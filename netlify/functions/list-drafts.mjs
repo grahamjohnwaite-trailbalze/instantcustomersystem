@@ -2,7 +2,7 @@ import { getStore } from '@netlify/blobs';
 
 export const handler = async () => {
   try {
-    const store = getStore({ name: 'newsletter-drafts' });
+    const store = getStore({ name: 'newsletter-drafts', consistency: 'strong' });
     const { blobs } = await store.list();
 
     const drafts = [];

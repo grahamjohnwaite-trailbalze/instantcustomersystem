@@ -12,7 +12,7 @@ export const handler = async (event) => {
     }
 
     const data = JSON.parse(event.body || '{}');
-    const store = getStore({ name: 'newsletter-drafts' });
+    const store = getStore({ name: 'newsletter-drafts', consistency: 'strong' });
 
     const id = data.id && String(data.id).trim()
       ? String(data.id).trim()
