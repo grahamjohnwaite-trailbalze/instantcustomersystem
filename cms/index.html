@@ -215,69 +215,56 @@
             <div class="niche-grid" id="nicheGrid"></div>
         </div>
     </div>
-<div class="card">
-    <h2>Saved Drafts</h2>
-    <p class="subtitle">Load previously saved Issue Producer drafts from Netlify Blobs.</p>
-    <div class="btn-group">
-        <button class="btn btn-secondary" onclick="loadSavedDrafts()">Load Saved Drafts</button>
-    </div>
-    <div id="savedDraftsPanel" style="margin-top:16px;">
-        <div class="empty-state" style="padding:30px 20px;">
-            <p>No drafts loaded yet.</p>
-        </div>
-    </div>
-</div>
 
     <!-- ISSUE PRODUCER -->
-<!-- ISSUE PRODUCER -->
-<div id="tab-producer" class="section">
-    <div class="card">
-        <h2>📝 Issue Producer</h2>
-        <p class="subtitle">Generate complete newsletter frameworks with Content Input Sheet for rich AI prompts. Every expert and activation position mapped.</p>
-    </div>
-
-    <div class="card">
-        <div id="stepBar" class="step-bar">
-            <div class="step step-current"><span>①</span> Setup</div>
-            <div class="step step-pending"><span>②</span> Framework</div>
-            <div class="step step-pending"><span>③</span> Content Inputs</div>
-            <div class="step step-pending"><span>④</span> Generate Prompt</div>
+    <div id="tab-producer" class="section">
+        <div class="card">
+            <h2>📝 Issue Producer</h2>
+            <p class="subtitle">Generate complete newsletter frameworks with Content Input Sheet for rich AI prompts. Every expert and activation position mapped.</p>
         </div>
 
-        <div class="form-row-4">
-            <div class="form-group">
-                <label class="form-label">Niche</label>
-                <select class="form-select" id="prodNiche">
-                    <option value="">Select niche...</option>
-                </select>
+        <div class="card">
+            <div id="stepBar" class="step-bar">
+                <div class="step step-current"><span>①</span> Setup</div>
+                <div class="step step-pending"><span>②</span> Framework</div>
+                <div class="step step-pending"><span>③</span> Content Inputs</div>
+                <div class="step step-pending"><span>④</span> Generate Prompt</div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Location</label>
-                <input class="form-input" id="prodLocation" placeholder="e.g. Peterborough">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Issue #</label>
-                <input class="form-input" id="prodIssue" type="number" placeholder="1" min="1">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Country</label>
-                <select class="form-select" id="prodCountry">
-                    <option value="UK">UK</option>
-                    <option value="US">US</option>
-                    <option value="Canada">Canada</option>
-                    <option value="Australia">Australia</option>
-                </select>
-            </div>
-        </div>
 
-        <div class="form-group">
-            <label class="form-label">📋 Previous Issue Outro (paste last week's "Next Week" section for continuity)</label>
-            <textarea class="form-textarea" id="prodOutro" placeholder="Paste the outro from your previous issue here to maintain editorial continuity..."></textarea>
-        </div>
+            <div class="form-row-4">
+                <div class="form-group">
+                    <label class="form-label">Niche</label>
+                    <select class="form-select" id="prodNiche">
+                        <option value="">Select niche...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input class="form-input" id="prodLocation" placeholder="e.g. Peterborough">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Issue #</label>
+                    <input class="form-input" id="prodIssue" type="number" placeholder="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Country</label>
+                    <select class="form-select" id="prodCountry">
+                        <option value="UK">UK</option>
+                        <option value="US">US</option>
+                        <option value="Canada">Canada</option>
+                        <option value="Australia">Australia</option>
+                    </select>
+                </div>
+            </div>
 
-        <div class="btn-group">
-            <button class="btn btn-primary" onclick="generateFramework()">⚡ Generate Framework</button>
-            <button class="btn btn-success" onclick="saveDraft()">💾 Save Draft</button>
+            <div class="form-group">
+                <label class="form-label">📋 Previous Issue Outro (paste last week's "Next Week" section for continuity)</label>
+                <textarea class="form-textarea" id="prodOutro" placeholder="Paste the outro from your previous issue here to maintain editorial continuity..."></textarea>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="generateFramework()">⚡ Generate Framework</button>
+            </div>
         </div>
 
         <!-- Framework Output -->
@@ -386,20 +373,7 @@
                 </div>
                 <div id="promptPreview" style="display:none;"></div>
             </div>
-
-            <div class="card">
-                <h2>Saved Drafts</h2>
-                <p class="subtitle">Load previously saved Issue Producer drafts from Netlify Blobs.</p>
-                <div class="btn-group">
-                    <button class="btn btn-secondary" onclick="loadSavedDrafts()">Load Saved Drafts</button>
-                </div>
-                <div id="savedDraftsPanel" style="margin-top:16px;">
-                    <div class="empty-state" style="padding:30px 20px;">
-                        <p>No drafts loaded yet.</p>
-                    </div>
-                </div>
-            </div>
-          </div>
+        </div>
 
         <div class="card">
             <h2>Saved Drafts</h2>
@@ -743,80 +717,6 @@ function populateNicheDropdowns() {
     });
 }
 
-async function saveDraft() {
-    const nicheId = document.getElementById('prodNiche').value;
-    const location = document.getElementById('prodLocation').value || '';
-    const issue = document.getElementById('prodIssue').value || '';
-    const country = document.getElementById('prodCountry').value || '';
-    const outro = document.getElementById('prodOutro').value || '';
-
-    if (!nicheId) {
-        showToast('Please select a niche before saving');
-        return;
-    }
-
-    const niche = getNiche(nicheId);
-
-    const expertInputs = Array.from(document.querySelectorAll('.expert-name')).map((input, i) => ({
-        role: input.dataset.role || '',
-        business: input.value || '',
-        contact: document.querySelectorAll('.expert-contact')[i]?.value || '',
-        content: document.querySelectorAll('.expert-content')[i]?.value || ''
-    }));
-
-    const activationInputs = Array.from(document.querySelectorAll('.activation-name')).map((input, i) => ({
-        type: input.dataset.type || '',
-        business: input.value || '',
-        contact: document.querySelectorAll('.activation-contact')[i]?.value || '',
-        content: document.querySelectorAll('.activation-content')[i]?.value || ''
-    }));
-
-    const payload = {
-        title: niche ? `${niche.name} — ${location} — Issue #${issue || '1'}` : 'Newsletter Draft',
-        issueDate: new Date().toISOString().split('T')[0],
-        edition: nicheId,
-        content: {
-            nicheId,
-            nicheName: niche ? niche.name : '',
-            location,
-            issue,
-            country,
-            outro,
-            marketStats: document.getElementById('inputMarketStats')?.value || '',
-            notableSales: document.getElementById('inputNotableSales')?.value || '',
-            streetName: document.getElementById('inputStreetName')?.value || '',
-            streetWhy: document.getElementById('inputStreetWhy')?.value || '',
-            streetDetails: document.getElementById('inputStreetDetails')?.value || '',
-            countryNews: document.getElementById('inputCountryNews')?.value || '',
-            community: document.getElementById('inputCommunity')?.value || '',
-            notes: document.getElementById('inputNotes')?.value || '',
-            expertInputs,
-            activationInputs
-        },
-        notes: 'Saved from Issue Producer'
-    };
-
-    try {
-        const response = await fetch('/.netlify/functions/save-draft', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        const result = await response.json();
-
-        if (result.ok) {
-            showToast('Draft saved successfully');
-            console.log('Saved draft:', result);
-        } else {
-            showToast(result.error || 'Save failed');
-            console.error('Save failed:', result);
-        }
-    } catch (error) {
-        showToast('Error saving draft');
-        console.error(error);
-    }
-}
 // ===== TAB SWITCHING =====
 function switchTab(tab) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -1114,6 +1014,45 @@ function previewPrompt() {
         preview.style.display = 'none';
     }
 }
+
+function populateDraftIntoForm(draft) {
+    document.getElementById('prodNiche').value = draft.niche || '';
+    document.getElementById('prodLocation').value = draft.location || '';
+    document.getElementById('prodIssue').value = draft.issue || '';
+    document.getElementById('prodCountry').value = draft.country || 'UK';
+    document.getElementById('prodOutro').value = draft.outro || '';
+
+    if (draft.inputMarketStats) document.getElementById('inputMarketStats').value = draft.inputMarketStats;
+    if (draft.inputNotableSales) document.getElementById('inputNotableSales').value = draft.inputNotableSales;
+    if (draft.inputStreetName) document.getElementById('inputStreetName').value = draft.inputStreetName;
+    if (draft.inputStreetWhy) document.getElementById('inputStreetWhy').value = draft.inputStreetWhy;
+    if (draft.inputStreetDetails) document.getElementById('inputStreetDetails').value = draft.inputStreetDetails;
+    if (draft.inputCountryNews) document.getElementById('inputCountryNews').value = draft.inputCountryNews;
+    if (draft.inputCommunity) document.getElementById('inputCommunity').value = draft.inputCommunity;
+    if (draft.inputNotes) document.getElementById('inputNotes').value = draft.inputNotes;
+
+    if (typeof generateFramework === 'function' && draft.niche && draft.location && draft.issue) {
+        generateFramework();
+
+        setTimeout(() => {
+            if (Array.isArray(draft.expertInputs)) {
+                draft.expertInputs.forEach(item => {
+                    const el = document.getElementById('expertInput_' + item.key);
+                    if (el) el.value = item.value || '';
+                });
+            }
+            if (Array.isArray(draft.activationInputs)) {
+                draft.activationInputs.forEach(item => {
+                    const el = document.getElementById('activationInput_' + item.key);
+                    if (el) el.value = item.value || '';
+                });
+            }
+        }, 50);
+    }
+
+    showToast('Draft loaded into form');
+}
+
 function loadSavedDrafts() {
     const panel = document.getElementById('savedDraftsPanel');
     if (!panel) return;
@@ -1146,14 +1085,22 @@ function loadSavedDrafts() {
                 return;
             }
 
+            window.savedDraftsIndex = {};
+            result.drafts.forEach(draft => {
+                window.savedDraftsIndex[draft.id] = draft;
+            });
+
             panel.innerHTML = result.drafts.map(draft => `
                 <div class="partner-input-card" style="margin-bottom:12px;">
                     <h4 style="margin-bottom:6px;">${escapeHtml(draft.title || 'Untitled draft')}</h4>
-                    <div style="font-size:12px;color:#94a3b8;line-height:1.7;">
+                    <div style="font-size:12px;color:#94a3b8;line-height:1.7;margin-bottom:12px;">
                         <div><strong>ID:</strong> ${escapeHtml(draft.id || '-')}</div>
                         <div><strong>Edition:</strong> ${escapeHtml(draft.edition || '-')}</div>
                         <div><strong>Issue date:</strong> ${escapeHtml(draft.issueDate || '-')}</div>
                         <div><strong>Saved:</strong> ${draft.savedAt ? new Date(draft.savedAt).toLocaleString() : '-'}</div>
+                    </div>
+                    <div class="btn-group" style="margin-top:0;">
+                        <button class="btn btn-primary" onclick="populateDraftIntoForm(window.savedDraftsIndex['${draft.id}'])">Load Into Form</button>
                     </div>
                 </div>
             `).join('');
@@ -1170,6 +1117,8 @@ function loadSavedDrafts() {
             showToast('Error loading drafts');
         });
 }
+
+
 function updateStepBar(step) {
     const steps = ['Setup', 'Framework', 'Content Inputs', 'Generate Prompt'];
     document.getElementById('stepBar').innerHTML = steps.map((s, i) => {
