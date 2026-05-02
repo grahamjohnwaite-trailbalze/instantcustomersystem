@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operations Manual — Instant Customer System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+        .nav-item { transition: all 0.15s ease; }
+        .nav-item:hover { background: rgba(255,255,255,0.06); }
+        .nav-item.active { background: rgba(20,184,166,0.1); border-left-color: #14b8a6; color: #14b8a6; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .sop-step { counter-increment: step; }
+        .sop-step::before { content: counter(step); display: flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; background: rgba(20,184,166,0.15); color: #14b8a6; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+    </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen">
+
+    <!-- ===== TOP NAV ===== -->
+    <nav class="bg-gray-900/80 backdrop-blur-xl border-b border-gray-800 px-4 py-3 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="../index.html" class="text-gray-500 hover:text-white text-sm transition">← Dashboard</a>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-base">📖</div>
+                    <div>
+                        <h1 class="text-sm font-bold">Operations Manual</h1>
+                        <p class="text-xs text-gray-500 leading-tight">Instant Customer System</p>
+                    </div>
+                </div>
+            </div>
+            <button onclick="toggleSidebar()" class="md:hidden w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-sm">☰</button>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto flex">
+
+        <!-- ===== SIDEBAR ===== -->
+        <aside id="sidebar" class="hidden md:block w-64 flex-shrink-0 border-r border-gray-800/50 min-h-screen bg-gray-900/30 sticky top-12 self-start overflow-y-auto" style="max-height:calc(100vh - 3rem);">
+            <div class="p-4 space-y-1">
+                <p class="text-xs text-gray-600 uppercase tracking-widest font-bold mb-3 px-3">Manual Sections</p>
+                <button onclick="goTo('overview')" data-nav="overview" class="nav-item active w-full text-left px-3 py-2 rounded-lg text-sm border-l-2 border-transparent">📋 System Overview</button>
+                <button onclick="goTo('architecture')" data-nav="architecture" class="nav-item w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 border-l-2 border-transparent">🏗 Architecture</button>
+                <button onclick="goTo('cms')" data-nav="cms" class="nav-item w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 border-l-2 border-transparent">📰 Niche Newsletter CMS</button>
+                <button onclick="goTo('spotlighthq')" data-nav="spotlighthq" class="nav-item w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 border-l-2 border-transparent">🔦 Spotlight HQ</button>
+                <button onclick="goTo('lifelanes')" data-nav="lifelanes" class="nav-item w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 border-l-2 border-transparent">🎯 Life Lanes Reference</button>
+                <button onclick="goTo('amplifier')" data-nav="amplifier" class="nav-item w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 border-l-2 border-transparent">📢 Amplifier</button>
+                <button onclick="goTo('weekly')" data-nav="weekly" class="nav-item w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 border-l-2 border-transparent">📅 Weekly Production SOP</button>
+                <button onclick="goTo('partners')" data-nav="partners" class="nav-item w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 border-l-2 border-transparent">🤝 Partner Management</button>
+                <button onclick="goTo('content')" data-nav="content" class="nav-item w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 border-l-2 border-transparent">✍️ Content Rules</button>
+                <button onclick="goTo('social')" data-nav="social" class="nav-item w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 border-l-2 border-transparent">📱 Social Media</button>
+                <button onclick="goTo('revenue')" data-nav="revenue" class="nav-item w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 border-l-2 border-transparent">💷 Revenue Operations</button>
+                <button onclick="goTo('expansion')" data-nav="expansion" class="nav-item w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 border-l-2 border-transparent">🌍 Location Expansion</button>
+            </div>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="flex-1 p-4 md:p-8 min-w-0">
+
+            <!-- OVERVIEW -->
+            <div id="sec-overview" class="section active">
+                <h2 class="text-2xl font-extrabold mb-2">System Overview</h2>
+                <p class="text-gray-400 text-sm mb-6">What the Instant Customer System is and how it works.</p>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">What Is This System?</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-4">The Instant Customer System is the complete back-office platform for producing, managing, and monetising local newsletters. It supports two distinct newsletter products: Niche Newsletters (vertical titles aimed at specific audiences) and Spotlight Editions (location-based newsletters covering every aspect of local life through 9 Life Lanes).</p>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-4">Revenue comes from two partner types: Expert Partners who appear every issue in recurring editorial roles, and Activation Partners who book 1–3 month rotating editorial slots. Neither should ever feel like advertising — all partner content is editorial-first.</p>
+                    <p class="text-sm text-gray-300 leading-relaxed">The system runs on four pages: a central Dashboard, the Niche Newsletter CMS, Spotlight HQ (Trail Blaze Local), and this Operations Manual. All live under one domain.</p>
+                </div>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">Two Products</h3>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div class="bg-blue-500/5 border border-blue-500/20 rounded-lg p-4">
+                            <h4 class="font-bold text-blue-400 text-sm mb-2">📰 Niche Newsletters</h4>
+                            <p class="text-xs text-gray-400 leading-relaxed">8 vertical titles: Home Seller Insider, Property Investor Insider, Renter Insider, Taste Trail, Local Pet Insider, Smile Dentist News, Smart Money News, Destination Spotlight. Each targets a specific audience with dedicated expert partners, activation slots, and tailored editorial sections. Managed in the CMS.</p>
+                        </div>
+                        <div class="bg-teal-500/5 border border-teal-500/20 rounded-lg p-4">
+                            <h4 class="font-bold text-teal-400 text-sm mb-2">🔦 Spotlight Editions</h4>
+                            <p class="text-xs text-gray-400 leading-relaxed">Location-based newsletters covering all 9 Life Lanes: Home & Moving, Money & Planning, Health & Wellbeing, Family & Education, Pets & Home Life, Food & Local Living, Work & Business, Home & Energy Upgrades, Community & Events. Every issue touches every lane. Managed in Spotlight HQ.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl p-6">
+                    <h3 class="font-bold mb-3">Key Terminology</h3>
+                    <div class="space-y-3">
+                        <div class="flex gap-3"><span class="text-teal-400 font-bold text-sm flex-shrink-0 w-36">Expert Partner</span><span class="text-sm text-gray-400">A recurring partner who appears every issue. Pays a monthly fee (typically £597–£997/mo). Their content is editorial — columns, Q&As, tips, quizzes — never ads.</span></div>
+                        <div class="flex gap-3"><span class="text-amber-400 font-bold text-sm flex-shrink-0 w-36">Activation Partner</span><span class="text-sm text-gray-400">A rotating partner who books a 1–3 month editorial slot. Feature stories, spotlights, reviews. Typically £197–£397/mo. Slots rotate so the content stays fresh.</span></div>
+                        <div class="flex gap-3"><span class="text-purple-400 font-bold text-sm flex-shrink-0 w-36">Life Lane</span><span class="text-sm text-gray-400">One of 9 life categories that every Spotlight edition must cover. Ensures each issue serves readers across all major aspects of local life.</span></div>
+                        <div class="flex gap-3"><span class="text-blue-400 font-bold text-sm flex-shrink-0 w-36">Content Layer</span><span class="text-sm text-gray-400">Classification of content: Global (works everywhere), Country (market-specific), or Local (unique per location). See Content Rules section.</span></div>
+                        <div class="flex gap-3"><span class="text-rose-400 font-bold text-sm flex-shrink-0 w-36">Amplifier</span><span class="text-sm text-gray-400">The social media module inside Spotlight HQ. Takes issue content and generates a 7-day social calendar across Facebook, Instagram, LinkedIn, and X.</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ARCHITECTURE -->
+            <div id="sec-architecture" class="section">
+                <h2 class="text-2xl font-extrabold mb-2">Architecture</h2>
+                <p class="text-gray-400 text-sm mb-6">File structure and how everything connects.</p>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">File Structure</h3>
+                    <div class="bg-gray-800/40 rounded-lg p-4">
+                        <pre class="text-sm text-gray-300 leading-relaxed font-mono">instantcustomersystem/
+├── index.html              ← Dashboard
+├── cms/
+│   └── index.html          ← Niche Newsletter CMS
+├── partners/
+│   └── index.html          ← Spotlight HQ (Trail Blaze Local)
+└── manual/
+    └── index.html          ← Operations Manual (this page)</pre>
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">How They Connect</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">The Dashboard is the central hub. It links to all three tools. Each tool links back to the Dashboard via the "← Dashboard" link in the top navigation. All tools are standalone HTML files — no backend, no database, no build step. State is managed in JavaScript memory during each session.</p>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">The CMS handles niche newsletter production. Spotlight HQ handles location-based Spotlight editions. They are separate tools because they manage different products with different structures, but both serve the same business.</p>
+                    <p class="text-sm text-gray-300 leading-relaxed">Newsletters are assembled in these tools and then uploaded as text content to Letterman for final sending. The tools generate the content, structure, and social posts — Letterman handles the actual email delivery.</p>
+                </div>
+
+                <div class="glass rounded-xl p-6">
+                    <h3 class="font-bold mb-3">Markets</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed">The system supports four currency markets: UK (£), US ($), Canada (C$), and Australia (A$). Each location belongs to a country. Country-specific content (tax, law, process) varies by market. Both the CMS and Spotlight HQ support all four markets.</p>
+                </div>
+            </div>
+
+            <!-- CMS -->
+            <div id="sec-cms" class="section">
+                <h2 class="text-2xl font-extrabold mb-2">Niche Newsletter CMS</h2>
+                <p class="text-gray-400 text-sm mb-6">How to use the Newsletter Empire CMS to produce niche newsletters.</p>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">Six Tabs</h3>
+                    <div class="space-y-4">
+                        <div class="bg-gray-800/30 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-blue-400 mb-1">🎛 Command Centre</h4>
+                            <p class="text-xs text-gray-400">Overview of the entire system. Shows all 8 niches, their expert counts, activation pools, section counts, and slot availability. Click any niche to jump to the Issue Producer. Also displays the editorial philosophy and weekly production workflow at a glance.</p>
+                        </div>
+                        <div class="bg-gray-800/30 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-blue-400 mb-1">📝 Issue Producer</h4>
+                            <p class="text-xs text-gray-400">The core production tool. Select a niche, location, issue number, and country. Paste in the previous issue's outro to maintain continuity. Click to generate the full section framework. Copy the plain text version or the AI prompt (for Claude or ChatGPT) to generate the complete draft. Every expert partner position is mapped. Every activation slot is placed.</p>
+                        </div>
+                        <div class="bg-gray-800/30 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-blue-400 mb-1">🏷 Title Builder</h4>
+                            <p class="text-xs text-gray-400">Generates the complete specification and pricing for any newsletter variant. Select a niche, location, and country to produce the full title spec including section count, partner slots, pricing tiers, and editorial structure.</p>
+                        </div>
+                        <div class="bg-gray-800/30 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-blue-400 mb-1">🧠 Partner Intelligence</h4>
+                            <p class="text-xs text-gray-400">Category maps showing every expert role and activation type for each niche. Includes referral chains (which partners refer which), onboarding sequences, and sales templates. Select a niche to view its full partner intelligence profile.</p>
+                        </div>
+                        <div class="bg-gray-800/30 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-blue-400 mb-1">📊 Pitch Tracker</h4>
+                            <p class="text-xs text-gray-400">CRM-style pipeline for tracking every prospect from first contact to signed agreement. Add businesses with their contact details, niche, partner type (Expert or Activation), position, and location. Filter by status: Prospect, Contacted, Pitched, Negotiating, Signed, Declined.</p>
+                        </div>
+                        <div class="bg-gray-800/30 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-blue-400 mb-1">📱 Social Engine</h4>
+                            <p class="text-xs text-gray-400">Generates a 7-day, 28-post social media calendar from each newsletter issue (4 posts per day across 4 platforms). Enter the niche, location, issue number, and lead story. Click Generate to produce the full calendar. Copy all 28 posts in one go.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl p-6">
+                    <h3 class="font-bold mb-3">The 8 Niches</h3>
+                    <div class="grid sm:grid-cols-2 gap-3">
+                        <div class="bg-gray-800/30 rounded-lg p-3"><span class="text-base mr-2">🏠</span><span class="text-sm font-medium">Home Seller Insider</span><span class="text-xs text-gray-600 ml-2">6 experts · 25 pool · 15 sections</span></div>
+                        <div class="bg-gray-800/30 rounded-lg p-3"><span class="text-base mr-2">📊</span><span class="text-sm font-medium">Property Investor Insider</span><span class="text-xs text-gray-600 ml-2">8 experts · 20 pool · 14 sections</span></div>
+                        <div class="bg-gray-800/30 rounded-lg p-3"><span class="text-base mr-2">🔑</span><span class="text-sm font-medium">Renter Insider</span><span class="text-xs text-gray-600 ml-2">4 experts · 14 pool · 12 sections</span></div>
+                        <div class="bg-gray-800/30 rounded-lg p-3"><span class="text-base mr-2">🍽</span><span class="text-sm font-medium">Taste Trail</span><span class="text-xs text-gray-600 ml-2">2 experts · 18 pool · 10 sections</span></div>
+                        <div class="bg-gray-800/30 rounded-lg p-3"><span class="text-base mr-2">🐾</span><span class="text-sm font-medium">Local Pet Insider</span><span class="text-xs text-gray-600 ml-2">4 experts · 14 pool · 10 sections</span></div>
+                        <div class="bg-gray-800/30 rounded-lg p-3"><span class="text-base mr-2">🦷</span><span class="text-sm font-medium">Smile Dentist News</span><span class="text-xs text-gray-600 ml-2">4 experts · 14 pool · 8 sections</span></div>
+                        <div class="bg-gray-800/30 rounded-lg p-3"><span class="text-base mr-2">💰</span><span class="text-sm font-medium">Smart Money News</span><span class="text-xs text-gray-600 ml-2">7 experts · 10 pool · 10 sections</span></div>
+                        <div class="bg-gray-800/30 rounded-lg p-3"><span class="text-base mr-2">☀️</span><span class="text-sm font-medium">Destination Spotlight</span><span class="text-xs text-gray-600 ml-2">5 experts · 18 pool · 10 sections</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SPOTLIGHT HQ -->
+            <div id="sec-spotlighthq" class="section">
+                <h2 class="text-2xl font-extrabold mb-2">Spotlight HQ</h2>
+                <p class="text-gray-400 text-sm mb-6">How to use Trail Blaze Local — Spotlight HQ to manage location-based editions.</p>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">Six Tabs</h3>
+                    <div class="space-y-4">
+                        <div class="bg-gray-800/30 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-teal-400 mb-1">🎯 Life Lanes</h4>
+                            <p class="text-xs text-gray-400">The coverage dashboard. Shows all 9 Life Lanes as a grid with each lane marked as Covered (has an expert or activation) or Gap (needs a partner). Stats bar shows lanes covered, total experts, total activations, and monthly revenue. The coverage progress bar must reach 9/9 before any issue is ready to publish.</p>
+                        </div>
+                        <div class="bg-gray-800/30 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-teal-400 mb-1">👔 Expert Partners</h4>
+                            <p class="text-xs text-gray-400">Manages recurring expert partners for this location. Target is 6–10 per location. Each expert has a business name, Life Lane, role, contact details, monthly fee, and status (Active/Paused). Grouped by Life Lane. Capacity bar shows progress toward 10. Experts appear in every issue — they are the editorial backbone.</p>
+                        </div>
+                        <div class="bg-gray-800/30 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-teal-400 mb-1">⚡ Activations</h4>
+                            <p class="text-xs text-gray-400">Manages rotating activation partners. These are 1–3 month bookings with a specific editorial format (Feature Story, Expert Column, Community Spotlight, etc.). Progress bars show time remaining. Expiry warnings flag partners needing renewal within 14 days. Any local business can be an activation partner.</p>
+                        </div>
+                        <div class="bg-gray-800/30 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-teal-400 mb-1">📰 Issue Builder</h4>
+                            <p class="text-xs text-gray-400">Pre-flight checker shows all 9 lanes as pass/fail icons. Issue layout preview shows every lane section with its assigned partners (expert and/or activation). Unfilled lanes show as red dashed outlines with suggested roles to sell. Issue history tracks past editions with their status (Draft/Published) and numbers.</p>
+                        </div>
+                        <div class="bg-gray-800/30 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-teal-400 mb-1">📢 Amplifier</h4>
+                            <p class="text-xs text-gray-400">The social media calendar. Shows a 7-day week (Mon–Sun) with posts for each day. "Generate from Issue" auto-creates a full week of social posts pulled from current experts and activations. Each post has a day, platform, type (Teaser, Issue Drop, Partner Spotlight, etc.), content, linked partner, and status. Add, edit, or delete individual posts.</p>
+                        </div>
+                        <div class="bg-gray-800/30 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-teal-400 mb-1">💷 Revenue</h4>
+                            <p class="text-xs text-gray-400">Monthly and annualised totals. Expert vs activation revenue split with visual bar. Revenue breakdown by Life Lane. Full partner table with individual monthly amounts. Cross-location summary showing all locations with a grand total.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl p-6">
+                    <h3 class="font-bold mb-3">Location Management</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">Each location is a separate Spotlight edition. Use the dropdown in the top nav to switch between locations. Click "+ Location" to add a new one. Each new location starts empty — no partners, no issues, no social posts.</p>
+                    <p class="text-sm text-gray-300 leading-relaxed">The system ships with Peterborough (fully loaded with sample data), Cambridgeshire, Norfolk, and North Norfolk. All locations support UK, US, Australia, and Canada markets.</p>
+                </div>
+            </div>
+
+            <!-- LIFE LANES REFERENCE -->
+            <div id="sec-lifelanes" class="section">
+                <h2 class="text-2xl font-extrabold mb-2">Life Lanes Reference</h2>
+                <p class="text-gray-400 text-sm mb-6">The 9 Life Lanes and their target expert/activation roles.</p>
+
+                <div class="space-y-4">
+                    <div class="glass rounded-xl p-5">
+                        <div class="flex items-center gap-2 mb-2"><span class="text-2xl">🏠</span><h3 class="font-bold">Home & Moving</h3></div>
+                        <p class="text-xs text-gray-500 mb-2">Everything about buying, selling, renting, and moving home.</p>
+                        <p class="text-sm text-gray-400">Target roles: Mortgage Broker, Estate Agent, Conveyancing Solicitor, Surveyor, Lettings / Portfolio Specialist, Planning Consultant</p>
+                    </div>
+                    <div class="glass rounded-xl p-5">
+                        <div class="flex items-center gap-2 mb-2"><span class="text-2xl">💰</span><h3 class="font-bold">Money & Planning</h3></div>
+                        <p class="text-xs text-gray-500 mb-2">Personal finance, investments, tax, and wealth management.</p>
+                        <p class="text-sm text-gray-400">Target roles: Independent Financial Adviser, Wealth Planner, Tax Specialist, Chartered Accountant, Business Financial Consultant</p>
+                    </div>
+                    <div class="glass rounded-xl p-5">
+                        <div class="flex items-center gap-2 mb-2"><span class="text-2xl">❤️</span><h3 class="font-bold">Health & Wellbeing</h3></div>
+                        <p class="text-xs text-gray-500 mb-2">Physical health, dental, fitness, mental health, and wellness.</p>
+                        <p class="text-sm text-gray-400">Target roles: Private GP, Dental Practice, Physiotherapy Clinic, Gym / Fitness Studio, Mental Health / Coaching, Aesthetics / Wellness Clinic</p>
+                    </div>
+                    <div class="glass rounded-xl p-5">
+                        <div class="flex items-center gap-2 mb-2"><span class="text-2xl">👨‍👩‍👧</span><h3 class="font-bold">Family & Education</h3></div>
+                        <p class="text-xs text-gray-500 mb-2">Schools, childcare, tutoring, family activities, and youth.</p>
+                        <p class="text-sm text-gray-400">Target roles: Independent School, Tuition Centre, Childcare / Nursery, Education Consultant, Youth Activity Club, Coding / STEM Academy</p>
+                    </div>
+                    <div class="glass rounded-xl p-5">
+                        <div class="flex items-center gap-2 mb-2"><span class="text-2xl">🐾</span><h3 class="font-bold">Pets & Home Life</h3></div>
+                        <p class="text-xs text-gray-500 mb-2">Pet care, vets, training, and home services.</p>
+                        <p class="text-sm text-gray-400">Target roles: Dog Training, Veterinary Practice, Pet Care Services, Pet Grooming</p>
+                    </div>
+                    <div class="glass rounded-xl p-5">
+                        <div class="flex items-center gap-2 mb-2"><span class="text-2xl">🍽️</span><h3 class="font-bold">Food & Local Living</h3></div>
+                        <p class="text-xs text-gray-500 mb-2">Restaurants, hospitality, retail, and local lifestyle.</p>
+                        <p class="text-sm text-gray-400">Target roles: Restaurant / Café, Event Venue, Boutique Hotel, Premium Local Retail, Hospitality Group</p>
+                    </div>
+                    <div class="glass rounded-xl p-5">
+                        <div class="flex items-center gap-2 mb-2"><span class="text-2xl">💼</span><h3 class="font-bold">Work & Business</h3></div>
+                        <p class="text-xs text-gray-500 mb-2">Recruitment, careers, local employers, and business services.</p>
+                        <p class="text-sm text-gray-400">Target roles: Recruitment Firm, Business Coach, Local Employer, IT Services Provider, Commercial Finance Broker</p>
+                    </div>
+                    <div class="glass rounded-xl p-5">
+                        <div class="flex items-center gap-2 mb-2"><span class="text-2xl">⚡</span><h3 class="font-bold">Home & Energy Upgrades</h3></div>
+                        <p class="text-xs text-gray-500 mb-2">Renewables, insulation, smart home, and energy efficiency.</p>
+                        <p class="text-sm text-gray-400">Target roles: Heating & Renewables, Solar Specialist, Home Improvement Company, Energy Consultancy, Smart Home Installer</p>
+                    </div>
+                    <div class="glass rounded-xl p-5">
+                        <div class="flex items-center gap-2 mb-2"><span class="text-2xl">🎪</span><h3 class="font-bold">Community & Events</h3></div>
+                        <p class="text-xs text-gray-500 mb-2">Local events, attractions, sports, and charity.</p>
+                        <p class="text-sm text-gray-400">Target roles: Event Organisers, Local Attractions, Sports Clubs, Charity Partners</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AMPLIFIER -->
+            <div id="sec-amplifier" class="section">
+                <h2 class="text-2xl font-extrabold mb-2">Amplifier</h2>
+                <p class="text-gray-400 text-sm mb-6">How the social media calendar works inside Spotlight HQ.</p>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">Purpose</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">Every Spotlight issue produces content across 9 Life Lanes with multiple expert and activation partners. The Amplifier takes that content and generates a 7-day social posting calendar so you get a full week of social media from a single issue — no extra writing required.</p>
+                    <p class="text-sm text-gray-300 leading-relaxed">This does three things: grows your subscriber list between issues, increases the value of partnerships (partners get social mentions beyond the newsletter), and keeps the Spotlight brand visible locally all week.</p>
+                </div>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">Weekly Calendar Structure</h3>
+                    <div class="space-y-3" style="counter-reset:step">
+                        <div class="flex items-start gap-3 bg-gray-800/30 rounded-lg p-3">
+                            <span class="w-20 flex-shrink-0 text-sm font-bold text-teal-400">Monday</span>
+                            <div><span class="text-sm font-medium">Pre-Issue Teasers</span><p class="text-xs text-gray-500 mt-0.5">Build anticipation. Mention 1–2 expert partners and what's coming. Facebook + Instagram.</p></div>
+                        </div>
+                        <div class="flex items-start gap-3 bg-gray-800/30 rounded-lg p-3">
+                            <span class="w-20 flex-shrink-0 text-sm font-bold text-teal-400">Tuesday</span>
+                            <div><span class="text-sm font-medium">Activation + Partner Spotlight</span><p class="text-xs text-gray-500 mt-0.5">Highlight an activation feature and a partner's expertise. Instagram + LinkedIn.</p></div>
+                        </div>
+                        <div class="flex items-start gap-3 bg-gray-800/30 rounded-lg p-3">
+                            <span class="w-20 flex-shrink-0 text-sm font-bold text-amber-400">Wednesday</span>
+                            <div><span class="text-sm font-medium">Issue Drop</span><p class="text-xs text-gray-500 mt-0.5">The main announcement — "Issue #X is LIVE." All platforms. This is the biggest post of the week.</p></div>
+                        </div>
+                        <div class="flex items-start gap-3 bg-gray-800/30 rounded-lg p-3">
+                            <span class="w-20 flex-shrink-0 text-sm font-bold text-teal-400">Thursday</span>
+                            <div><span class="text-sm font-medium">Activation Results + Expert Highlight</span><p class="text-xs text-gray-500 mt-0.5">Share an activation result or feature update. Highlight another expert partner's column. Facebook.</p></div>
+                        </div>
+                        <div class="flex items-start gap-3 bg-gray-800/30 rounded-lg p-3">
+                            <span class="w-20 flex-shrink-0 text-sm font-bold text-teal-400">Friday</span>
+                            <div><span class="text-sm font-medium">Business Spotlight + Community</span><p class="text-xs text-gray-500 mt-0.5">LinkedIn partner spotlight. Instagram community engagement (photo of the week, local question).</p></div>
+                        </div>
+                        <div class="flex items-start gap-3 bg-gray-800/30 rounded-lg p-3">
+                            <span class="w-20 flex-shrink-0 text-sm font-bold text-teal-400">Saturday</span>
+                            <div><span class="text-sm font-medium">Behind the Scenes</span><p class="text-xs text-gray-500 mt-0.5">Show the production side. "How we build your local newsletter." Instagram.</p></div>
+                        </div>
+                        <div class="flex items-start gap-3 bg-gray-800/30 rounded-lg p-3">
+                            <span class="w-20 flex-shrink-0 text-sm font-bold text-cyan-400">Sunday</span>
+                            <div><span class="text-sm font-medium">Countdown</span><p class="text-xs text-gray-500 mt-0.5">Next issue countdown. Ask readers what they want covered. Facebook.</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl p-6">
+                    <h3 class="font-bold mb-3">Post Types</h3>
+                    <div class="grid sm:grid-cols-2 gap-2">
+                        <div class="bg-blue-500/10 rounded-lg p-3"><span class="text-xs font-bold text-blue-400">Pre-Issue Teaser</span><p class="text-xs text-gray-500 mt-0.5">Builds anticipation before the issue drops</p></div>
+                        <div class="bg-amber-500/10 rounded-lg p-3"><span class="text-xs font-bold text-amber-400">Issue Drop</span><p class="text-xs text-gray-500 mt-0.5">The main "issue is live" announcement</p></div>
+                        <div class="bg-teal-500/10 rounded-lg p-3"><span class="text-xs font-bold text-teal-400">Partner Spotlight</span><p class="text-xs text-gray-500 mt-0.5">Highlights a specific expert or activation partner</p></div>
+                        <div class="bg-purple-500/10 rounded-lg p-3"><span class="text-xs font-bold text-purple-400">Activation Highlight</span><p class="text-xs text-gray-500 mt-0.5">Shares activation content, results, or updates</p></div>
+                        <div class="bg-rose-500/10 rounded-lg p-3"><span class="text-xs font-bold text-rose-400">Community Engagement</span><p class="text-xs text-gray-500 mt-0.5">Questions, photo of the week, local interaction</p></div>
+                        <div class="bg-cyan-500/10 rounded-lg p-3"><span class="text-xs font-bold text-cyan-400">Next Issue Countdown</span><p class="text-xs text-gray-500 mt-0.5">Countdown to next issue, ask for input</p></div>
+                        <div class="bg-slate-500/10 rounded-lg p-3"><span class="text-xs font-bold text-slate-400">Behind the Scenes</span><p class="text-xs text-gray-500 mt-0.5">Shows the editorial process, humanises the brand</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WEEKLY PRODUCTION SOP -->
+            <div id="sec-weekly" class="section">
+                <h2 class="text-2xl font-extrabold mb-2">Weekly Production SOP</h2>
+                <p class="text-gray-400 text-sm mb-6">Day-by-day workflow for producing both niche newsletters and Spotlight editions.</p>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-4">Niche Newsletter — Weekly Cycle</h3>
+                    <div class="space-y-3" style="counter-reset:step">
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-teal-400">Monday — Framework</h4>
+                                <p class="text-xs text-gray-400 mt-1">Open the CMS Issue Producer. Select niche, location, and issue number. Paste the previous issue's outro into the continuity field. Generate the section framework. Review the structure — every expert position should be mapped, every activation slot placed.</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-teal-400">Tuesday — AI Draft</h4>
+                                <p class="text-xs text-gray-400 mt-1">Copy the AI prompt from the Issue Producer. Paste into Claude or ChatGPT. Generate the full content draft. Review the output — check that tone is editorial, not promotional. Adjust any sections that feel like advertising.</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-teal-400">Wednesday — News Layer</h4>
+                                <p class="text-xs text-gray-400 mt-1">Add newsworthy, timely items using the copy-back method (find relevant local/national news and weave it into existing sections). Edit and refine the entire draft. Add any Local-layer content (specific streets, events, data).</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-teal-400">Thursday — Review</h4>
+                                <p class="text-xs text-gray-400 mt-1">Final check. Verify every expert partner appears at least once. Verify activation slots are filled. Proofread all sections. Check that the outro teases next week's content (this becomes Monday's continuity input).</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-teal-400">Friday — Publish</h4>
+                                <p class="text-xs text-gray-400 mt-1">Upload the final content to Letterman. Send the newsletter. Save the outro for next Monday. Open the CMS Social Engine and generate the 28-post social calendar. Open the Pitch Tracker and log any new conversations from this week.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-4">Spotlight Edition — Weekly Cycle</h3>
+                    <div class="space-y-3" style="counter-reset:step">
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-amber-400">Monday — Pre-Flight</h4>
+                                <p class="text-xs text-gray-400 mt-1">Open Spotlight HQ. Select the location. Go to Issue Builder. Check the Pre-Flight panel — all 9 Life Lanes must show green. If any are red, go to Experts or Activations tab and fill the gap before proceeding.</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-amber-400">Tuesday — Content Build</h4>
+                                <p class="text-xs text-gray-400 mt-1">Build content for each Life Lane section. For expert partners: use their latest column, Q&A, tips, or contributed content. For activations: write the editorial feature in the assigned format (Feature Story, Community Spotlight, etc.). Ensure every partner's content feels like genuine editorial.</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-amber-400">Wednesday — Publish + Amplify</h4>
+                                <p class="text-xs text-gray-400 mt-1">Upload final content to Letterman. Send the Spotlight edition. Go to the Amplifier tab and hit "Generate from Issue" to create the week's social calendar. Review and customise the generated posts. Set statuses to Scheduled.</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-amber-400">Thu–Sun — Social Posting</h4>
+                                <p class="text-xs text-gray-400 mt-1">Post according to the Amplifier calendar. Thursday: activation results + expert highlight. Friday: LinkedIn spotlight + community engagement. Saturday: behind the scenes. Sunday: countdown to next issue. Mark each post as "Posted" when done.</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-amber-400">Ongoing — Partner Health</h4>
+                                <p class="text-xs text-gray-400 mt-1">Check the Activations tab weekly for expiry warnings. Any activation within 14 days of ending needs a renewal conversation or a replacement lined up. Check the Revenue tab to track monthly income and identify gaps.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PARTNER MANAGEMENT -->
+            <div id="sec-partners" class="section">
+                <h2 class="text-2xl font-extrabold mb-2">Partner Management</h2>
+                <p class="text-gray-400 text-sm mb-6">How to recruit, onboard, and manage expert and activation partners.</p>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">Expert Partners</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">Expert partners are the editorial backbone. They appear in every issue in varied formats — articles, quotes, quizzes, giveaways, lists, Q&As. They pay a recurring monthly fee for a guaranteed weekly editorial presence.</p>
+                    <div class="bg-gray-800/30 rounded-lg p-4 mb-3">
+                        <h4 class="text-xs font-bold text-teal-400 uppercase tracking-wider mb-2">Target Per Location</h4>
+                        <p class="text-sm text-gray-400">6–10 expert partners per Spotlight location. For niche newsletters, expert count varies by niche (see CMS Command Centre for each niche's expert count).</p>
+                    </div>
+                    <div class="bg-gray-800/30 rounded-lg p-4 mb-3">
+                        <h4 class="text-xs font-bold text-teal-400 uppercase tracking-wider mb-2">Pricing (Spotlight HQ)</h4>
+                        <p class="text-sm text-gray-400">Typical range: £597–£997/mo depending on the role and lane. Premium roles (IFAs, estate agents) command higher fees. Niche-specific pricing may differ — use the Title Builder in the CMS for niche specs.</p>
+                    </div>
+                    <div class="bg-gray-800/30 rounded-lg p-4">
+                        <h4 class="text-xs font-bold text-teal-400 uppercase tracking-wider mb-2">Onboarding Steps</h4>
+                        <p class="text-sm text-gray-400">Identify the target role from the Life Lane reference. Pitch the editorial value — they're not buying an ad, they're becoming the trusted local voice in their category. Once agreed: add them in the Experts tab with full details, assign their Life Lane and role, set their monthly fee, and mark as Active. They appear in the next issue.</p>
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">Activation Partners</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">Activation partners book short-term editorial slots. They get a feature in a specific editorial format (Feature Story, Expert Column, Community Spotlight, Wellness Feature, etc.) for 1–3 months. Content rotates so the newsletter stays fresh.</p>
+                    <div class="bg-gray-800/30 rounded-lg p-4 mb-3">
+                        <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Pricing</h4>
+                        <p class="text-sm text-gray-400">Typical range: £197–£397/mo. Lower barrier than expert partnerships, ideal for restaurants, gyms, local retail, events, trades, and any business wanting editorial exposure without a long-term commitment.</p>
+                    </div>
+                    <div class="bg-gray-800/30 rounded-lg p-4 mb-3">
+                        <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Editorial Formats</h4>
+                        <p class="text-sm text-gray-400">Feature Story, Expert Column, Community Spotlight, Wellness Feature, Jobs & Careers Slot, Local Living Review, Family Spotlight, Home Upgrade Feature, Event Listing, Q&A Interview, Day in the Life, Behind the Scenes. Assign the format that best fits the business and the Life Lane.</p>
+                    </div>
+                    <div class="bg-gray-800/30 rounded-lg p-4">
+                        <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Renewal Management</h4>
+                        <p class="text-sm text-gray-400">The Activations tab shows days remaining and a progress bar for each booking. Expiry warnings appear when a partner is within 14 days of ending. Start the renewal conversation at least 2 weeks before expiry. If not renewing, line up a replacement to keep the Life Lane covered.</p>
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl p-6">
+                    <h3 class="font-bold mb-3">The Golden Rule</h3>
+                    <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                        <p class="text-sm text-amber-300 font-medium leading-relaxed">Nothing should ever feel like an advertisement. Experts appear in varied editorial formats. Activations are written as genuine features, reviews, and spotlights. The reader should feel informed and entertained — never sold to. If a piece of partner content reads like an ad, rewrite it until it doesn't.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTENT RULES -->
+            <div id="sec-content" class="section">
+                <h2 class="text-2xl font-extrabold mb-2">Content Rules</h2>
+                <p class="text-gray-400 text-sm mb-6">Editorial standards, content layers, and integration rules.</p>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">Content Layers (G / C / L)</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-4">Every piece of content is tagged as one of three layers. This determines how it scales across locations and markets.</p>
+                    <div class="space-y-3">
+                        <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-green-400 mb-1">G — Global</h4>
+                            <p class="text-xs text-gray-400">Works everywhere. Psychology, tips, techniques, general knowledge. Write once, reuse across all locations and countries. Example: "5 things every first-time buyer should know before viewing a property."</p>
+                        </div>
+                        <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-blue-400 mb-1">C — Country</h4>
+                            <p class="text-xs text-gray-400">Market-specific. Tax rules, legal processes, regulations, government schemes. Varies by UK, US, Canada, or Australia. Example: "How the UK Stamp Duty threshold change affects your purchase."</p>
+                        </div>
+                        <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-amber-400 mb-1">L — Local</h4>
+                            <p class="text-xs text-gray-400">Unique per edition. Local streets, events, data, businesses, community stories. Cannot be reused elsewhere. Example: "Peterborough Cathedral Quarter — why this postcode is outperforming the market by 8%."</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">Editorial Philosophy</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">The newsletter is a publication, not a marketing channel. Readers subscribe because the content is genuinely useful, entertaining, and informative. Partners get value because they're positioned as trusted experts within high-quality editorial content.</p>
+                    <p class="text-sm text-gray-300 leading-relaxed">Every expert should appear in varied formats across issues — an article one week, a quick-fire Q&A the next, a quiz or giveaway the week after. Activations should read as genuine features, reviews, or spotlights. The word "sponsored" never appears. There are no banner ads, no "brought to you by" labels, no promotional language. Pure editorial integration.</p>
+                </div>
+
+                <div class="glass rounded-xl p-6">
+                    <h3 class="font-bold mb-3">Pure Audience Sections</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed">Some sections in each newsletter carry zero monetisation. These exist purely for the reader. They build trust and keep open rates high. Never try to monetise every section — the un-monetised sections are what make the monetised ones work. In niche newsletters, these are specified per niche in the CMS. In Spotlight editions, community-focused content within Life Lanes serves this purpose.</p>
+                </div>
+            </div>
+
+            <!-- SOCIAL MEDIA -->
+            <div id="sec-social" class="section">
+                <h2 class="text-2xl font-extrabold mb-2">Social Media</h2>
+                <p class="text-gray-400 text-sm mb-6">Two social tools for two products.</p>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">CMS Social Engine — Niche Newsletters</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">Lives inside the Newsletter CMS under the Social Engine tab. Generates a 7-day, 28-post social media calendar from each newsletter issue — 4 posts per day across 4 platforms (Facebook, Instagram, LinkedIn, X/Twitter).</p>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">To generate: select the niche, enter the location and issue number, type the lead story headline, and click Generate. The engine creates platform-specific posts with appropriate tone and format for each. Copy all 28 posts in one click.</p>
+                    <p class="text-sm text-gray-300 leading-relaxed">Use this for every niche newsletter you publish. 28 posts per title per week means consistent social presence without additional content creation.</p>
+                </div>
+
+                <div class="glass rounded-xl p-6">
+                    <h3 class="font-bold mb-3">Spotlight Amplifier — Spotlight Editions</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">Lives inside Spotlight HQ under the Amplifier tab. Generates a 7-day social calendar from the current issue's experts and activations. Fewer posts than the CMS engine (typically 10–12 per week) but each post links back to a specific partner.</p>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">To generate: go to the Amplifier tab and click "Generate from Issue". The system reads your current experts and activations and creates posts for each day of the week. Customise the content, set platforms, link partners, and mark status as you post.</p>
+                    <p class="text-sm text-gray-300 leading-relaxed">The partner link on each post adds value to your partnerships — partners see their name and expertise being promoted across social channels all week, not just in the newsletter. This makes renewals easier and justifies pricing.</p>
+                </div>
+            </div>
+
+            <!-- REVENUE -->
+            <div id="sec-revenue" class="section">
+                <h2 class="text-2xl font-extrabold mb-2">Revenue Operations</h2>
+                <p class="text-gray-400 text-sm mb-6">Tracking income, targets, and financial reporting.</p>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">Revenue Sources</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">All revenue comes from two sources: expert partner monthly fees and activation partner monthly fees. There is no advertising, no affiliate income, no subscription charges to readers. The newsletter is free to readers — partners fund everything.</p>
+                    <div class="grid sm:grid-cols-2 gap-3">
+                        <div class="bg-teal-500/10 border border-teal-500/20 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-teal-400 mb-1">Expert Revenue</h4>
+                            <p class="text-xs text-gray-400">Recurring monthly. £597–£997/mo per expert. Predictable and stable. Forms the revenue backbone. Target: 6–10 experts per location = £3,582–£9,970/mo base.</p>
+                        </div>
+                        <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-amber-400 mb-1">Activation Revenue</h4>
+                            <p class="text-xs text-gray-400">Short-term (1–3 months). £197–£397/mo per activation. Higher turnover but easier to sell. Top-up revenue on top of the expert base. Unlimited activation slots available.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">Revenue Dashboard (Spotlight HQ)</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">The Revenue tab in Spotlight HQ shows: monthly total, annualised total, expert revenue, activation revenue, revenue split bar, revenue by Life Lane, full partner table, and cross-location summary with a grand total.</p>
+                    <p class="text-sm text-gray-300 leading-relaxed">Review this weekly. Look for Life Lanes with zero revenue — those are gaps to fill. Look for activation expiries that will reduce next month's income. Track the annualised number as your key growth metric.</p>
+                </div>
+
+                <div class="glass rounded-xl p-6">
+                    <h3 class="font-bold mb-3">Revenue Targets</h3>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between py-2 border-b border-gray-800/50">
+                            <span class="text-sm font-medium">Launch Phase (Month 1–3)</span>
+                            <span class="text-sm text-gray-400">3–4 experts + 2–3 activations = ~£3,000/mo</span>
+                        </div>
+                        <div class="flex items-center justify-between py-2 border-b border-gray-800/50">
+                            <span class="text-sm font-medium">Growth Phase (Month 4–6)</span>
+                            <span class="text-sm text-gray-400">6–8 experts + 4–6 activations = ~£6,000/mo</span>
+                        </div>
+                        <div class="flex items-center justify-between py-2 border-b border-gray-800/50">
+                            <span class="text-sm font-medium">Maturity (Month 7+)</span>
+                            <span class="text-sm text-gray-400">8–10 experts + 6–10 activations = ~£9,000+/mo</span>
+                        </div>
+                        <div class="flex items-center justify-between pt-2">
+                            <span class="text-sm font-bold">Per Location Annual Target</span>
+                            <span class="text-sm font-bold text-teal-400">£72,000–£120,000/yr</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LOCATION EXPANSION -->
+            <div id="sec-expansion" class="section">
+                <h2 class="text-2xl font-extrabold mb-2">Location Expansion</h2>
+                <p class="text-gray-400 text-sm mb-6">How to launch new Spotlight locations.</p>
+
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="font-bold mb-3">Launch Checklist</h3>
+                    <div class="space-y-3" style="counter-reset:step">
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold">Add the Location</h4>
+                                <p class="text-xs text-gray-400 mt-1">In Spotlight HQ, click "+ Location" in the top nav. Enter the name, country, and region. The location appears immediately with empty Life Lanes.</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold">Recruit 3–4 Expert Partners</h4>
+                                <p class="text-xs text-gray-400 mt-1">You need at least 3–4 experts before launching. Priority lanes: Home & Moving (estate agent or mortgage broker), Money & Planning (IFA or accountant), and Health & Wellbeing (dentist or GP). These are the easiest sells and cover the most valuable lanes.</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold">Book 2–3 Activations</h4>
+                                <p class="text-xs text-gray-400 mt-1">Fill remaining Life Lanes with activation partners. Restaurants, gyms, local events, and trades are the easiest activation sells. They only need to commit for 1 month initially.</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold">Pre-Flight Check</h4>
+                                <p class="text-xs text-gray-400 mt-1">Go to Issue Builder. Check the Pre-Flight panel. You need all 9 lanes covered before publishing. If any gaps remain, either sell another partner or write editorial-only content for that lane temporarily.</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold">Build Issue #1</h4>
+                                <p class="text-xs text-gray-400 mt-1">Create the first issue using the Issue Builder layout. Build content for all 9 lanes. Upload to Letterman and send. Then generate the Amplifier calendar for the week's social posts.</p>
+                            </div>
+                        </div>
+                        <div class="sop-step flex items-start gap-3 bg-gray-800/30 rounded-lg p-4">
+                            <div>
+                                <h4 class="text-sm font-bold">Fill to Capacity Over 3–6 Months</h4>
+                                <p class="text-xs text-gray-400 mt-1">Continue recruiting experts until you hit 8–10. Keep activations rotating. Use the Revenue tab to track growth. Use the Amplifier to maintain social presence between issues. Target: full capacity by month 6.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl p-6">
+                    <h3 class="font-bold mb-3">Scaling Strategy</h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">Each location is independent — its own partners, its own content, its own revenue. The system supports unlimited locations across all four markets (UK, US, Canada, Australia).</p>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-3">Launch adjacent locations once the first is at capacity. The cross-location revenue summary in the Revenue tab shows the combined income across all locations. Niche newsletters can also be replicated across locations using the CMS — each niche + location combination is a separate edition.</p>
+                    <p class="text-sm text-gray-300 leading-relaxed">Global content (G-layer) scales across all locations for free. Country content (C-layer) scales across all locations in the same market. Only Local content (L-layer) needs writing fresh for each location. This means each additional location requires less effort than the first.</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <footer class="border-t border-gray-800/50 py-6 text-center">
+        <p class="text-xs text-gray-700">Instant Customer System · Operations Manual · Internal Use Only</p>
+    </footer>
+
+<script>
+function goTo(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => { n.classList.remove('active'); n.classList.add('text-gray-400'); });
+    const sec = document.getElementById('sec-' + id);
+    const nav = document.querySelector('[data-nav="' + id + '"]');
+    if (sec) sec.classList.add('active');
+    if (nav) { nav.classList.add('active'); nav.classList.remove('text-gray-400'); }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Close sidebar on mobile
+    if (window.innerWidth < 768) {
+        document.getElementById('sidebar').classList.add('hidden');
+    }
+}
+
+function toggleSidebar() {
+    const sb = document.getElementById('sidebar');
+    sb.classList.toggle('hidden');
+    if (!sb.classList.contains('hidden')) {
+        sb.classList.add('fixed', 'inset-0', 'z-30', 'w-full', 'bg-gray-950');
+        sb.style.maxHeight = '100vh';
+        sb.style.top = '3rem';
+    } else {
+        sb.classList.remove('fixed', 'inset-0', 'z-30', 'w-full', 'bg-gray-950');
+    }
+}
+</script>
+</body>
+</html>

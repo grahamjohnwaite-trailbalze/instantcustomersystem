@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Data Manager v2 — Instant Customer System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+body{font-family:Inter,sans-serif}.glass{background:rgba(255,255,255,.04);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08)}
+.tab.active{background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.45);color:#c084fc}
+.drop{border:2px dashed rgba(255,255,255,.14)}.drop:hover,.drop.over{border-color:rgba(168,85,247,.7);background:rgba(168,85,247,.08)}
+.toast{opacity:0;transform:translateY(12px);transition:.25s}.toast.show{opacity:1;transform:translateY(0)}
+::-webkit-scrollbar{height:6px;width:6px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:8px}
+</style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen">
+<header class="bg-gray-900/80 border-b border-gray-800 px-4 py-4">
+  <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+    <a href="/" class="text-sm text-gray-500 hover:text-white">← Dashboard</a>
+    <div class="text-center">
+      <h1 class="text-lg font-black">🗂 Data Manager v2</h1>
+      <p class="text-xs text-gray-500">Google Sheets CSV · Import · Preview · Export · Browser Save</p>
+    </div>
+    <button onclick="clearAll()" class="text-xs px-3 py-2 rounded-lg bg-red-500/10 text-red-300 border border-red-500/20">Clear Saved</button>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto p-4 md:p-6">
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+    <div class="glass rounded-xl p-3 text-center"><div id="statTypes" class="text-xl font-black text-purple-400">10</div><div class="text-xs text-gray-500">Data Types</div></div>
+    <div class="glass rounded-xl p-3 text-center"><div id="statRecords" class="text-xl font-black">0</div><div class="text-xs text-gray-500">Records</div></div>
+    <div class="glass rounded-xl p-3 text-center"><div id="statImports" class="text-xl font-black">0</div><div class="text-xs text-gray-500">Imports</div></div>
+    <div class="glass rounded-xl p-3 text-center"><div id="statExports" class="text-xl font-black">0</div><div class="text-xs text-gray-500">Exports</div></div>
+    <div class="glass rounded-xl p-3 text-center"><div id="statSaved" class="text-xl font-black">0</div><div class="text-xs text-gray-500">Browser Saved</div></div>
+  </div>
+
+  <div class="glass rounded-2xl p-5 mb-6">
+    <h2 class="font-bold mb-2">How to use this</h2>
+    <p class="text-sm text-gray-400 leading-relaxed">Keep Google Sheets as the master source. Download a tab as CSV, import it here, preview it, add quick records if needed, then export or copy it for prompts and workflows. This saves in your browser using localStorage, so it is not yet a shared cloud database.</p>
+  </div>
+
+  <div class="flex gap-2 overflow-x-auto pb-2 mb-6">
+    <button id="tab-templates" onclick="tab('templates')" class="tab active px-4 py-2.5 rounded-xl border border-gray-800 text-sm font-semibold whitespace-nowrap">📋 Templates</button>
+    <button id="tab-import" onclick="tab('import')" class="tab px-4 py-2.5 rounded-xl border border-gray-800 text-sm font-semibold whitespace-nowrap">📥 Import</button>
+    <button id="tab-add" onclick="tab('add')" class="tab px-4 py-2.5 rounded-xl border border-gray-800 text-sm font-semibold whitespace-nowrap">➕ Quick Add</button>
+    <button id="tab-export" onclick="tab('export')" class="tab px-4 py-2.5 rounded-xl border border-gray-800 text-sm font-semibold whitespace-nowrap">📤 Export</button>
+    <button id="tab-records" onclick="tab('records')" class="tab px-4 py-2.5 rounded-xl border border-gray-800 text-sm font-semibold whitespace-nowrap">🔎 Records</button>
+  </div>
+
+  <section id="panel-templates">
+    <div class="glass rounded-2xl p-6">
+      <h3 class="font-bold mb-1">CSV Templates</h3>
+      <p class="text-sm text-gray-500 mb-5">Download templates, fill them in Google Sheets, then export as CSV and import here.</p>
+      <div id="templateGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+  </section>
+
+  <section id="panel-import" class="hidden">
+    <div class="grid lg:grid-cols-3 gap-6">
+      <div class="space-y-6">
+        <div class="glass rounded-2xl p-6">
+          <h3 class="font-bold mb-3">Choose data type</h3>
+          <select id="importType" onchange="renderPreview()" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm"></select>
+          <p id="importHelp" class="text-xs text-gray-500 mt-4 leading-relaxed"></p>
+        </div>
+        <div class="glass rounded-2xl p-6">
+          <h3 class="font-bold mb-3">Import CSV</h3>
+          <div id="drop" class="drop rounded-2xl p-8 text-center cursor-pointer">
+            <div class="text-4xl mb-2">📄</div><p class="font-semibold">Drop CSV here</p><p class="text-sm text-gray-500">or click to choose file</p>
+            <input id="file" type="file" accept=".csv,text/csv" class="hidden">
+          </div>
+          <div class="flex flex-wrap gap-2 mt-4">
+            <button onclick="downloadTemplate(currentType())" class="px-4 py-2 rounded-lg bg-purple-500/20 text-purple-300 text-sm font-semibold">Download Template</button>
+            <button onclick="clearType(currentType())" class="px-4 py-2 rounded-lg bg-red-500/10 text-red-300 text-sm font-semibold border border-red-500/20">Clear This Type</button>
+          </div>
+        </div>
+      </div>
+      <div class="lg:col-span-2 glass rounded-2xl p-6">
+        <div class="flex justify-between gap-4 mb-4">
+          <div><h3 class="font-bold">Preview</h3><p id="previewStatus" class="text-sm text-gray-500">No records loaded.</p></div>
+          <button onclick="downloadCurrent()" class="px-4 py-2 rounded-lg bg-green-500/20 text-green-300 text-sm font-semibold">Export Current</button>
+        </div>
+        <div class="overflow-x-auto max-h-[520px] rounded-xl border border-gray-800">
+          <table class="w-full text-sm"><thead id="previewHead" class="bg-gray-900 sticky top-0"></thead><tbody id="previewBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="panel-add" class="hidden">
+    <div class="glass rounded-2xl p-6">
+      <div class="flex flex-wrap justify-between gap-4 mb-5">
+        <div><h3 class="font-bold">Quick Add Record</h3><p class="text-sm text-gray-500">Add a single row manually.</p></div>
+        <select id="quickType" onchange="renderQuick()" class="bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm"></select>
+      </div>
+      <div id="quickForm" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      <button onclick="addQuick()" class="mt-5 px-5 py-3 rounded-xl bg-purple-600 text-white text-sm font-bold">Add Record</button>
+    </div>
+  </section>
+
+  <section id="panel-export" class="hidden">
+    <div class="grid lg:grid-cols-3 gap-6">
+      <div class="glass rounded-2xl p-6">
+        <h3 class="font-bold mb-4">Export</h3>
+        <select id="exportType" onchange="renderExport()" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm mb-4"></select>
+        <div class="space-y-3">
+          <button onclick="downloadSelected()" class="w-full py-3 rounded-xl bg-green-500/20 text-green-300 text-sm font-bold">Download Selected CSV</button>
+          <button onclick="copySelected()" class="w-full py-3 rounded-xl bg-blue-500/20 text-blue-300 text-sm font-bold">Copy Selected CSV</button>
+          <button onclick="downloadBundle()" class="w-full py-3 rounded-xl bg-amber-500/20 text-amber-300 text-sm font-bold">Download All Text Bundle</button>
+        </div>
+      </div>
+      <div class="lg:col-span-2 glass rounded-2xl p-6">
+        <h3 class="font-bold mb-4">CSV Output</h3>
+        <textarea id="csvOut" class="w-full h-[380px] bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs font-mono text-gray-300"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <section id="panel-records" class="hidden">
+    <div class="glass rounded-2xl p-6">
+      <div class="flex flex-wrap justify-between gap-4 mb-5">
+        <div><h3 class="font-bold">Loaded Records</h3><p class="text-sm text-gray-500">View and filter imported data.</p></div>
+        <div class="flex gap-2 flex-wrap">
+          <select id="recordsType" onchange="renderRecords()" class="bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm"></select>
+          <input id="search" oninput="renderRecords()" placeholder="Search..." class="bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm">
+        </div>
+      </div>
+      <div class="overflow-x-auto max-h-[620px] rounded-xl border border-gray-800">
+        <table class="w-full text-sm"><thead id="recordsHead" class="bg-gray-900 sticky top-0"></thead><tbody id="recordsBody"></tbody></table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast fixed bottom-6 right-6 bg-green-600 text-white px-5 py-3 rounded-xl text-sm font-semibold shadow-2xl">Done</div>
+
+<script>
+const TYPES={
+experts:{i:'👔',l:'Expert Partners',d:'Recurring editorial partners',c:['Business Name','Contact Name','Email','Phone','Life Lane','Niche','Role','Monthly Fee','Currency','Location','Status'],s:['Bright Advice','Alex Smith','alex@example.com','01234 000000','Money & Planning','Smart Money News','Financial Adviser','597','GBP','Peterborough','Prospect']},
+activation_partners:{i:'⚡',l:'Activation Partners',d:'Booked rotating campaign partners',c:['Business Name','Contact Name','Email','Phone','Life Lane','Niche','Editorial Format','Monthly Fee','Currency','Location','Duration (Months)','Start Date','Status'],s:['The Riverside Cafe','Sam Jones','sam@example.com','01234 111111','Food & Local Living','Taste Trail','Reader Offer','397','GBP','Cambridge','1','2026-05-01','Prospect']},
+pitch_tracker:{i:'📊',l:'Pitch Tracker',d:'Sales pipeline entries',c:['Business Name','Contact','Email','Phone','Niche','Type','Position','Location','Status','Notes'],s:['Oak Mortgage','Chris Brown','chris@example.com','01234 222222','Property','Expert','Mortgage Adviser','Peterborough','Contacted','Asked for overview']},
+locations:{i:'📍',l:'Locations',d:'Spotlight and niche edition locations',c:['Location Name','Country','Region','Edition Type','Status','Notes'],s:['Peterborough','UK','Cambridgeshire','Spotlight','Live','Existing edition']},
+story_bank:{i:'🧠',l:'Story Bank',d:'Reusable story ideas and local signals',c:['Story ID','Newsletter Brand','Location','Region','Country','Niche','Life Lane','Story Topic','Angle','Reader Problem','Source URL','Source Type','Priority','Status','Notes'],s:['SB001','Peterborough Spotlight','Peterborough','Cambridgeshire','UK','Spotlight','Homes & Property','Rents settling high','Why rents feel permanently expensive','Readers need context on rental pressure','','Archive','High','Unused','Good anchor story']},
+venues:{i:'🏛',l:'Venues',d:'Restaurants, cafes, pubs, attractions and local places',c:['Venue Name','Location','Region','Country','Venue Type','Subcategory','Website','Email','Phone','Address','Suitable For','Featured','Verified','Source URL','Notes'],s:['Ferry Meadows','Peterborough','Cambridgeshire','UK','Park','Country Park','https://example.com','','','Peterborough','Family / Events','Yes','Yes','','Useful for What’s On']},
+activation_catalogue:{i:'🎯',l:'Activation Catalogue',d:'Campaign and activation ideas',c:['Activation ID','Activation Name','Category','Business Type','Campaign Type','Ideal Tier','Duration','CTA','Lead Capture','Newsletter Fit','Notes'],s:['AC001','Reader Giveaway','Hospitality','Restaurant / Venue','Competition','Engagement','3-4 weeks','Enter to win','Yes','Spotlight / Taste Trail','Good for list growth']},
+hooks:{i:'💡',l:'Hooks',d:'Headline and story hook patterns',c:['Hook ID','Hook Type','Tone','Hook Phrase','Topic Area','Example','Predicted Engagement','Purpose Tag','Notes'],s:['H001','Question','Curiosity','Why Is ___ So Hard Right Now?','Public services','Why Is It So Hard To See A GP?','Very High','Anchor opener','Useful for Spotlight anchors']},
+inoreader:{i:'📡',l:'Inoreader',d:'RSS/feed/source tracking',c:['Source Name','Feed URL','Category','Location','Region','Country','Niche','Priority','Status','Notes'],s:['Local Council News','https://example.com/feed','Council','Peterborough','Cambridgeshire','UK','Spotlight','High','Active','Useful for local signals']},
+niche_hub:{i:'📰',l:'Niche Hub',d:'Niche publication master list',c:['Newsletter Brand','Niche Family','Sub-Niche','Country','Market','Audience','Partner Categories','Status','Demo URL','Notes'],s:['Smart Money News','Finance','Personal Finance','UK','National / Local','Savers, borrowers, investors','IFA, mortgage broker, accountant','Demo','https://example.com','Can localise by city']}
+};
+let R={},imports=0,exportsN=0;const KEY='ics_dm_v2';
+function init(){Object.keys(TYPES).forEach(k=>R[k]=[]);try{let s=JSON.parse(localStorage.getItem(KEY)||'{}');Object.keys(TYPES).forEach(k=>R[k]=Array.isArray(s[k])?s[k]:[])}catch(e){}
+['importType','quickType','exportType','recordsType'].forEach(id=>{document.getElementById(id).innerHTML=Object.entries(TYPES).map(([k,t])=>`<option value="${k}">${t.i} ${t.l}</option>`).join('')});
+renderTemplates();setupDrop();renderPreview();renderQuick();renderRecords();stats();}
+function tab(x){['templates','import','add','export','records'].forEach(t=>{document.getElementById('panel-'+t).classList.toggle('hidden',t!==x);document.getElementById('tab-'+t).classList.toggle('active',t===x)});if(x==='export')renderExport();if(x==='records')renderRecords();}
+function save(){localStorage.setItem(KEY,JSON.stringify(R));stats()}
+function stats(){let n=Object.values(R).reduce((a,b)=>a+b.length,0);statTypes.textContent=Object.keys(TYPES).length;statRecords.textContent=n;statImports.textContent=imports;statExports.textContent=exportsN;statSaved.textContent=n}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function currentType(){return importType.value}
+function renderTemplates(){templateGrid.innerHTML=Object.entries(TYPES).map(([k,t])=>`<div class="bg-gray-800/30 rounded-xl p-5 border border-gray-800 hover:-translate-y-1 transition"><div class="flex gap-3 mb-3"><div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-xl">${t.i}</div><div><h4 class="font-bold text-sm text-purple-300">${t.l}</h4><p class="text-xs text-gray-500">${t.d}</p></div></div><p class="text-xs text-gray-400 mb-3">${t.c.join(', ')}</p><button onclick="downloadTemplate('${k}')" class="w-full py-2 rounded-lg bg-purple-500/20 text-purple-300 text-sm font-semibold">⬇ Download Template</button></div>`).join('')}
+function setupDrop(){drop.onclick=()=>file.click();file.onchange=e=>e.target.files[0]&&loadFile(e.target.files[0]);['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over')}));drop.addEventListener('drop',e=>{let f=e.dataTransfer.files[0];if(f)loadFile(f)})}
+function loadFile(f){let rd=new FileReader();rd.onload=e=>importCSV(e.target.result);rd.readAsText(f)}
+function parseCSV(txt){let rows=[],row=[],cur='',q=false;for(let i=0;i<txt.length;i++){let ch=txt[i],nx=txt[i+1];if(ch=='"'&&q&&nx=='"'){cur+='"';i++}else if(ch=='"')q=!q;else if(ch==','&&!q){row.push(cur);cur=''}else if((ch=='\n'||ch=='\r')&&!q){if(ch=='\r'&&nx=='\n')i++;row.push(cur);rows.push(row);row=[];cur=''}else cur+=ch}if(cur.length||row.length){row.push(cur);rows.push(row)}return rows}
+function norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+function importCSV(txt){let rows=parseCSV(txt);if(!rows.length)return toast('No rows found',1);let heads=rows[0].map(x=>x.trim()),nh=heads.map(norm),k=currentType(),cols=TYPES[k].c;let data=rows.slice(1).filter(r=>r.some(v=>String(v||'').trim())).map(r=>{let o={};cols.forEach(c=>{let i=nh.indexOf(norm(c));o[c]=i>=0?(r[i]||''):''});return o});R[k]=R[k].concat(data);imports++;save();renderPreview();renderRecords();toast(data.length+' record(s) imported')}
+function toCSV(rows,cols){let e=v=>{v=String(v??'');return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};return [cols.map(e).join(',')].concat(rows.map(r=>cols.map(c=>e(r[c])).join(','))).join('\n')}
+function dl(name,txt){let b=new Blob([txt],{type:'text/plain;charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);exportsN++;stats()}
+function downloadTemplate(k){let t=TYPES[k],o={};t.c.forEach((c,i)=>o[c]=t.s[i]||'');dl(k+'_template.csv',toCSV([o],t.c));toast('Template downloaded')}
+function table(hid,bid,rows,cols){document.getElementById(hid).innerHTML='<tr>'+cols.map(c=>`<th class="text-left px-4 py-3 text-xs text-gray-400 border-b border-gray-800 whitespace-nowrap">${esc(c)}</th>`).join('')+'</tr>';document.getElementById(bid).innerHTML=rows.length?rows.map(r=>'<tr class="hover:bg-white/5">'+cols.map(c=>`<td class="px-4 py-3 text-xs text-gray-300 border-b border-gray-900 whitespace-nowrap">${esc(r[c]||'')}</td>`).join('')+'</tr>').join(''):`<tr><td colspan="${cols.length}" class="text-center px-4 py-10 text-gray-600">No records loaded.</td></tr>`}
+function renderPreview(){let k=currentType(),t=TYPES[k];importHelp.textContent=t.d+' — expected columns: '+t.c.join(', ');table('previewHead','previewBody',R[k],t.c);previewStatus.textContent=R[k].length+' record(s) loaded for '+t.l}
+function renderQuick(){let k=quickType.value,t=TYPES[k];quickForm.innerHTML=t.c.map(c=>`<div><label class="block text-xs font-semibold text-gray-400 mb-1">${esc(c)}</label><input data-col="${esc(c)}" class="quick w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm" placeholder="${esc(c)}"></div>`).join('')}
+function addQuick(){let k=quickType.value,o={};document.querySelectorAll('.quick').forEach(i=>o[i.dataset.col]=i.value||'');R[k].push(o);save();renderQuick();toast('Record added')}
+function renderExport(){let k=exportType.value,t=TYPES[k];csvOut.value=toCSV(R[k],t.c)}
+function downloadSelected(){let k=exportType.value;dl(k+'_export.csv',toCSV(R[k],TYPES[k].c));toast('CSV exported')}
+function copySelected(){renderExport();navigator.clipboard.writeText(csvOut.value).then(()=>toast('CSV copied'))}
+function downloadBundle(){let out='';Object.entries(TYPES).forEach(([k,t])=>{out+='\n\n===== '+t.l+' =====\n'+toCSV(R[k],t.c)});dl('instant_customer_system_data_bundle.txt',out.trim());toast('Bundle downloaded')}
+function downloadCurrent(){let k=currentType();dl(k+'_export.csv',toCSV(R[k],TYPES[k].c));toast('CSV exported')}
+function clearType(k){if(confirm('Clear '+TYPES[k].l+' records?')){R[k]=[];save();renderPreview();renderRecords();toast('Cleared')}}
+function renderRecords(){let k=recordsType.value,t=TYPES[k],q=(search.value||'').toLowerCase(),rows=R[k].filter(r=>Object.values(r).join(' ').toLowerCase().includes(q));table('recordsHead','recordsBody',rows,t.c)}
+function clearAll(){if(confirm('Clear all browser-saved data?')){Object.keys(TYPES).forEach(k=>R[k]=[]);localStorage.removeItem(KEY);renderPreview();renderRecords();stats();toast('All cleared')}}
+function toast(m,bad){let t=document.getElementById('toast');t.textContent=m;t.className='toast fixed bottom-6 right-6 '+(bad?'bg-red-600':'bg-green-600')+' text-white px-5 py-3 rounded-xl text-sm font-semibold shadow-2xl show';setTimeout(()=>t.classList.remove('show'),2200)}
+init();
+</script>
+</body>
+</html>
