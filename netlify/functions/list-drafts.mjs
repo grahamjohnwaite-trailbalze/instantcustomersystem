@@ -1,39 +1,28 @@
-import { getStore } from "@netlify/blobs";
+import { getStore } from '@netlify/blobs';
 
-export default async () => {
+export const handler = async () => {
   try {
-    const store = getStore("drafts");
+    const store = getStore({ name: 'newsletter-drafts' });
     const { blobs } = await store.list();
 
     const drafts = [];
-
     for (const blob of blobs) {
-      const draft = await store.get(blob.key, { type: "json" });
-      if (draft) drafts.push(draft);
+      const item = await store.get(blob.key, { type: 'json' });
+      if (item) drafts.push(item);
     }
 
-    drafts.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+    drafts.sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        drafts
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" }
-      }
-    );
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: true, drafts })
+    };
   } catch (error) {
-    return new Response(
-      JSON.stringify({
-        ok: false,
-        error: "Could not load drafts"
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      }
-    );
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: error.message })
+    };
   }
 };
