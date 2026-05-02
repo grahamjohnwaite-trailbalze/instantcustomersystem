@@ -1,59 +1,67 @@
-export async function handler(event) {
-  if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ok: false,
-        error: "Method not allowed"
-      })
-    };
+import { getStore } from "@netlify/blobs";
+
+export default async (request) => {
+  if (request.method !== "POST") {
+    return new Response(
+      JSON.stringify({ ok: false, error: "Method not allowed" }),
+      {
+        status: 405,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
   }
 
   try {
-    const data = JSON.parse(event.body || "{}");
+    const data = await request.json();
 
     const title = (data.title || "").trim();
     const issueDate = (data.issueDate || "").trim();
     const edition = (data.edition || "").trim();
-    const content = data.content || "";
-    const notes = data.notes || "";
 
     if (!title) {
-      return {
-        statusCode: 400,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ok: false,
-          error: "Title is required"
-        })
-      };
+      return new Response(
+        JSON.stringify({ ok: false, error: "Title is required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
     }
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const store = getStore("drafts");
+    const key = `${edition || "general"}-${Date.now()}`;
+
+    const draft = {
+      id: key,
+      title,
+      issueDate,
+      edition,
+      content: data.content || {},
+      notes: data.notes || "",
+      savedAt: new Date().toISOString()
+    };
+
+    await store.setJSON(key, draft);
+
+    return new Response(
+      JSON.stringify({
         ok: true,
-        message: "Draft received",
-        draft: {
-          title,
-          issueDate,
-          edition,
-          content,
-          notes
-        },
-        savedAt: new Date().toISOString()
-      })
-    };
+        message: "Draft saved",
+        id: key,
+        draft
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ok: false,
-        error: "Invalid request"
-      })
-    };
+    return new Response(
+      JSON.stringify({ ok: false, error: "Invalid request" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
   }
-}
+};
