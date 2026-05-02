@@ -131,6 +131,10 @@
         .intel-card h4{font-size:14px;margin-bottom:10px;color:#60a5fa;}
         .intel-item{font-size:13px;color:#94a3b8;padding:4px 0 4px 16px;position:relative;}
         .intel-item::before{content:'→';position:absolute;left:0;color:#60a5fa;}
+        .draft-status-bar{background:#172554;border:1px solid #1e40af;border-radius:10px;padding:14px 16px;margin:16px 0 20px;color:#bfdbfe;}
+        .draft-status-bar strong{color:#fff;}
+        .draft-status-meta{font-size:12px;color:#93c5fd;margin-top:4px;}
+        .draft-status-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
         .empty-state{text-align:center;padding:60px 20px;color:#475569;}
         .empty-state .icon{font-size:48px;margin-bottom:12px;}
         .empty-state p{font-size:14px;}
@@ -221,6 +225,14 @@
         <div class="card">
             <h2>📝 Issue Producer</h2>
             <p class="subtitle">Generate complete newsletter frameworks with Content Input Sheet for rich AI prompts. Every expert and activation position mapped.</p>
+        </div>
+
+        <div id="loadedDraftStatus" class="draft-status-bar" style="display:none;">
+            <div><strong>Loaded draft:</strong> <span id="loadedDraftTitle">None</span></div>
+            <div class="draft-status-meta" id="loadedDraftMeta">This appears after you load a saved draft.</div>
+            <div class="draft-status-actions">
+                <button class="btn btn-secondary" type="button" onclick="clearLoadedDraft()">Start Fresh</button>
+            </div>
         </div>
 
         <div class="card">
@@ -1015,7 +1027,29 @@ function previewPrompt() {
     }
 }
 
+function setLoadedDraftStatus(draft) {
+    window.currentLoadedDraft = draft || null;
+    const bar = document.getElementById('loadedDraftStatus');
+    const title = document.getElementById('loadedDraftTitle');
+    const meta = document.getElementById('loadedDraftMeta');
+    if (!bar || !title || !meta) return;
+    if (!draft) {
+        bar.style.display = 'none';
+        return;
+    }
+    title.textContent = draft.title || 'Untitled draft';
+    meta.textContent = `ID: ${draft.id || '-'} • Edition: ${draft.edition || '-'} • Issue date: ${draft.issueDate || '-'} • Saved: ${draft.savedAt ? new Date(draft.savedAt).toLocaleString() : '-'}`;
+    bar.style.display = 'block';
+}
+
+function clearLoadedDraft() {
+    window.currentLoadedDraft = null;
+    setLoadedDraftStatus(null);
+    showToast('Loaded draft cleared — next save should create a new draft if your backend uses unique IDs');
+}
+
 function populateDraftIntoForm(draft) {
+    setLoadedDraftStatus(draft);
     document.getElementById('prodNiche').value = draft.niche || '';
     document.getElementById('prodLocation').value = draft.location || '';
     document.getElementById('prodIssue').value = draft.issue || '';
