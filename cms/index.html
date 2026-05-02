@@ -387,9 +387,21 @@
                     </div>
                 </div>
             </div>
+          </div>
+
+        <div class="card">
+            <h2>Saved Drafts</h2>
+            <p class="subtitle">Load previously saved Issue Producer drafts from Netlify Blobs.</p>
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="loadSavedDrafts()">Load Saved Drafts</button>
+            </div>
+            <div id="savedDraftsPanel" style="margin-top:16px;">
+                <div class="empty-state" style="padding:30px 20px;">
+                    <p>No drafts loaded yet.</p>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
     <!-- TITLE BUILDER -->
     <div id="tab-title" class="section">
