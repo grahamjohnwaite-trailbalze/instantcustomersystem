@@ -217,55 +217,56 @@
     </div>
 
     <!-- ISSUE PRODUCER -->
-    <div id="tab-producer" class="section">
-        <div class="card">
-            <h2>📝 Issue Producer</h2>
-            <p class="subtitle">Generate complete newsletter frameworks with Content Input Sheet for rich AI prompts. Every expert and activation position mapped.</p>
+<!-- ISSUE PRODUCER -->
+<div id="tab-producer" class="section">
+    <div class="card">
+        <h2>📝 Issue Producer</h2>
+        <p class="subtitle">Generate complete newsletter frameworks with Content Input Sheet for rich AI prompts. Every expert and activation position mapped.</p>
+    </div>
+
+    <div class="card">
+        <div id="stepBar" class="step-bar">
+            <div class="step step-current"><span>①</span> Setup</div>
+            <div class="step step-pending"><span>②</span> Framework</div>
+            <div class="step step-pending"><span>③</span> Content Inputs</div>
+            <div class="step step-pending"><span>④</span> Generate Prompt</div>
         </div>
 
-        <div class="card">
-            <div id="stepBar" class="step-bar">
-                <div class="step step-current"><span>①</span> Setup</div>
-                <div class="step step-pending"><span>②</span> Framework</div>
-                <div class="step step-pending"><span>③</span> Content Inputs</div>
-                <div class="step step-pending"><span>④</span> Generate Prompt</div>
-            </div>
-
-            <div class="form-row-4">
-                <div class="form-group">
-                    <label class="form-label">Niche</label>
-                    <select class="form-select" id="prodNiche">
-                        <option value="">Select niche...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Location</label>
-                    <input class="form-input" id="prodLocation" placeholder="e.g. Peterborough">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Issue #</label>
-                    <input class="form-input" id="prodIssue" type="number" placeholder="1" min="1">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Country</label>
-                    <select class="form-select" id="prodCountry">
-                        <option value="UK">UK</option>
-                        <option value="US">US</option>
-                        <option value="Canada">Canada</option>
-                        <option value="Australia">Australia</option>
-                    </select>
-                </div>
-            </div>
-
+        <div class="form-row-4">
             <div class="form-group">
-                <label class="form-label">📋 Previous Issue Outro (paste last week's "Next Week" section for continuity)</label>
-                <textarea class="form-textarea" id="prodOutro" placeholder="Paste the outro from your previous issue here to maintain editorial continuity..."></textarea>
+                <label class="form-label">Niche</label>
+                <select class="form-select" id="prodNiche">
+                    <option value="">Select niche...</option>
+                </select>
             </div>
+            <div class="form-group">
+                <label class="form-label">Location</label>
+                <input class="form-input" id="prodLocation" placeholder="e.g. Peterborough">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Issue #</label>
+                <input class="form-input" id="prodIssue" type="number" placeholder="1" min="1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Country</label>
+                <select class="form-select" id="prodCountry">
+                    <option value="UK">UK</option>
+                    <option value="US">US</option>
+                    <option value="Canada">Canada</option>
+                    <option value="Australia">Australia</option>
+                </select>
+            </div>
+        </div>
 
-  <div class="btn-group">
-    <button class="btn btn-primary" onclick="generateFramework()">⚡ Generate Framework</button>
-    <button class="btn btn-success" onclick="saveDraft()">💾 Save Draft</button>
-</div>
+        <div class="form-group">
+            <label class="form-label">📋 Previous Issue Outro (paste last week's "Next Week" section for continuity)</label>
+            <textarea class="form-textarea" id="prodOutro" placeholder="Paste the outro from your previous issue here to maintain editorial continuity..."></textarea>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="generateFramework()">⚡ Generate Framework</button>
+            <button class="btn btn-success" onclick="saveDraft()">💾 Save Draft</button>
+        </div>
 
         <!-- Framework Output -->
         <div id="frameworkArea" style="display:none;">
@@ -373,8 +374,22 @@
                 </div>
                 <div id="promptPreview" style="display:none;"></div>
             </div>
+
+            <div class="card">
+                <h2>Saved Drafts</h2>
+                <p class="subtitle">Load previously saved Issue Producer drafts from Netlify Blobs.</p>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="loadSavedDrafts()">Load Saved Drafts</button>
+                </div>
+                <div id="savedDraftsPanel" style="margin-top:16px;">
+                    <div class="empty-state" style="padding:30px 20px;">
+                        <p>No drafts loaded yet.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+</div>
 
     <!-- TITLE BUILDER -->
     <div id="tab-title" class="section">
@@ -1075,7 +1090,62 @@ function previewPrompt() {
         preview.style.display = 'none';
     }
 }
+function loadSavedDrafts() {
+    const panel = document.getElementById('savedDraftsPanel');
+    if (!panel) return;
 
+    panel.innerHTML = `
+        <div class="empty-state" style="padding:30px 20px;">
+            <p>Loading drafts...</p>
+        </div>
+    `;
+
+    fetch('/.netlify/functions/list-drafts')
+        .then(response => response.json())
+        .then(result => {
+            if (!result.ok) {
+                panel.innerHTML = `
+                    <div class="empty-state" style="padding:30px 20px;">
+                        <p>Could not load drafts.</p>
+                    </div>
+                `;
+                showToast(result.error || 'Failed to load drafts');
+                return;
+            }
+
+            if (!result.drafts || result.drafts.length === 0) {
+                panel.innerHTML = `
+                    <div class="empty-state" style="padding:30px 20px;">
+                        <p>No saved drafts found.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            panel.innerHTML = result.drafts.map(draft => `
+                <div class="partner-input-card" style="margin-bottom:12px;">
+                    <h4 style="margin-bottom:6px;">${escapeHtml(draft.title || 'Untitled draft')}</h4>
+                    <div style="font-size:12px;color:#94a3b8;line-height:1.7;">
+                        <div><strong>ID:</strong> ${escapeHtml(draft.id || '-')}</div>
+                        <div><strong>Edition:</strong> ${escapeHtml(draft.edition || '-')}</div>
+                        <div><strong>Issue date:</strong> ${escapeHtml(draft.issueDate || '-')}</div>
+                        <div><strong>Saved:</strong> ${draft.savedAt ? new Date(draft.savedAt).toLocaleString() : '-'}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            showToast('Saved drafts loaded');
+        })
+        .catch(error => {
+            console.error(error);
+            panel.innerHTML = `
+                <div class="empty-state" style="padding:30px 20px;">
+                    <p>Error loading drafts.</p>
+                </div>
+            `;
+            showToast('Error loading drafts');
+        });
+}
 function updateStepBar(step) {
     const steps = ['Setup', 'Framework', 'Content Inputs', 'Generate Prompt'];
     document.getElementById('stepBar').innerHTML = steps.map((s, i) => {
