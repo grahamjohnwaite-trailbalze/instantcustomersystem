@@ -227,6 +227,8 @@
             <p class="subtitle">Generate complete newsletter frameworks with Content Input Sheet for rich AI prompts. Every expert and activation position mapped.</p>
         </div>
 
+        <input type="hidden" id="currentDraftId" value="">
+
         <div id="loadedDraftStatus" class="draft-status-bar" style="display:none;">
             <div><strong>Loaded draft:</strong> <span id="loadedDraftTitle">None</span></div>
             <div class="draft-status-meta" id="loadedDraftMeta">This appears after you load a saved draft.</div>
@@ -1029,6 +1031,10 @@ function previewPrompt() {
 
 function setLoadedDraftStatus(draft) {
     window.currentLoadedDraft = draft || null;
+    const hiddenId = document.getElementById('currentDraftId');
+    if (hiddenId) hiddenId.value = draft && draft.id ? draft.id : '';
+    const hiddenId = document.getElementById('currentDraftId');
+    if (hiddenId) hiddenId.value = draft && draft.id ? draft.id : '';
     const bar = document.getElementById('loadedDraftStatus');
     const title = document.getElementById('loadedDraftTitle');
     const meta = document.getElementById('loadedDraftMeta');
@@ -1044,6 +1050,10 @@ function setLoadedDraftStatus(draft) {
 
 function clearLoadedDraft() {
     window.currentLoadedDraft = null;
+    const hiddenId = document.getElementById('currentDraftId');
+    if (hiddenId) hiddenId.value = '';
+    const hiddenId = document.getElementById('currentDraftId');
+    if (hiddenId) hiddenId.value = '';
     setLoadedDraftStatus(null);
     showToast('Loaded draft cleared — next save should create a new draft if your backend uses unique IDs');
 }
