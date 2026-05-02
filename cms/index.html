@@ -262,10 +262,10 @@
                 <textarea class="form-textarea" id="prodOutro" placeholder="Paste the outro from your previous issue here to maintain editorial continuity..."></textarea>
             </div>
 
-            <div class="btn-group">
-                <button class="btn btn-primary" onclick="generateFramework()">⚡ Generate Framework</button>
-            </div>
-        </div>
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="generateFramework()">⚡ Generate Framework</button>
+    <button class="btn btn-success" onclick="saveDraft()">💾 Save Draft</button>
+</div>
 
         <!-- Framework Output -->
         <div id="frameworkArea" style="display:none;">
@@ -704,6 +704,80 @@ function populateNicheDropdowns() {
     });
 }
 
+async function saveDraft() {
+    const nicheId = document.getElementById('prodNiche').value;
+    const location = document.getElementById('prodLocation').value || '';
+    const issue = document.getElementById('prodIssue').value || '';
+    const country = document.getElementById('prodCountry').value || '';
+    const outro = document.getElementById('prodOutro').value || '';
+
+    if (!nicheId) {
+        showToast('Please select a niche before saving');
+        return;
+    }
+
+    const niche = getNiche(nicheId);
+
+    const expertInputs = Array.from(document.querySelectorAll('.expert-name')).map((input, i) => ({
+        role: input.dataset.role || '',
+        business: input.value || '',
+        contact: document.querySelectorAll('.expert-contact')[i]?.value || '',
+        content: document.querySelectorAll('.expert-content')[i]?.value || ''
+    }));
+
+    const activationInputs = Array.from(document.querySelectorAll('.activation-name')).map((input, i) => ({
+        type: input.dataset.type || '',
+        business: input.value || '',
+        contact: document.querySelectorAll('.activation-contact')[i]?.value || '',
+        content: document.querySelectorAll('.activation-content')[i]?.value || ''
+    }));
+
+    const payload = {
+        title: niche ? `${niche.name} — ${location} — Issue #${issue || '1'}` : 'Newsletter Draft',
+        issueDate: new Date().toISOString().split('T')[0],
+        edition: nicheId,
+        content: {
+            nicheId,
+            nicheName: niche ? niche.name : '',
+            location,
+            issue,
+            country,
+            outro,
+            marketStats: document.getElementById('inputMarketStats')?.value || '',
+            notableSales: document.getElementById('inputNotableSales')?.value || '',
+            streetName: document.getElementById('inputStreetName')?.value || '',
+            streetWhy: document.getElementById('inputStreetWhy')?.value || '',
+            streetDetails: document.getElementById('inputStreetDetails')?.value || '',
+            countryNews: document.getElementById('inputCountryNews')?.value || '',
+            community: document.getElementById('inputCommunity')?.value || '',
+            notes: document.getElementById('inputNotes')?.value || '',
+            expertInputs,
+            activationInputs
+        },
+        notes: 'Saved from Issue Producer'
+    };
+
+    try {
+        const response = await fetch('/.netlify/functions/save-draft', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.ok) {
+            showToast('Draft saved successfully');
+            console.log('Saved draft:', result);
+        } else {
+            showToast(result.error || 'Save failed');
+            console.error('Save failed:', result);
+        }
+    } catch (error) {
+        showToast('Error saving draft');
+        console.error(error);
+    }
+}
 // ===== TAB SWITCHING =====
 function switchTab(tab) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
