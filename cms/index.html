@@ -1560,4 +1560,47 @@ const location = document.getElementById('prodLocation').value || 'your location
     
     return prompt;
 }
+
+function populateInputSheet(niche) {
+    const expertsDiv = document.getElementById('expertInputCards');
+    const activationsDiv = document.getElementById('activationInputCards');
+    
+    expertsDiv.innerHTML = '';
+    activationsDiv.innerHTML = '';
+    
+    const config = {
+        'investor': {
+            experts: ['Estate Agent', 'Mortgage Broker', 'Tax Specialist', 'Lettings Manager', 'Property Surveyor', 'Financial Planner', 'Portfolio Strategist', 'Legal Adviser'],
+            activations: ['Property Developer', 'Renovation Company', 'Investment Platform']
+        },
+        'renter': {
+            experts: ['Lettings Agent', 'Tenant Rights Adviser', 'Financial Coach', 'Relocation Specialist'],
+            activations: ['Flatshare Service', 'Home Furnishing', 'Local Services']
+        },
+        'home-seller': {
+            experts: ['Estate Agent', 'Mortgage Broker', 'Conveyancing Solicitor', 'Surveyor'],
+            activations: ['Home Stager', 'Local Builder', 'Moving Company']
+        },
+        'pets': {
+            experts: ['Veterinary Surgeon', 'Dog Trainer', 'Pet Nutritionist'],
+            activations: ['Pet Groomer', 'Pet Shop', 'Pet-Friendly Venue']
+        }
+    };
+    
+    const nicheData = config[niche] || {experts: [], activations: []};
+    
+    nicheData.experts.forEach((expert) => {
+        const div = document.createElement('div');
+        div.className = 'input-card';
+        div.innerHTML = `<div><strong>${expert}</strong></div><textarea class="expert-input-textarea" placeholder="${expert} contribution..."></textarea>`;
+        expertsDiv.appendChild(div);
+    });
+    
+    nicheData.activations.forEach((activation) => {
+        const div = document.createElement('div');
+        div.className = 'input-card';
+        div.innerHTML = `<div><strong>${activation}</strong></div><textarea class="activation-input-textarea" placeholder="${activation} details..."></textarea>`;
+        activationsDiv.appendChild(div);
+    });
+}
 </script>
