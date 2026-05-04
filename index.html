@@ -1,318 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instant Customer System — Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .tool-card { transition: all 0.3s ease; }
-        .tool-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
-        .quick-link { transition: all 0.2s ease; }
-        .quick-link:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
-        .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
-        .niche-card { transition: all 0.2s ease; }
-        .niche-card:hover { background: rgba(255,255,255,0.06); }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Newsletter Empire — CMS v2.0</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;}
+.header{background:#1e293b;border-bottom:1px solid #334155;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.header-left{display:flex;align-items:center;gap:16px;}.back-link{color:#60a5fa;text-decoration:none;font-size:14px;}.header-title{font-size:20px;font-weight:700;}.header-title span{color:#60a5fa;}.header-sub{font-size:12px;color:#94a3b8;margin-top:2px;}
+.tabs{background:#1e293b;border-bottom:1px solid #334155;display:flex;overflow-x:auto;padding:0 16px;}.tab{padding:12px 18px;cursor:pointer;font-size:13px;color:#94a3b8;border-bottom:2px solid transparent;white-space:nowrap}.tab.active{color:#60a5fa;border-bottom-color:#60a5fa;}
+.content{max-width:1200px;margin:0 auto;padding:24px;}.section{display:none;}.section.active{display:block;}.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:24px;margin-bottom:20px;}.card h2{font-size:18px;font-weight:600;margin-bottom:6px;}.card .subtitle{font-size:13px;color:#94a3b8;margin-bottom:16px;}
+.form-group{margin-bottom:16px;}.form-label{display:block;font-size:13px;font-weight:500;color:#94a3b8;margin-bottom:6px;}.form-select,.form-input,.form-textarea{width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;}.form-textarea{min-height:80px;resize:vertical;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}.form-row-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;}
+.btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:8px;}.btn-primary{background:#2563eb;color:white;}.btn-secondary{background:#334155;color:#e2e8f0;}.btn-success{background:#059669;color:white;}.btn-amber{background:#d97706;color:white;}.btn-group{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;}
+.framework-output,.prompt-preview,.spec-output{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:20px;margin-top:16px;white-space:pre-wrap;overflow:auto;}.step-bar{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;}.step{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;}.step-current{background:#172554;color:#93c5fd;}.step-pending{background:#1e293b;color:#475569;}
+.input-sheet{margin-top:24px;border:2px solid #1e40af;border-radius:12px;overflow:hidden;}.input-sheet-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#172554;cursor:pointer;}.input-sheet-header h3{font-size:16px;color:#93c5fd;display:flex;align-items:center;gap:8px;}.input-sheet-header .badge{background:#2563eb;color:white;font-size:11px;padding:2px 10px;border-radius:20px;}.input-sheet-body{background:#1e293b;padding:24px;}
+.input-section{margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid #334155;}.input-section:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}.input-section-title{font-size:15px;font-weight:600;color:#60a5fa;margin-bottom:4px;}.input-section-desc{font-size:13px;color:#94a3b8;margin-bottom:16px;}
+.niche-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:16px;}.niche-card{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:20px;cursor:pointer;}.niche-card:hover{border-color:#60a5fa;}.niche-name{font-size:15px;font-weight:600;margin-bottom:10px;}.niche-stats{display:flex;gap:8px;flex-wrap:wrap;}.niche-stat{font-size:11px;color:#94a3b8;background:#1e293b;padding:3px 8px;border-radius:6px;}
+.layer-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;}.layer-g{background:#064e3b;color:#6ee7b7;}.layer-c{background:#4c1d95;color:#c4b5fd;}.layer-l{background:#7c2d12;color:#fdba74;}
+.empty-state{text-align:center;padding:60px 20px;color:#475569;}.empty-state .icon{font-size:48px;margin-bottom:12px;}.copy-toast{position:fixed;bottom:24px;right:24px;background:#059669;color:white;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:500;display:none;z-index:1000;}
+.table-wrap{overflow-x:auto;}table{width:100%;border-collapse:collapse;}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid #334155;font-size:13px;}
+footer{text-align:center;padding:32px;color:#475569;font-size:12px;border-top:1px solid #1e293b;margin-top:40px;}
+@media(max-width:768px){.form-row,.form-row-3,.form-row-4{grid-template-columns:1fr;}.tabs{padding:0 8px;}.tab{padding:10px 12px;font-size:12px;}.content{padding:16px;}.header{padding:12px 16px;}.header-title{font-size:17px;}}
+</style>
 </head>
-<body class="bg-gray-950 text-white min-h-screen">
-
-    <!-- ===== HEADER ===== -->
-    <header class="bg-gray-900/80 backdrop-blur-xl border-b border-gray-800 px-4 py-6">
-        <div class="max-w-7xl mx-auto text-center">
-            <div class="flex items-center justify-center gap-3 mb-2">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-xl">⚡</div>
-                <h1 class="text-2xl font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">Instant Customer System</h1>
-            </div>
-            <p class="text-sm text-gray-500">Internal Tools Dashboard</p>
-        </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto p-4 md:p-6">
-
-        <!-- ===== WELCOME + STATS ===== -->
-        <div class="mb-8">
-            <h2 class="text-lg font-bold mb-1">Welcome Back</h2>
-            <p class="text-sm text-gray-500 mb-5">Choose a tool to get started</p>
-            <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
-                <div class="glass rounded-xl p-3 text-center">
-                    <div class="text-xl font-black text-white">8</div>
-                    <div class="text-xs text-gray-500">Newsletter Niches</div>
-                </div>
-                <div class="glass rounded-xl p-3 text-center">
-                    <div class="text-xl font-black text-teal-400">9</div>
-                    <div class="text-xs text-gray-500">Life Lanes</div>
-                </div>
-                <div class="glass rounded-xl p-3 text-center">
-                    <div class="text-xl font-black text-white">40</div>
-                    <div class="text-xs text-gray-500">Expert Categories</div>
-                </div>
-                <div class="glass rounded-xl p-3 text-center">
-                    <div class="text-xl font-black text-white">133</div>
-                    <div class="text-xs text-gray-500">Activation Pool</div>
-                </div>
-                <div class="glass rounded-xl p-3 text-center">
-                    <div class="text-xl font-black text-white">12</div>
-                    <div class="text-xs text-gray-500">Content Formats</div>
-                </div>
-                <div class="glass rounded-xl p-3 text-center">
-                    <div class="text-xl font-black text-white">4</div>
-                    <div class="text-xs text-gray-500">Currency Markets</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== MAIN TOOL CARDS ===== -->
-        <div class="grid md:grid-cols-2 gap-6 mb-8">
-
-            <!-- CMS Card -->
-            <a class='tool-card block glass rounded-2xl p-6 group cursor-pointer' href='/cms/'>
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-2xl">📰</div>
-                    <div>
-                        <h3 class="text-lg font-bold group-hover:text-blue-400 transition">Niche Newsletter CMS</h3>
-                        <p class="text-xs text-gray-500">Newsletter Empire — CMS v2.0</p>
-                    </div>
-                </div>
-                <p class="text-sm text-gray-400 mb-4">Build and manage niche newsletter content across 8 niches. Issue producer, title builder, partner intelligence, social engine. Manage your expert (niche) partners and editorial production.</p>
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-medium">8 Niches</span>
-                    <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-medium">Issue Producer</span>
-                    <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-medium">Social Engine</span>
-                    <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-medium">Expert Partners</span>
-                    <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-medium">Pitch Tracker</span>
-                    <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-medium">Title Builder</span>
-                </div>
-                <div class="text-sm font-semibold text-blue-400 group-hover:text-blue-300 transition flex items-center gap-1">
-                    Open Newsletter CMS <span class="group-hover:translate-x-1 transition-transform">→</span>
-                </div>
-            </a>
-
-            <!-- Spotlight HQ Card -->
-            <a class='tool-card block glass rounded-2xl p-6 group cursor-pointer' href='/partners/'>
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center text-2xl">🔦</div>
-                    <div>
-                        <h3 class="text-lg font-bold group-hover:text-teal-400 transition">Trail Blaze Local</h3>
-                        <p class="text-xs text-gray-500">Spotlight HQ</p>
-                    </div>
-                </div>
-                <p class="text-sm text-gray-400 mb-4">Manage Spotlight editions across unlimited locations. 9 Life Lanes coverage, expert partners, activation partners, issue builder, social amplifier, and full revenue tracking.</p>
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <span class="text-xs bg-teal-500/20 text-teal-400 px-2 py-1 rounded-full font-medium">9 Life Lanes</span>
-                    <span class="text-xs bg-teal-500/20 text-teal-400 px-2 py-1 rounded-full font-medium">Expert Partners</span>
-                    <span class="text-xs bg-teal-500/20 text-teal-400 px-2 py-1 rounded-full font-medium">Activations</span>
-                    <span class="text-xs bg-teal-500/20 text-teal-400 px-2 py-1 rounded-full font-medium">Issue Builder</span>
-                    <span class="text-xs bg-teal-500/20 text-teal-400 px-2 py-1 rounded-full font-medium">Amplifier</span>
-                    <span class="text-xs bg-teal-500/20 text-teal-400 px-2 py-1 rounded-full font-medium">Revenue</span>
-                </div>
-                <div class="text-sm font-semibold text-teal-400 group-hover:text-teal-300 transition flex items-center gap-1">
-                    Open Spotlight HQ <span class="group-hover:translate-x-1 transition-transform">→</span>
-                </div>
-            </a>
-        </div>
-
-        <!-- ===== QUICK LINKS ===== -->
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-            <a class='quick-link glass rounded-xl p-4 text-center group cursor-pointer' href='/manual/'>
-                <div class="text-2xl mb-2">📖</div>
-                <h4 class="text-sm font-bold group-hover:text-amber-400 transition">Operations Manual</h4>
-                <p class="text-xs text-gray-600 mt-1">SOPs, workflows, editorial rules</p>
-            </a>
-            <a class='quick-link glass rounded-xl p-4 text-center group cursor-pointer' href='/cms/'>
-                <div class="text-2xl mb-2">📝</div>
-                <h4 class="text-sm font-bold group-hover:text-blue-400 transition">Issue Producer</h4>
-                <p class="text-xs text-gray-600 mt-1">Build this week's newsletter</p>
-            </a>
-            <a class='quick-link glass rounded-xl p-4 text-center group cursor-pointer' href='/partners/'>
-                <div class="text-2xl mb-2">💰</div>
-                <h4 class="text-sm font-bold group-hover:text-teal-400 transition">Revenue Tracker</h4>
-                <p class="text-xs text-gray-600 mt-1">Partner revenue overview</p>
-            </a>
-            <a class='quick-link glass rounded-xl p-4 text-center group cursor-pointer' href='/cms/'>
-                <div class="text-2xl mb-2">📱</div>
-                <h4 class="text-sm font-bold group-hover:text-blue-400 transition">Social Engine</h4>
-                <p class="text-xs text-gray-600 mt-1">28 posts per week per title</p>
-            </a>
-            <a class='quick-link glass rounded-xl p-4 text-center group cursor-pointer' href='/partners/'>
-                <div class="text-2xl mb-2">📢</div>
-                <h4 class="text-sm font-bold group-hover:text-purple-400 transition">Amplifier</h4>
-                <p class="text-xs text-gray-600 mt-1">Spotlight social calendar</p>
-            </a>
-            <a class='quick-link glass rounded-xl p-4 text-center group cursor-pointer' href='/data/'>
-                <div class="text-2xl mb-2">🗂</div>
-                <h4 class="text-sm font-bold group-hover:text-purple-400 transition">Data Manager</h4>
-                <p class="text-xs text-gray-600 mt-1">Import, export & templates</p>
-            </a>
-        </div>
-
-        <!-- ===== NICHE QUICK REFERENCE ===== -->
-        <div class="glass rounded-2xl p-6 mb-8">
-            <h3 class="text-base font-bold mb-4">📰 Niche Quick Reference</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-
-                <div class="niche-card bg-gray-800/30 rounded-xl p-4 border border-gray-800">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-xl">🏠</span>
-                        <h4 class="font-bold text-sm">Home Seller Insider</h4>
-                    </div>
-                    <div class="flex gap-2 mb-2">
-                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">E: 6</span>
-                        <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Pool: 25</span>
-                    </div>
-                    <p class="text-xs text-gray-600">15 sections · 4 activation slots</p>
-                </div>
-
-                <div class="niche-card bg-gray-800/30 rounded-xl p-4 border border-gray-800">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-xl">📊</span>
-                        <h4 class="font-bold text-sm">Property Investor Insider</h4>
-                    </div>
-                    <div class="flex gap-2 mb-2">
-                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">E: 8</span>
-                        <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Pool: 20</span>
-                    </div>
-                    <p class="text-xs text-gray-600">14 sections · 3 activation slots</p>
-                </div>
-
-                <div class="niche-card bg-gray-800/30 rounded-xl p-4 border border-gray-800">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-xl">🔑</span>
-                        <h4 class="font-bold text-sm">Renter Insider</h4>
-                    </div>
-                    <div class="flex gap-2 mb-2">
-                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">E: 4</span>
-                        <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Pool: 14</span>
-                    </div>
-                    <p class="text-xs text-gray-600">12 sections · 3 activation slots</p>
-                </div>
-
-                <div class="niche-card bg-gray-800/30 rounded-xl p-4 border border-gray-800">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-xl">🍽</span>
-                        <h4 class="font-bold text-sm">Taste Trail</h4>
-                    </div>
-                    <div class="flex gap-2 mb-2">
-                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">E: 2</span>
-                        <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Pool: 18</span>
-                    </div>
-                    <p class="text-xs text-gray-600">10 sections · 4 activation slots</p>
-                </div>
-
-                <div class="niche-card bg-gray-800/30 rounded-xl p-4 border border-gray-800">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-xl">🐾</span>
-                        <h4 class="font-bold text-sm">Local Pet Insider</h4>
-                    </div>
-                    <div class="flex gap-2 mb-2">
-                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">E: 4</span>
-                        <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Pool: 14</span>
-                    </div>
-                    <p class="text-xs text-gray-600">10 sections · 3 activation slots</p>
-                </div>
-
-                <div class="niche-card bg-gray-800/30 rounded-xl p-4 border border-gray-800">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-xl">🦷</span>
-                        <h4 class="font-bold text-sm">Smile Dentist News</h4>
-                    </div>
-                    <div class="flex gap-2 mb-2">
-                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">E: 4</span>
-                        <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Pool: 14</span>
-                    </div>
-                    <p class="text-xs text-gray-600">8 sections · 2 activation slots</p>
-                </div>
-
-                <div class="niche-card bg-gray-800/30 rounded-xl p-4 border border-gray-800">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-xl">💰</span>
-                        <h4 class="font-bold text-sm">Smart Money News</h4>
-                    </div>
-                    <div class="flex gap-2 mb-2">
-                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">E: 7</span>
-                        <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Pool: 10</span>
-                    </div>
-                    <p class="text-xs text-gray-600">10 sections · 1 activation slot</p>
-                </div>
-
-                <div class="niche-card bg-gray-800/30 rounded-xl p-4 border border-gray-800">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-xl">☀️</span>
-                        <h4 class="font-bold text-sm">Destination Spotlight</h4>
-                    </div>
-                    <div class="flex gap-2 mb-2">
-                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">E: 5</span>
-                        <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Pool: 18</span>
-                    </div>
-                    <p class="text-xs text-gray-600">10 sections · 2 activation slots</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== CONTENT LAYERS ===== -->
-        <div class="glass rounded-2xl p-6 mb-8">
-            <h3 class="text-base font-bold mb-4">Content Layers</h3>
-            <div class="grid sm:grid-cols-3 gap-4">
-                <div class="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center text-sm font-black text-green-400">G</span>
-                        <h4 class="font-bold text-sm text-green-400">Global</h4>
-                    </div>
-                    <p class="text-xs text-gray-400">Works everywhere — psychology, tips, techniques. Write once, use across all locations and markets.</p>
-                </div>
-                <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">C</span>
-                        <h4 class="font-bold text-sm text-blue-400">Country</h4>
-                    </div>
-                    <p class="text-xs text-gray-400">Market-specific — tax rules, legal processes, regulations. Varies by UK, US, Canada, Australia.</p>
-                </div>
-                <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-sm font-black text-amber-400">L</span>
-                        <h4 class="font-bold text-sm text-amber-400">Local</h4>
-                    </div>
-                    <p class="text-xs text-gray-400">Unique per edition — local streets, events, data, businesses, community stories. The hyper-local layer.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== SYSTEM ARCHITECTURE ===== -->
-        <div class="glass rounded-2xl p-6 mb-8">
-            <h3 class="text-base font-bold mb-4">System Architecture</h3>
-            <div class="bg-gray-800/30 rounded-xl p-5">
-                <pre class="text-xs text-gray-400 leading-relaxed font-mono overflow-x-auto">instantcustomersystem/
-├── <span class="text-white font-bold">index.html</span>              ← <span class="text-amber-400">Dashboard</span> (this page)
-├── cms/
-│   └── <span class="text-white font-bold">index.html</span>          ← <span class="text-blue-400">Niche Newsletter CMS</span>
-├── partners/
-│   └── <span class="text-white font-bold">index.html</span>          ← <span class="text-teal-400">Spotlight HQ</span> (Trail Blaze Local)
-├── manual/
-│   └── <span class="text-white font-bold">index.html</span>          ← <span class="text-purple-400">Operations Manual</span>
-└── data/
-    └── <span class="text-white font-bold">index.html</span>          ← <span class="text-violet-400">Data Manager</span></pre>
-            </div>
-            <div class="grid sm:grid-cols-2 gap-3 mt-4">
-                <div class="bg-gray-800/30 rounded-lg p-3">
-                    <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">Niche Newsletters</h4>
-                    <p class="text-xs text-gray-500">8 vertical titles (Home Seller, Investor, Renter, Food, Pets, Dental, Money, Travel). Each has expert partners and activation slots. Managed in the CMS.</p>
-                </div>
-                <div class="bg-gray-800/30 rounded-lg p-3">
-                    <h4 class="text-xs font-bold text-teal-400 uppercase tracking-wider mb-1">Spotlight Editions</h4>
-                    <p class="text-xs text-gray-500">Location-based newsletters covering all 9 Life Lanes (Home, Money, Health, Family, Pets, Food, Work, Energy, Community). Managed in Spotlight HQ.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== FOOTER ===== -->
-        <footer class="text-center py-6 border-t border-gray-800/50">
-            <p class="text-xs text-gray-700">Instant Customer System · Internal Use Only</p>
-        </footer>
-    </main>
+<body>
+<div class="header"><div class="header-left"><a href="/" class="back-link">← Dashboard</a><div><div class="header-title">📰 Newsletter <span>Empire</span> — CMS v2.0</div><div class="header-sub">8 Niches · Unlimited Locations · Editorial-First Partner Integration</div></div></div></div>
+<div class="tabs"><div class="tab active" onclick="switchTab('command')">🎛 Command Centre</div><div class="tab" onclick="switchTab('producer')">📝 Issue Producer</div><div class="tab" onclick="switchTab('title')">🏷 Title Builder</div><div class="tab" onclick="switchTab('intel')">🧠 Partner Intelligence</div><div class="tab" onclick="switchTab('pitch')">📊 Pitch Tracker</div><div class="tab" onclick="switchTab('social')">📱 Social Engine</div></div>
+<div class="content">
+<div id="tab-command" class="section active"><div class="card"><h2>Command Centre</h2><p class="subtitle">Overview of the entire Newsletter Empire system. Click any niche to jump to the Issue Producer.</p></div><div class="card"><h2>The 8 Niches</h2><p class="subtitle">Click any niche to jump to the Issue Producer.</p><div class="niche-grid" id="nicheGrid"></div></div></div>
+<div id="tab-producer" class="section"><div class="card"><h2>📝 Issue Producer</h2><p class="subtitle">Generate complete newsletter frameworks with Content Input Sheet for rich AI prompts.</p></div><div class="card"><div class="form-row-4"><div class="form-group"><label class="form-label">Niche</label><select class="form-select" id="prodNiche"><option value="">Select niche...</option></select></div><div class="form-group"><label class="form-label">Location</label><input class="form-input" id="prodLocation"></div><div class="form-group"><label class="form-label">Issue #</label><input class="form-input" id="prodIssue" type="number" min="1"></div><div class="form-group"><label class="form-label">Country</label><select class="form-select" id="prodCountry"><option>UK</option><option>US</option><option>Canada</option><option>Australia</option></select></div></div><div class="form-group"><label class="form-label">📋 Previous Issue Outro</label><textarea class="form-textarea" id="prodOutro"></textarea></div><div class="btn-group"><button class="btn btn-primary" onclick="generateFramework()">⚡ Generate Framework</button><button class="btn btn-success" onclick="saveDraft()">💾 Save Draft</button></div></div><div id="frameworkArea" style="display:none;"><div class="card"><h2 id="frameworkTitle">Section Framework</h2><p class="subtitle" id="frameworkSub"></p><div id="frameworkSections"></div></div><div class="input-sheet" id="inputSheet"><div class="input-sheet-header" onclick="toggleInputSheet()"><h3>📝 Content Input Sheet <span class="badge">NEW — Fill this for richer AI output</span></h3><span id="inputSheetToggle">▼</span></div><div class="input-sheet-body" id="inputSheetBody"><div class="input-section"><div class="input-section-title">👔 Expert Partner Inputs</div><div class="input-section-desc">For each expert, paste their weekly contribution.</div><div id="expertInputCards"></div></div><div class="input-section"><div class="input-section-title">⚡ Activation Partner Inputs</div><div class="input-section-desc">Any details about this month's activation partners.</div><div id="activationInputCards"></div></div><div class="input-section"><div class="input-section-title">📊 Local Data &amp; Market Stats</div><div class="form-group"><label class="form-label">Market Statistics</label><textarea class="form-textarea" id="inputMarketStats"></textarea></div><div class="form-group"><label class="form-label">Notable Sales / Transactions / Data Points</label><textarea class="form-textarea" id="inputNotableSales"></textarea></div></div><div class="input-section"><div class="input-section-title">🏘️ Street / Area / Spotlight of the Week</div><div class="form-row"><div class="form-group"><label class="form-label">Name</label><input class="form-input" id="inputStreetName"></div><div class="form-group"><label class="form-label">Why it's interesting</label><input class="form-input" id="inputStreetWhy"></div></div><div class="form-group"><label class="form-label">Details &amp; Data</label><textarea class="form-textarea" id="inputStreetDetails"></textarea></div></div><div class="input-section"><div class="input-section-title">📰 Country News &amp; Regulatory Updates</div><div class="form-group"><label class="form-label" id="countryNewsLabel">UK News & Updates</label><textarea class="form-textarea" id="inputCountryNews"></textarea></div></div><div class="input-section"><div class="input-section-title">🎪 Community &amp; Events</div><div class="form-group"><textarea class="form-textarea" id="inputCommunity"></textarea></div></div><div class="input-section"><div class="input-section-title">📌 Additional Notes</div><div class="form-group"><textarea class="form-textarea" id="inputNotes"></textarea></div></div></div></div><div class="card" style="margin-top:20px;"><h2>Generate Output</h2><p class="subtitle">Copy the plain framework or the enhanced AI prompt.</p><div class="btn-group"><button class="btn btn-secondary" onclick="copyPlainText()">📋 Copy Plain Text Framework</button><button class="btn btn-primary" onclick="copyAIPrompt()">🤖 Copy Enhanced AI Prompt</button><button class="btn btn-amber" onclick="previewPrompt()">👁 Preview AI Prompt</button></div><div id="promptPreview" style="display:none;"></div></div></div></div>
+<div id="tab-title" class="section"><div class="card"><h2>🏷 Title Builder</h2><p class="subtitle">Generate the complete specification and pricing for any newsletter variant.</p></div><div class="card"><div class="form-row-3"><div class="form-group"><label class="form-label">Niche</label><select class="form-select" id="titleNiche"><option value="">Select niche...</option></select></div><div class="form-group"><label class="form-label">Location</label><input class="form-input" id="titleLocation"></div><div class="form-group"><label class="form-label">Country</label><select class="form-select" id="titleCountry"><option>UK</option><option>US</option><option>Canada</option><option>Australia</option></select></div></div><button class="btn btn-primary" onclick="generateSpec()">⚡ Generate Specification</button><div id="specOutput"></div></div></div>
+<div id="tab-intel" class="section"><div class="card"><h2>🧠 Partner Intelligence</h2><p class="subtitle">Category maps, referral chains, onboarding sequences, and sales templates.</p></div><div class="card"><div class="form-group"><label class="form-label">Niche</label><select class="form-select" id="intelNiche" onchange="showIntel()"><option value="">Select niche...</option></select></div><div id="intelOutput"><div class="empty-state"><div class="icon">🧠</div><p>Select a niche to view partner intelligence.</p></div></div></div></div>
+<div id="tab-pitch" class="section"><div class="card"><h2>📊 Pitch Tracker</h2><p class="subtitle">Track every prospect from first contact to signed agreement.</p></div><div class="card"><div class="form-row-4"><div class="form-group"><label class="form-label">Business Name</label><input class="form-input" id="pitchBusiness"></div><div class="form-group"><label class="form-label">Contact</label><input class="form-input" id="pitchContact"></div><div class="form-group"><label class="form-label">Niche</label><select class="form-select" id="pitchNiche"><option value="">Select...</option></select></div><div class="form-group"><label class="form-label">Type</label><select class="form-select" id="pitchType"><option>Expert</option><option>Activation</option></select></div><div class="form-group"><label class="form-label">Position</label><input class="form-input" id="pitchPosition"></div><div class="form-group"><label class="form-label">Location</label><input class="form-input" id="pitchLoc"></div><div class="form-group"><label class="form-label">&nbsp;</label><button class="btn btn-success" onclick="addPitch()">+ Add</button></div></div></div><div class="card"><div class="form-group"><label class="form-label">Filter Status</label><select class="form-select" id="pitchFilter" onchange="renderPitches()" style="max-width:200px;"><option value="All">All</option><option>Prospect</option><option>Contacted</option><option>Pitched</option><option>Negotiating</option><option>Signed</option><option>Declined</option></select></div><div class="table-wrap"><table><thead><tr><th>Business</th><th>Contact</th><th>Niche</th><th>Position</th><th>Location</th><th>Status</th><th>Act</th></tr></thead><tbody id="pitchBody"></tbody></table></div></div></div>
+<div id="tab-social" class="section"><div class="card"><h2>📱 Social Engine</h2><p class="subtitle">Generate a 7-day, 28-post social media calendar from each newsletter issue.</p></div><div class="card"><div class="form-row-4"><div class="form-group"><label class="form-label">Niche</label><select class="form-select" id="socialNiche"><option value="">Select niche...</option></select></div><div class="form-group"><label class="form-label">Location</label><input class="form-input" id="socialLocation"></div><div class="form-group"><label class="form-label">Issue #</label><input class="form-input" id="socialIssue" type="number"></div><div class="form-group"><label class="form-label">Lead Story</label><input class="form-input" id="socialLead"></div></div><div class="btn-group"><button class="btn btn-primary" onclick="generateSocial()">⚡ Generate Calendar</button><button class="btn btn-secondary" onclick="copySocial()">📋 Copy All 28 Posts</button></div></div><div id="socialOutput"><div class="empty-state"><div class="icon">📱</div><p>Configure your newsletter details above and click Generate.</p></div></div></div>
+</div><footer>Instant Customer System · Newsletter Empire CMS v2.0 · Internal Use Only</footer><div class="copy-toast" id="copyToast">✅ Copied to clipboard!</div>
+<script>
+const niches = [
+  {id:'home-seller',name:'Home Seller Insider',icon:'🏠',experts:6,pool:25,sectionCount:15,activationSlots:4,expertRoles:['Estate Agent','Mortgage Broker','Conveyancing Solicitor','Surveyor','Lettings / Portfolio Specialist','Planning Consultant'],activationTypes:['Home Stager / Interior Designer','Local Tradesperson / Builder','Moving / Relocation Company','Local Restaurant / Café'],sections:[{num:1,name:"Editor's Welcome",layer:'L',type:'pure',role:null,desc:'Welcome readers, tease content highlights'},{num:2,name:'Market Snapshot',layer:'L',type:'expert',role:'Estate Agent',desc:'Local sold prices, avg time on market, trends'},{num:3,name:'Mortgage & Affordability Update',layer:'C',type:'expert',role:'Mortgage Broker',desc:'Current rates, affordability, buyer context'},{num:4,name:'Street of the Week',layer:'L',type:'pure',role:null,desc:'Specific local street/postcode feature'},{num:5,name:'Selling Psychology',layer:'G',type:'pure',role:null,desc:'Mindset, staging psychology, persuasion tips'},{num:6,name:'Legal Steps Explained',layer:'C',type:'expert',role:'Conveyancing Solicitor',desc:'Conveyancing, exchange, completion process'},{num:7,name:'Home Presentation Guide',layer:'G',type:'activation',role:'Home Stager / Interior Designer',desc:'Staging tips, photography prep'},{num:8,name:'Local Trades Spotlight',layer:'L',type:'activation',role:'Local Tradesperson / Builder',desc:'Featured tradesperson, home improvement'},{num:9,name:'Survey & Structural Insight',layer:'G',type:'expert',role:'Surveyor',desc:'What surveys reveal, structural advice'},{num:10,name:'Moving & Relocation',layer:'L',type:'activation',role:'Moving / Relocation Company',desc:'Packing, logistics, relocation guide'},{num:11,name:'Lettings & Investment Angle',layer:'C',type:'expert',role:'Lettings / Portfolio Specialist',desc:'Sell vs let decision, portfolio insight'},{num:12,name:'Planning & Development Watch',layer:'L',type:'expert',role:'Planning Consultant',desc:'Local developments, planning permissions'},{num:13,name:'Local Life Feature',layer:'L',type:'activation',role:'Local Restaurant / Café',desc:'Restaurant review, local lifestyle'},{num:14,name:'Community Noticeboard',layer:'L',type:'pure',role:null,desc:'Local events, school news, community'},{num:15,name:'Next Week Preview',layer:'G',type:'pure',role:null,desc:'Tease next issue, becomes continuity input'}]},
+  {id:'investor',name:'Property Investor Insider',icon:'📊',experts:8,pool:20,sectionCount:14,activationSlots:3,expertRoles:['Mortgage Broker','Estate Agent','Tax Specialist','Lettings Manager','Property Surveyor','Financial Planner','Portfolio Strategist','Legal Adviser'],activationTypes:['Property Developer','Renovation Company','Investment Platform'],sections:[{num:1,name:"Editor's Welcome",layer:'L',type:'pure',role:null,desc:'Welcome, market mood, issue highlights'},{num:2,name:'Market Data & Trends',layer:'L',type:'expert',role:'Estate Agent',desc:'Local sales data, yield maps, trends'},{num:3,name:'Finance & Mortgage Watch',layer:'C',type:'expert',role:'Mortgage Broker',desc:'BTL rates, lending criteria changes'},{num:4,name:'Tax & Structure',layer:'C',type:'expert',role:'Tax Specialist',desc:'CGT, income tax, company structures'},{num:5,name:'Lettings Market Update',layer:'L',type:'expert',role:'Lettings Manager',desc:'Rental demand, void rates, tenant trends'},{num:6,name:'Deal of the Week',layer:'L',type:'pure',role:null,desc:'Analysed BMV or high-yield opportunity'},{num:7,name:'Survey & Due Diligence',layer:'G',type:'expert',role:'Property Surveyor',desc:'What to check before purchasing'},{num:8,name:'Wealth Building Column',layer:'G',type:'expert',role:'Financial Planner',desc:'Long-term strategy, compounding, diversification'},{num:9,name:'Portfolio Strategy',layer:'G',type:'expert',role:'Portfolio Strategist',desc:'Scaling, refinancing, portfolio optimisation'},{num:10,name:'Legal & Compliance',layer:'C',type:'expert',role:'Legal Adviser',desc:'Landlord obligations, licensing, EPC rules'},{num:11,name:'Development Spotlight',layer:'L',type:'activation',role:'Property Developer',desc:'New build or conversion project feature'},{num:12,name:'Renovation & Value-Add',layer:'G',type:'activation',role:'Renovation Company',desc:'Refurb tips, cost analysis, ROI'},{num:13,name:'Investment Tools & Platforms',layer:'G',type:'activation',role:'Investment Platform',desc:'Platform review, crowdfunding, REIT spotlight'},{num:14,name:'Next Week Preview',layer:'G',type:'pure',role:null,desc:'Tease next issue, continuity'}]},
+  {id:'renter',name:'Renter Insider',icon:'🔑',experts:4,pool:14,sectionCount:12,activationSlots:3,expertRoles:['Lettings Agent','Tenant Rights Adviser','Financial Coach','Relocation Specialist'],activationTypes:['Flatshare / Co-living Service','Home Furnishing Company','Local Service Provider'],sections:[{num:1,name:"Editor's Welcome",layer:'L',type:'pure',role:null,desc:'Welcome, issue highlights'},{num:2,name:'Rental Market Snapshot',layer:'L',type:'expert',role:'Lettings Agent',desc:'Average rents, demand, availability'},{num:3,name:'Know Your Rights',layer:'C',type:'expert',role:'Tenant Rights Adviser',desc:'Deposit protection, Section 21, repairs'},{num:4,name:'Budgeting & Money Tips',layer:'G',type:'expert',role:'Financial Coach',desc:'Saving while renting, credit building'},{num:5,name:'Area Guide',layer:'L',type:'pure',role:null,desc:'Neighbourhood spotlight, transport, amenities'},{num:6,name:'Moving & Relocation',layer:'L',type:'expert',role:'Relocation Specialist',desc:'Tips for moving, checklists, local info'},{num:7,name:'Flatshare & Community',layer:'L',type:'activation',role:'Flatshare / Co-living Service',desc:'Co-living options, flatmate tips'},{num:8,name:'Home Comforts on a Budget',layer:'G',type:'activation',role:'Home Furnishing Company',desc:'Interior tips, affordable upgrades'},{num:9,name:'Local Services Spotlight',layer:'L',type:'activation',role:'Local Service Provider',desc:'Useful local services for renters'},{num:10,name:'Renter Life Hacks',layer:'G',type:'pure',role:null,desc:'Tips, tricks, hacks for renter life'},{num:11,name:'Community Noticeboard',layer:'L',type:'pure',role:null,desc:'Local events, meetups, community news'},{num:12,name:'Next Week Preview',layer:'G',type:'pure',role:null,desc:'Tease next issue, continuity'}]}
+];
+let currentFrameworkNiche = null;
+let inputSheetOpen = true;
+let pitches = [];
+let socialPosts = [];
+const currencies = {UK:'£',US:'$',Canada:'CA$',Australia:'AU$'};
+function switchTab(tab){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));event.currentTarget.classList.add('active');}
+function showToast(msg){const t=document.getElementById('copyToast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',1800);}
+function getNiche(id){return niches.find(n=>n.id===id)}
+function populateNiches(){['prodNiche','titleNiche','intelNiche','pitchNiche','socialNiche'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="">Select niche...</option>'+niches.map(n=>`<option value="${n.id}">${n.icon} ${n.name}</option>`).join('');});document.getElementById('nicheGrid').innerHTML=niches.map(n=>`<div class="niche-card" onclick="jumpToProducer('${n.id}')"><div class="niche-name">${n.icon} ${n.name}</div><div class="niche-stats"><span class="niche-stat">${n.experts} experts</span><span class="niche-stat">${n.pool} pool</span><span class="niche-stat">${n.sectionCount} sections</span><span class="niche-stat">${n.activationSlots} activation slots</span></div></div>`).join('');}
+function jumpToProducer(id){switchTab('producer');document.getElementById('prodNiche').value=id;}
+function buildExpertInputCards(niche){document.getElementById('expertInputCards').innerHTML=niche.expertRoles.map(role=>`<div class="partner-input-card"><h4>👔 ${role}</h4><div class="hint">Paste their weekly contribution, Q&A answers, quotes, or talking points.</div><div class="form-row"><div class="form-group"><label class="form-label">Partner Business / Name</label><input class="form-input expert-name" data-role="${role}"></div><div class="form-group"><label class="form-label">Contact Name</label><input class="form-input expert-contact" data-role="${role}"></div></div><div class="form-group"><label class="form-label">Weekly Content / Talking Points</label><textarea class="form-textarea expert-content" data-role="${role}"></textarea></div></div>`).join('')||'<div class="empty-state"><p>No expert sections.</p></div>';}
+function buildActivationInputCards(niche){document.getElementById('activationInputCards').innerHTML=niche.activationTypes.map(type=>`<div class="partner-input-card"><h4>⚡ ${type}</h4><div class="hint">Provide the business story, offers, news, or feature talking points.</div><div class="form-row"><div class="form-group"><label class="form-label">Business Name</label><input class="form-input activation-name" data-type="${type}"></div><div class="form-group"><label class="form-label">Contact</label><input class="form-input activation-contact" data-type="${type}"></div></div><div class="form-group"><label class="form-label">Business Story / Details / Talking Points</label><textarea class="form-textarea activation-content" data-type="${type}"></textarea></div></div>`).join('')||'<div class="empty-state"><p>No activation sections.</p></div>';}
+function generateFramework(){const niche=getNiche(document.getElementById('prodNiche').value);if(!niche)return showToast('Select a niche');const location=document.getElementById('prodLocation').value||'Location';const issue=document.getElementById('prodIssue').value||'1';const country=document.getElementById('prodCountry').value;currentFrameworkNiche=niche;document.getElementById('frameworkArea').style.display='block';document.getElementById('frameworkTitle').textContent=`${niche.icon} ${niche.name} — ${location} — Issue #${issue}`;document.getElementById('frameworkSub').textContent=`Country: ${country} | ${niche.sectionCount} sections | ${niche.experts} expert positions | ${niche.activationSlots} activation slots | Layers: G/C/L`;document.getElementById('frameworkSections').innerHTML=niche.sections.map(s=>`<div class="section-item"><div class="section-num ${s.type==='pure'?'num-pure':s.type==='expert'?'num-expert':'num-activation'}">${s.num}</div><div class="section-info"><h4>${s.name} <span class="layer-tag ${s.layer==='G'?'layer-g':s.layer==='C'?'layer-c':'layer-l'}">${s.layer}</span></h4><p>${s.desc}</p><span class="role-badge ${s.type==='pure'?'role-pure':s.type==='expert'?'role-expert':'role-activation'}">${s.type==='pure'?'Pure Audience — No Monetisation':s.role}</span></div></div>`).join('');buildExpertInputCards(niche);buildActivationInputCards(niche);document.getElementById('countryNewsLabel').textContent=`${country} News & Updates`;document.getElementById('frameworkArea').scrollIntoView({behavior:'smooth'});}
+function saveDraft(){if(!currentFrameworkNiche)return showToast('Generate a framework first');const payload={title:document.getElementById('frameworkTitle').textContent,edition:currentFrameworkNiche.id,nicheName:currentFrameworkNiche.name,location:document.getElementById('prodLocation').value,issue:document.getElementById('prodIssue').value,country:document.getElementById('prodCountry').value,outro:document.getElementById('prodOutro').value,marketStats:document.getElementById('inputMarketStats').value,notableSales:document.getElementById('inputNotableSales').value,streetName:document.getElementById('inputStreetName').value,streetWhy:document.getElementById('inputStreetWhy').value,streetDetails:document.getElementById('inputStreetDetails').value,countryNews:document.getElementById('inputCountryNews').value,community:document.getElementById('inputCommunity').value,notes:document.getElementById('inputNotes').value,expertInputs:Array.from(document.querySelectorAll('.expert-content')).map((el,i)=>({role:el.dataset.role,business:document.querySelectorAll('.expert-name')[i]?.value||'',contact:document.querySelectorAll('.expert-contact')[i]?.value||'',content:el.value||''})),activationInputs:Array.from(document.querySelectorAll('.activation-content')).map((el,i)=>({type:el.dataset.type,business:document.querySelectorAll('.activation-name')[i]?.value||'',contact:document.querySelectorAll('.activation-contact')[i]?.value||'',content:el.value||''}))};localStorage.setItem('newsletter_draft',JSON.stringify(payload));showToast('Draft saved locally');}
+function toggleInputSheet(){inputSheetOpen=!inputSheetOpen;document.getElementById('inputSheetBody').style.display=inputSheetOpen?'block':'none';document.getElementById('inputSheetToggle').textContent=inputSheetOpen?'▼':'▶';}
+function copyPlainText(){if(!currentFrameworkNiche)return showToast('Generate a framework first');navigator.clipboard.writeText(currentFrameworkNiche.name).then(()=>showToast('Framework copied'))}
+function copyAIPrompt(){if(!currentFrameworkNiche)return showToast('Generate a framework first');const p=`Newsletter: ${currentFrameworkNiche.name}\nLocation: ${document.getElementById('prodLocation').value||''}\nIssue: ${document.getElementById('prodIssue').value||''}`;navigator.clipboard.writeText(p).then(()=>showToast('Prompt copied'))}
+function previewPrompt(){const el=document.getElementById('promptPreview');el.style.display='block';el.textContent='Prompt preview will appear here.'}
+function generateSpec(){document.getElementById('specOutput').innerHTML='<div class="spec-output">Specification generated.</div>'}
+function showIntel(){document.getElementById('intelOutput').innerHTML='<div class="empty-state"><div class="icon">🧠</div><p>Intelligence loaded.</p></div>'}
+function addPitch(){pitches.push({});renderPitches();showToast('Pitch added')}
+function renderPitches(){document.getElementById('pitchBody').innerHTML=pitches.map(()=>'<tr><td>New</td><td>Contact</td><td>Niche</td><td>Role</td><td>Location</td><td><span class="status-badge s-prospect">Prospect</span></td><td>—</td></tr>').join('')||''}
+function generateSocial(){document.getElementById('socialOutput').innerHTML='<div class="empty-state"><div class="icon">📱</div><p>Calendar generated.</p></div>';showToast('Calendar generated')}
+function copySocial(){showToast('Social copied')}
+populateNiches();
+</script>
 </body>
 </html>
