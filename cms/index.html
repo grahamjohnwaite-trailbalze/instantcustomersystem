@@ -1411,6 +1411,93 @@ function escapeHtml(text) {
 // Init
 init();
 renderPitches();
+
+// === ISSUE PRODUCER BUTTON FUNCTIONS ===
+function copyAiPrompt() {
+    const prompt = generateAiPrompt();
+    navigator.clipboard.writeText(prompt).then(() => {
+        showToast('🤖 AI-Optimised Prompt copied to clipboard!');
+    });
+}
+
+function copyRawFramework() {
+    const raw = document.getElementById('frameworkSections').innerText;
+    navigator.clipboard.writeText(raw).then(() => {
+        showToast('📋 Raw Framework copied to clipboard!');
+    });
+}
+
+function generateAiDraft() {
+    const prompt = generateAiPrompt();
+    document.getElementById('promptPreview').innerHTML = 
+        `<pre class="prompt-text">${prompt}</pre>`;
+    document.getElementById('promptPreview').style.display = 'block';
+    showToast('⚡ AI Draft preview generated!');
+}
+
+// AI Prompt Generator (uses all Content Input Sheet data)
+function generateAiPrompt() {
+    const niche = document.getElementById('prodNiche').value;
+    const location = document.getElementById('prodLocation').value;
+    const issueNum = document.getElementById('prodIssue').value;
+    const country = document.getElementById('prodCountry').value;
+    const outro = document.getElementById('prodOutro').value;
+    
+    // Framework sections
+    const sections = document.getElementById('frameworkSections').innerText;
+    
+    // Content Input Sheet data
+    const expertInputs = [];
+    document.querySelectorAll('.expert-input-textarea').forEach((ta, i) => {
+        if (ta.value.trim()) expertInputs.push(ta.value);
+    });
+    
+    const activationInputs = document.querySelectorAll('.activation-input-textarea');
+    const marketStats = document.getElementById('inputMarketStats')?.value || '';
+    const notableSales = document.getElementById('inputNotableSales')?.value || '';
+    const streetName = document.getElementById('inputStreetName')?.value || '';
+    const streetWhy = document.getElementById('inputStreetWhy')?.value || '';
+    const streetDetails = document.getElementById('inputStreetDetails')?.value || '';
+    const countryNews = document.getElementById('inputCountryNews')?.value || '';
+    const community = document.getElementById('inputCommunity')?.value || '';
+    const notes = document.getElementById('inputNotes')?.value || '';
+    
+    let prompt = `Write a complete ${niche} newsletter for ${location}, ${country} - Issue #${issueNum}\n\n`;
+    
+    if (outro) prompt += `CONTINUITY: "${outro}"\n\n`;
+    
+    prompt += `FRAMEWORK:\n${sections}\n\n`;
+    
+    if (expertInputs.length) {
+        prompt += `EXPERT CONTRIBUTIONS:\n${expertInputs.join('\n\n')}\n\n`;
+    }
+    
+    if (activationInputs.length) {
+        prompt += `ACTIVATION PARTNERS:\n${Array.from(activationInputs).map(ta => ta.value).join('\n\n')}\n\n`;
+    }
+    
+    if (marketStats || notableSales) {
+        prompt += `LOCAL DATA:\n${marketStats}\n${notableSales}\n\n`;
+    }
+    
+    if (streetName) {
+        prompt += `STREET SPOTLIGHT: ${streetName} (${streetWhy})\n${streetDetails}\n\n`;
+    }
+    
+    if (countryNews) {
+        prompt += `NATIONAL NEWS:\n${countryNews}\n\n`;
+    }
+    
+    if (community) {
+        prompt += `COMMUNITY:\n${community}\n\n`;
+    }
+    
+    if (notes) {
+        prompt += `EDITOR NOTES:\n${notes}\n\n`;
+    }
+    
+    prompt += `INSTRUCTIONS: Follow the framework exactly. Make it hyper-local to ${location}. Use all provided data. Professional tone. 1200-1600 words.`;
+    
+    return prompt;
+}
 </script>
-</body>
-</html>
