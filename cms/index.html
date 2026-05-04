@@ -771,7 +771,67 @@ function generateFramework() {
     document.getElementById('frameworkArea').style.display = 'block';
     document.getElementById('frameworkTitle').textContent = `${niche.icon} ${niche.name} — ${location} — Issue #${issue}`;
     document.getElementById('frameworkSub').textContent = `Country: ${country} | ${niche.sectionCount} sections | ${niche.experts} expert positions | ${niche.activationSlots} activation slots | Layers: G/C/L`;
-
+// Auto-populate Content Input Sheet
+populateInputSheet(nicheId);
+function populateInputSheet(niche) {
+    const expertsDiv = document.getElementById('expertInputCards');
+    const activationsDiv = document.getElementById('activationInputCards');
+    
+    // Clear existing
+    expertsDiv.innerHTML = '';
+    activationsDiv.innerHTML = '';
+    
+    // Niche-specific experts & activations
+    const config = {
+        'investor': {
+            experts: ['Estate Agent', 'Mortgage Broker', 'Tax Specialist', 'Lettings Manager', 'Property Surveyor', 'Financial Planner', 'Portfolio Strategist', 'Legal Adviser', 'Planning Consultant'],
+            activations: ['Property Developer', 'Renovation Company', 'Investment Platform']
+        },
+        'renter': {
+            experts: ['Lettings Agent', 'Tenant Rights Adviser', 'Financial Coach', 'Relocation Specialist'],
+            activations: ['Flatshare / Co-living Service', 'Home Furnishing Company', 'Local Service Provider']
+        },
+        'home-seller': {
+            experts: ['Estate Agent', 'Mortgage Broker', 'Conveyancing Solicitor', 'Surveyor', 'Lettings / Portfolio Specialist', 'Planning Consultant'],
+            activations: ['Home Stager / Interior Designer', 'Local Tradesperson / Builder', 'Moving / Relocation Company', 'Local Restaurant / Café']
+        },
+        'pets': {
+            experts: ['Veterinary Surgeon', 'Dog Trainer', 'Pet Nutritionist', 'Animal Behaviourist'],
+            activations: ['Pet Grooming Salon', 'Pet Shop / Supplies', 'Pet-Friendly Venue']
+        }
+        // Add other niches as needed
+    };
+    
+    const nicheData = config[niche] || {experts: [], activations: []};
+    
+    // Generate expert input cards
+    nicheData.experts.forEach((expert, i) => {
+        const card = document.createElement('div');
+        card.className = 'input-card';
+        card.innerHTML = `
+            <div class="input-card-header">
+                <strong>${expert}</strong>
+            </div>
+            <textarea class="form-textarea expert-input-textarea" 
+                      placeholder="Paste ${expert} contribution here (quotes, tips, Q&A answers)..."></textarea>
+        `;
+        expertsDiv.appendChild(card);
+    });
+    
+    // Generate activation input cards  
+    nicheData.activations.forEach((activation, i) => {
+        const card = document.createElement('div');
+        card.className = 'input-card';
+        card.innerHTML = `
+            <div class="input-card-header">
+                <strong>${activation}</strong>
+            </div>
+            <textarea class="form-textarea activation-input-textarea" 
+                      placeholder="Paste ${activation} details (offers, news, talking points)..."></textarea>
+        `;
+        activationsDiv.appendChild(card);
+    });
+}
     const sectionsHTML = niche.sections.map(s => {
         const numClass = s.type === 'pure' ? 'num-pure' : s.type === 'expert' ? 'num-expert' : 'num-activation';
         const layerClass = s.layer === 'G' ? 'layer-g' : s.layer === 'C' ? 'layer-c' : 'layer-l';
