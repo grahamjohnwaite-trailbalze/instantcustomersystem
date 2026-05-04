@@ -1437,8 +1437,8 @@ function generateAiDraft() {
 
 // AI Prompt Generator (uses all Content Input Sheet data)
 function generateAiPrompt() {
-    const niche = document.getElementById('prodNiche').value;
-    const location = document.getElementById('prodLocation').value;
+  const niche = document.getElementById('prodNiche').value || 'your niche';
+const location = document.getElementById('prodLocation').value || 'your location';
     const issueNum = document.getElementById('prodIssue').value;
     const country = document.getElementById('prodCountry').value;
     const outro = document.getElementById('prodOutro').value;
