@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Newsletter Empire — CMS v2.9</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}.header{background:#1e293b;border-bottom:1px solid #334155;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}.header-left{display:flex;align-items:center;gap:16px}.back-link{color:#60a5fa;text-decoration:none;font-size:14px}.header-title{font-size:20px;font-weight:700}.header-title span{color:#60a5fa}.header-sub{font-size:12px;color:#94a3b8;margin-top:2px}.tabs{background:#1e293b;border-bottom:1px solid #334155;display:flex;overflow-x:auto;padding:0 16px}.tab{padding:12px 18px;cursor:pointer;font-size:13px;color:#94a3b8;border-bottom:2px solid transparent;white-space:nowrap;transition:.2s}.tab:hover{color:#e2e8f0}.tab.active{color:#60a5fa;border-bottom-color:#60a5fa}.content{max-width:1200px;margin:0 auto;padding:24px}.section{display:none}.section.active{display:block}.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:24px;margin-bottom:20px}.card h2{font-size:18px;font-weight:600;margin-bottom:6px}.subtitle{font-size:13px;color:#94a3b8;margin-bottom:16px}.niche-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:16px}.niche-card{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:20px;cursor:pointer;transition:.2s}.niche-card:hover{border-color:#60a5fa;transform:translateY(-2px)}.niche-icon{font-size:28px;margin-bottom:8px}.niche-name{font-size:15px;font-weight:600;margin-bottom:10px}.niche-stats{display:flex;gap:8px;flex-wrap:wrap}.niche-stat{font-size:11px;color:#94a3b8;background:#1e293b;padding:3px 8px;border-radius:6px}.form-group{margin-bottom:16px}.form-label{display:block;font-size:13px;font-weight:500;color:#94a3b8;margin-bottom:6px}.form-select,.form-input,.form-textarea{width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit}.form-select:focus,.form-input:focus,.form-textarea:focus{outline:none;border-color:#60a5fa}.form-textarea{min-height:82px;resize:vertical}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}.form-row-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}.btn{padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:.2s;display:inline-flex;align-items:center;gap:8px}.btn-primary{background:#2563eb;color:#fff}.btn-primary:hover{background:#1d4ed8}.btn-secondary{background:#334155;color:#e2e8f0}.btn-secondary:hover{background:#475569}.btn-success{background:#059669;color:#fff}.btn-amber{background:#d97706;color:#fff}.btn-danger{background:#7f1d1d;color:#fecaca}.btn-group{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}.layer-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}.layer-g{background:#064e3b;color:#6ee7b7}.layer-c{background:#4c1d95;color:#c4b5fd}.layer-l{background:#7c2d12;color:#fdba74}.role-badge{font-size:11px;padding:2px 8px;border-radius:4px;display:inline-block;margin-top:4px}.role-expert{background:#1e3a5f;color:#60a5fa}.role-activation{background:#422006;color:#fbbf24}.role-pure{background:#064e3b;color:#6ee7b7}.section-item{padding:12px 16px;background:#0f172a;border:1px solid #334155;border-radius:8px;margin-bottom:8px;display:flex;gap:12px}.section-num{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;color:#fff}.num-pure{background:#059669}.num-expert{background:#2563eb}.num-activation{background:#d97706}.section-info h4{font-size:14px;margin-bottom:4px}.section-info p{font-size:12px;color:#94a3b8}.input-sheet{margin-top:24px;border:2px solid #1e40af;border-radius:12px;overflow:hidden}.input-sheet-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#172554}.input-sheet-header h3{font-size:16px;color:#93c5fd}.input-sheet-body{background:#1e293b;padding:24px}.input-section{margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid #334155}.input-section:last-child{border-bottom:none}.input-section-title{font-size:15px;font-weight:700;color:#60a5fa;margin-bottom:4px}.input-section-desc{font-size:13px;color:#94a3b8;margin-bottom:16px}.partner-input-card{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;margin-bottom:12px}.partner-input-card h4{font-size:14px;font-weight:600;margin-bottom:4px}.hint{font-size:12px;color:#64748b;margin-bottom:8px}.prompt-preview{background:#0f172a;border:1px solid #1e40af;border-radius:8px;padding:20px;margin-top:16px;font-family:'Courier New',monospace;font-size:12px;line-height:1.65;white-space:pre-wrap;max-height:620px;overflow-y:auto;color:#bfdbfe}.philosophy-box{background:#172554;border:1px solid #1e40af;border-radius:12px;padding:20px;margin-bottom:20px}.philosophy-box h3{font-size:15px;color:#93c5fd;margin-bottom:8px}.philosophy-box p{font-size:13px;color:#94a3b8;line-height:1.6}.layers-row,.workflow-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}.layer-card,.wf-step{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;flex:1;min-width:180px}.layer-card h4,.wf-step h4{font-size:13px;margin-bottom:4px}.layer-card p,.wf-step p{font-size:12px;color:#94a3b8}.day{font-size:12px;font-weight:700;color:#60a5fa;margin-bottom:4px}.score-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}.score-card{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px}.score-card strong{font-size:18px}.score-good{color:#6ee7b7}.score-warn{color:#fbbf24}.score-bad{color:#fca5a5}.empty-state{text-align:center;padding:40px 20px;color:#64748b}.copy-toast{position:fixed;bottom:24px;right:24px;background:#059669;color:white;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;display:none;z-index:1000}footer{text-align:center;padding:32px;color:#475569;font-size:12px;border-top:1px solid #1e293b;margin-top:40px}@media(max-width:800px){.form-row,.form-row-3,.form-row-4{grid-template-columns:1fr}.content{padding:16px}.header-title{font-size:17px}}
+</style>
+</head>
+<body>
+<div class="header"><div class="header-left"><a href="/" class="back-link">← Dashboard</a><div><div class="header-title">📰 Newsletter <span>Empire</span> — CMS v2.9</div><div class="header-sub">8 Niches · Issue Memory · Angle Engine · Expert + Activation Prompt Builder</div></div></div></div>
+<div class="tabs"><div class="tab active" onclick="switchTab('command')">🎛 Command Centre</div><div class="tab" onclick="switchTab('producer')">📝 Issue Producer</div><div class="tab" onclick="switchTab('spotlight')">📍 Spotlight Builder</div><div class="tab" onclick="switchTab('title')">🏷 Title Builder</div><div class="tab" onclick="switchTab('intel')">🧠 Partner Intelligence</div><div class="tab" onclick="switchTab('pitch')">📊 Pitch Tracker</div><div class="tab" onclick="switchTab('social')">📱 Social Engine</div></div>
+<div class="content">
+<div id="tab-command" class="section active"><div class="card"><h2>Command Centre</h2><p class="subtitle">Overview of the Newsletter Empire CMS. Click any niche to jump to the Issue Producer.</p></div><div class="philosophy-box"><h3>📖 Editorial Philosophy v2.3</h3><p>Experts appear as useful voices, not ad labels. Activations appear as the main example inside genuine editorial. Every issue needs a theme, tension, visible reality, reader questions, and enough monetisation visibility that a business can see where it fits.</p></div><div class="layers-row"><div class="layer-card"><h4><span class="layer-tag layer-g">G</span> Global</h4><p>Reusable principles, tips and reader psychology.</p></div><div class="layer-card"><h4><span class="layer-tag layer-c">C</span> Country</h4><p>Rules, regulations, tax, travel or market process by country.</p></div><div class="layer-card"><h4><span class="layer-tag layer-l">L</span> Local</h4><p>Specific places, businesses, roads, venues, events and local realities.</p></div></div><div class="card"><h2>Current Workflow</h2><div class="workflow-row" style="margin-top:16px"><div class="wf-step"><div class="day">1</div><h4>Set Niche + Location</h4><p>Choose niche, country, issue number and previous continuity.</p></div><div class="wf-step"><div class="day">2</div><h4>Fill Angle Engine</h4><p>Theme, tension, controversy, visible reality, reader questions.</p></div><div class="wf-step"><div class="day">3</div><h4>Add Experts + Activations</h4><p>Use notes or leave placeholders if you are building a demo issue.</p></div><div class="wf-step"><div class="day">4</div><h4>Copy AI Prompt</h4><p>Paste into GPT and produce the full newsletter.</p></div><div class="wf-step"><div class="day">5</div><h4>Archive Memory</h4><p>Save covered topics and next-week teases so the next issue continues properly.</p></div></div></div><div class="card"><h2>The 8 Niches</h2><p class="subtitle">Click any niche to start in the Issue Producer.</p><div class="niche-grid" id="nicheGrid"></div></div></div>
+<div id="tab-producer" class="section"><div class="card"><h2>📝 Issue Producer</h2><p class="subtitle">Build the prompt that creates the newsletter. For now, use <strong>Copy AI Prompt</strong> as the main workflow.</p></div><div class="card"><div class="form-row-4"><div class="form-group"><label class="form-label">Niche</label><select class="form-select" id="prodNiche" onchange="onNicheChange()"></select></div><div class="form-group"><label class="form-label">Location</label><input class="form-input" id="prodLocation" placeholder="e.g. Alanya, Hull, Cambridge"></div><div class="form-group"><label class="form-label">Issue #</label><input class="form-input" id="prodIssue" type="number" placeholder="1" min="1"></div><div class="form-group"><label class="form-label">Country</label><input class="form-input" id="prodCountry" list="countrySuggestions" placeholder="e.g. UK, Spain, Turkey, UAE"><datalist id="countrySuggestions"><option value="UK"><option value="US"><option value="Canada"><option value="Australia"><option value="Spain"><option value="Portugal"><option value="Turkey"><option value="UAE"><option value="Greece"><option value="Italy"><option value="France"></datalist></div></div><div class="form-row"><div class="form-group"><label class="form-label">Previous Issue Outro / Continuity</label><textarea class="form-textarea" id="prodOutro" placeholder="Paste last issue's Next Week section or previous issue outro..."></textarea></div><div class="form-group"><label class="form-label">Issue Memory: Topics Already Covered</label><textarea class="form-textarea" id="memoryCovered" placeholder="Topics, places, experts, activations already used. The prompt will tell AI to avoid repeating unless following up."></textarea></div></div><div class="form-row"><div class="form-group"><label class="form-label">Teased Topics To Follow Up This Issue</label><textarea class="form-textarea" id="memoryTeased" placeholder="What last issue promised for this issue. Example: boat trips, quieter stays, airport transfers."></textarea></div><div class="form-group"><label class="form-label">Do Not Repeat / Avoid This Week</label><textarea class="form-textarea" id="memoryAvoid" placeholder="Overused angles, places, words, activations or hooks to avoid."></textarea></div></div><div class="btn-group"><button class="btn btn-primary" onclick="generateFramework()">⚡ Generate Framework</button><button class="btn btn-amber" onclick="prefillDemo()">✨ Apply Demo To Empty Fields</button><button class="btn btn-secondary" onclick="resetDemo()">↺ Reset Demo Fields</button><button class="btn btn-secondary" onclick="clearInputs(false)">Clear Inputs</button></div></div><div id="frameworkArea" style="display:none"><div class="card"><h2 id="frameworkTitle">Section Framework</h2><p class="subtitle" id="frameworkSub"></p><div id="frameworkSections"></div></div><div class="input-sheet"><div class="input-sheet-header"><h3>📝 Content Input Sheet</h3><span>v2.3</span></div><div class="input-sheet-body"><p style="font-size:13px;color:#94a3b8;margin-bottom:20px;line-height:1.6">Fill what you have. Empty expert/activation inputs become placeholders in the prompt, so demo issues can still be created. Real issues should use real notes, sources or partner inputs.</p><div class="input-section"><div class="input-section-title">🔥 Angle Engine — Required</div><div class="input-section-desc">This stops the issue becoming generic. Every issue needs tension, visible reality and reader involvement.</div><div class="form-row"><div class="form-group"><label class="form-label">Main Theme</label><input class="form-input" id="angleTheme" placeholder="e.g. Worth it vs overpriced"></div><div class="form-group"><label class="form-label">Tension / Debate</label><input class="form-input" id="angleTension" placeholder="e.g. Tourists want ease; locals want the area to stay liveable"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Local Controversy / Friction</label><textarea class="form-textarea" id="angleControversy" placeholder="Tourism tax, rising prices, airport queues, rent pressure, service delays..."></textarea></div><div class="form-group"><label class="form-label">Visible Reality On The Ground</label><textarea class="form-textarea" id="angleReality" placeholder="Show what it looks like: queues, full tables, pricing, waiting times, parking, reader behaviour..."></textarea></div></div><div class="form-row"><div class="form-group"><label class="form-label">Reader Questions / Polls</label><textarea class="form-textarea" id="angleQuestions" placeholder="Worth it or overpriced? Would you stay central or quieter? What should we test next?"></textarea></div><div class="form-group"><label class="form-label">Banned / Weak Language</label><textarea class="form-textarea" id="bannedWords">quietly, chaos, curated experience, hidden gem unless specific, vibrant, premium, arguably, some say, in many ways, must-visit, unforgettable, something for everyone</textarea></div></div></div><div class="input-section"><div class="input-section-title">🧠 Issue Memory & Continuity</div><div class="input-section-desc">Use this to stop repetition and follow through on promises from the previous issue.</div><div id="memorySummary" class="prompt-preview" style="display:block;max-height:160px;color:#cbd5e1"></div></div><div class="input-section"><div class="input-section-title">👔 Expert Partner Inputs</div><div class="input-section-desc">Give each expert a direct warning, useful tip, and quotable line. Real partner names are optional.</div><div id="expertInputCards"></div></div><div class="input-section"><div class="input-section-title">⚡ Activation Partner Inputs</div><div class="input-section-desc">Activations should be the main example inside the story, not a small mention. Add honest angle, downside and reader value.</div><div id="activationInputCards"></div></div><div class="input-section"><div class="input-section-title" id="localDataTitle">📊 Local Data & Market Stats</div><div class="input-section-desc" id="localDataDesc">Real numbers make the newsletter credible. Paste relevant local data, useful facts or reality checks.</div><div class="form-group"><label class="form-label" id="statsLabel">Market Statistics / Useful Facts</label><textarea class="form-textarea" id="inputMarketStats" placeholder=""></textarea></div><div class="form-group"><label class="form-label" id="notableLabel">Notable Transactions / Data Points / Local Signals</label><textarea class="form-textarea" id="inputNotableSales" placeholder=""></textarea></div></div><div class="input-section"><div class="input-section-title" id="placeTitle">🏘️ Street / Area / Spotlight of the Week</div><div class="input-section-desc" id="placeDesc">A specific place, street, venue, area or feature to highlight.</div><div class="form-row"><div class="form-group"><label class="form-label">Name</label><input class="form-input" id="inputStreetName" placeholder=""></div><div class="form-group"><label class="form-label">Why it's interesting</label><input class="form-input" id="inputStreetWhy" placeholder=""></div></div><div class="form-group"><label class="form-label">Details & Data</label><textarea class="form-textarea" id="inputStreetDetails" placeholder=""></textarea></div></div><div class="input-section"><div class="input-section-title" id="countryNewsTitle">📰 Country News & Regulatory Updates</div><div class="input-section-desc" id="countryNewsDesc">National or country-specific rules, costs, regulations or timely updates.</div><div class="form-group"><label class="form-label" id="countryNewsLabel">Country News & Updates</label><textarea class="form-textarea" id="inputCountryNews" placeholder=""></textarea></div></div><div class="input-section"><div class="input-section-title">🎪 Community & Events</div><div class="input-section-desc">Events, community happenings, local dates, seasonal activities or reader-submission prompts.</div><textarea class="form-textarea" id="inputCommunity" placeholder=""></textarea></div><div class="input-section"><div class="input-section-title">📌 Additional Notes</div><div class="input-section-desc">Anything else the AI must know this week.</div><textarea class="form-textarea" id="inputNotes" placeholder=""></textarea></div></div></div><div class="card"><h2>Monetisation Readiness</h2><p class="subtitle">This is a guide, not a final quality score. It checks whether the issue has enough expert/activation material to be commercially visible.</p><div class="score-grid" id="scoreGrid"></div><div id="validationWarnings" class="prompt-preview" style="display:none;max-height:220px;color:#fde68a;border-color:#92400e;background:#1f1303"></div></div><div class="card"><h2>Generate & Copy Outputs</h2><p class="subtitle">Main workflow: copy the AI prompt, paste into GPT, then save issue memory after final edit.</p><div class="btn-group"><button class="btn btn-primary" onclick="copyAIPrompt()">🤖 Copy AI Prompt</button><button class="btn btn-secondary" onclick="previewAIPrompt()">👀 Preview Prompt</button><button class="btn btn-secondary" onclick="copyRawFramework()">📋 Copy Raw Framework</button><button class="btn btn-success" onclick="saveDraftLocal()">💾 Save Local Draft</button></div><div id="promptPreview" class="prompt-preview" style="display:none"></div></div><div class="card"><h2>Saved Local Drafts</h2><p class="subtitle">Local browser save for testing. Netlify Blob saving can be reconnected after Issue Producer is locked.</p><div class="btn-group"><button class="btn btn-secondary" onclick="loadDraftsLocal()">Load Saved Drafts</button><button class="btn btn-danger" onclick="clearDraftsLocal()">Clear Local Drafts</button></div><div id="savedDraftsPanel" style="margin-top:16px"><div class="empty-state"><p>No drafts loaded yet.</p></div></div></div></div></div>
+<div id="tab-spotlight" class="section">
+  <div class="card">
+    <h2>📍 Spotlight Builder — Internal Production Engine</h2>
+    <p class="subtitle">Build Spotlight issues, social posts, commercial maps, proof packs, SEO data and issue memory from one structured input form.</p>
+    <div class="philosophy-box" style="margin-top:16px">
+      <h3>Recommended Workflow</h3>
+      <p><strong>1.</strong> Load publication profile → <strong>2.</strong> Add issue number/date, story signals, local data and partner updates → <strong>3.</strong> Generate Newsletter Prompt first → <strong>4.</strong> Finalise/edit the issue → <strong>5.</strong> Generate Social Pack → <strong>6.</strong> Generate Commercial Map → <strong>7.</strong> Generate Proof Pack → <strong>8.</strong> Generate SEO + Memory → <strong>9.</strong> Save draft / copy rows into sheets.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Step 1 — Load Publication Profile</h2>
+    <p class="subtitle">Start here. Load the standard profile for a live Spotlight publication, then add this week’s story signals and issue memory.</p>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="loadSpotlightPreset('pbs')">Step 1: Load PBS Profile</button>
+      <button class="btn btn-primary" onclick="loadSpotlightPreset('cbs')">Step 1: Load CBS Profile</button>
+      <button class="btn btn-primary" onclick="loadSpotlightPreset('ns')">Step 1: Load Norfolk Profile</button>
+      <button class="btn btn-secondary" onclick="loadSpotlightPreset('blank')">Blank New Spotlight</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>1. Publication Setup</h2>
+    <p class="subtitle">Set the publication, issue and local voice.</p>
+    <div class="form-row-4">
+      <div class="form-group"><label class="form-label">Publication Name</label><input class="form-input" id="spotPubName" placeholder="e.g. Peterborough Spotlight"></div>
+      <div class="form-group"><label class="form-label">Coverage Area</label><input class="form-input" id="spotCoverage" placeholder="e.g. Peterborough / Cambridgeshire / Norfolk"></div>
+      <div class="form-group"><label class="form-label">Issue #</label><input class="form-input" id="spotIssue" type="number" placeholder="41"></div>
+      <div class="form-group"><label class="form-label">Publish Date</label><input class="form-input" id="spotDate" placeholder="e.g. 18 May 2026"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Tone Profile</label><textarea class="form-textarea" id="spotTone" placeholder="e.g. Punchy, civic, direct, local-pride/frustration energy. Rifle-shot, specific, useful, witty."></textarea></div>
+      <div class="form-group"><label class="form-label">Subscriber / Growth Notes</label><textarea class="form-textarea" id="spotSubs" placeholder="e.g. Around 1,700 subscribers, lead ads running, organic social needs stronger questions."></textarea></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>2. Issue Inputs — Story Signals, Memory & Local Data</h2>
+    <p class="subtitle">This is the main human input area. Add this week’s raw material before generating a live issue.</p>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Main Issue Theme</label><input class="form-input" id="spotTheme" placeholder="e.g. What Peterborough Actually Needs"></div>
+      <div class="form-group"><label class="form-label">Central Local Argument</label><input class="form-input" id="spotArgument" placeholder="e.g. The city does not need another vision; it needs reasons people actually use."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Previous Issue Memory</label><textarea class="form-textarea" id="spotMemory" placeholder="Topics covered, teases, replies, things to avoid repeating."></textarea></div>
+      <div class="form-group"><label class="form-label">Must Include / Avoid</label><textarea class="form-textarea" id="spotMustAvoid" placeholder="Must include topics, warm prospects, live offers, and do-not-repeat notes."></textarea></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">This Week’s Story Signals / Links</label><p class="hint">Paste this week’s raw material here: links, social comments, reader replies, local gripes, roads, venues, costs, screenshots or notes. Aim for 8–15 signals before generating a live issue.</p><textarea class="form-textarea" id="spotSignals" placeholder="Example: MOT fail discussion; city centre Tuesday debate; mortgage renewal pressure; pet-renting replies; venue worth-the-money nominations."></textarea></div>
+      <div class="form-group"><label class="form-label">Specific Local Data / Prices / Places</label><p class="hint">Add the concrete details that stop the issue feeling generic: streets, PE postcodes, rents, bills, venue names, journey times, parking costs, school/service waits.</p><textarea class="form-textarea" id="spotData" placeholder="Roads, streets, villages, prices, rents, bills, journey times, venue names, costs, waits."></textarea></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>3. Partner / Commercial Inputs</h2>
+    <p class="subtitle">Confirmed partners, warm prospects, open categories and placeholder routes.</p>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Confirmed Partners / Live Offers</label><textarea class="form-textarea" id="spotConfirmed" placeholder="e.g. Suzanne / Y-US Lettings — free Renters’ Rights consultation. Raimonda / Smarter Paws Hub — free dog training hub."></textarea></div>
+      <div class="form-group"><label class="form-label">Warm Prospects</label><textarea class="form-textarea" id="spotWarm" placeholder="e.g. Tola / TMacLife trial. Claire / Talk Mortgages contact. Dentist, garage, estate agent, IFA prospects."></textarea></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Desired Authority Categories</label><textarea class="form-textarea" id="spotCategories" placeholder="Estate agent, mortgage adviser, lettings, IFA, accountant, dentist, garage/MOT, physio, pets, heating, nursery, food activations."></textarea></div>
+      <div class="form-group"><label class="form-label">Placeholder Links / Lead Magnets</label><textarea class="form-textarea" id="spotLinks" placeholder="Mortgage checklist, MOT five-minute check, heating checklist, GP app guide, pet hub, Renters’ Rights consultation."></textarea></div>
+    </div>
+    <div class="form-row-3">
+      <div class="form-group"><label class="form-label">Minimum Click Routes</label><input class="form-input" id="spotMinClicks" placeholder="6"></div>
+      <div class="form-group"><label class="form-label">Target Click Routes</label><input class="form-input" id="spotTargetClicks" placeholder="10–20"></div>
+      <div class="form-group"><label class="form-label">Secured Weekly Slots</label><input class="form-input" id="spotWeeklySlots" placeholder="Suzanne, Raimonda, Tola trial, etc."></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>4. Generate Spotlight Outputs</h2>
+    <p class="subtitle">Use the buttons in order. Build the newsletter first, then generate the supporting social, commercial and SEO outputs from the final issue.</p>
+
+    <div class="philosophy-box">
+      <h3>✅ Before Generating</h3>
+      <p>Check these first: issue date · 8–15 story signals · specific local places/prices/data · partner updates · previous issue replies/comments · must-avoid repeats.</p>
+    </div>
+    <div id="spotlightSignalWarning" class="prompt-preview" style="display:none;max-height:120px;color:#fde68a;border-color:#92400e;background:#1f1303"></div>
+
+    <div class="input-section" style="border-bottom:1px solid #334155;margin-top:18px">
+      <div class="input-section-title">Step 2 — Build Newsletter First</div>
+      <div class="input-section-desc">Use this first for normal production. Finalise the issue before creating the post-issue assets.</div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="previewSpotlightOutputPrompt('newsletter')">Step 2: Generate Newsletter Prompt</button>
+      </div>
+    </div>
+
+    <div class="input-section" style="border-bottom:1px solid #334155">
+      <div class="input-section-title">Step 3 — Post-Issue Outputs</div>
+      <div class="input-section-desc">Use these after the newsletter is written or mostly final.</div>
+      <div class="btn-group">
+        <button class="btn btn-amber" onclick="previewSpotlightOutputPrompt('social')">Step 3: Generate Social Pack Prompt</button>
+        <button class="btn btn-amber" onclick="previewSpotlightOutputPrompt('commercial')">Step 4: Generate Commercial Map Prompt</button>
+        <button class="btn btn-amber" onclick="previewSpotlightOutputPrompt('proof')">Step 5: Generate Proof Pack Prompt</button>
+        <button class="btn btn-amber" onclick="previewSpotlightOutputPrompt('seo')">Step 6: Generate SEO + Memory Prompt</button>
+      </div>
+    </div>
+
+    <div class="input-section" style="border-bottom:1px solid #334155">
+      <div class="input-section-title">Optional — Full Package</div>
+      <div class="input-section-desc">Use this for testing or when you want one large all-in-one prompt.</div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="previewSpotlightPrompt()">Optional: Generate Master Full Package Prompt</button>
+        <button class="btn btn-secondary" onclick="copySpotlightPrompt()">Copy Master Prompt</button>
+      </div>
+    </div>
+
+    <div class="input-section" style="border-bottom:none">
+      <div class="input-section-title">Save / Copy</div>
+      <div class="input-section-desc">Copy the current output or save/load local drafts for this browser.</div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="copySpotlightCurrentOutput()">📋 Copy Current Output</button>
+        <button class="btn btn-success" onclick="saveSpotlightDraftLocal()">💾 Save Spotlight Draft</button>
+        <button class="btn btn-secondary" onclick="loadSpotlightDraftsLocal()">Load Spotlight Drafts</button>
+        <button class="btn btn-danger" onclick="clearSpotlightDraftsLocal()">Clear Spotlight Drafts</button>
+      </div>
+    </div>
+    <p class="subtitle" id="spotlightOutputTitle" style="margin-top:12px">Current Output: none yet</p>
+    <div id="spotlightPromptPreview" class="prompt-preview" style="display:none"></div>
+    <div id="spotlightDraftsPanel" style="margin-top:16px"><div class="empty-state"><p>No Spotlight drafts loaded yet.</p></div></div>
+  </div>
+</div>
+<div id="tab-title" class="section"><div class="card"><h2>🏷 Title Builder</h2><p class="subtitle">Kept from the previous CMS. This area is not the current testing focus.</p><div class="form-row-3"><div class="form-group"><label class="form-label">Niche</label><select class="form-select" id="titleNiche"></select></div><div class="form-group"><label class="form-label">Location</label><input class="form-input" id="titleLocation" placeholder="e.g. Peterborough"></div><div class="form-group"><label class="form-label">Country</label><input class="form-input" id="titleCountry" placeholder="e.g. UK"></div></div><button class="btn btn-primary" onclick="generateSpec()">Generate Specification</button><div id="specOutput" class="prompt-preview" style="display:none;color:#cbd5e1"></div></div></div>
+<div id="tab-intel" class="section"><div class="card"><h2>🧠 Partner Intelligence</h2><p class="subtitle">Shows expert and activation map by niche.</p><div class="form-group"><label class="form-label">Niche</label><select class="form-select" id="intelNiche" onchange="showIntel()"></select></div><div id="intelOutput"><div class="empty-state"><p>Select a niche to view roles, activation slots and sales angle.</p></div></div></div></div>
+<div id="tab-pitch" class="section"><div class="card"><h2>📊 Pitch Tracker</h2><p class="subtitle">Local browser tracker for quick testing. Keep your main pipeline in your preferred CRM/Sheet for now.</p><div class="form-row-4"><div class="form-group"><label class="form-label">Business</label><input class="form-input" id="pitchBusiness"></div><div class="form-group"><label class="form-label">Contact</label><input class="form-input" id="pitchContact"></div><div class="form-group"><label class="form-label">Niche</label><select class="form-select" id="pitchNiche"></select></div><div class="form-group"><label class="form-label">Type</label><select class="form-select" id="pitchType"><option>Expert</option><option>Activation</option></select></div></div><div class="btn-group"><button class="btn btn-success" onclick="addPitch()">+ Add Prospect</button></div><div id="pitchOutput" class="prompt-preview" style="display:none;color:#cbd5e1"></div></div></div>
+<div id="tab-social" class="section"><div class="card"><h2>📱 Social Engine</h2><p class="subtitle">Simple 7-day social starter. Full social upgrade comes after Issue Producer is locked.</p><div class="form-row-4"><div class="form-group"><label class="form-label">Niche</label><select class="form-select" id="socialNiche"></select></div><div class="form-group"><label class="form-label">Location</label><input class="form-input" id="socialLocation"></div><div class="form-group"><label class="form-label">Issue #</label><input class="form-input" id="socialIssue" type="number"></div><div class="form-group"><label class="form-label">Lead Story</label><input class="form-input" id="socialLead"></div></div><div class="btn-group"><button class="btn btn-primary" onclick="generateSocial()">Generate Social Plan</button><button class="btn btn-secondary" onclick="copySocial()">Copy Social Plan</button></div><div id="socialOutput" class="prompt-preview" style="display:none;color:#cbd5e1"></div></div></div>
+</div><footer>Instant Customer System · Newsletter Empire CMS v2.9 · Local Test Version</footer><div class="copy-toast" id="copyToast">✅ Copied!</div>
+<script>
+const niches=[
+{id:'home-seller',name:'Home Seller Insider',icon:'🏠',experts:6,activationSlots:4,pool:25,sectionCount:15,targetExperts:4,targetActivations:4,expertRoles:['Estate Agent','Mortgage Broker','Conveyancing Solicitor','Surveyor','Lettings / Portfolio Specialist','Planning Consultant'],activationTypes:['Home Stager / Interior Designer','Local Tradesperson / Builder','Moving / Relocation Company','Local Restaurant / Café'],sections:[['Editor\'s Welcome','L','pure','Welcome readers, issue highlights'],['Market Snapshot','L','expert','Local sold prices, price tension, buyer mood','Estate Agent'],['Mortgage & Affordability Update','C','expert','Rates, affordability, buyer reality','Mortgage Broker'],['Street of the Week','L','pure','Specific street or postcode feature'],['Selling Psychology','G','pure','What sellers misunderstand'],['Legal Steps Explained','C','expert','Conveyancing and process','Conveyancing Solicitor'],['Home Presentation Guide','G','activation','Practical staging or photo-prep feature','Home Stager / Interior Designer'],['Local Trades Spotlight','L','activation','Useful local works, fixes or upgrades','Local Tradesperson / Builder'],['Survey & Structural Insight','G','expert','Survey issues and buyer warnings','Surveyor'],['Moving & Relocation','L','activation','Packing, logistics, relocation guide','Moving / Relocation Company'],['Lettings & Investment Angle','C','expert','Sell vs let decision','Lettings / Portfolio Specialist'],['Planning & Development Watch','L','expert','Local planning/development','Planning Consultant'],['Local Life Feature','L','activation','Lifestyle venue or local living feature','Local Restaurant / Café'],['Community Noticeboard','L','pure','Events, local updates'],['Next Week Preview','G','pure','Tease next issue']]},
+{id:'investor',name:'Property Investor Insider',icon:'📊',experts:8,activationSlots:3,pool:20,sectionCount:14,targetExperts:5,targetActivations:3,expertRoles:['Mortgage Broker','Estate Agent','Tax Specialist','Lettings Manager','Property Surveyor','Financial Planner','Portfolio Strategist','Legal Adviser'],activationTypes:['Property Developer','Renovation Company','Investment Platform'],sections:[['Editor\'s Welcome','L','pure','Market mood and issue highlights'],['Market Data & Trends','L','expert','Yields, pricing, demand','Estate Agent'],['Finance & Mortgage Watch','C','expert','BTL rates and lending','Mortgage Broker'],['Tax & Structure','C','expert','Tax and ownership routes','Tax Specialist'],['Lettings Market Update','L','expert','Rent demand and voids','Lettings Manager'],['Deal of the Week','L','pure','Worth it or red flag deal'],['Survey & Due Diligence','G','expert','Pre-purchase checks','Property Surveyor'],['Wealth Building Column','G','expert','Long-term investing','Financial Planner'],['Portfolio Strategy','G','expert','Scaling/refinancing','Portfolio Strategist'],['Legal & Compliance','C','expert','Landlord obligations','Legal Adviser'],['Development Spotlight','L','activation','Development feature','Property Developer'],['Renovation & Value-Add','G','activation','Refurb ROI','Renovation Company'],['Investment Tools & Platforms','G','activation','Useful tools/platforms','Investment Platform'],['Next Week Preview','G','pure','Tease next issue']]},
+{id:'renter',name:'Renter Insider',icon:'🔑',experts:4,activationSlots:3,pool:14,sectionCount:12,targetExperts:3,targetActivations:3,expertRoles:['Lettings Agent','Tenant Rights Adviser','Financial Coach','Relocation Specialist'],activationTypes:['Flatshare / Co-living Service','Home Furnishing Company','Local Service Provider'],sections:[['Editor\'s Welcome','L','pure','Renter mood and issue highlights'],['Rental Market Snapshot','L','expert','Rents, availability, pressure','Lettings Agent'],['Know Your Rights','C','expert','Deposits, repairs, rules','Tenant Rights Adviser'],['Budgeting & Money Tips','G','expert','Renter money reality','Financial Coach'],['Area Guide','L','pure','Where it works and where it doesn\'t'],['Moving & Relocation','L','expert','Moving tips','Relocation Specialist'],['Flatshare & Community','L','activation','Flatshare/co-living feature','Flatshare / Co-living Service'],['Home Comforts on a Budget','G','activation','Affordable furnishing','Home Furnishing Company'],['Local Services Spotlight','L','activation','Useful local service','Local Service Provider'],['Renter Life Hacks','G','pure','Practical tips'],['Community Noticeboard','L','pure','Events, local updates'],['Next Week Preview','G','pure','Tease next issue']]},
+{id:'food',name:'Taste Trail',icon:'🍽',experts:2,activationSlots:4,pool:18,sectionCount:10,targetExperts:2,targetActivations:4,expertRoles:['Food Critic / Writer','Nutritionist'],activationTypes:['Café / Coffee Shop','Bar / Pub','Event Venue','Takeaway / Delivery'],sections:[['Editor\'s Welcome','L','pure','Food mood, issue highlights'],['Restaurant of the Week','L','expert','Honest review with worth-it angle','Food Critic / Writer'],['Healthy Eating Column','G','expert','Nutrition without being boring','Nutritionist'],['New Openings & Closures','L','pure','What changed locally'],['Recipe of the Week','G','pure','Seasonal recipe'],['Café Spotlight','L','activation','Café feature','Café / Coffee Shop'],['Bar & Drinks Feature','L','activation','Bar/pub feature','Bar / Pub'],['Local Food Event','L','activation','Event or venue feature','Event Venue'],['Takeaway Review','L','activation','Honest takeaway test','Takeaway / Delivery'],['Next Week Preview','G','pure','Tease next issue']]},
+{id:'pets',name:'Local Pet Insider',icon:'🐾',experts:4,activationSlots:3,pool:14,sectionCount:10,targetExperts:3,targetActivations:3,expertRoles:['Veterinary Surgeon','Dog Trainer','Pet Nutritionist','Animal Behaviourist'],activationTypes:['Pet Grooming Salon','Pet Shop / Supplies','Pet-Friendly Venue'],sections:[['Editor\'s Welcome','L','pure','Pet community mood'],['Vet\'s Corner','G','expert','Health warning/tip','Veterinary Surgeon'],['Training Tips','G','expert','Training reality','Dog Trainer'],['Pet Nutrition','G','expert','Food advice','Pet Nutritionist'],['Behaviour Q&A','G','expert','Behaviour problems','Animal Behaviourist'],['Local Walks & Parks','L','pure','Dog walks/parks'],['Grooming & Wellness','L','activation','Grooming feature','Pet Grooming Salon'],['Pet Supplies Spotlight','L','activation','Useful product/shop feature','Pet Shop / Supplies'],['Pet-Friendly Places','L','activation','Venue feature','Pet-Friendly Venue'],['Next Week Preview','G','pure','Tease next issue']]},
+{id:'dental',name:'Smile Dentist News',icon:'🦷',experts:4,activationSlots:2,pool:14,sectionCount:8,targetExperts:3,targetActivations:2,expertRoles:['General Dentist','Orthodontist','Dental Hygienist','Cosmetic Dentist'],activationTypes:['Dental Product / Brand','Wellness / Aesthetics Clinic'],sections:[['Editor\'s Welcome','G','pure','Dental health opener'],['Dental Health Column','G','expert','Prevention/check-up advice','General Dentist'],['Straight Talk — Orthodontics','G','expert','Aligners/braces','Orthodontist'],['Hygiene Corner','G','expert','Gum health and hygiene','Dental Hygienist'],['Smile Makeover Feature','G','expert','Cosmetic dentistry','Cosmetic Dentist'],['Patient Stories','G','pure','Anonymised journey'],['Product & Practice Spotlight','L','activation','Product/technology feature','Dental Product / Brand'],['Wellness Feature','G','activation','Wellness/aesthetics angle','Wellness / Aesthetics Clinic']]},
+{id:'money',name:'Smart Money News',icon:'💰',experts:7,activationSlots:1,pool:10,sectionCount:10,targetExperts:5,targetActivations:1,expertRoles:['Independent Financial Adviser','Wealth Planner','Tax Specialist','Chartered Accountant','Pension Adviser','Business Finance Broker','Estate Planner'],activationTypes:['Financial Product / Service'],sections:[['Editor\'s Welcome','G','pure','Money mood'],['Market Commentary','G','expert','Markets and economy','Independent Financial Adviser'],['Wealth Building','G','expert','Strategy and compounding','Wealth Planner'],['Tax Watch','C','expert','Allowances and tax changes','Tax Specialist'],['Business Finance','G','expert','Funding/cashflow','Business Finance Broker'],['Accounting & Compliance','C','expert','Compliance and filings','Chartered Accountant'],['Pension & Retirement','C','expert','Pension planning','Pension Adviser'],['Estate & Legacy Planning','C','expert','Wills/trusts/IHT','Estate Planner'],['Financial Tools & Products','G','activation','Tool/product feature','Financial Product / Service'],['Next Week Preview','G','pure','Tease next issue']]},
+{id:'travel',name:'Destination Spotlight',icon:'☀️',experts:6,activationSlots:6,pool:18,sectionCount:10,targetExperts:4,targetActivations:4,expertRoles:['Travel Writer','Hotel / Stay Expert','Tour & Experience Expert','Travel Insurance Specialist','Flight & Booking Expert','Property / Relocation Expert'],activationTypes:['Featured Area / Beach / Town','Hotel / Villa / Stay','Tour / Excursion','Attraction / Family Day Out','Car Hire / Transfers','Restaurant / Bar / Beach Club'],sections:[['Editor\'s Wave','G','pure','Welcome, issue highlights, sharp local mood, reader question'],['Destination Feature','L','expert','Area, beach or town feature with clear worth-it-or-not angle','Travel Writer'],['Stay Review','L','expert-activation','Hotel, villa, resort or stay-area review','Hotel / Stay Expert','Hotel / Villa / Stay'],['Experiences People Actually Talk About','L','expert-activation','Tours, trips, queues, costs and weather reality','Tour & Experience Expert','Tour / Excursion'],['Is It Worth It?','L','activation','High-engagement attraction with positive and negative reader angles','Attraction / Family Day Out'],['Smart Travel','G','expert-activation','Flights, insurance, car hire, transfers and common money mistakes','Flight & Booking Expert + Travel Insurance Specialist','Car Hire / Transfers'],['Local Gem / Area Feature','L','activation','Specific place that gives real feel for destination','Featured Area / Beach / Town'],['Food & Nightlife','L','activation','Restaurant, bar, beach club or nightlife feature','Restaurant / Bar / Beach Club'],['The Real Bits','L','expert','Quick hits: property, expat reality, local debate, saver tip, cultural note','Property / Relocation Expert'],['Photo + Next Week Preview','G','pure','Reader photo prompt and strong next-week tease']]}
+];
+const demoData={travel:{loc:'Alanya',country:'Turkey',theme:'Worth it vs overpriced',tension:'Tourists want ease; locals want the area to stay liveable',controversy:'Tourism tax, rising food prices, airport taxi queues, and family attractions that delight children but make parents wince at the bill.',reality:'In peak weeks, restaurants fill early, taxi queues stretch outside arrivals, and the best beach spots are taken before late risers have finished breakfast.',questions:'Worth it or overpriced? Would you stay central or somewhere quieter? What should we test next?',stats:'Gazipaşa-Alanya Airport is much closer than Antalya for many Alanya stays. Peak-season transfer timing, taxi queues and beach timing should shape the issue.',place:['Kleopatra Beach','Classic Alanya beach with castle views, but peak timing changes the experience','Golden sand, Damlataş nearby, best early or later in the day.'],countryNews:'Turkey travel costs, accommodation tax changes, airport transfer reality and health/insurance rules for UK visitors.',community:'Reader photo prompt: send the Alanya moment that felt worth it or overpriced.',notes:'Make expert voices sound human. Make activations ownable but not advertorial.'},
+'home-seller':{loc:'Hull',country:'UK',theme:'Selling fast vs sitting stale',tension:'Sellers want top price; buyers want proof the home is worth it',controversy:'Overpricing, mortgage affordability, down valuations and homes sitting after optimistic launch prices.',reality:'Some homes get strong interest quickly; others need reductions after awkward first weeks online.',questions:'Would you price high and negotiate, or price sharply and move? What street should we test next?',stats:'Add local sold prices, listing reductions, time on market and mortgage affordability data.',place:['Princes Avenue','Popular local area with lifestyle appeal and mixed buyer demand','Use recent listings, local amenities and buyer mood.'],countryNews:'UK mortgage rates, stamp duty, conveyancing delays, EPC or planning updates.',community:'Local moving dates, school catchments, events that affect viewings.',notes:'Make it useful for sellers without sounding like estate agent copy.'}}
+function $(id){return document.getElementById(id)}function getNiche(id){return niches.find(n=>n.id===id)}function selectedNiche(){return getNiche($('prodNiche').value)}function switchTab(tab){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));$('tab-'+tab).classList.add('active');document.querySelectorAll('.tab')[['command','producer','spotlight','title','intel','pitch','social'].indexOf(tab)].classList.add('active')}function jumpToProducer(id){switchTab('producer');$('prodNiche').value=id;onNicheChange();generateFramework()}function init(){renderNicheGrid();populateDropdowns();onNicheChange();loadDraftsLocal(false)}function populateDropdowns(){['prodNiche','titleNiche','intelNiche','pitchNiche','socialNiche'].forEach(id=>{if($(id))$(id).innerHTML=niches.map(n=>`<option value="${n.id}">${n.icon} ${n.name}</option>`).join('')})}function renderNicheGrid(){$('nicheGrid').innerHTML=niches.map(n=>`<div class="niche-card" onclick="jumpToProducer('${n.id}')"><div class="niche-icon">${n.icon}</div><div class="niche-name">${n.name}</div><div class="niche-stats"><span class="niche-stat">E: ${n.experts}</span><span class="niche-stat">Pool: ${n.pool}</span><span class="niche-stat">${n.sectionCount} sections</span><span class="niche-stat">${n.activationSlots} activations</span></div></div>`).join('')}function onNicheChange(){updateDynamicLabels();if($('frameworkArea').style.display!=='none')generateFramework()}function updateDynamicLabels(){const n=selectedNiche();if(!n)return;const country=$('prodCountry').value||'Country';if(n.id==='travel'){$('localDataTitle').textContent='📊 Local Reality & Useful Facts';$('localDataDesc').textContent='Travel-specific facts: prices, queues, timings, airport routes, ferry times, local rules and real-life friction.';$('statsLabel').textContent='Travel Costs / Timings / Useful Facts';$('notableLabel').textContent='Notable Local Signals';$('placeTitle').textContent='📍 Place / Area / Experience of the Week';$('placeDesc').textContent='A beach, town, harbour, hotel area, attraction or experience to spotlight.';$('countryNewsTitle').textContent='📰 Travel Rules, Costs & Local Updates';$('countryNewsDesc').textContent='Country-specific travel rules, visitor costs, tax, driving, health or local updates.';$('countryNewsLabel').textContent=(country||'Country')+' Travel Updates'}else if(n.id==='food'){$('localDataTitle').textContent='📊 Food Scene Reality & Useful Facts';$('localDataDesc').textContent='Prices, opening hours, booking friction, menu changes, reader complaints, venue signals.';$('statsLabel').textContent='Food / Venue Facts';$('notableLabel').textContent='Openings / Closures / Menu Changes';$('placeTitle').textContent='📍 Venue / Area / Food Trail of the Week';$('placeDesc').textContent='A restaurant, café, pub, food area or local trail.';$('countryNewsTitle').textContent='📰 Food, Hospitality & Cost Updates';$('countryNewsLabel').textContent=(country||'Country')+' Hospitality Updates'}else if(n.id==='pets'){$('localDataTitle').textContent='📊 Pet Owner Reality & Useful Facts';$('localDataDesc').textContent='Vet access, seasonal risks, local walk conditions, costs, rules, pet-friendly places.';$('statsLabel').textContent='Pet Owner Facts';$('notableLabel').textContent='Local Pet Signals';$('placeTitle').textContent='📍 Walk / Park / Pet Place of the Week';$('placeDesc').textContent='A park, walk, dog-friendly café, groomer, shop or rescue angle.';$('countryNewsTitle').textContent='📰 Pet Rules, Health & Local Updates';$('countryNewsLabel').textContent=(country||'Country')+' Pet Updates'}else{$('localDataTitle').textContent='📊 Local Data & Market Stats';$('localDataDesc').textContent='Real numbers make the newsletter credible. Paste market trends, prices, local stats or concrete facts.';$('statsLabel').textContent='Market Statistics';$('notableLabel').textContent='Notable Sales / Transactions / Data Points';$('placeTitle').textContent='🏘️ Street / Area / Spotlight of the Week';$('placeDesc').textContent='A specific street, postcode, neighbourhood or local feature.';$('countryNewsTitle').textContent='📰 Country News & Regulatory Updates';$('countryNewsDesc').textContent='National news relevant to this niche — rates, tax, regulation, government schemes.';$('countryNewsLabel').textContent=(country||'Country')+' News & Updates'}}function generateFramework(){const n=selectedNiche();if(!n){showToast('Select niche');return}$('frameworkArea').style.display='block';const loc=$('prodLocation').value||'Location', issue=$('prodIssue').value||'1', country=$('prodCountry').value||'Country';$('frameworkTitle').textContent=`${n.icon} ${n.name} — ${loc} — Issue #${issue}`;$('frameworkSub').textContent=`Country: ${country} | ${n.sectionCount} sections | ${n.experts} expert positions | ${n.activationSlots} activation slots | Target: ${n.targetExperts}+ experts / ${n.targetActivations}+ activations`;$('frameworkSections').innerHTML=n.sections.map((s,i)=>{const type=s[2];const numClass=type==='pure'?'num-pure':type.includes('expert')?'num-expert':'num-activation';const layerClass=s[1]==='G'?'layer-g':s[1]==='C'?'layer-c':'layer-l';let role='';if(type==='pure')role='<span class="role-badge role-pure">Pure Audience — No Monetisation</span>';if(type==='expert')role=`<span class="role-badge role-expert">Expert: ${s[4]}</span>`;if(type==='activation')role=`<span class="role-badge role-activation">Activation: ${s[4]}</span>`;if(type==='expert-activation')role=`<span class="role-badge role-expert">Expert: ${s[4]}</span> <span class="role-badge role-activation">Activation: ${s[5]}</span>`;return `<div class="section-item"><div class="section-num ${numClass}">${i+1}</div><div class="section-info"><h4>${s[0]} <span class="layer-tag ${layerClass}">${s[1]}</span></h4><p>${s[3]}</p>${role}</div></div>`}).join('');buildExpertInputCards(n);buildActivationInputCards(n);updateDynamicLabels();updateMemorySummary();updateScore()}function buildExpertInputCards(n){$('expertInputCards').innerHTML=n.expertRoles.map((role,i)=>`<div class="partner-input-card"><h4>👔 ${role}</h4><div class="hint">Add a warning, useful tip and quotable line. For named partners, include business/contact only if verified.</div><div class="form-row"><div class="form-group"><label class="form-label">Partner Business / Name</label><input class="form-input expert-name" data-role="${role}" placeholder="Optional"></div><div class="form-group"><label class="form-label">Contact / Voice</label><input class="form-input expert-contact" data-role="${role}" placeholder="Optional"></div></div><div class="form-group"><label class="form-label">Weekly Content / Talking Points</label><textarea class="form-textarea expert-content" data-role="${role}" oninput="updateScore()" placeholder="${role}: one direct warning, one useful tip, one quotable line..."></textarea></div></div>`).join('')}function buildActivationInputCards(n){$('activationInputCards').innerHTML=n.activationTypes.map(type=>`<div class="partner-input-card"><h4>⚡ ${type}</h4><div class="hint">Write as honest editorial. Include why readers care, what works, what might annoy people, and how a business could own this slot.</div><div class="form-row"><div class="form-group"><label class="form-label">Business / Example Name</label><input class="form-input activation-name" data-type="${type}" placeholder="Optional"></div><div class="form-group"><label class="form-label">Contact / Slot Owner</label><input class="form-input activation-contact" data-type="${type}" placeholder="Optional"></div></div><div class="form-group"><label class="form-label">Business Story / Honest Angle / Reader Value</label><textarea class="form-textarea activation-content" data-type="${type}" oninput="updateScore()" placeholder="${type}: why readers care, what works, downside, reader question..."></textarea></div></div>`).join('')}function updateMemorySummary(){if(!$('memorySummary'))return;$('memorySummary').textContent=`Previous outro: ${$('prodOutro').value?'included':'none'}\nCovered topics: ${$('memoryCovered').value?'included':'none'}\nTeased topics: ${$('memoryTeased').value?'included':'none'}\nAvoid/repetition notes: ${$('memoryAvoid').value?'included':'none'}`}['prodOutro','memoryCovered','memoryTeased','memoryAvoid'].forEach(id=>document.addEventListener('input',e=>{if(e.target&&e.target.id===id)updateMemorySummary()}));function countFilled(sel){return Array.from(document.querySelectorAll(sel)).filter(x=>x.value.trim()).length}function updateScore(){const n=selectedNiche();if(!n||!$('scoreGrid'))return;const e=countFilled('.expert-content'),a=countFilled('.activation-content');const angle=['angleTheme','angleTension','angleControversy','angleReality','angleQuestions'].filter(id=>$(id)&&$(id).value.trim()).length;const memory=['prodOutro','memoryCovered','memoryTeased','memoryAvoid'].filter(id=>$(id)&&$(id).value.trim()).length;const cls=(ok,warn)=>ok?'score-good':warn?'score-warn':'score-bad';$('scoreGrid').innerHTML=`<div class="score-card"><div>Experts</div><strong class="${cls(e>=n.targetExperts,e>0)}">${e}/${n.targetExperts}</strong><p class="subtitle">filled inputs</p></div><div class="score-card"><div>Activations</div><strong class="${cls(a>=n.targetActivations,a>0)}">${a}/${n.targetActivations}</strong><p class="subtitle">filled inputs</p></div><div class="score-card"><div>Angle Engine</div><strong class="${cls(angle>=4,angle>=2)}">${angle}/5</strong><p class="subtitle">core fields</p></div><div class="score-card"><div>Memory</div><strong class="${cls(memory>=2,memory>=1)}">${memory}/4</strong><p class="subtitle">continuity fields</p></div>`;updateWarnings()}document.addEventListener('input',e=>{if(e.target)updateScore()});function fieldIsBlank(el){return !el || !String(el.value||'').trim() || String(el.value||'').trim().toLowerCase()==='none provided'}
+function fillDemoField(id,value,force=false,counter){const el=$(id);if(!el||value==null)return;if(force||fieldIsBlank(el)){el.value=value; if(counter)counter.filled++}else{if(counter)counter.skipped++}}
+function setIfEmpty(id,value,counter){
+  const el=$(id);
+  if(!el || value==null) return;
+  if(!String(el.value||'').trim()){
+    el.value=value;
+    if(counter) counter.filled++;
+  } else {
+    if(counter) counter.kept++;
+  }
+}
+function setAlways(id,value,counter){
+  const el=$(id);
+  if(!el || value==null) return;
+  el.value=value;
+  if(counter) counter.reset++;
+}
+function ensureFrameworkForPrefill(n){
+  // Always rebuild the visible section/expert/activation cards before applying demo data.
+  // Preserve user-entered setup + memory + angle/local fields through the rebuild.
+  const keep={};
+  ['prodLocation','prodCountry','prodIssue','prodOutro','memoryCovered','memoryTeased','memoryAvoid','angleTheme','angleTension','angleControversy','angleReality','angleQuestions','inputMarketStats','inputNotableSales','inputStreetName','inputStreetWhy','inputStreetDetails','inputCountryNews','inputCommunity','inputNotes','bannedWords'].forEach(id=>{if($(id))keep[id]=$(id).value});
+  generateFramework();
+  Object.keys(keep).forEach(id=>{if($(id))$(id).value=keep[id]});
+}
+function prefillDemo(){
+  const n=selectedNiche();
+  if(!n){showToast('Select a niche first');return}
+  const d=demoData[n.id]||{loc:'Peterborough',country:'UK',issue:'1',theme:'Worth it vs reality check',tension:'Readers want simple answers; reality is messier',controversy:'Pricing, trust, delays, quality and local frustration.',reality:'Readers see the practical effects: queues, costs, missed expectations, delays or decisions that cost money.',questions:'Worth it or overpriced? What would you do? What should we test next?',stats:'Add niche-specific figures or real-world facts here.',place:['Example area','Useful because it reveals the wider issue','Add concrete details and local signals.'],countryNews:'Add national/country-specific updates relevant to this niche.',community:'Add events or reader prompt.',notes:'Keep expert voices human and activations commercially visible.'};
+  const counter={filled:0,kept:0,reset:0};
+
+  // Apply Demo to Empty Fields ONLY. It should never wipe your typed issue/location/memory/place choices.
+  ensureFrameworkForPrefill(n);
+  setIfEmpty('prodLocation',d.loc,counter);
+  setIfEmpty('prodCountry',d.country,counter);
+  setIfEmpty('prodIssue',d.issue||'1',counter);
+  setIfEmpty('angleTheme',d.theme,counter);
+  setIfEmpty('angleTension',d.tension,counter);
+  setIfEmpty('angleControversy',d.controversy,counter);
+  setIfEmpty('angleReality',d.reality,counter);
+  setIfEmpty('angleQuestions',d.questions,counter);
+  setIfEmpty('inputMarketStats',d.stats,counter);
+  setIfEmpty('inputStreetName',d.place[0],counter);
+  setIfEmpty('inputStreetWhy',d.place[1],counter);
+  setIfEmpty('inputStreetDetails',d.place[2],counter);
+  setIfEmpty('inputCountryNews',d.countryNews,counter);
+  setIfEmpty('inputCommunity',d.community,counter);
+  setIfEmpty('inputNotes',d.notes,counter);
+
+  document.querySelectorAll('.expert-content').forEach(x=>{
+    const val=x.dataset.role+': Give one direct warning, one useful tip, and one line readers would quote back.';
+    if(!String(x.value||'').trim()){x.value=val;counter.filled++}else counter.kept++;
+  });
+  document.querySelectorAll('.activation-content').forEach(x=>{
+    const val=x.dataset.type+': Write this as an honest editorial feature. Include why readers care, what works, what might annoy people, and the best reader question to end on.';
+    if(!String(x.value||'').trim()){x.value=val;counter.filled++}else counter.kept++;
+  });
+  updateMemorySummary();
+  updateScore();
+  previewAIPrompt();
+  showToast('Demo applied — '+counter.filled+' blank fields filled, '+counter.kept+' existing fields kept.');
+}
+function resetDemo(){
+  const n=selectedNiche();
+  if(!n){showToast('Select a niche first');return}
+  if(!confirm('Reset demo-managed fields for the selected niche? This overwrites demo fields, but keeps Location, Country, Issue # and memory notes.'))return;
+  const d=demoData[n.id]||{theme:'Worth it vs reality check',tension:'Readers want simple answers; reality is messier',controversy:'Pricing, trust, delays, quality and local frustration.',reality:'Readers see the practical effects: queues, costs, missed expectations, delays or decisions that cost money.',questions:'Worth it or overpriced? What would you do? What should we test next?',stats:'Add niche-specific figures or real-world facts here.',place:['Example area','Useful because it reveals the wider issue','Add concrete details and local signals.'],countryNews:'Add national/country-specific updates relevant to this niche.',community:'Add events or reader prompt.',notes:'Keep expert voices human and activations commercially visible.'};
+  const counter={filled:0,kept:0,reset:0};
+  ensureFrameworkForPrefill(n);
+  // Protected fields deliberately NOT overwritten: prodLocation, prodCountry, prodIssue, prodOutro, memoryCovered, memoryTeased, memoryAvoid.
+  setAlways('angleTheme',d.theme,counter);
+  setAlways('angleTension',d.tension,counter);
+  setAlways('angleControversy',d.controversy,counter);
+  setAlways('angleReality',d.reality,counter);
+  setAlways('angleQuestions',d.questions,counter);
+  setAlways('inputMarketStats',d.stats,counter);
+  setAlways('inputStreetName',d.place[0],counter);
+  setAlways('inputStreetWhy',d.place[1],counter);
+  setAlways('inputStreetDetails',d.place[2],counter);
+  setAlways('inputCountryNews',d.countryNews,counter);
+  setAlways('inputCommunity',d.community,counter);
+  setAlways('inputNotes',d.notes,counter);
+  document.querySelectorAll('.expert-content').forEach(x=>{x.value=x.dataset.role+': Give one direct warning, one useful tip, and one line readers would quote back.';counter.reset++});
+  document.querySelectorAll('.activation-content').forEach(x=>{x.value=x.dataset.type+': Write this as an honest editorial feature. Include why readers care, what works, what might annoy people, and the best reader question to end on.';counter.reset++});
+  updateMemorySummary();
+  updateScore();
+  previewAIPrompt();
+  showToast('Demo reset — '+counter.reset+' demo fields reloaded. Setup and memory kept.');
+}
+function findConflicts(){const warnings=[];const issue=parseInt(($('prodIssue')&&$('prodIssue').value)||'1',10)||1;const covered=($('memoryCovered')&&$('memoryCovered').value.trim())||'';const teased=($('memoryTeased')&&$('memoryTeased').value.trim())||'';const avoid=($('memoryAvoid')&&$('memoryAvoid').value.trim())||'';const place=((($('inputStreetName')&&$('inputStreetName').value)||'')+' '+(($('inputStreetWhy')&&$('inputStreetWhy').value)||'')+' '+(($('inputStreetDetails')&&$('inputStreetDetails').value)||'')).toLowerCase();if(issue>1&&!covered&&!teased)warnings.push('Issue #'+issue+' has no memory/teaser input. Add previous topics or last issue tease so it does not restart like Issue #1.');if(avoid&&place){const words=avoid.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w=>w.length>4&&!['repeat','repeating','feature','main','avoid','again','topic','topics','section','beach'].includes(w));const hit=[...new Set(words.filter(w=>place.includes(w)))];if(hit.length)warnings.push('Conflict: your Place / Area / Experience field appears to include avoid-repeat term(s): '+hit.join(', ')+'. Change the feature or clarify it is a new angle.')}return warnings}function updateWarnings(){const box=$('validationWarnings');if(!box)return;const warnings=findConflicts();if(!warnings.length){box.style.display='none';box.textContent='';return}box.style.display='block';box.textContent='⚠️ Validation checks\n- '+warnings.join('\n- ')}function sectionBriefs(n,loc,country){return n.sections.map((s,i)=>{let role='';if(s[2]==='pure')role='Pure audience section — zero monetisation.';if(s[2]==='expert')role='Partner: '+s[4];if(s[2]==='activation')role='Activation: '+s[4]+' (write as genuine editorial feature, NOT advertising)';if(s[2]==='expert-activation')role='Partner: '+s[4]+'\nActivation: '+s[5]+' (write as genuine editorial feature, NOT advertising)';return `SECTION ${i+1}: ${s[0]} [Layer: ${s[1]} — ${s[1]==='G'?'Global — works everywhere':s[1]==='C'?country+' specific':'Local — '+loc+' specific'}]\nBrief: ${s[3]}\n${role}\nWord count: 150-300 words`}).join('\n\n')}function collectExpertLines(n){return n.expertRoles.map((role,i)=>{const name=document.querySelectorAll('.expert-name')[i]?.value||'';const contact=document.querySelectorAll('.expert-contact')[i]?.value||'';const content=document.querySelectorAll('.expert-content')[i]?.value||`${role}: Give one direct warning, one useful tip, and one line readers would quote back.`;const sec=n.sections.findIndex(s=>String(s[4]||'').includes(role)||String(s[4]||'')===role)+1;return `- ${role} — Section ${sec>0?sec:'?'}${name?' | '+name:''}${contact?' | '+contact:''}\n  INPUT: ${content}`}).join('\n')}function collectActivationLines(n){return n.activationTypes.map((type,i)=>{const name=document.querySelectorAll('.activation-name')[i]?.value||'';const content=document.querySelectorAll('.activation-content')[i]?.value||`${type}: Write this as an honest editorial feature. Include why readers care, what works, what might annoy people, and the best reader question to end on.`;const sec=n.sections.findIndex(s=>String(s[4]||'').includes(type)||String(s[5]||'').includes(type))+1;return `- Slot ${i+1} (Section ${sec>0?sec:'?'}): ${type}${name?' | Example/Business: '+name:''}\n  INPUT: ${content}`}).join('\n')}function generateEnhancedPrompt(){const n=selectedNiche();if(!n)return'';const loc=$('prodLocation').value||'Location',issue=$('prodIssue').value||'1',country=$('prodCountry').value||'Country';let p=`You are the editor of "${n.name} — ${loc}", a weekly editorial newsletter. This is Issue #${issue}. Country: ${country}.\n\n`;p+=`TONE: Warm, authoritative, editorial. Nothing should feel like advertising. Every partner appears naturally within editorial content. Use varied formats across sections — articles, Q&As, tips, quotes, quizzes, lists.\n\n`;p+=`CONTENT LAYERS:\n- Sections marked G: Write universal content (works anywhere)\n- Sections marked C: Write ${country}-specific content (reference ${country} law, tax, regulations or relevant national rules)\n- Sections marked L: Write ${loc}-specific content (real places, local data, businesses, streets, venues, costs or reader realities)\n\n`;const issueNum=parseInt(issue,10)||1;const outroRaw=($('prodOutro').value||'').trim();const coveredRaw=($('memoryCovered').value||'').trim();const teasedRaw=($('memoryTeased').value||'').trim();const avoidRaw=($('memoryAvoid').value||'').trim();const continuityLine=outroRaw || (issueNum>1 && (coveredRaw||teasedRaw) ? 'No full previous outro pasted. Use the covered topics and teased topics below as the continuity record for this issue.' : 'None provided');const avoidLine=avoidRaw || (coveredRaw ? 'Avoid repeating previously covered headline topics as main features unless adding a genuinely new angle.' : 'None provided');p+=`ISSUE MEMORY / CONTINUITY — MUST USE:
+Previous issue outro or continuity notes: ${continuityLine}
+Topics already covered: ${coveredRaw||'None provided'}
+Topics teased for this issue: ${teasedRaw||'None provided'}
+Avoid repeating this week: ${avoidLine}
+Instruction: Follow up on teased topics where provided. Avoid repeating covered topics unless adding a genuinely new angle. If Issue # is greater than 1, make the issue feel like a continuation, not a restart.
+
+`;p+=`ANGLE ENGINE — MUST BE USED:\nMain theme: ${$('angleTheme').value||'Set a clear, practical theme based on the niche'}\nTension / debate: ${$('angleTension').value||'Include a genuine reader/business/local tension'}\nLocal controversy / friction: ${$('angleControversy').value||'Include a realistic friction point, not outrage for its own sake'}\nVisible reality on the ground: ${$('angleReality').value||'Show what readers can see, pay, queue for, avoid, argue about or experience'}\nReader questions / polls to weave in: ${$('angleQuestions').value||'End sections with direct reader prompts'}\n\nEach section must clearly show:\n- what works\n- what does not\n- who it suits\n- who should avoid it\n\n`;p+=`STYLE RULES:\n- Write like a real editor, not a brochure or corporate marketer.\n- Do not use vague labels where visible detail works better. If you mean busy, show the queue, full tables, parking, waiting times or prices.\n- Include light tension, humour, reader prompts and specific examples.\n- Expert voices should sound human and quotable, not like labels. Use phrasing such as "A ${n.name.includes('Destination')?'travel':'local'} expert we spoke to put it bluntly..." where useful.\n- Every activation must feel like genuine editorial but be commercially visible. It should feel like a slot a business could own weekly, not a tiny mention.\n- Do not use internal phrases such as "activation-style", "expert slot", "slot owner", or anything that sounds like a system label in the reader-facing newsletter. Write everything as natural editorial content.\n- Use verified facts only. If a detail cannot be confidently verified, keep the wording general or phrase it cautiously so uncertain information is not presented as fact.\n- Vary how expert voices are introduced. Do not repeat the same phrasing such as "an expert we spoke to" in every section. Use natural variations such as a local guide, stay specialist, booking adviser, relocation adviser, owner, regular, or local voice where appropriate.\n- Avoid repeating the same reader question phrasing across sections. Vary engagement prompts so they feel fresh and natural.\n- Avoid these weak/fluff phrases unless there is a very specific reason: ${$('bannedWords').value}\n- Keep sections tight and focused. Avoid unnecessary filler or repeating the same idea in different wording.\n\n`;p+=`EXPERT PARTNERS TO INTEGRATE:\n${collectExpertLines(n)}\n\n`;p+=`ACTIVATION PARTNERS (rotating editorial features):\nEach activation should feel like the main example inside the story, not a mention. It should be obvious to a business that they could own this slot weekly. These are internal commercial placements, but the reader-facing copy must not say "activation", "activation-style", "partner slot" or similar system language.\n${collectActivationLines(n)}\n\n`;p+=`SUPPORTING LOCAL INPUTS:\n${$('localDataTitle').textContent}: ${$('inputMarketStats').value||'None provided'}\n${$('notableLabel').textContent}: ${$('inputNotableSales').value||'None provided'}\n${$('placeTitle').textContent}: ${$('inputStreetName').value||'None provided'} — ${$('inputStreetWhy').value||''}\nPlace details: ${$('inputStreetDetails').value||'None provided'}\n${$('countryNewsTitle').textContent}: ${$('inputCountryNews').value||'None provided'}\nCommunity & Events: ${$('inputCommunity').value||'None provided'}\nAdditional Notes: ${$('inputNotes').value||'None provided'}\n\n`;p+=`==================================================\nSECTION-BY-SECTION BRIEF:\n==================================================\n\n${sectionBriefs(n,loc,country)}\n\nFINAL INSTRUCTIONS:\n- Write all sections in full.\n- Each section 150-300 words unless the section clearly works better as quick hits.\n- Maintain editorial quality — this is a publication, not a marketing channel.\n- Nothing should read like an advertisement. If it sounds promotional, rewrite it.\n- Do not include internal production labels in the published issue: no "activation-style", "expert slot", "partner slot" or similar terms.\n- Include enough expert and activation visibility that a potential partner can clearly see where they fit, without making it sound like an ad.\n- Use direct, visible detail instead of vague wording.\n- If facts, prices, dates, taxes, distances or rules are not verified, keep them general or flag them for checking rather than stating them as certain.\n\nMONETISATION REQUIREMENTS:\n- Minimum ${n.targetExperts} expert references.\n- Minimum ${n.targetActivations} activation-led editorial features, written without internal labels.\n- At least 2 sections where a business could clearly see themselves as the featured example.\n`;return p}function previewAIPrompt(){const p=generateEnhancedPrompt();$('promptPreview').style.display='block';$('promptPreview').textContent=p;updateScore()}function copyAIPrompt(){const p=generateEnhancedPrompt();navigator.clipboard.writeText(p).then(()=>{previewAIPrompt();showToast('AI prompt copied')})}function copyRawFramework(){const n=selectedNiche();if(!n)return;const txt=n.sections.map((s,i)=>`${i+1}. ${s[0]} [${s[1]}] — ${s[3]}`).join('\n');navigator.clipboard.writeText(txt).then(()=>showToast('Raw framework copied'))}function saveDraftLocal(){const n=selectedNiche();const data={id:'draft_'+Date.now(),savedAt:new Date().toISOString(),niche:$('prodNiche').value,location:$('prodLocation').value,country:$('prodCountry').value,issue:$('prodIssue').value,prompt:generateEnhancedPrompt()};const arr=JSON.parse(localStorage.getItem('cms_v29_drafts')||'[]');arr.unshift(data);localStorage.setItem('cms_v29_drafts',JSON.stringify(arr.slice(0,20)));showToast('Draft saved locally');loadDraftsLocal(false)}function loadDraftsLocal(show=true){const arr=JSON.parse(localStorage.getItem('cms_v29_drafts')||'[]');if(!$('savedDraftsPanel'))return;$('savedDraftsPanel').innerHTML=arr.length?arr.map(d=>`<div class="section-item"><div class="section-info"><h4>${d.location||'Location'} — ${getNiche(d.niche)?.name||d.niche} Issue #${d.issue||''}</h4><p>${d.savedAt}</p></div><button class="btn btn-secondary" onclick="navigator.clipboard.writeText(${JSON.stringify(d.prompt)});showToast('Draft prompt copied')">Copy Prompt</button></div>`).join(''):'<div class="empty-state"><p>No local drafts saved yet.</p></div>';if(show)showToast('Drafts loaded')}function clearDraftsLocal(){if(confirm('Clear local drafts?')){localStorage.removeItem('cms_v29_drafts');loadDraftsLocal(false);showToast('Drafts cleared')}}function clearInputs(all){['prodOutro','memoryCovered','memoryTeased','memoryAvoid','angleTheme','angleTension','angleControversy','angleReality','angleQuestions','inputMarketStats','inputNotableSales','inputStreetName','inputStreetWhy','inputStreetDetails','inputCountryNews','inputCommunity','inputNotes'].forEach(id=>{if($(id))$(id).value=''});document.querySelectorAll('.expert-name,.expert-contact,.expert-content,.activation-name,.activation-contact,.activation-content').forEach(x=>x.value='');if(all){$('prodLocation').value='';$('prodCountry').value='';$('prodIssue').value=''}updateScore();previewAIPrompt()}function setSpotlightValue(id,value){const el=document.getElementById(id);if(el)el.value=value||''}
+function clearSpotlightForm(){['spotPubName','spotCoverage','spotIssue','spotDate','spotTone','spotSubs','spotTheme','spotArgument','spotMemory','spotMustAvoid','spotSignals','spotData','spotConfirmed','spotWarm','spotCategories','spotLinks','spotMinClicks','spotTargetClicks','spotWeeklySlots'].forEach(id=>setSpotlightValue(id,''));const box=document.getElementById('spotlightPromptPreview');if(box){box.style.display='none';box.textContent=''}showToast('Spotlight form cleared')}
+function loadSpotlightPreset(key){
+  if(key==='blank'){clearSpotlightForm();setSpotlightValue('spotMinClicks','6');setSpotlightValue('spotTargetClicks','10–20');return}
+  const profiles={
+    pbs:{
+      pub:'Peterborough Spotlight',coverage:'Peterborough and surrounding areas',issue:'41',date:'',
+      tone:'Punchy, civic, direct, local-pride/frustration energy. Feels like: “Peterborough, what are we actually doing here?” Rifle-shot, specific, useful, witty, slightly cheeky, and written like a switched-on local who has had enough of polite nonsense.',
+      subs:'Around 1,700 subscribers and growing. Lead ads running. Organic social needs sharper questions, stronger debate hooks and more comments/shares. Latest issue route: https://peterboroughspotlight.co.uk/latest Archive: https://peterboroughspotlight.co.uk/archive',
+      theme:'Create this week’s Peterborough argument from the story signals.',
+      argument:'Peterborough does not need vague visions. It needs useful answers, visible outcomes and things local people actually use.',
+      memory:'Use PBS Issue #40 memory. Avoid repeating articles unless clearly a reader follow-up, new angle, updated fact or partner/action continuation. Previous live lanes included MOT traps, city centre, school catchments, Renters’ Rights, Tola/physio, Raimonda/pets, mortgage renewals, salons, planning checks, tax code, afternoon tea, nurseries, community and local finds.',
+      mustAvoid:'Do not sound like local news, council copy, bland regeneration wording or generic “what do you think?” filler. Add more light sections, named places, real lists, specific prices/costs, click routes and sponsor/authority visibility. Include secured weekly presence where natural for Suzanne and Raimonda. Tola may be a £197/month opening visibility trial. Claire is contact at Talk Mortgages.',
+      signals:'Paste this week’s Peterborough story links, Facebook comments, reader replies, local costs, roads, venues, sponsor hooks and social signals here.',
+      data:'Use specific Peterborough details: roads, estates, wards, streets, PE postcodes, local prices, rent examples, city centre venues, journey times, parking costs, service waits, venue names and real local comparisons.',
+      confirmed:'Suzanne / Y-US Lettings — live useful offer: free 15-minute Renters’ Rights consultation for renters and landlords. Raimonda / Smarter Paws Hub — resident dog trainer/live useful offer: free access to Smarter Paws Hub.',
+      warm:'Tola / TMacLife — warm physio/recovery prospect, possible £197/month opening visibility trial, no category lock. Claire / Talk Mortgages — contact for mortgage authority discussion; Claire is not the adviser but can route internally. Open: estate agent, IFA, accountant, dentist, garage/MOT, planning consultant, nursery/tutor, food/hospitality activations.',
+      cats:'Estate agent, mortgage adviser, lettings/property manager, conveyancer/solicitor, surveyor/planning consultant, IFA/financial planner, accountant/tax adviser, dentist, private GP/pharmacist/health clinic, physio/recovery clinic, dog trainer/vet/pet service, heating/energy/insulation, garage/MOT centre, nursery/tutor/education provider, restaurant/café/pub/local venue.',
+      links:'Renters’ Rights consultation, Smarter Paws Hub, Mortgage Renewal Shock Checklist, Back Pain / Movement Checklist, MOT Five-Minute Check, Peterborough Property Price Reality Guide, Tax Code Check, Planning Appraisal Checklist, Nursery/School Routine Checklist, Worth Going Back To nomination route.',
+      clicks:'6',target:'10–20',weekly:'Suzanne / Y-US Lettings; Raimonda / Smarter Paws Hub. Possible trial: Tola / TMacLife. Possible mortgage route: Talk Mortgages via Claire.'
+    },
+    cbs:{
+      pub:'Cambridgeshire Spotlight',coverage:'Cambridgeshire county-wide, using towns and villages across the county, not just Cambridge',issue:'38',date:'',
+      tone:'County-wide, sharp, practical, thoughtful and mildly impatient with nonsense. British, conversational, warm but direct. Use towns and villages across Cambridgeshire, not just Cambridge. Strong local specifics, rifle-shot hooks and useful reader action.',
+      subs:'Lead ads running for CBS. Needs more organic social, sharper questions and stronger comment/share prompts. Latest issue route: https://cambridgeshirespotlight.co.uk/latest Archive: https://cambridgeshirespotlight.co.uk/archive',
+      theme:'Create this week’s Cambridgeshire argument from the story signals.',
+      argument:'If a change only works on paper, it does not work in real life. Test promises against local costs, waits, routes, bills and what families actually deal with.',
+      memory:'Use CBS Issue #37 memory. Avoid repeating unless clearly a reader follow-up, new angle, updated fact or partner/action continuation. Previous lanes included GP apps, pets/renting, Market Square, bills, food value, mortgage renewals, school phones, river safety, back pain, council tax, energy bills, pub bill, after-school clubs, dental queue, planning delays, driver traps, charity/local shop finds and takeaway value.',
+      mustAvoid:'Do not over-focus on Cambridge. Include towns/villages such as Ely, Huntingdon, St Neots, Wisbech, March, Cambourne, Royston edge where relevant, Whittlesey, St Ives and surrounding areas. Add light sections, named places, real lists, click routes, by-numbers and partner/authority visibility.',
+      signals:'Paste this week’s Cambridgeshire story links, Facebook comments, reader replies, local costs, roads, venues, sponsor hooks and social signals here.',
+      data:'Use specific Cambridgeshire details: towns/villages, roads, bus routes, GP access examples, rent/house price ranges, bills, Market Square/transport/local service timelines, venue names and real local comparisons.',
+      confirmed:'Suzanne / Y-US Lettings — live useful offer: free 15-minute Renters’ Rights consultation for renters and landlords across parts of Cambridgeshire. Raimonda / Smarter Paws Hub — resident dog trainer/live useful offer: free access to Smarter Paws Hub.',
+      warm:'Tola / TMacLife — warm physio/recovery prospect, possible £197/month opening visibility trial, no category lock. Claire / Talk Mortgages — contact for mortgage authority discussion. Open: health clinic/pharmacy, dentist, IFA, accountant, energy/heating, planning/architect, childcare/tutor, food/hospitality, motoring/garage.',
+      cats:'Mortgage adviser, lettings/property manager, estate agent, IFA/financial planner, accountant/tax adviser, dentist, pharmacist/private GP/health clinic, physio/recovery clinic, dog trainer/vet/pet service, heating/energy/insulation, planning consultant/architect/surveyor, childcare/tutor/education provider, restaurant/café/pub/takeaway, garage/driving instructor/dashcam/insurance.',
+      links:'Renters’ Rights consultation, Smarter Paws Hub, Mortgage Renewal Shock Checklist, GP App Survival Guide, Energy Bill Interpreter Checklist, Back Pain / Movement Checklist, Dental Access Guide, Planning Delay Checklist, School Phone Boundary Checklist, Worth It Or Overpriced nomination route.',
+      clicks:'6',target:'10–20',weekly:'Suzanne / Y-US Lettings; Raimonda / Smarter Paws Hub. Possible trial: Tola / TMacLife. Possible mortgage route: Talk Mortgages via Claire.'
+    },
+    ns:{
+      pub:'Norfolk Spotlight',coverage:'Norfolk county-wide, including Norwich, King’s Lynn, Thetford, Dereham, Fakenham, North Walsham, Great Yarmouth, Cromer, Sheringham, Wells, Diss and villages/coastal areas',issue:'3',date:'',
+      tone:'Warmer, community-led, place-sensitive and protective of local character, but sharp when needed. Not tourism brochure Norfolk. Real Norfolk: roads, homes, bills, seasonal businesses, villages, coastal pressure, services and local life. Specific, witty, useful and talkable.',
+      subs:'Norfolk Spotlight is early-stage. Lead ads running. Issue #2 publishes Tuesday. Need more engagement, named places, links, lists, light sections and stronger newsletter experience as subscriber base grows.',
+      theme:'Create this week’s Norfolk argument from the story signals.',
+      argument:'Norfolk is beautiful, but local life is not lived through postcards. Test who changes really serve: locals, visitors, developers or nobody in particular.',
+      memory:'Use NS Issue #2 memory. Avoid repeating roads/housing/bills in the same way unless follow-up or new angle. Previous lanes included A47, North Walsham growth, coastal housing, GP access, fish and chips value, seasonal business, dog recall, older homes/heating, pubs, rural school runs, By Numbers and local-life reality.',
+      mustAvoid:'Do not accidentally make Norfolk-wide issues too North Norfolk-heavy. Spread named examples across Norwich, King’s Lynn, Thetford, Dereham, Fakenham, Great Yarmouth, Diss and North Norfolk where relevant. Add light sections, real named lists, venue links, markets/makers/music, pets/community warmth, food/café features, By Numbers, seasonal feel and click routes.',
+      signals:'Paste this week’s Norfolk story links, Facebook comments, reader replies, local costs, roads, venues, sponsor hooks and social signals here.',
+      data:'Use specific Norfolk details: A47/A11/A140, Norwich roads, King’s Lynn, Dereham, Thetford, coastal towns, local rent ranges, meal costs, fuel/travel examples, heating/oil examples, market towns, named venues, real journey times and seasonal business realities.',
+      confirmed:'Raimonda / Smarter Paws Hub — resident dog trainer/live useful offer: free access to Smarter Paws Hub where dog/pet content fits.',
+      warm:'Open Norfolk categories: estate agent, lettings, mortgage adviser, heating/insulation, garage/MOT, dentist, private GP/pharmacy, physio, food/hospitality, pub/café/attraction, childcare/tutor, accountant/IFA, driving instructor, tourism/local venue.',
+      cats:'Estate agent, mortgage adviser, lettings/property manager, IFA/financial planner, accountant/tax adviser, dentist, pharmacist/private GP/health clinic, physio/recovery clinic, dog trainer/vet/pet service, heating/energy/insulation, garage/MOT/driving instructor, nursery/tutor/education provider, restaurant/café/pub/local venue, tourism/attraction/farm shop.',
+      links:'Smarter Paws Hub, Norfolk Home Heating Checklist, Coastal Housing Reality Guide, Before You Buy In A Growth Area Checklist, Norfolk Driver Check, Worth The Trip nominations, Places Locals Go Back To nominations, GP App Survival Guide, Norfolk Bill Watch.',
+      clicks:'6',target:'10–20',weekly:'Raimonda / Smarter Paws Hub where pet/dog content fits. Other categories open.'
+    }
+  };
+  const p=profiles[key];
+  if(!p){showToast('Unknown preset');return}
+  setSpotlightValue('spotPubName',p.pub);setSpotlightValue('spotCoverage',p.coverage);setSpotlightValue('spotIssue',p.issue);setSpotlightValue('spotDate',p.date);setSpotlightValue('spotTone',p.tone);setSpotlightValue('spotSubs',p.subs);setSpotlightValue('spotTheme',p.theme);setSpotlightValue('spotArgument',p.argument);setSpotlightValue('spotMemory',p.memory);setSpotlightValue('spotMustAvoid',p.mustAvoid);setSpotlightValue('spotSignals',p.signals);setSpotlightValue('spotData',p.data);setSpotlightValue('spotConfirmed',p.confirmed);setSpotlightValue('spotWarm',p.warm);setSpotlightValue('spotCategories',p.cats);setSpotlightValue('spotLinks',p.links);setSpotlightValue('spotMinClicks',p.clicks);setSpotlightValue('spotTargetClicks',p.target);setSpotlightValue('spotWeeklySlots',p.weekly);
+  previewSpotlightPrompt();
+  showToast(p.pub+' preset loaded');
+}
+function getSpotlightValue(id){const el=document.getElementById(id);return el?String(el.value||'').trim():''}
+function buildSpotlightPrompt(){
+const pub=getSpotlightValue('spotPubName')||'Spotlight Publication';
+const coverage=getSpotlightValue('spotCoverage')||'Local coverage area';
+const issue=getSpotlightValue('spotIssue')||'Next';
+const date=getSpotlightValue('spotDate')||'Upcoming publish date';
+const tone=getSpotlightValue('spotTone')||'Sharp, specific, useful, witty, local and commercially aware.';
+const subs=getSpotlightValue('spotSubs')||'Subscriber and growth notes not provided.';
+const theme=getSpotlightValue('spotTheme')||'Create a strong local theme from the story signals.';
+const argument=getSpotlightValue('spotArgument')||'Create a central local argument that feels talkable and specific.';
+const memory=getSpotlightValue('spotMemory')||'No previous issue memory provided.';
+const mustAvoid=getSpotlightValue('spotMustAvoid')||'No must-include or avoid notes provided.';
+const signals=getSpotlightValue('spotSignals')||'No story signals provided.';
+const data=getSpotlightValue('spotData')||'No specific local data provided.';
+const confirmed=getSpotlightValue('spotConfirmed')||'No confirmed partners or live offers provided.';
+const warm=getSpotlightValue('spotWarm')||'No warm prospects provided.';
+const categories=getSpotlightValue('spotCategories')||'Use core Spotlight categories where natural.';
+const links=getSpotlightValue('spotLinks')||'Create useful placeholder routes where partners are not yet secured.';
+const minClicks=getSpotlightValue('spotMinClicks')||'6';
+const targetClicks=getSpotlightValue('spotTargetClicks')||'10–20';
+const weeklySlots=getSpotlightValue('spotWeeklySlots')||'No secured weekly slots listed.';
+return `You are the editor of ${pub}, a local Spotlight newsletter covering ${coverage}. This is Issue #${issue}, planned for ${date}.
+
+CORE JOB:
+Build a full Spotlight issue package, not just articles.
+
+OUTPUT REQUIRED:
+A. Full 25-slot Letterman-ready newsletter
+B. Email subject line options
+C. Preview text options
+D. Short newsletter description
+E. SEO slug and archive description
+F. 10–15 social posts
+G. 7-day organic social schedule
+H. Reader action / click route list
+I. 25-row Issue Commercial Map
+J. Partner Proof Pack with strongest 3–6 commercial lanes
+K. Issue Memory row
+L. Future Issue Bank rows where relevant
+
+PUBLICATION / AUDIENCE:
+Publication: ${pub}
+Coverage area: ${coverage}
+Issue: #${issue}
+Publish date: ${date}
+Tone profile: ${tone}
+Subscriber / growth notes: ${subs}
+
+ISSUE THEME:
+Main issue theme: ${theme}
+Central local argument: ${argument}
+
+ISSUE MEMORY:
+Previous issue memory:
+${memory}
+
+Must include / avoid:
+${mustAvoid}
+
+LOCAL STORY SIGNALS:
+${signals}
+
+SPECIFIC LOCAL DATA / PRICES / PLACES:
+${data}
+
+PARTNER / COMMERCIAL INPUTS:
+Confirmed partners / live offers:
+${confirmed}
+
+Warm prospects:
+${warm}
+
+Desired authority categories:
+${categories}
+
+Placeholder links / lead magnets:
+${links}
+
+Secured weekly slots:
+${weeklySlots}
+
+CLICK TARGET:
+Minimum useful click/action routes: ${minClicks}
+Target click routes as system matures: ${targetClicks}
+
+EDITORIAL PHILOSOPHY:
+This is not local news. This is local conversation with receipts.
+Write like a smart local person has read the paperwork, heard the pub conversation, spotted the gap, and written the version people actually care about.
+The issue must create “have you read this?” moments.
+If an article would not be worth forwarding, arguing with, laughing at, saving, clicking or replying to, rewrite it.
+
+RIFLE SHOT RULE:
+Every strong article should hit a recognisable daily-life moment and give it a memorable phrase or point of view.
+Examples:
+- MOT fails: “The Stupidity Tax”
+- coastal housing: “A postcard eating its own staff”
+- A47: “The journey you don’t measure in miles”
+- older homes: “The heating bill is where the romance gets tested”
+- pubs: “Packed in August, panicking in January”
+- dog recall: “Friendly is not the same as trained”
+
+EXPERT AS WISE MATE RULE:
+Experts and businesses must sound like knowledgeable locals who have seen the problem a hundred times and are giving readers the useful version.
+Do not write brochure copy, ads, corporate quotes or generic “expert could help” filler.
+Write: “Here’s the daft mistake people keep making.” / “Here’s what I’d check before spending money.” / “Here’s the thing nobody tells you until it’s too late.”
+
+SPECIFICITY RULE:
+Every anchor article must include real local specifics: roads, streets, areas, towns, villages, prices, rents, bills, waits, journey times, venues, costs, local comparisons or named services.
+If an article could apply anywhere in the UK, rewrite it.
+
+DATA DETAIL RULE:
+Where the article discusses money, property, rent, bills, rates, food prices, travel, business costs or public investment, include specific data or realistic examples.
+
+EDGE RULE:
+Do not weaken copy with timid wording when the point is clear. Skate on the ice. Do not fall through it. Be sharp, specific, memorable and fair.
+
+NEWSLETTER EXPERIENCE RULE:
+Do not create 25 serious essays. Include serious anchors, useful guides, light sections, venue links, local lists, local tip boxes, food/café/pub features, pets/community warmth, By Numbers, markets/makers/music where relevant, what’s on/weekend ideas, useful calculators/guides, reader nominations, seasonal feel, partner/placeholder click routes and recommendation-style features.
+
+ISSUE MIX TARGET:
+- 5–7 anchor articles
+- 5–7 medium useful pieces
+- 5–7 shorts, lights, quizzes, lists or quick-hit features
+- 3–6 minimum click/action moments in early issues
+- 10–20 possible click routes as partner/resource system matures
+- 3–5 authority/partner opportunities
+- 3–5 activation/recommendation opportunities
+- 2–4 social-first discussion prompts
+- 1–2 community trust slots
+
+REAL LIST RULE:
+If you write a list, make it real. Name places, explain why they matter, add practical use, and include a reader prompt or link route.
+
+POLL WITH TENSION RULE:
+Polls must create recognition, disagreement, local examples and useful replies.
+
+CLICK / PLACEHOLDER LINK RULE:
+Links must sit where the reader already cares. Do not create random link dumps.
+When no partner is sold, create useful placeholder routes: mortgage checklist, MOT five-minute check, dental access guide, GP/pharmacy/private route guide, heating checklist, Smarter Paws Hub or dog behaviour guide, food nomination/venue list, property valuation/moving/checklist route.
+Once a partner buys the category, that route points to them.
+
+SECURED SLOT WEEKLY PRESENCE RULE:
+If a partner is secured, their category must appear every week in some useful reader-facing way. Not always a full article. Use quick expert tip, checklist link, reader Q&A, By Numbers contribution, one thing to check this week, mistake to avoid, practical tip box, social post, resource link, or full article where natural.
+Do not force a partner into an unrelated article.
+
+READER-FACING WORD BANS:
+Do not use these words in reader-facing copy: sponsor, activation, partner slot, sellable slot, advertorial, monetisation, commercial opportunity.
+Avoid generic filler: quietly, vibrant, premium, curated, arguably, some say, in many ways, must-visit, unforgettable, something for everyone, stakeholder, ecosystem, glow up, chaos unless genuinely necessary, hidden gem unless specific.
+
+FINAL OUTPUT FORMAT:
+1. Full 25-slot issue
+2. Subject line options
+3. Preview text
+4. Short description
+5. SEO slug + archive description
+6. Reader action/click list
+7. Social post pack
+8. 7-day social schedule
+9. Issue Commercial Map as TSV with columns:
+Map ID, Publication, Issue, Slot, Article Title, Commercial Type, Best Category Fit, Specific Partner / Prospect, Status, Reader Problem, Commercial Angle, Recommended CTA / Offer, Placeholder Link Now, Future Partner Route, Use In Outreach?, Outreach Note, Notes
+10. Partner Proof Pack as TSV with columns:
+Proof ID, Publication, Issue, Proof Category, Article Title(s), Reader Problem, Best Category Fit, Specific Partner / Prospect, Status, Suggested Offer / Lead Magnet, Placeholder Route Now, Future Partner Route, Example CTA, Social Post Angle, Outreach Line, Use In Outreach?, Notes
+11. Issue Memory row
+12. Future Issue Bank rows
+
+Before final answer, run a final editorial pass:
+- Is it specific?
+- Is it talkable?
+- Is it useful?
+- Does it include light/click/list content?
+- Does it make partner categories visible without sounding like ads?
+- Would a real local person read, reply, forward, save, click or remember it?`;
+}
+
+function buildSpotlightOutputPrompt(kind){
+  const base = buildSpotlightPrompt();
+  const pub = getSpotlightValue('spotPubName') || 'Spotlight Publication';
+  const issue = getSpotlightValue('spotIssue') || 'Next';
+
+  const labels={newsletter:'NEWSLETTER PROMPT',social:'SOCIAL PACK PROMPT',commercial:'COMMERCIAL MAP PROMPT',proof:'PARTNER PROOF PACK PROMPT',seo:'SEO + MEMORY PROMPT',master:'MASTER FULL PACKAGE PROMPT'};
+  const label = labels[kind] || 'MASTER FULL PACKAGE PROMPT';
+
+  const context = `\n\n==============================\nMASTER CONTEXT TO USE\n==============================\nYou are working from the Spotlight Builder master context below for ${pub} Issue #${issue}. Use all publication, issue memory, partner, tone, specificity, click-route and commercial instructions from this context.\n\n${base}`;
+
+  const prompts = {
+    newsletter: `==============================\n${label}\n==============================\n\nProduce ONLY the Letterman-ready newsletter package for ${pub} Issue #${issue}.\n\nOutput:\n1. Full 25-slot newsletter issue\n2. Email subject line options\n3. Preview text options\n4. Short newsletter description\n5. Reader action/click list\n\nDo not output Commercial Map, Proof Pack or Social Pack in this response unless a reader-facing CTA needs to be included inside the newsletter.\n\nBefore writing, ensure the issue includes:\n- 5–7 anchors\n- 5–7 medium useful pieces\n- 5–7 light/list/quiz/recommendation sections\n- secured weekly partner presence where natural\n- enough specificity, data, local places and rifle-shot hooks\n- contextual click/action routes\n\n${context}`,
+
+    social: `==============================\n${label}\n==============================\n\nProduce ONLY the Social Pack for ${pub} Issue #${issue}.\n\nOutput:\n1. 10–15 Facebook/social posts\n2. 7-day organic posting schedule\n3. Suggested best first post\n4. Which post should be boosted/tested if any\n\nRules:\n- Posts must be sharper and more comment-friendly than simple article excerpts.\n- Use questions with tension.\n- Use local places and real examples.\n- Avoid bland “what do you think?” prompts.\n- Create posts that make people want to comment, tag, argue lightly, laugh, or share.\n\n${context}`,
+
+    commercial: `==============================\n${label}\n==============================\n\nProduce ONLY the 25-row Issue Commercial Map as clean TSV for ${pub} Issue #${issue}.\n\nUse exactly these columns:\nMap ID\tPublication\tIssue\tSlot\tArticle Title\tCommercial Type\tBest Category Fit\tSpecific Partner / Prospect\tStatus\tReader Problem\tCommercial Angle\tRecommended CTA / Offer\tPlaceholder Link Now\tFuture Partner Route\tUse In Outreach?\tOutreach Note\tNotes\n\nRules:\n- One row per published slot.\n- For a 25-slot issue, output 25 rows.\n- Do not include reader-facing labels like sponsor or activation inside article copy.\n- Make commercial categories visible internally.\n- Include placeholder route now and future partner route wherever possible.\n\n${context}`,
+
+    proof: `==============================\n${label}\n==============================\n\nProduce ONLY the Partner Proof Pack as clean TSV for ${pub} Issue #${issue}.\n\nUse exactly these columns:\nProof ID\tPublication\tIssue\tProof Category\tArticle Title(s)\tReader Problem\tBest Category Fit\tSpecific Partner / Prospect\tStatus\tSuggested Offer / Lead Magnet\tPlaceholder Route Now\tFuture Partner Route\tExample CTA\tSocial Post Angle\tOutreach Line\tUse In Outreach?\tNotes\n\nRules:\n- Create the strongest 3–6 proof rows only.\n- These are for outreach, so prospects should immediately see where they fit.\n- Use real live/warm partner status where supplied.\n- Make each outreach line specific, useful and not generic advertising language.\n\n${context}`,
+
+    seo: `==============================\n${label}\n==============================\n\nProduce ONLY the SEO, archive and memory package for ${pub} Issue #${issue}.\n\nOutput:\n1. SEO slug\n2. Page title\n3. Meta description\n4. Archive description\n5. Primary topic/keyword list\n6. Internal link/topic hub opportunities\n7. Issue Memory row as TSV\n8. Future Issue Bank rows as TSV where relevant\n\nRules:\n- Keep slugs clean and lowercase with hyphens.\n- The archive description should be useful for readers and search engines.\n- Issue Memory must clearly record covered topics, partner mentions, click routes, social angles and next issue follow-ups.\n\n${context}`
+  };
+
+  return prompts[kind] || base;
+}
+function spotlightOutputLabel(kind){
+  const labels={newsletter:'Newsletter Prompt',social:'Social Pack Prompt',commercial:'Commercial Map Prompt',proof:'Partner Proof Pack Prompt',seo:'SEO + Memory Prompt',master:'Master Full Package Prompt'};
+  return labels[kind] || 'Spotlight Output';
+}
+function updateSpotlightSignalWarning(){
+  const box=document.getElementById('spotlightSignalWarning');
+  if(!box) return;
+  const signals=getSpotlightValue('spotSignals');
+  if(!signals || signals.toLowerCase().includes('paste this week')){
+    box.style.display='block';
+    box.textContent='⚠️ No real story signals added yet. This may generate a generic issue. Add 8–15 current links, comments, local gripes, prices, places or reader replies before building a live issue.';
+  }else{
+    box.style.display='none';
+    box.textContent='';
+  }
+}
+function previewSpotlightOutputPrompt(kind){
+  updateSpotlightSignalWarning();
+  const p = buildSpotlightOutputPrompt(kind);
+  const box = document.getElementById('spotlightPromptPreview');
+  const title=document.getElementById('spotlightOutputTitle');
+  if(!box) return;
+  box.style.display = 'block';
+  box.textContent = p;
+  if(title) title.textContent='Current Output: '+spotlightOutputLabel(kind);
+  window.spotlightCurrentOutput = p;
+  showToast(spotlightOutputLabel(kind)+' generated');
+  setTimeout(()=>{box.scrollIntoView({behavior:'smooth',block:'start'});},80);
+}
+
+function copySpotlightCurrentOutput(){
+  const box = document.getElementById('spotlightPromptPreview');
+  const p = window.spotlightCurrentOutput || (box ? box.textContent : '') || buildSpotlightPrompt();
+  navigator.clipboard.writeText(p).then(()=>showToast('Current Spotlight output copied'));
+}
+
+function previewSpotlightPrompt(){
+  updateSpotlightSignalWarning();
+  const p=buildSpotlightPrompt();
+  const box=document.getElementById('spotlightPromptPreview');
+  const title=document.getElementById('spotlightOutputTitle');
+  if(!box)return;
+  box.style.display='block';
+  box.textContent=p;
+  if(title) title.textContent='Current Output: '+spotlightOutputLabel('master');
+  window.spotlightCurrentOutput=p;
+}
+function copySpotlightPrompt(){const p=buildSpotlightPrompt();navigator.clipboard.writeText(p).then(()=>{previewSpotlightPrompt();showToast('Spotlight prompt copied')})}
+function collectSpotlightDraftData(){return{id:'spotlight_'+Date.now(),savedAt:new Date().toISOString(),publication:getSpotlightValue('spotPubName'),coverage:getSpotlightValue('spotCoverage'),issue:getSpotlightValue('spotIssue'),prompt:buildSpotlightPrompt(),fields:{spotPubName:getSpotlightValue('spotPubName'),spotCoverage:getSpotlightValue('spotCoverage'),spotIssue:getSpotlightValue('spotIssue'),spotDate:getSpotlightValue('spotDate'),spotTone:getSpotlightValue('spotTone'),spotSubs:getSpotlightValue('spotSubs'),spotTheme:getSpotlightValue('spotTheme'),spotArgument:getSpotlightValue('spotArgument'),spotMemory:getSpotlightValue('spotMemory'),spotMustAvoid:getSpotlightValue('spotMustAvoid'),spotSignals:getSpotlightValue('spotSignals'),spotData:getSpotlightValue('spotData'),spotConfirmed:getSpotlightValue('spotConfirmed'),spotWarm:getSpotlightValue('spotWarm'),spotCategories:getSpotlightValue('spotCategories'),spotLinks:getSpotlightValue('spotLinks'),spotMinClicks:getSpotlightValue('spotMinClicks'),spotTargetClicks:getSpotlightValue('spotTargetClicks'),spotWeeklySlots:getSpotlightValue('spotWeeklySlots')}}}
+function saveSpotlightDraftLocal(){const data=collectSpotlightDraftData();const arr=JSON.parse(localStorage.getItem('spotlight_builder_drafts')||'[]');arr.unshift(data);localStorage.setItem('spotlight_builder_drafts',JSON.stringify(arr.slice(0,20)));showToast('Spotlight draft saved locally');loadSpotlightDraftsLocal(false)}
+function loadSpotlightDraftsLocal(show=true){const arr=JSON.parse(localStorage.getItem('spotlight_builder_drafts')||'[]');const panel=document.getElementById('spotlightDraftsPanel');if(!panel)return;panel.innerHTML=arr.length?arr.map(d=>`<div class="section-item"><div class="section-info"><h4>${d.publication||'Spotlight'} — Issue #${d.issue||''}</h4><p>${d.coverage||''} · ${d.savedAt}</p></div><button class="btn btn-secondary" onclick="navigator.clipboard.writeText(${JSON.stringify(d.prompt)});showToast('Spotlight draft prompt copied')">Copy Prompt</button></div>`).join(''):'<div class="empty-state"><p>No Spotlight drafts saved yet.</p></div>';if(show)showToast('Spotlight drafts loaded')}
+function clearSpotlightDraftsLocal(){if(confirm('Clear Spotlight local drafts?')){localStorage.removeItem('spotlight_builder_drafts');loadSpotlightDraftsLocal(false);showToast('Spotlight drafts cleared')}}
+document.addEventListener('input',e=>{if(e.target && e.target.id==='spotSignals')updateSpotlightSignalWarning()});
+function generateSpec(){const n=getNiche($('titleNiche').value);if(!n)return;const loc=$('titleLocation').value||'Location', country=$('titleCountry').value||'Country';$('specOutput').style.display='block';$('specOutput').textContent=`${n.name} — ${loc}\nCountry: ${country}\nSections: ${n.sectionCount}\nExperts: ${n.experts}\nActivations: ${n.activationSlots}\nTarget build: ${n.targetExperts}+ expert references and ${n.targetActivations}+ activation features per issue.`}function showIntel(){const n=getNiche($('intelNiche').value);if(!n)return;$('intelOutput').innerHTML=`<div class="card"><h2>${n.icon} ${n.name}</h2><p class="subtitle">Expert roles</p><p>${n.expertRoles.join(' · ')}</p><p class="subtitle" style="margin-top:16px">Activation types</p><p>${n.activationTypes.join(' · ')}</p><p class="subtitle" style="margin-top:16px">Sales angle</p><p>Sell the role as editorial visibility and trusted category presence, not advertising.</p></div>`}let pitches=[];function addPitch(){pitches.push({b:$('pitchBusiness').value,c:$('pitchContact').value,n:getNiche($('pitchNiche').value)?.name,t:$('pitchType').value});$('pitchOutput').style.display='block';$('pitchOutput').textContent=pitches.map(p=>`${p.b} | ${p.c} | ${p.n} | ${p.t}`).join('\n');showToast('Prospect added')}let socialText='';function generateSocial(){const n=getNiche($('socialNiche').value)?.name||'Newsletter',loc=$('socialLocation').value||'Location',lead=$('socialLead').value||'Lead story';socialText=`${n} — ${loc} social starter\n\nMon: Tease the issue angle: ${lead}\nTue: Ask a reader poll linked to the main tension.\nWed: Issue live post.\nThu: Expert quote post.\nFri: Activation/venue/business feature post.\nSat: Behind-the-scenes/editor note.\nSun: Next issue question and teaser.`;$('socialOutput').style.display='block';$('socialOutput').textContent=socialText}function copySocial(){navigator.clipboard.writeText(socialText||$('socialOutput').textContent||'').then(()=>showToast('Social plan copied'))}function showToast(msg){const t=$('copyToast');t.textContent='✅ '+msg;t.style.display='block';setTimeout(()=>t.style.display='none',1800)}init();
+</script>
+</body>
+</html>
