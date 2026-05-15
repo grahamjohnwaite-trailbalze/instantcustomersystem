@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Newsletter Empire — Spotlight Builder v1.3</title>
+  <style>
+    :root {
+      --bg: #f6f3ea;
+      --panel: #ffffff;
+      --ink: #1d2a22;
+      --muted: #617064;
+      --green: #154f3b;
+      --green2: #1f6f52;
+      --gold: #d8b45f;
+      --line: #ded8c8;
+      --soft: #eef4ef;
+      --danger: #7f2f2f;
+      --shadow: 0 16px 40px rgba(18, 38, 28, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at top left, #fff9e8 0, var(--bg) 40%, #eef4ef 100%);
+      line-height: 1.45;
+    }
+    header {
+      background: linear-gradient(135deg, #113a2d, #1b654a);
+      color: white;
+      padding: 28px 28px 22px;
+      border-bottom: 5px solid var(--gold);
+    }
+    header .topline { display: flex; justify-content: space-between; gap: 16px; align-items: center; flex-wrap: wrap; }
+    h1 { margin: 0 0 6px; font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: -0.03em; }
+    header p { margin: 0; color: rgba(255,255,255,.82); max-width: 980px; }
+    .version-pill { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); padding: 8px 12px; border-radius: 999px; font-weight: 700; }
+
+    nav {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(246,243,234,.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 24px;
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    nav a, button {
+      border: 0; border-radius: 999px; padding: 9px 14px;
+      background: var(--green); color: white; text-decoration: none; cursor: pointer;
+      font-weight: 700; font-size: 0.9rem;
+    }
+    button.secondary, nav a.secondary { background: #e9efe9; color: var(--green); border: 1px solid #cbd9cf; }
+    button.gold { background: #9a741f; }
+    button.danger { background: var(--danger); }
+    button:active { transform: translateY(1px); }
+
+    main { max-width: 1240px; margin: 0 auto; padding: 24px; }
+    section { background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 22px; padding: 22px; margin: 0 0 22px; }
+    h2 { margin: 0 0 8px; font-size: 1.45rem; letter-spacing: -0.025em; }
+    h3 { margin: 20px 0 8px; font-size: 1.05rem; }
+    .hint { color: var(--muted); margin: 0 0 16px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    @media (max-width: 820px) { .grid, .grid3 { grid-template-columns: 1fr; } }
+    label { font-size: .82rem; text-transform: uppercase; letter-spacing: .055em; color: #48564c; font-weight: 800; display: block; margin: 0 0 6px; }
+    input, textarea, select {
+      width: 100%; border: 1px solid #cfd8cf; border-radius: 14px; padding: 11px 12px;
+      font: inherit; background: #fffef9; color: var(--ink);
+    }
+    textarea { min-height: 110px; resize: vertical; }
+    textarea.tall { min-height: 230px; }
+    textarea.output { min-height: 520px; background: #111c16; color: #edf8ee; border-color: #111c16; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: .88rem; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+    .card { background: var(--soft); border: 1px solid #d9e5dc; border-radius: 18px; padding: 14px; }
+    .badge { display: inline-block; background: #efe4bd; color: #4f3a08; padding: 4px 8px; border-radius: 999px; font-size: .75rem; font-weight: 800; margin-right: 5px; }
+    .status { color: var(--muted); font-size: .9rem; margin-left: 8px; }
+    .small { font-size: .88rem; color: var(--muted); }
+    footer { text-align: center; color: var(--muted); padding: 40px 20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topline">
+      <div>
+        <h1>Newsletter Empire — Spotlight Builder v1.3</h1>
+        <p>Spotlight internal production · stronger local proof · CTR engine · category visibility · post-publish outputs from final approved issue text</p>
+      </div>
+      <div class="version-pill">CBS-tested v1.3</div>
+    </div>
+  </header>
+
+  <nav>
+    <a href="#command">Command Centre</a>
+    <a href="#setup">Publication Setup</a>
+    <a href="#inputs">Issue Inputs</a>
+    <a href="#commercial">Commercial Inputs</a>
+    <a href="#final">Final Issue Text</a>
+    <a href="#outputs">Generate Outputs</a>
+    <a href="#rules" class="secondary">v1.3 Rules</a>
+  </nav>
+
+  <main>
+    <section id="command">
+      <h2>Command Centre</h2>
+      <p class="hint">Use this builder in order: load profile → add story signals and local proof → add partner/click-route notes → generate newsletter prompt → edit issue → paste final approved text → generate post-publish prompts.</p>
+      <div class="grid3">
+        <div class="card"><span class="badge">1</span><strong>Build the issue</strong><br><span class="small">The newsletter prompt now forces local proof, reader action and placeholder CTR assets.</span></div>
+        <div class="card"><span class="badge">2</span><strong>Edit for Letterman</strong><br><span class="small">Finalise article titles, order, CTAs and links before post-publish prompts.</span></div>
+        <div class="card"><span class="badge">3</span><strong>Map the business value</strong><br><span class="small">Commercial Map and Proof Pack use the final issue only, so outreach matches what was actually published.</span></div>
+      </div>
+    </section>
+
+    <section id="setup">
+      <h2>Step 1 — Load Publication Profile</h2>
+      <p class="hint">Start here. Load a live Spotlight profile or create a blank issue.</p>
+      <div class="actions">
+        <button onclick="loadProfile('PBS')">Load PBS Profile</button>
+        <button onclick="loadProfile('CBS')">Load CBS Profile</button>
+        <button onclick="loadProfile('NORFOLK')">Load Norfolk Profile</button>
+        <button class="secondary" onclick="clearSetup()">Blank New Spotlight</button>
+      </div>
+
+      <h3>1. Publication Setup</h3>
+      <div class="grid">
+        <div><label>Publication Name</label><input id="publication" /></div>
+        <div><label>Coverage Area</label><input id="coverage" /></div>
+        <div><label>Issue #</label><input id="issue" /></div>
+        <div><label>Publish Date</label><input id="publishDate" /></div>
+      </div>
+      <div class="grid" style="margin-top:14px;">
+        <div><label>Tone Profile</label><textarea id="tone"></textarea></div>
+        <div><label>Subscriber / Growth Notes</label><textarea id="growth"></textarea></div>
+      </div>
+    </section>
+
+    <section id="inputs">
+      <h2>Step 2 — Issue Inputs: Story Signals, Memory & Local Data</h2>
+      <p class="hint">This is the main human input area. Add links, social comments, reader replies, local gripes, roads, venues, costs, screenshots or notes. Aim for 8–15 signals before generating a live issue.</p>
+      <div class="grid">
+        <div><label>Main Issue Theme</label><textarea id="theme"></textarea></div>
+        <div><label>Central Local Argument</label><textarea id="argument"></textarea></div>
+        <div><label>Previous Issue Memory</label><textarea id="memory"></textarea></div>
+        <div><label>Must Include / Avoid</label><textarea id="must"></textarea></div>
+      </div>
+      <div style="margin-top:14px;"><label>This Week’s Story Signals / Links</label><textarea class="tall" id="signals" placeholder="Paste this week’s raw material here: links, council decisions, social comments, reader replies, local gripes, roads, venues, costs, screenshots or notes."></textarea></div>
+      <div style="margin-top:14px;"><label>Specific Local Data / Prices / Places</label><textarea id="localData" placeholder="Add roads, streets, schools, junctions, parking costs, rent examples, market areas, venues, journey times, bills, waiting lists and reader examples."></textarea></div>
+      <div style="margin-top:14px;"><label>Reader Comments / Local Voice Notes</label><textarea id="localVoice" placeholder="Paste real reader replies, social comments, common local complaints or realistic local voice notes. Do not invent named quotes."></textarea></div>
+    </section>
+
+    <section id="commercial">
+      <h2>Step 3 — Partner / Commercial Inputs</h2>
+      <p class="hint">Confirmed partners can appear naturally. Unsold categories should still create useful placeholder click routes so CTR can be proven before outreach.</p>
+      <div class="grid">
+        <div><label>Confirmed Partners / Live Offers</label><textarea id="partners"></textarea></div>
+        <div><label>Warm Prospects</label><textarea id="prospects"></textarea></div>
+        <div><label>Desired Authority Categories</label><textarea id="categories"></textarea></div>
+        <div><label>Placeholder Links / Lead Magnets</label><textarea id="leadMagnets"></textarea></div>
+        <div><label>Secured Weekly Slots</label><textarea id="weeklySlots"></textarea></div>
+        <div class="grid">
+          <div><label>Minimum Click Routes</label><input id="minClicks" value="6" /></div>
+          <div><label>Target Click Routes</label><input id="targetClicks" value="10–20" /></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="final">
+      <h2>Step 4 — Final Approved Issue Text</h2>
+      <p class="hint">After the newsletter is edited/finalised, paste the exact final issue here before generating Social Pack, Commercial Map, Proof Pack or SEO + Memory.</p>
+      <label>Final Published / Approved Issue Text</label>
+      <textarea class="tall" id="finalIssue" placeholder="Paste the clean final Letterman issue here, including final article titles and order."></textarea>
+    </section>
+
+    <section id="outputs">
+      <h2>Step 5 — Generate Spotlight Outputs</h2>
+      <p class="hint">Build the newsletter first. After editing, paste the final issue and use post-publish buttons.</p>
+      <div class="actions">
+        <button onclick="generateNewsletterPrompt()">Generate Newsletter Prompt</button>
+        <button onclick="generateSocialPrompt()">Generate Social Pack Prompt</button>
+        <button onclick="generateCommercialMapPrompt()">Generate Commercial Map Prompt</button>
+        <button onclick="generateProofPackPrompt()">Generate Proof Pack Prompt</button>
+        <button onclick="generateSeoMemoryPrompt()">Generate SEO + Memory Prompt</button>
+        <button class="gold" onclick="generateMasterPrompt()">Generate Master Full Package Prompt</button>
+      </div>
+      <div class="actions">
+        <button class="secondary" onclick="copyOutput()">Copy Current Output</button>
+        <button class="secondary" onclick="saveDraft()">Save Spotlight Draft</button>
+        <button class="secondary" onclick="loadDrafts()">Load Spotlight Drafts</button>
+        <button class="danger" onclick="clearDrafts()">Clear Spotlight Drafts</button>
+        <span id="status" class="status">Current Output: none yet</span>
+      </div>
+      <h3>Current Output</h3>
+      <textarea class="output" id="output" readonly></textarea>
+      <div id="draftList" class="small" style="margin-top:10px;">No Spotlight drafts loaded yet.</div>
+    </section>
+
+    <section id="rules">
+      <h2>v1.3 Rules Added After CBS #38 Test</h2>
+      <p class="hint">These are now baked into generated prompts. They force specificity, CTR architecture, local voice and commercial category visibility.</p>
+      <div class="card"><strong>Local Proof + CTR Engine:</strong> every anchor and medium article must include local proof, reader action and a future commercial path.</div><br>
+      <div class="card"><strong>Placeholder Asset Rule:</strong> unsold categories still need useful guides, checklists, polls, maps, forms or nominations.</div><br>
+      <div class="card"><strong>Category Visibility Rule:</strong> every issue should surface 8–12 business category opportunities as reader problems.</div><br>
+      <div class="card"><strong>Local Voice Without Fake Quotes:</strong> include what locals are likely asking or experiencing without inventing named quotes.</div><br>
+      <div class="card"><strong>County Texture Rule:</strong> county-wide editions must use real towns, roads, high streets, journeys, prices and local scenarios, not place-name scattering.</div>
+    </section>
+  </main>
+
+  <footer>Instant Customer System · Spotlight Builder v1.3 · Local Test Version</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function val(id){ return ($(id)?.value || '').trim(); }
+function set(id, text){ if($(id)) $(id).value = text; }
+function section(title, body){ return `\n\n==============================\n${title}\n==============================\n${body || ''}`; }
+
+const rulesV13 = `
+EDITORIAL PHILOSOPHY:
+This is not local news. This is local conversation with receipts.
+Write like a smart local person has read the paperwork, heard the pub conversation, spotted the gap, and written the version people actually care about.
+The issue must create “have you read this?” moments.
+If an article would not be worth forwarding, arguing with, laughing at, saving, clicking or replying to, rewrite it.
+
+RIFLE SHOT RULE:
+Every strong article should hit a recognisable daily-life moment and give it a memorable phrase or point of view.
+Examples:
+- MOT fails: “The Stupidity Tax”
+- coastal housing: “A postcard eating its own staff”
+- A47: “The journey you don’t measure in miles”
+- older homes: “The heating bill is where the romance gets tested”
+- pubs: “Packed in August, panicking in January”
+- dog recall: “Friendly is not the same as trained”
+
+ARTICLE SURVIVAL TEST:
+Every article must earn its place. Before including any section, check that it does at least one of these:
+- reveals something specific about the local area
+- explains a decision readers are already making
+- exposes a local trade-off, cost, risk, frustration or contradiction
+- gives readers a practical action they can use
+- creates a debate, poll, survey or reply route
+- opens a credible expert/authority category without sounding like a sales pitch
+- creates a natural click route, checklist, nomination route or lead magnet
+- gives reusable reader insight for future editorial or outreach
+If a section is only warm, nice, broadly useful, community-ish or vaguely positive, cut it or replace it.
+
+LOCAL PROOF + CTR ENGINE RULE:
+For every anchor and medium article, include all three of the following:
+
+1. LOCAL PROOF
+Include at least one concrete local proof point:
+- named road, junction, market, high street, station, school area, village, estate, venue, shopping area or transport route
+- specific price, rent, bill, wait, journey time, date, number or cost
+- realistic local household/business scenario
+- “what locals are likely asking” phrased as lived experience, not invented quotes
+
+2. READER ACTION
+Each article must create a clear reader action:
+- click a guide/checklist
+- answer a poll
+- submit a local example
+- nominate a place
+- report a road/problem
+- compare costs
+- ask an expert-style question
+- save a practical list
+- reply with a specific detail
+
+3. FUTURE COMMERCIAL PATH
+The article should naturally reveal which expert, business or service category could later own the reader problem, without saying this in reader-facing copy.
+Do not let a useful article end with only a soft question. It should create a click, reply, saved resource, shareable debate, nomination, practical guide or future lead-magnet route.
+
+PLACEHOLDER ASSET RULE:
+If no paid expert or authority partner exists for a reader problem, the issue should still create a useful placeholder asset.
+Examples:
+- Mortgage Renewal Shock Checklist
+- Renters’ Rights Pet Request Template
+- Cambridge South Journey Poll
+- Food Caddy Survival Guide
+- Fen Road / Tyre Damage Form
+- School-Run Pinch Point Map
+- Dental Access Guide
+- Back Pain Before Gardening Checklist
+- £6 Lunch List
+- Worth It Or Overpriced Reader Guide
+- Useful Local Person Radar
+- Energy Bill Interpreter
+- Planning Delay Checklist
+- Local Business Mistake Box
+These assets should be mentioned naturally inside the article where the reader already cares, not dumped only at the end.
+
+CATEGORY VISIBILITY RULE:
+Every issue should surface 8–12 commercial category opportunities through reader problems, even when no partner has bought the category yet.
+Examples:
+- mortgage renewal pressure
+- rental law confusion
+- pet behaviour/rental friction
+- dental access
+- back pain / physio / recovery
+- garages / tyres / pothole damage
+- energy bills / heating / insulation
+- school/tutoring/family logistics
+- food/value/venue discovery
+- planning/home improvement
+- tax/accounting/business cost pressure
+- transport/commuting/parking
+These must appear as useful reader-facing problems, not adverts.
+Each category should have one of:
+- a practical CTA
+- a placeholder guide/checklist
+- a reader poll
+- a nomination/list route
+- a local problem submission form
+- a short expert-style question box
+
+LOCAL VOICE WITHOUT FAKE QUOTES RULE:
+Where appropriate, include the kind of thing locals are likely asking, worrying about or saying — but do not invent named quotes.
+Use formats such as:
+- “The question people in [place] are really asking is…”
+- “For a family in [place], the issue is not the policy. It is…”
+- “A landlord with one property in [place] may now be thinking…”
+- “A renter in [place] does not just need rights. They need…”
+- “For drivers around [road/town], this shows up as…”
+- “For a café owner in [town centre], the problem is…”
+This creates local voice without pretending we interviewed someone.
+
+COUNTY TEXTURE RULE:
+For county-wide Spotlight editions, do not rely on place-name scattering.
+At least 8–10 sections should include true county texture:
+- named towns and villages
+- roads or junctions
+- station/transport links
+- school-run situations
+- market areas
+- high streets
+- local journey examples
+- price/rent/bill examples
+- household or small business scenarios
+If Cambridge dominates the live story signals, deliberately balance the issue with meaningful examples from market towns, villages and rural areas where relevant.
+
+CTA VARIETY RULE:
+Do not stack too many “tell us your recommendation” or “we are building a guide” prompts in the final third. Across the whole issue, vary CTAs between polls, reply questions, checklists, practical links, nominations, reader experiences, local problem reports and one clear business-owner sourcing prompt.
+
+NO REPEATED JOB RULE:
+No two sections should do the same editorial job. Do not stack several sections that all ask readers to nominate a local business, name a helpful person, recommend somewhere worth going back to, share a tiny win or say what made life easier. One recommendation/nominations mechanic per issue is usually enough unless each route has a clearly different purpose.
+
+READER-FACING COMMERCIAL SUBTLETY RULE:
+Never expose internal commercial thinking in reader copy. Do not write: lane, reader route, partner opportunity, activation, slot, sponsor, commercial opportunity, or “this is where a good local [category] could be useful.” Instead, make the article useful to readers and let the opportunity be obvious underneath.
+
+EXPERT / PARTNER INTEGRATION RULE:
+Confirmed authority partners can appear weekly only where editorially natural, through one practical note, checklist, reader Q&A, tip box, live offer CTA or full article when strongly fitted. Warm prospects may be lightly name-checked as local context, but do not give them a full authority platform unless confirmed. Open categories should be signalled through reader problems, not by saying we are looking for someone.
+
+STRONGER BACK-THIRD RULE:
+Slots 18–25 must not become filler. The final third should include some combination of local controversy, public decision, money explainer, consumer decision, business-owner CTA, reader poll, high-click local list, forward-looking teaser and strong outro. Avoid ending with several soft community prompts.
+
+REAL LIST RULE:
+If you write a list, make it real. Name places, explain why they matter, add practical use, and include a reader prompt or link route.
+
+POLL WITH TENSION RULE:
+Polls must create recognition, disagreement, local examples and useful replies.
+
+READER-FACING WORD BANS:
+Do not use these words in reader-facing copy: sponsor, activation, partner slot, sellable slot, advertorial, monetisation, commercial opportunity, lovely lane, reader route, partner opportunity, slot, we are looking for a partner.
+Avoid generic filler and overused structures: quietly, vibrant, premium, curated, arguably, some say, in many ways, must-visit, unforgettable, something for everyone, stakeholder, ecosystem, glow up, chaos unless genuinely necessary, hidden gem unless specific, repeated “Not X. Y.” rhythm, repeated single-line fragments, and repeated “This is where [business/category] could be useful.”
+`;
+
+function masterContext(){
+  return `You are the editor of ${val('publication') || '[Publication]'}, a local Spotlight newsletter covering ${val('coverage') || '[Coverage area]'}.
+This is Issue #${val('issue') || '[Issue #]'}, planned for ${val('publishDate') || '[Publish date]'}.
+
+PUBLICATION / AUDIENCE:
+Publication: ${val('publication')}
+Coverage area: ${val('coverage')}
+Issue: #${val('issue')}
+Publish date: ${val('publishDate')}
+Tone profile: ${val('tone')}
+Subscriber / growth notes: ${val('growth')}
+
+ISSUE THEME:
+Main issue theme: ${val('theme')}
+Central local argument: ${val('argument')}
+
+ISSUE MEMORY:
+Previous issue memory:
+${val('memory')}
+
+Must include / avoid:
+${val('must')}
+
+LOCAL STORY SIGNALS:
+${val('signals')}
+
+SPECIFIC LOCAL DATA / PRICES / PLACES:
+${val('localData')}
+
+READER COMMENTS / LOCAL VOICE NOTES:
+${val('localVoice')}
+
+PARTNER / COMMERCIAL INPUTS:
+Confirmed partners / live offers:
+${val('partners')}
+
+Warm prospects:
+${val('prospects')}
+
+Desired authority categories:
+${val('categories')}
+
+Placeholder links / lead magnets:
+${val('leadMagnets')}
+
+Secured weekly slots:
+${val('weeklySlots')}
+
+CLICK TARGET:
+Minimum useful click/action routes: ${val('minClicks')}
+Target click routes as system matures: ${val('targetClicks')}
+
+${rulesV13}`;
+}
+
+function generateNewsletterPrompt(){
+  const prompt = `==============================
+NEWSLETTER PROMPT
+==============================
+
+Produce ONLY the Letterman-ready newsletter package for ${val('publication') || '[Publication]'} Issue #${val('issue') || '[Issue]'}.
+
+Output:
+1. Full 25-slot newsletter issue
+2. Email subject line options
+3. Preview text options
+4. Short newsletter description
+5. Reader action/click list
+
+Do not output Commercial Map, Proof Pack, SEO Pack or Social Pack in this response unless a reader-facing CTA needs to be included inside the newsletter.
+
+Before writing, ensure the issue includes:
+- 5–7 anchors
+- 5–7 medium useful pieces
+- 5–7 light/list/quiz/recommendation sections
+- secured weekly partner presence where natural
+- 8–12 surfaced commercial category opportunities through reader problems
+- enough specificity, data, local places and rifle-shot hooks
+- contextual click/action routes inside the articles, not only at the end
+- placeholder assets where no expert/partner exists yet
+- true county/local texture rather than place-name scattering
+
+IMPORTANT OVERRIDE FOR THIS RUN:
+Ignore the Master Context's full-package output list when it conflicts with the focused prompt above. Produce only the output requested at the top of this focused prompt.
+
+${section('MASTER CONTEXT TO USE', masterContext())}
+
+Before final answer, run a final editorial pass:
+- Is it specific?
+- Is it talkable?
+- Is it useful?
+- Does every anchor and medium article include local proof + reader action + future commercial path?
+- Does it include light/click/list content?
+- Does it create CTR routes before partners are sold?
+- Does it make partner categories visible without sounding like ads?
+- Would a real local person read, reply, forward, save, click or remember it?`;
+  output(prompt, 'Newsletter Prompt generated');
+}
+
+function requireFinal(){
+  if(!val('finalIssue')) return 'NO FINAL APPROVED ISSUE TEXT PROVIDED. Ask the user to paste the final published issue first.';
+  return val('finalIssue');
+}
+
+function generateSocialPrompt(){
+  const prompt = `Produce ONLY the Social Pack for ${val('publication')} Issue #${val('issue')}.
+
+Use the Final Approved Issue Text below as the source of truth. Do not invent article titles, order or claims.
+
+Output:
+1. 10–15 Facebook/LinkedIn posts
+2. 7-day organic social schedule
+3. 5 high-comment question posts
+4. 3 click-through posts pointing to reader assets/guides/forms
+5. 3 partner/prospect-safe posts that show expertise without sounding like adverts
+
+Make posts punchy, local, comment-friendly and specific. Avoid generic captions.
+
+FINAL APPROVED ISSUE TEXT:
+${requireFinal()}`;
+  output(prompt, 'Social Pack Prompt generated');
+}
+
+function generateCommercialMapPrompt(){
+  const prompt = `Produce ONLY the 25-row Issue Commercial Map as clean TSV for ${val('publication')} Issue #${val('issue')}.
+
+Use the Final Approved Issue Text as the source of truth; map only the final published slots.
+
+Use exactly these columns:
+Map ID\tPublication\tIssue\tSlot\tArticle Title\tCommercial Type\tBest Category Fit\tSpecific Partner / Prospect\tStatus\tReader Problem\tCommercial Angle\tRecommended CTA / Offer\tPlaceholder Link Now\tFuture Partner Route\tUse In Outreach?\tOutreach Note\tNotes
+
+Rules:
+- One row per published slot.
+- For a 25-slot issue, output 25 rows.
+- Do not include reader-facing labels like sponsor or activation inside article copy.
+- Include placeholder route now and future partner route wherever possible.
+- Highlight where the article already creates CTR proof: poll, guide, checklist, form, nomination, map, reply route or lead magnet.
+- Make commercial categories visible internally.
+
+FINAL APPROVED ISSUE TEXT:
+${requireFinal()}`;
+  output(prompt, 'Commercial Map Prompt generated');
+}
+
+function generateProofPackPrompt(){
+  const prompt = `Produce ONLY the Partner Proof Pack for ${val('publication')} Issue #${val('issue')} as clean TSV.
+
+Use the Final Approved Issue Text as the source of truth.
+
+Use exactly these columns:
+Proof ID\tPublication\tIssue\tProof Category\tArticle Title(s)\tReader Problem\tBest Category Fit\tSpecific Partner / Prospect\tStatus\tSuggested Offer / Lead Magnet\tPlaceholder Route Now\tFuture Partner Route\tExample CTA\tSocial Post Angle\tOutreach Line\tUse In Outreach?\tNotes
+
+Rules:
+- Select the strongest 3–8 commercial lanes from the issue.
+- Prioritise lanes with clear reader pain, local proof and CTR routes.
+- Include confirmed partners, warm prospects and open category opportunities where relevant.
+- Keep outreach lines human, specific and non-pushy.
+
+FINAL APPROVED ISSUE TEXT:
+${requireFinal()}`;
+  output(prompt, 'Proof Pack Prompt generated');
+}
+
+function generateSeoMemoryPrompt(){
+  const prompt = `Produce ONLY the SEO + Memory Pack for ${val('publication')} Issue #${val('issue')}.
+
+Use the Final Approved Issue Text as the source of truth.
+
+Output:
+1. SEO slug
+2. Archive description
+3. Short meta description
+4. Issue Memory row
+5. Future Issue Bank rows where relevant
+6. Click Route / Lead Magnet rows where relevant
+
+Rules:
+- Do not invent article titles or article order.
+- Record partner mentions, placeholder assets and future follow-up warnings.
+- Issue Memory should help avoid repetition next week.
+- Future Issue Bank should preserve strong unfinished angles, reader-response follow-ups and commercial routes.
+
+FINAL APPROVED ISSUE TEXT:
+${requireFinal()}`;
+  output(prompt, 'SEO + Memory Prompt generated');
+}
+
+function generateMasterPrompt(){
+  const prompt = `==============================
+MASTER FULL PACKAGE PROMPT
+==============================
+
+Produce the complete Spotlight issue package for ${val('publication')} Issue #${val('issue')}.
+
+Output:
+1. Full 25-slot issue
+2. Subject line options
+3. Preview text options
+4. Short description
+5. SEO slug + archive description
+6. Reader action/click list
+7. Social post pack
+8. 7-day social schedule
+9. 25-row Issue Commercial Map as TSV
+10. Partner Proof Pack as TSV
+11. Issue Memory row
+12. Future Issue Bank rows
+
+Use the Master Context below.
+
+${section('MASTER CONTEXT TO USE', masterContext())}`;
+  output(prompt, 'Master Full Package Prompt generated');
+}
+
+function output(text, msg){ set('output', text); $('status').textContent = msg; }
+async function copyOutput(){
+  const text = val('output');
+  if(!text){ $('status').textContent = 'Nothing to copy yet'; return; }
+  await navigator.clipboard.writeText(text);
+  $('status').textContent = 'Copied current output';
+}
+
+function currentState(){
+  const ids = ['publication','coverage','issue','publishDate','tone','growth','theme','argument','memory','must','signals','localData','localVoice','partners','prospects','categories','leadMagnets','weeklySlots','minClicks','targetClicks','finalIssue'];
+  const data = {}; ids.forEach(id => data[id] = val(id)); return data;
+}
+function applyState(data){ Object.keys(data || {}).forEach(id => set(id, data[id] || '')); }
+function saveDraft(){
+  const key = 'spotlightBuilderV13Drafts';
+  const drafts = JSON.parse(localStorage.getItem(key) || '[]');
+  drafts.unshift({ saved: new Date().toISOString(), publication: val('publication'), issue: val('issue'), data: currentState() });
+  localStorage.setItem(key, JSON.stringify(drafts.slice(0,20)));
+  $('status').textContent = 'Draft saved locally';
+}
+function loadDrafts(){
+  const drafts = JSON.parse(localStorage.getItem('spotlightBuilderV13Drafts') || '[]');
+  if(!drafts.length){ $('draftList').textContent = 'No Spotlight drafts loaded yet.'; return; }
+  $('draftList').innerHTML = drafts.map((d,i)=>`<div class="card" style="margin:8px 0;"><strong>${d.publication || 'Untitled'} #${d.issue || ''}</strong> <span class="small">${new Date(d.saved).toLocaleString()}</span> <button onclick="loadDraft(${i})">Load</button></div>`).join('');
+  window.__drafts = drafts;
+}
+function loadDraft(i){ applyState(window.__drafts[i].data); $('status').textContent = 'Draft loaded'; }
+function clearDrafts(){ localStorage.removeItem('spotlightBuilderV13Drafts'); $('draftList').textContent = 'No Spotlight drafts loaded yet.'; $('status').textContent = 'Drafts cleared'; }
+
+function clearSetup(){
+  ['publication','coverage','issue','publishDate','tone','growth','theme','argument','memory','must','signals','localData','localVoice','partners','prospects','categories','leadMagnets','weeklySlots','finalIssue'].forEach(id => set(id,''));
+  set('minClicks','6'); set('targetClicks','10–20');
+}
+
+function loadProfile(profile){
+  if(profile === 'CBS'){
+    set('publication','Cambridgeshire Spotlight');
+    set('coverage','Cambridgeshire county-wide: Cambridge, South Cambridgeshire, Ely, Huntingdonshire, St Neots, St Ives, Fenland, March, Wisbech, Cambourne, Whittlesey, Chatteris, Sawston, Histon, Cottenham, Waterbeach and surrounding villages where relevant');
+    set('tone','County-wide, sharp, practical, thoughtful and mildly impatient with nonsense. British, conversational, warm but direct. Use towns, villages, roads, prices, queues and real local situations. Do not over-focus on Cambridge.');
+    set('growth','Lead ads running for CBS. Needs more organic social, sharper questions, stronger comment/share prompts, visible click routes and proof that local businesses can see where they fit. Latest issue route: https://cambridgeshirespotlight.co.uk/latest Archive: https://cambridgeshirespotlight.co.uk/archive');
+    set('theme','Create this week’s Cambridgeshire argument from the story signals.');
+    set('argument','If a change only works on paper, it does not work in real life. Test promises against local costs, waits, routes, bills and what families actually deal with.');
+    set('must','Do not over-focus on Cambridge. Add true county texture, not place-name scattering. Include light sections, named places, real lists, click routes, by-numbers and partner/authority visibility.');
+    set('partners','Suzanne / Y-US Lettings — live useful offer: free 15-minute Renters’ Rights consultation for renters and landlords across parts of Cambridgeshire.\nRaimonda / Smarter Paws Hub — resident dog trainer/live useful offer: free access to Smarter Paws Hub.');
+    set('prospects','Tola / TMacLife — warm physio/recovery prospect, possible opening visibility trial, no category lock.\nClaire / Talk Mortgages — contact for mortgage authority discussion.\nOpen: health clinic/pharmacy, dentist, IFA, accountant, energy/heating, planning/architect, childcare/tutor, food/hospitality, motoring/garage.');
+    set('categories','Mortgage adviser, lettings/property manager, estate agent, IFA/financial planner, accountant/tax adviser, dentist, pharmacist/private GP/health clinic, physio/recovery clinic, dog trainer/vet/pet service, heating/energy/insulation, planning consultant/architect/surveyor, childcare/tutor/education provider, restaurant/café/pub/takeaway, garage/driving instructor/dashcam/insurance.');
+    set('leadMagnets','Renters’ Rights consultation\nSmarter Paws Hub\nMortgage Renewal Shock Checklist\nRenters’ Rights Pet Request Template\nCambridge South Journey Poll\nFood Caddy Survival Guide\nFen Road / Tyre Damage Form\nSchool-Run Pinch Point Map\nBack Pain Before Gardening Checklist\nDental Access Guide\n£6 Lunch List\nWorth It Or Overpriced Reader Guide\nUseful Local Person Radar\nEnergy Bill Interpreter\nPlanning Delay Checklist\nLocal Business Mistake Box');
+    set('weeklySlots','Suzanne / Y-US Lettings; Raimonda / Smarter Paws Hub. Possible trial: Tola / TMacLife. Possible mortgage route: Talk Mortgages via Claire.');
+  }
+  if(profile === 'PBS'){
+    set('publication','Peterborough Spotlight');
+    set('coverage','Peterborough and surrounding villages/areas, including city centre, Orton, Hampton, Werrington, Bretton, Fletton, Dogsthorpe, Stanground, Yaxley, Whittlesey edge and nearby communities where relevant');
+    set('tone','Sharp local insider. Warm, useful, direct, mildly impatient with nonsense. Use Peterborough-specific places, roads, costs, venues and real local situations.');
+    set('growth','Peterborough Spotlight has an active subscriber base and growing social audience. Prioritise useful click routes, organic social prompts and partner proof.');
+    set('theme','Create this week’s Peterborough argument from the story signals.');
+    set('argument','Test local promises against real costs, queues, roads, bills, rents and everyday decisions.');
+    set('must','Use Peterborough-specific detail. Avoid generic local-news summary. Include click routes and partner visibility without sounding salesy.');
+  }
+  if(profile === 'NORFOLK'){
+    set('publication','Norfolk Spotlight');
+    set('coverage','Norfolk county-wide, using Norwich, King’s Lynn, Great Yarmouth, Thetford, Dereham, Fakenham, North Norfolk, villages and coast where relevant');
+    set('tone','Warm, practical, county-wide local insider. Use named roads, coastal towns, market towns, tourism pressure, housing, travel, seasonal issues and community detail.');
+    set('growth','Early-stage Spotlight profile. Needs strong local texture, reader prompts, shareable sections and commercial category visibility.');
+    set('theme','Create this week’s Norfolk argument from the story signals.');
+    set('argument','Test local promises against distance, seasonal pressure, housing, roads, costs, tourism and real household decisions.');
+    set('must','Do not make everything Norwich. Add market towns, villages and coast where relevant.');
+  }
+  $('status').textContent = profile + ' profile loaded';
+}
+</script>
+</body>
+</html>
