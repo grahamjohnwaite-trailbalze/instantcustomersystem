@@ -1,0 +1,20 @@
+Instant Customer System — GitHub Builder Patch
+
+Upload these to the GitHub repo:
+github.com/grahamjohnwaite-trailbalze/instantcustomersystem
+
+Files included:
+- builder/index.html
+- builder/rules-v3.txt
+- robots.txt
+
+Upload them at the repo root so the paths stay exactly:
+builder/index.html
+builder/rules-v3.txt
+robots.txt
+
+After commit, Netlify should auto-deploy.
+
+Check:
+https://instantcustomersystem.com/builder/
+https://instantcustomersystem.com/builder/rules-v3.txt
