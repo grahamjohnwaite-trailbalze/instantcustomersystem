@@ -1,0 +1,10 @@
+ICS Phase 1B Add Section Fix v1.1
+
+Upload these two folders/files to the ROOT of the existing GitHub repository, replacing the existing files:
+- app/index.html
+- netlify/functions/sections.mjs
+
+Commit message:
+Fix Phase 1B Add Section action
+
+Wait for Netlify to publish, then hard-refresh https://instantcustomersystem.com/app
