@@ -14,15 +14,14 @@ export const TABLES = Object.freeze({
 });
 
 export function json(statusCode, body, extraHeaders = {}) {
-  return {
-    statusCode,
+  return new Response(JSON.stringify(body), {
+    status: statusCode,
     headers: {
       'content-type': 'application/json; charset=utf-8',
       'cache-control': 'no-store',
       ...extraHeaders
-    },
-    body: JSON.stringify(body)
-  };
+    }
+  });
 }
 
 export async function airtableRequest(tableName, { params = {}, method = 'GET', body } = {}) {
