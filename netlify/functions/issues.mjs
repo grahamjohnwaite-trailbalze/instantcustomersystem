@@ -1,19 +1,3 @@
-import { TABLES, cleanRecord, json, listAll, publicError } from './_airtable.mjs';
-
-export default async (request) => {
-  try {
-    const url = new URL(request.url);
-    const publicationId = url.searchParams.get('publicationId');
-    const records = (await listAll(TABLES.issues))
-      .map(cleanRecord)
-      .filter(({ fields }) => !publicationId || (fields.Publication || []).includes(publicationId))
-      .sort((a, b) => {
-        const ad = a.fields['Send Date'] || '';
-        const bd = b.fields['Send Date'] || '';
-        return bd.localeCompare(ad) || Number(b.fields['Issue Number'] || 0) - Number(a.fields['Issue Number'] || 0);
-      });
-    return json(200, { ok: true, records, count: records.length });
-  } catch (error) {
-    return publicError(error, 'issues');
-  }
-};
+import {TABLES,airtableRequest,cleanRecord,json,listAll,pick,publicError,readJson} from './_airtable.mjs';
+const FIELDS=['Publication','Issue Number','Send Date','Issue Status','Main Theme','Subject Line','Preheader','Commercial Target','Production Warning','Notes'];
+export default async(request)=>{try{const method=request.method.toUpperCase();const url=new URL(request.url);if(method==='GET'){const publicationId=url.searchParams.get('publicationId');const records=(await listAll(TABLES.issues)).map(cleanRecord).filter(({fields})=>!publicationId||(fields.Publication||[]).includes(publicationId)).sort((a,b)=>String(b.fields['Send Date']||'').localeCompare(String(a.fields['Send Date']||''))||Number(b.fields['Issue Number']||0)-Number(a.fields['Issue Number']||0));return json(200,{ok:true,records,count:records.length})}const data=await readJson(request);if(method==='POST'){const fields=pick(data.fields,FIELDS);if(!fields.Publication?.length||!fields['Send Date'])return json(400,{ok:false,error:'Publication and Send Date are required.'});const result=await airtableRequest(TABLES.issues,{method:'POST',body:{fields}});return json(201,{ok:true,record:cleanRecord(result)})}if(method==='PATCH'){if(!data.id)return json(400,{ok:false,error:'Issue id is required.'});const result=await airtableRequest(TABLES.issues,{method:'PATCH',body:{records:[{id:data.id,fields:pick(data.fields,FIELDS)}],typecast:true}});return json(200,{ok:true,record:cleanRecord(result.records[0])})}return json(405,{ok:false,error:'Method not allowed'})}catch(error){return publicError(error,'issues')}};

@@ -1,0 +1,10 @@
+UPLOAD THE CONTENTS OF instantcustomersystem-main TO THE EXISTING GITHUB REPOSITORY ROOT.
+
+Suggested commit message:
+Add ICS Phase 1B minimum Issue Command Centre
+
+After Netlify deploy:
+1. Replace the read-only AIRTABLE_TOKEN with a restricted token that has data.records:read and data.records:write for the ICS base.
+2. Keep AIRTABLE_BASE_ID unchanged.
+3. Open https://instantcustomersystem.com/app
+4. Use Open Norfolk production.

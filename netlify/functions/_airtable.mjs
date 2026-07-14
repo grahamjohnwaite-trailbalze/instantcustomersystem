@@ -1,84 +1,10 @@
 const API_ROOT = 'https://api.airtable.com/v0';
-
-function env(name) {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing required environment variable: ${name}`);
-  return value;
-}
-
-export const TABLES = Object.freeze({
-  publications: 'Publications',
-  issues: 'Issues',
-  sections: 'Issue Sections',
-  qa: 'QA Checks'
-});
-
-export function json(statusCode, body, extraHeaders = {}) {
-  return new Response(JSON.stringify(body), {
-    status: statusCode,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store',
-      ...extraHeaders
-    }
-  });
-}
-
-export async function airtableRequest(tableName, { params = {}, method = 'GET', body } = {}) {
-  const token = env('AIRTABLE_TOKEN');
-  const baseId = env('AIRTABLE_BASE_ID');
-  const query = new URLSearchParams(params);
-  const url = `${API_ROOT}/${baseId}/${encodeURIComponent(tableName)}${query.size ? `?${query}` : ''}`;
-  const response = await fetch(url, {
-    method,
-    headers: {
-      authorization: `Bearer ${token}`,
-      'content-type': 'application/json'
-    },
-    body: body ? JSON.stringify(body) : undefined
-  });
-  const text = await response.text();
-  let payload;
-  try { payload = text ? JSON.parse(text) : {}; }
-  catch { payload = { raw: text }; }
-  if (!response.ok) {
-    const error = new Error(`Airtable request failed (${response.status})`);
-    error.status = response.status;
-    error.details = payload;
-    throw error;
-  }
-  return payload;
-}
-
-export async function listAll(tableName, params = {}) {
-  const records = [];
-  let offset;
-  do {
-    const page = await airtableRequest(tableName, {
-      params: { pageSize: '100', ...params, ...(offset ? { offset } : {}) }
-    });
-    records.push(...(page.records || []));
-    offset = page.offset;
-  } while (offset);
-  return records;
-}
-
-export function cleanRecord(record) {
-  return {
-    id: record.id,
-    createdTime: record.createdTime,
-    fields: record.fields || {}
-  };
-}
-
-export function publicError(error, context) {
-  console.error(context, {
-    message: error.message,
-    status: error.status,
-    details: error.details
-  });
-  if (String(error.message || '').includes('Missing required environment variable')) {
-    return json(503, { ok: false, error: 'Airtable connection is not configured on Netlify.' });
-  }
-  return json(error.status || 500, { ok: false, error: 'Unable to load Airtable data.', context });
-}
+function env(name){const value=process.env[name];if(!value)throw new Error(`Missing required environment variable: ${name}`);return value;}
+export const TABLES=Object.freeze({publications:'Publications',issues:'Issues',sections:'Issue Sections',qa:'QA Checks'});
+export function json(statusCode,body,extraHeaders={}){return new Response(JSON.stringify(body),{status:statusCode,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store',...extraHeaders}})}
+export async function readJson(request){try{return await request.json()}catch{return {}}}
+export async function airtableRequest(tableName,{params={},method='GET',body}={}){const token=env('AIRTABLE_TOKEN');const baseId=env('AIRTABLE_BASE_ID');const query=new URLSearchParams(params);const url=`${API_ROOT}/${baseId}/${encodeURIComponent(tableName)}${query.size?`?${query}`:''}`;const response=await fetch(url,{method,headers:{authorization:`Bearer ${token}`,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});const text=await response.text();let payload;try{payload=text?JSON.parse(text):{}}catch{payload={raw:text}}if(!response.ok){const error=new Error(`Airtable request failed (${response.status})`);error.status=response.status;error.details=payload;throw error}return payload}
+export async function listAll(tableName,params={}){const records=[];let offset;do{const page=await airtableRequest(tableName,{params:{pageSize:'100',...params,...(offset?{offset}:{})}});records.push(...(page.records||[]));offset=page.offset}while(offset);return records}
+export function cleanRecord(record){return{id:record.id,createdTime:record.createdTime,fields:record.fields||{}}}
+export function pick(source,allowed){const out={};for(const key of allowed){if(Object.prototype.hasOwnProperty.call(source||{},key)){const value=source[key];if(value!==undefined)out[key]=value}}return out}
+export function publicError(error,context){console.error(context,{message:error.message,status:error.status,details:error.details});if(String(error.message||'').includes('Missing required environment variable'))return json(503,{ok:false,error:'Airtable connection is not configured on Netlify.'});const detail=error?.details?.error?.message;return json(error.status||500,{ok:false,error:detail||'Unable to update Airtable data.',context})}
