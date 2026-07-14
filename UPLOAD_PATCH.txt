@@ -1,10 +1,6 @@
-ICS Phase 1B Add Section Fix v1.1
+ICS Phase 1B linked issue field fix v1.2
 
-Upload these two folders/files to the ROOT of the existing GitHub repository, replacing the existing files:
-- app/index.html
-- netlify/functions/sections.mjs
-
-Commit message:
-Fix Phase 1B Add Section action
-
-Wait for Netlify to publish, then hard-refresh https://instantcustomersystem.com/app
+Upload the app and netlify folders to the root of the existing GitHub repository.
+Replace the existing files when prompted.
+Commit message: Fix Issue Sections linked field mapping
+Wait for Netlify to publish, then hard refresh /app with Ctrl+F5.
