@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Instant Customer System</title>
+<style>
+:root{--bg:#f4f7fb;--panel:#fff;--ink:#172033;--muted:#657089;--line:#dfe5ef;--nav:#13213a;--accent:#2366d1;--good:#117a55;--warn:#a15c00;--bad:#a02d36;--shadow:0 10px 30px rgba(20,35,65,.08)}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}button,select{font:inherit}.shell{min-height:100vh;display:grid;grid-template-columns:238px 1fr}.sidebar{background:var(--nav);color:white;padding:22px 16px;position:sticky;top:0;height:100vh}.brand{font-weight:850;font-size:19px;line-height:1.2;margin:3px 8px 28px}.brand span{display:block;font-size:12px;color:#aebbd1;font-weight:600;margin-top:6px}.nav{display:grid;gap:7px}.nav button{border:0;background:transparent;color:#c9d3e4;text-align:left;padding:11px 13px;border-radius:9px;cursor:pointer}.nav button.active,.nav button:hover{background:#243653;color:white}.phase{position:absolute;bottom:18px;left:18px;right:18px;padding:11px;border:1px solid #314866;border-radius:10px;color:#b7c5d9;font-size:12px}.main{padding:26px 30px 50px;min-width:0}.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:22px}.eyebrow{color:var(--accent);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.08em}.topbar h1{margin:5px 0 5px;font-size:29px}.sub{color:var(--muted);font-size:14px}.status{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:12px;box-shadow:var(--shadow)}.dot{width:9px;height:9px;border-radius:50%;background:#8f9bae}.dot.ok{background:var(--good)}.dot.error{background:var(--bad)}.grid{display:grid;gap:16px}.metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}.metric strong{display:block;font-size:28px;margin-top:5px}.metric span,.label{font-size:12px;color:var(--muted);font-weight:700}.section-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:24px 0 12px}.section-head h2{font-size:18px;margin:0}.btn{border:0;border-radius:9px;padding:10px 13px;background:var(--accent);color:white;font-weight:750;cursor:pointer}.btn.secondary{background:white;color:var(--ink);border:1px solid var(--line)}.btn:disabled{opacity:.5;cursor:not-allowed}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.toolbar select{min-width:220px;border:1px solid var(--line);border-radius:9px;background:white;padding:9px 11px}.table-wrap{overflow:auto;background:white;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}table{width:100%;border-collapse:collapse;min-width:780px}th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;background:#f8fafc}tr:last-child td{border-bottom:0}.pill{display:inline-flex;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:750;background:#edf2f8;color:#4b5b73}.pill.good{background:#e6f6ef;color:var(--good)}.pill.warn{background:#fff2dc;color:var(--warn)}.link{color:var(--accent);text-decoration:none}.empty{padding:32px;text-align:center;color:var(--muted)}.view{display:none}.view.active{display:block}.warning{border-left:4px solid var(--warn);background:#fff9ee;padding:14px 16px;border-radius:8px;margin-bottom:16px;color:#704500}.setup{max-width:760px}.setup code{background:#edf2f8;border-radius:5px;padding:2px 5px}.quick{grid-template-columns:repeat(4,minmax(0,1fr))}.quick button{text-align:left;background:white;border:1px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;box-shadow:var(--shadow)}.quick strong{display:block;margin-bottom:5px}.quick span{font-size:12px;color:var(--muted)}@media(max-width:900px){.shell{grid-template-columns:1fr}.sidebar{height:auto;position:static}.nav{grid-template-columns:repeat(3,1fr)}.phase{display:none}.metrics,.quick{grid-template-columns:repeat(2,1fr)}.main{padding:20px}}@media(max-width:560px){.metrics,.quick{grid-template-columns:1fr}.nav{grid-template-columns:1fr 1fr}.topbar{display:block}.status{margin-top:14px;width:max-content}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="brand">Instant Customer System<span>Issue Command Centre</span></div>
+  <nav class="nav" aria-label="Primary">
+    <button class="active" data-view="dashboard">Dashboard</button>
+    <button data-view="publications">Publications</button>
+    <button data-view="issues">Issues</button>
+    <button data-view="build" disabled title="Enabled in the next build">Build Issue</button>
+    <button data-view="qa" disabled title="Enabled in the next build">QA</button>
+    <button data-view="library" disabled title="Enabled in the next build">Library</button>
+  </nav>
+  <div class="phase">Phase 1A<br><strong>Connected read-only shell</strong></div>
+</aside>
+<main class="main">
+  <header class="topbar">
+    <div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-subtitle">Current issues, deadlines and production warnings.</div></div>
+    <div class="status"><span class="dot" id="connection-dot"></span><span id="connection-text">Connecting to Airtable…</span></div>
+  </header>
+
+  <section class="view active" id="view-dashboard">
+    <div id="setup-warning"></div>
+    <div class="grid metrics">
+      <div class="card metric"><span>Active publications</span><strong id="metric-publications">—</strong></div>
+      <div class="card metric"><span>Open issues</span><strong id="metric-open">—</strong></div>
+      <div class="card metric"><span>Production warnings</span><strong id="metric-warnings">—</strong></div>
+      <div class="card metric"><span>Next send</span><strong id="metric-next" style="font-size:18px">—</strong></div>
+    </div>
+    <div class="section-head"><h2>Quick actions</h2></div>
+    <div class="grid quick">
+      <button data-go="issues"><strong>Open issues</strong><span>Review all current production work.</span></button>
+      <button disabled><strong>Create issue</strong><span>Enabled when write connection is added.</span></button>
+      <button disabled><strong>Run QA</strong><span>Enabled with the Issue Command Centre.</span></button>
+      <button disabled><strong>Generate Letterman copy</strong><span>Enabled after publish checks pass.</span></button>
+    </div>
+    <div class="section-head"><h2>Issues needing attention</h2><button class="btn secondary" data-go="issues">View all issues</button></div>
+    <div class="table-wrap" id="attention-table"><div class="empty">Loading issues…</div></div>
+  </section>
+
+  <section class="view" id="view-publications">
+    <div class="section-head"><h2>Active publications</h2><button class="btn secondary" id="refresh-publications">Refresh</button></div>
+    <div class="table-wrap" id="publication-table"><div class="empty">Loading publications…</div></div>
+  </section>
+
+  <section class="view" id="view-issues">
+    <div class="section-head"><h2>Issue production list</h2><div class="toolbar"><select id="publication-filter"><option value="">All publications</option></select><button class="btn secondary" id="refresh-issues">Refresh</button></div></div>
+    <div class="table-wrap" id="issue-table"><div class="empty">Loading issues…</div></div>
+  </section>
+</main>
+</div>
+<script>
+const state={publications:[],issues:[],connected:false};
+const views={dashboard:['Dashboard','Current issues, deadlines and production warnings.'],publications:['Publications','Publication identity, URLs, cadence and operating status.'],issues:['Issues','All issues across the active Spotlight and niche publications.']};
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const fmtDate=v=>v?new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(v+'T12:00:00')):'—';
+function pill(value){const v=value||'Not set';const cls=/ready|complete|published|pass/i.test(v)?'good':/warning|blocked|late|fail|overdue/i.test(v)?'warn':'';return `<span class="pill ${cls}">${esc(v)}</span>`}
+async function api(path){const r=await fetch('/.netlify/functions/'+path,{headers:{accept:'application/json'}});const data=await r.json().catch(()=>({ok:false,error:'Invalid server response'}));if(!r.ok||!data.ok)throw new Error(data.error||'Request failed');return data}
+function connection(ok,message){state.connected=ok;document.querySelector('#connection-dot').className='dot '+(ok?'ok':'error');document.querySelector('#connection-text').textContent=message}
+function show(view){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));document.querySelector('#view-'+view)?.classList.add('active');document.querySelector(`.nav button[data-view="${view}"]`)?.classList.add('active');document.querySelector('#page-title').textContent=views[view]?.[0]||'Instant Customer System';document.querySelector('#page-subtitle').textContent=views[view]?.[1]||''}
+function publicationName(ids){const id=(ids||[])[0];return state.publications.find(p=>p.id===id)?.fields['Publication Name']||'Unlinked'}
+function renderPublications(){const el=document.querySelector('#publication-table');if(!state.publications.length){el.innerHTML='<div class="empty">No active publications found.</div>';return}el.innerHTML=`<table><thead><tr><th>Publication</th><th>Code</th><th>Status</th><th>Weekly target</th><th>Links</th></tr></thead><tbody>${state.publications.map(p=>{const f=p.fields;return `<tr><td><strong>${esc(f['Publication Name'])}</strong></td><td>${esc(f['Short Code']||'—')}</td><td>${pill(f.Status)}</td><td>${esc(f['Weekly Send Target']||'—')}</td><td>${f['Main URL']?`<a class="link" href="${esc(f['Main URL'])}" target="_blank" rel="noreferrer">Main</a>`:'—'} ${f['Latest URL']?` · <a class="link" href="${esc(f['Latest URL'])}" target="_blank" rel="noreferrer">Latest</a>`:''} ${f['Archive URL']?` · <a class="link" href="${esc(f['Archive URL'])}" target="_blank" rel="noreferrer">Archive</a>`:''}</td></tr>`}).join('')}</tbody></table>`}
+function issueRows(records){return records.map(i=>{const f=i.fields;return `<tr><td><strong>${esc(f['Issue Name']||`Issue ${f['Issue Number']||''}`)}</strong><div class="label">${esc(publicationName(f.Publication))}</div></td><td>${fmtDate(f['Send Date'])}</td><td>${pill(f['Issue Status'])}</td><td>${pill(f['QA Status'])}</td><td>${pill(f['Production Warning'])}</td><td>${esc(f['Main Theme']||'—')}</td></tr>`}).join('')}
+function renderIssues(){const selected=document.querySelector('#publication-filter').value;const records=selected?state.issues.filter(i=>(i.fields.Publication||[]).includes(selected)):state.issues;const el=document.querySelector('#issue-table');el.innerHTML=records.length?`<table><thead><tr><th>Issue</th><th>Send date</th><th>Status</th><th>QA</th><th>Warning</th><th>Main theme</th></tr></thead><tbody>${issueRows(records)}</tbody></table>`:'<div class="empty">No issues match this filter.</div>'}
+function renderAttention(){const attention=state.issues.filter(i=>{const f=i.fields;return (f['Production Warning']&&f['Production Warning']!=='None')||/fail|blocked|not ready/i.test(f['QA Status']||'')}).slice(0,6);document.querySelector('#attention-table').innerHTML=attention.length?`<table><thead><tr><th>Issue</th><th>Send date</th><th>Status</th><th>QA</th><th>Warning</th><th>Main theme</th></tr></thead><tbody>${issueRows(attention)}</tbody></table>`:'<div class="empty">No current issues have a production warning or blocking QA state.</div>'}
+function renderDashboard(){const open=state.issues.filter(i=>!['Published','Complete','Archived'].includes(i.fields['Issue Status'])).length;const warnings=state.issues.filter(i=>i.fields['Production Warning']&&i.fields['Production Warning']!=='None').length;const future=state.issues.filter(i=>i.fields['Send Date']&&new Date(i.fields['Send Date']+'T23:59:59')>=new Date()).sort((a,b)=>a.fields['Send Date'].localeCompare(b.fields['Send Date']))[0];document.querySelector('#metric-publications').textContent=state.publications.length;document.querySelector('#metric-open').textContent=open;document.querySelector('#metric-warnings').textContent=warnings;document.querySelector('#metric-next').textContent=future?`${fmtDate(future.fields['Send Date'])}`:'No future date';renderAttention()}
+function populateFilter(){const s=document.querySelector('#publication-filter');s.innerHTML='<option value="">All publications</option>'+state.publications.map(p=>`<option value="${esc(p.id)}">${esc(p.fields['Publication Name'])}</option>`).join('')}
+async function loadAll(){try{connection(false,'Connecting to Airtable…');const [p,i]=await Promise.all([api('publications'),api('issues')]);state.publications=p.records;state.issues=i.records;connection(true,`Connected · ${p.count} publications · ${i.count} issues`);document.querySelector('#setup-warning').innerHTML='';populateFilter();renderPublications();renderIssues();renderDashboard()}catch(e){connection(false,'Connection needs setup');document.querySelector('#setup-warning').innerHTML=`<div class="warning setup"><strong>Airtable is not connected on this Netlify deploy.</strong><br>Add <code>AIRTABLE_TOKEN</code> and <code>AIRTABLE_BASE_ID</code> to Netlify environment variables, then redeploy. No token belongs in this page or GitHub.<br><small>${esc(e.message)}</small></div>`;document.querySelector('#publication-table').innerHTML='<div class="empty">Airtable connection is not configured.</div>';document.querySelector('#issue-table').innerHTML='<div class="empty">Airtable connection is not configured.</div>';document.querySelector('#attention-table').innerHTML='<div class="empty">Airtable connection is not configured.</div>'}}
+document.querySelectorAll('.nav button[data-view]:not([disabled])').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));document.querySelector('#publication-filter').addEventListener('change',renderIssues);document.querySelector('#refresh-publications').addEventListener('click',loadAll);document.querySelector('#refresh-issues').addEventListener('click',loadAll);loadAll();
+</script>
+</body>
+</html>
