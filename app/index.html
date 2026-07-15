@@ -47,6 +47,9 @@ const AUTHORITY_LANES=[
  ['Education / childcare',['school','education','university','apprentice','childcare','college']]
 ];
 function sectionText(s){return Object.values(s.fields||{}).filter(v=>typeof v==='string').join(' ').toLowerCase()}
+const ISSUE_STOP_WORDS=new Set('the a an and or of to in on for with is are was were be been being this that what which who how why your our norfolk spotlight unfiltered'.split(' '));
+function issueTopicTokens(s){return new Set(String(s||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>3&&!ISSUE_STOP_WORDS.has(w)))}
+function issueSimilarity(a,b){const A=issueTopicTokens(a),B=issueTopicTokens(b);if(!A.size||!B.size)return 0;let hit=0;A.forEach(x=>{if(B.has(x))hit++});return hit/Math.min(A.size,B.size)}
 function auditMap(){
  sortSections();
  const counts={Authority:0,Activation:0,Community:0,Other:0};
@@ -61,7 +64,7 @@ function auditMap(){
  });
  for(let i=0;i<S.sections.length;i++)for(let j=i+1;j<S.sections.length;j++){
    const a=S.sections[i],b=S.sections[j];
-   const score=similarity([val(a.fields,'Section Title'),val(a.fields,'Core Reader Question'),val(a.fields,'Universal Reader Problem')].join(' '),[val(b.fields,'Section Title'),val(b.fields,'Core Reader Question'),val(b.fields,'Universal Reader Problem')].join(' '));
+   const score=issueSimilarity([val(a.fields,'Section Title'),val(a.fields,'Core Reader Question'),val(a.fields,'Universal Reader Problem')].join(' '),[val(b.fields,'Section Title'),val(b.fields,'Core Reader Question'),val(b.fields,'Universal Reader Problem')].join(' '));
    if(score>=0.45)duplicates.push(`${val(a.fields,'Section Order')} ↔ ${val(b.fields,'Section Order')}`);
  }
  const lanes=AUTHORITY_LANES.map(([name,keys])=>{
@@ -95,10 +98,7 @@ const isEvent=/concert|festival|event|ticket|sandringham|performer|promoter/.tes
 const isCommunity=/nominate|reader|what is your|tell us|share your|your verdict|give us/.test(text);
 const currentIssuePeers=S.sections.filter(s=>s.id!==S.section.id);
 const proposedCore=[f['Section Title'],f['Core Reader Question'],f['Universal Reader Problem']].join(' ').toLowerCase();
-const STOP=new Set('the a an and or of to in on for with is are was were be been being this that what which who how why your our norfolk spotlight unfiltered'.split(' '));
-const topicTokens=s=>new Set(String(s||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>3&&!STOP.has(w)));
-const similarity=(a,b)=>{const A=topicTokens(a),B=topicTokens(b);if(!A.size||!B.size)return 0;let hit=0;A.forEach(x=>{if(B.has(x))hit++});return hit/Math.min(A.size,B.size)};
-const issueMatches=currentIssuePeers.map(s=>({s,score:similarity(proposedCore,[val(s.fields,'Section Title'),val(s.fields,'Core Reader Question'),val(s.fields,'Universal Reader Problem')].join(' '))})).filter(x=>x.score>=0.45).sort((a,b)=>b.score-a.score);
+const issueMatches=currentIssuePeers.map(s=>({s,score:issueSimilarity(proposedCore,[val(s.fields,'Section Title'),val(s.fields,'Core Reader Question'),val(s.fields,'Universal Reader Problem')].join(' '))})).filter(x=>x.score>=0.45).sort((a,b)=>b.score-a.score);
 let hot=38;
 if(isCar&&/check|before|overlook|assume|ready/.test(text))hot=49;
 else if(/worth|overpriced|good value|feels worth/.test(text))hot=2;
