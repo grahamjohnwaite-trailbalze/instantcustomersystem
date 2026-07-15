@@ -52,7 +52,17 @@ const ISSUE_STOP_WORDS=new Set('the a an and or of to in on for with is are was 
 function issueTopicTokens(s){return new Set(String(s||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>3&&!ISSUE_STOP_WORDS.has(w)))}
 function issueSimilarity(a,b){const A=issueTopicTokens(a),B=issueTopicTokens(b);if(!A.size||!B.size)return 0;let hit=0;A.forEach(x=>{if(B.has(x))hit++});return hit/Math.min(A.size,B.size)}
 async function copyProductionMap(){
- sortSections();
+ E('save-state').textContent='Loading current issue map…';
+ try{
+   const id=S.issue?.id||E('issue-select').value;
+   if(!id){E('save-state').textContent='Select an issue first.';return}
+   const r=await api(`/api/sections?issue=${encodeURIComponent(id)}`);
+   S.sections=r.records||[];
+   sortSections();
+ }catch(err){
+   E('save-state').textContent='Could not load the current issue map: '+err.message;
+   return;
+ }
  const lines=['ISSUE PRODUCTION MAP',`${S.sections.length} sections`,''];
  S.sections.forEach(s=>{
    const f=s.fields||{};
