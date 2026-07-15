@@ -1,6 +1,8 @@
-ICS Phase 1B linked issue field fix v1.2
+ICS Phase 1B Production Editor Fix v1.4
 
-Upload the app and netlify folders to the root of the existing GitHub repository.
-Replace the existing files when prompted.
-Commit message: Fix Issue Sections linked field mapping
-Wait for Netlify to publish, then hard refresh /app with Ctrl+F5.
+Upload the app and netlify folders to the root of the existing GitHub repository. Replace the existing files.
+
+Commit message:
+Complete Phase 1B production section editor
+
+After Netlify publishes, open /app and hard refresh with Ctrl+F5.
