@@ -117,7 +117,7 @@ function suspectedBriefMismatch(f){
  const title=String(val(f,'Section Title')||'').toLowerCase();
  const proof=(String(val(f,'Local Proof Needed')||'')+' '+String(val(f,'Evidence Required')||'')).toLowerCase();
  if(/a47|a11|tyres|coolant|warning lights|pre-journey/.test(proof) && !/drive|car|road|diversion|journey/.test(title)) return true;
- if(/menu price|menu details/.test(proof) && !/breakfast|food|farm shop|beauty/.test(title)) return true;
+ if(/menu price|menu details/.test(proof) && !/breakfast|full english|food|farm shop|beauty|family day|event/.test(title)) return true;
  return false;
 }
 async function buildIssue(){
