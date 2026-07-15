@@ -53,12 +53,23 @@ function sectionText(s){return Object.values(s.fields||{}).filter(v=>typeof v===
 const ISSUE_STOP_WORDS=new Set('the a an and or of to in on for with is are was were be been being this that what which who how why your our norfolk spotlight unfiltered'.split(' '));
 function issueTopicTokens(s){return new Set(String(s||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>3&&!ISSUE_STOP_WORDS.has(w)))}
 function issueSimilarity(a,b){const A=issueTopicTokens(a),B=issueTopicTokens(b);if(!A.size||!B.size)return 0;let hit=0;A.forEach(x=>{if(B.has(x))hit++});return hit/Math.min(A.size,B.size)}
-function evidenceClass(f){
+function buildProfile(f){
+ const title=String(val(f,'Section Title')||'');
+ const q=String(val(f,'Core Reader Question')||'');
+ const type=String(val(f,'Section Type')||'');
  const status=String(val(f,'Evidence Status')||'');
- const blob=[val(f,'Section Title'),val(f,'Core Reader Question'),val(f,'Evidence Required'),val(f,'Local Proof Needed')].join(' ').toLowerCase();
- if(status==='Question Only'||/intro|outro/.test(String(val(f,'Section Type')).toLowerCase()))return 'A — Question Only';
- if(/nhs|council|water|planning|temperature|°c|mortgage|conveyanc|solicitor|survey|deposit|house|price|cost|£|heat pump|air con|dentist|health service|road|diversion|hosepipe|ban|ticket|refund|cancel/.test(blob))return 'C — Evidence Heavy';
- return 'B — Light Proof';
+ const blob=(title+' '+q).toLowerCase();
+ if(status==='Question Only'||/intro|outro/.test(type.toLowerCase())) return {cls:'A — Question Only',proof:'No external proof required unless the draft introduces a new factual claim.'};
+ if(/water|sewage|drainage|nhs|dentist|health service|37\.7|mortgage|debt|conveyanc|solicitor|survey|deposit|house|£250,000|£350,000|£500,000|heat pump|air con|hosepipe|ban|cancel|sandringham|university|apprentice|road|diversion/.test(blob))
+   return {cls:'C — Evidence Heavy',proof:'Verify material claims with current reliable sources and named Norfolk proof before drafting.'};
+ return {cls:'B — Light Proof',proof:'Check named Norfolk examples and any current prices, dates or service details before drafting.'};
+}
+function suspectedBriefMismatch(f){
+ const title=String(val(f,'Section Title')||'').toLowerCase();
+ const proof=(String(val(f,'Local Proof Needed')||'')+' '+String(val(f,'Evidence Required')||'')).toLowerCase();
+ if(/a47|a11|tyres|coolant|warning lights|pre-journey/.test(proof) && !/drive|car|road|diversion|journey/.test(title)) return true;
+ if(/menu price|menu details/.test(proof) && !/breakfast|food|farm shop|beauty/.test(title)) return true;
+ return false;
 }
 async function buildIssue(){
  if(!S.issue){alert('Open an issue first.');return}
@@ -72,27 +83,31 @@ async function buildIssue(){
    }).sort((a,b)=>a.run-b.run);
    if(!publish.length){alert('No Publish Now editorial plan found. Apply the editorial plan first.');return}
    const groups={'A — Question Only':[],'B — Light Proof':[],'C — Evidence Heavy':[]};
-   publish.forEach(x=>groups[evidenceClass(x.s.fields)].push(x));
-   const lines=['ISSUE BUILD RUN',`${publish.length} Publish Now sections`,'',
+   const mismatches=[];
+   publish.forEach(x=>{const p=buildProfile(x.s.fields);groups[p.cls].push(x);if(suspectedBriefMismatch(x.s.fields))mismatches.push(x)});
+   const lines=['ISSUE BUILD QA',`${publish.length} Publish Now sections`,'',
      `A — Question Only: ${groups['A — Question Only'].length}`,
      `B — Light Proof: ${groups['B — Light Proof'].length}`,
-     `C — Evidence Heavy: ${groups['C — Evidence Heavy'].length}`,'',
-     'BUILD QUEUE'];
+     `C — Evidence Heavy: ${groups['C — Evidence Heavy'].length}`,
+     `Suspected copied/mismatched briefs: ${mismatches.length}`,''];
+   if(mismatches.length){
+     lines.push('STOP GATE — BRIEF REPAIR REQUIRED');
+     mismatches.forEach(({s,run})=>lines.push(`${String(run).padStart(2,'0')} | ${val(s.fields,'Section Title')}`));
+     lines.push('','These sections appear to contain evidence/local-proof text copied from a different topic. Repair the section brief before automated research or drafting.','');
+   } else lines.push('QA PASS — no obvious copied brief mismatch detected.','');
+   lines.push('BUILD QUEUE');
    publish.forEach(({s,run})=>{
-     const f=s.fields||{}, cls=evidenceClass(f);
-     lines.push('',
-       `${String(run).padStart(2,'0')} | ${val(f,'Section Title')}`,
-       `Class: ${cls} | Lane: ${val(f,'Commercial Lane')} | CTA: ${val(f,'CTA Type')}`,
+     const f=s.fields||{}, profile=buildProfile(f), bad=suspectedBriefMismatch(f);
+     lines.push('',`${String(run).padStart(2,'0')} | ${val(f,'Section Title')}`,
+       `Class: ${profile.cls} | Lane: ${val(f,'Commercial Lane')} | CTA: ${val(f,'CTA Type')} | Brief QA: ${bad?'REPAIR':'PASS'}`,
        `Question: ${val(f,'Core Reader Question')||'—'}`,
-       `Local proof needed: ${val(f,'Local Proof Needed')||'—'}`,
-       `Evidence required: ${val(f,'Evidence Required')||'—'}`,
-       `Current source: ${val(f,'Source / Reference Link 1')||'—'}`,
-       `Rule: ${cls.startsWith('A')?'Draft from the approved question and reader action. Do not invent local quotes or factual claims.':cls.startsWith('B')?'Verify the named local examples and any current prices/dates before drafting.':'Research and verify material factual claims from reliable current sources before drafting. Do not mark Verified until the finished copy is supportable.'}`
-     );
+       `Stored local proof: ${val(f,'Local Proof Needed')||'—'}`,
+       `Stored evidence: ${val(f,'Evidence Required')||'—'}`,
+       `Build rule: ${profile.proof}`);
    });
    E('preview-text').value=lines.join('\n');
    E('preview-dialog').showModal();
-   E('save-state').textContent=`Build run prepared: ${groups['A — Question Only'].length} A · ${groups['B — Light Proof'].length} B · ${groups['C — Evidence Heavy'].length} C.`;
+   E('save-state').textContent=`Build QA: ${groups['A — Question Only'].length} A · ${groups['B — Light Proof'].length} B · ${groups['C — Evidence Heavy'].length} C · ${mismatches.length} brief repairs.`;
  }catch(err){alert('Build issue error: '+err.message);E('save-state').textContent='Build issue failed.'}
 }
 async function applyEditorialPlan(){
