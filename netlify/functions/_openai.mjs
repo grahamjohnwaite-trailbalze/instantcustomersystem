@@ -17,9 +17,12 @@ export function cleanUrl(value){
   }catch{return ''}
 }
 
-export async function createResponse({input,useWeb=false}){
-  const apiKey=env('OPENAI_API_KEY');
-  const model=env('OPENAI_MODEL',{required:false,fallback:'gpt-5.5'});
+function candidateModels(){
+  const configured=String(env('OPENAI_MODEL',{required:false,fallback:''})||'').trim();
+  return [...new Set([configured,'gpt-5.6-luna','gpt-5.6-terra','gpt-5.6'].filter(Boolean))];
+}
+
+async function requestModel({apiKey,model,input,useWeb}){
   const body={model,input};
   if(useWeb)body.tools=[{type:'web_search'}];
   const response=await fetch(`${API_ROOT}/responses`,{
@@ -29,11 +32,26 @@ export async function createResponse({input,useWeb=false}){
   });
   const text=await response.text();
   let payload;try{payload=text?JSON.parse(text):{}}catch{payload={raw:text}}
-  if(!response.ok){
-    const error=new Error(payload?.error?.message||`OpenAI request failed (${response.status})`);
-    error.status=response.status;error.details=payload;throw error;
+  return {response,payload};
+}
+
+export async function createResponse({input,useWeb=false}){
+  const apiKey=env('OPENAI_API_KEY');
+  const attempts=[];
+  for(const model of candidateModels()){
+    const {response,payload}=await requestModel({apiKey,model,input,useWeb});
+    if(response.ok)return {...payload,_model_used:model};
+    const message=payload?.error?.message||`OpenAI request failed (${response.status})`;
+    const code=payload?.error?.code||payload?.error?.type||'';
+    attempts.push(`${model}: ${message}${code?` [${code}]`:''}`);
+    const retryable=response.status===404||response.status===403||/model|permission|access/i.test(message);
+    if(!retryable){
+      const error=new Error(message);
+      error.status=response.status;error.details=payload;throw error;
+    }
   }
-  return payload;
+  const error=new Error(`No configured OpenAI model was available. Attempts: ${attempts.join(' | ')}`);
+  error.status=403;error.details={attempts};throw error;
 }
 
 export function outputText(response){

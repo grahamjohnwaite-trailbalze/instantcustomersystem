@@ -5,7 +5,7 @@ Adds a real server-side production step using the OpenAI Responses API.
 ## Netlify environment variables required
 
 - `OPENAI_API_KEY` — required
-- `OPENAI_MODEL` — optional; defaults to `gpt-5.5`
+- `OPENAI_MODEL` — optional; automatically tries `gpt-5.6-luna`, then `gpt-5.6-terra`, then `gpt-5.6`
 - existing `AIRTABLE_TOKEN`
 - existing `AIRTABLE_BASE_ID`
 
