@@ -50,7 +50,7 @@ function sectionText(s){return Object.values(s.fields||{}).filter(v=>typeof v===
 function auditMap(){
  sortSections();
  const counts={Authority:0,Activation:0,Community:0,Other:0};
- const ctas={}; const evidence=[]; const pathways=[]; const archive=[];
+ const ctas={}; const evidence=[]; const pathways=[]; const archive=[]; const duplicates=[];
  S.sections.forEach(s=>{
    const lane=val(s.fields,'Commercial Lane')||'Other';
    counts[lane]=(counts[lane]||0)+1;
@@ -59,6 +59,11 @@ function auditMap(){
    if(!val(s.fields,'Commercial Pathway')) pathways.push(val(s.fields,'Section Order'));
    if(!val(s.fields,'Archive Similarity Note')) archive.push(val(s.fields,'Section Order'));
  });
+ for(let i=0;i<S.sections.length;i++)for(let j=i+1;j<S.sections.length;j++){
+   const a=S.sections[i],b=S.sections[j];
+   const score=similarity([val(a.fields,'Section Title'),val(a.fields,'Core Reader Question'),val(a.fields,'Universal Reader Problem')].join(' '),[val(b.fields,'Section Title'),val(b.fields,'Core Reader Question'),val(b.fields,'Universal Reader Problem')].join(' '));
+   if(score>=0.45)duplicates.push(`${val(a.fields,'Section Order')} ↔ ${val(b.fields,'Section Order')}`);
+ }
  const lanes=AUTHORITY_LANES.map(([name,keys])=>{
    const hits=S.sections.filter(s=>keys.some(k=>sectionText(s).includes(k)));
    return `<div><strong>${hits.length?'✓':'✕'} ${esc(name)}</strong><br><span class="muted">${hits.length?'Sections '+hits.map(s=>esc(val(s.fields,'Section Order'))).join(', '):'MISSING'}</span></div>`;
@@ -70,8 +75,8 @@ function auditMap(){
  ${activationWarning}
  <h3>Locked authority lane coverage</h3><div style="display:grid;gap:8px">${lanes}</div>
  <h3>CTA mix</h3><div class="muted">${Object.entries(ctas).map(([k,v])=>`${esc(k)} ${v}`).join(' · ')}</div>
- <h3>Pre-build gaps</h3><div class="muted">Evidence needs update: ${evidence.length?evidence.join(', '):'none'}<br>Missing commercial pathway: ${pathways.length?pathways.join(', '):'none'}<br>Missing archive note: ${archive.length?archive.join(', '):'none'}</div>
- <div class="muted" style="margin-top:10px">URLs: use clean raw destination URLs only. Tracking is applied later in Global Control.</div>`;
+ <h3>Pre-build gaps</h3><div class="muted">Evidence needs update: ${evidence.length?evidence.join(', '):'none'}<br>Missing commercial pathway: ${pathways.length?pathways.join(', '):'none'}<br>Missing archive note: ${archive.length?archive.join(', '):'none'}<br>Current issue similarity warnings: ${duplicates.length?duplicates.join(' · '):'none'}</div>
+ <div class="muted" style="margin-top:10px">Similarity warnings are review prompts, not automatic duplicate deletions.<br>URLs: use clean raw destination URLs only. Tracking is applied later in Global Control.</div>`;
 }
 
 async function loadSections(){E('section-list').innerHTML='<div class="empty">Loading…</div>';const d=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=d.records;sortSections();S.section=S.sections[0]||null;renderSections();renderForm()}
@@ -88,6 +93,12 @@ const isFood=/cafe|café|pub|restaurant|breakfast|food|takeaway|meal|plate|beans
 const isVisitor=/visitor|day trip|holiday|tourist|visiting friends|visiting relatives/.test(text);
 const isEvent=/concert|festival|event|ticket|sandringham|performer|promoter/.test(text);
 const isCommunity=/nominate|reader|what is your|tell us|share your|your verdict|give us/.test(text);
+const currentIssuePeers=S.sections.filter(s=>s.id!==S.section.id);
+const proposedCore=[f['Section Title'],f['Core Reader Question'],f['Universal Reader Problem']].join(' ').toLowerCase();
+const STOP=new Set('the a an and or of to in on for with is are was were be been being this that what which who how why your our norfolk spotlight unfiltered'.split(' '));
+const topicTokens=s=>new Set(String(s||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>3&&!STOP.has(w)));
+const similarity=(a,b)=>{const A=topicTokens(a),B=topicTokens(b);if(!A.size||!B.size)return 0;let hit=0;A.forEach(x=>{if(B.has(x))hit++});return hit/Math.min(A.size,B.size)};
+const issueMatches=currentIssuePeers.map(s=>({s,score:similarity(proposedCore,[val(s.fields,'Section Title'),val(s.fields,'Core Reader Question'),val(s.fields,'Universal Reader Problem')].join(' '))})).filter(x=>x.score>=0.45).sort((a,b)=>b.score-a.score);
 let hot=38;
 if(isCar&&/check|before|overlook|assume|ready/.test(text))hot=49;
 else if(/worth|overpriced|good value|feels worth/.test(text))hot=2;
@@ -128,8 +139,11 @@ let lane='Community',path='Community organisations and local businesses connecte
 if(isCar){lane='Authority';path='Garages, tyre specialists, MOT centres, breakdown providers and vehicle air-conditioning specialists.'}
 else if(isMortgage){lane='Authority';path='Mortgage advisers, debt advisers and financial specialists who can explain suitability, total cost and risk clearly.'}
 else if(isFood){lane='Activation';path='Independent cafés, pubs, farm shops, hotels and local food businesses with specific local proof.'}
-else if(isEvent){lane='Activation';path='Hotels, pubs, restaurants, taxis, attractions, entertainment venues and event businesses affected by major visitor events.'}
-setField('Commercial Lane',lane,true);setField('Commercial Pathway',path,true);
+else if(isEvent){lane='Activation';path='Event organisers, attractions, venues and family-experience partners who can demonstrate real value through transparent pricing, inclusions and practical visitor information.'}
+setField('Commercial Lane',lane,true);
+const existingPath=(f['Commercial Pathway']||'').trim();
+const stalePath=/garages|tyre specialists|mot centres|independent cafés|independent cafes|farm shops|event businesses affected by major visitor events/i.test(existingPath);
+if(!existingPath||stalePath)setField('Commercial Pathway',path,true);
 
 let reader='Norfolk residents directly affected by this question';
 if(isCar)reader='Norfolk drivers, families and visitors planning longer summer journeys';
@@ -177,6 +191,13 @@ else if(isFood)social='What is the one detail that makes or breaks this for you?
 setField('Social Question Shape',social,true);
 
 setField('Archive Similarity Status','Review',true);
+if(issueMatches.length){
+ const top=issueMatches[0];
+ setField('Archive Similarity Note',`CURRENT ISSUE WARNING: Similar to Section ${val(top.s.fields,'Section Order')} — ${val(top.s.fields,'Section Title')}. Review before saving.`,true);
+ E('save-state').textContent=`Current issue duplicate warning: compare with Section ${val(top.s.fields,'Section Order')}.`;
+}else if(/CURRENT ISSUE WARNING:/i.test(f['Archive Similarity Note']||'')){
+ setField('Archive Similarity Note','No close current-issue match detected by ICS. Archive review still required.',true);
+}
 let reuse='Reusable';
 if(isCar||isMortgage)reuse='Multi-edition';
 else if(/sandringham/.test(text)&&/cancel|concert|event/.test(text))reuse='Multi-edition';
