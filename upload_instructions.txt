@@ -1,0 +1,40 @@
+Instant Customer System — Phase 1A Connected Read-Only Shell
+
+This package is a full repository package for:
+github.com/grahamjohnwaite-trailbalze/instantcustomersystem
+
+DO NOT upload only the builder files.
+DO NOT upload yet until guided through the GitHub replacement step.
+
+New Phase 1A files:
+- app/index.html
+- netlify/functions/_airtable.mjs
+- netlify/functions/publications.mjs
+- netlify/functions/issues.mjs
+- ICS_PHASE_1A_BUILD_NOTES.md
+
+Updated repository files:
+- netlify.toml
+- package.json
+
+Existing files retained:
+- index.html
+- builder/
+- cms/
+- data/
+- manual/
+- partners/
+- existing Netlify functions
+- robots.txt
+
+Required Netlify environment variables after GitHub deployment:
+- AIRTABLE_TOKEN = the retained restricted read-only Airtable token
+- AIRTABLE_BASE_ID = appVwgvUU4qvRWroW
+
+Expected test URLs after deployment:
+- https://instantcustomersystem.com/app/
+- https://instantcustomersystem.com/ics
+- https://instantcustomersystem.com/.netlify/functions/publications
+- https://instantcustomersystem.com/.netlify/functions/issues
+
+Phase 1A is read-only. It does not create, edit or delete Airtable records.

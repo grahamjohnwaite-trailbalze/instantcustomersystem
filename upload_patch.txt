@@ -1,0 +1,8 @@
+ICS Phase 1B Production Editor Fix v1.4
+
+Upload the app and netlify folders to the root of the existing GitHub repository. Replace the existing files.
+
+Commit message:
+Complete Phase 1B production section editor
+
+After Netlify publishes, open /app and hard refresh with Ctrl+F5.

@@ -9,7 +9,10 @@
 <button class="btn secondary" id="copy-issue-map" style="width:100%;margin-bottom:8px">Open production map</button>
 <button class="btn secondary" id="apply-editorial-plan" style="width:100%;margin-bottom:8px">Apply current editorial plan</button>
 <button class="btn" id="build-issue" style="width:100%;margin-bottom:8px">Build issue</button>
-<button class="btn secondary" id="repair-build-briefs" style="width:100%;margin-bottom:12px">Repair issue briefs</button>
+<button class="btn secondary" id="repair-build-briefs" style="width:100%;margin-bottom:8px">Repair issue briefs</button>
+<button class="btn" id="run-production" style="width:100%;margin-bottom:8px">Run production service</button>
+<button class="btn secondary" id="run-next-production" style="width:100%;margin-bottom:12px">Produce next section only</button>
+<div id="production-progress" class="empty" style="margin-bottom:14px">Production service not run yet.</div>
 <div id="map-audit" class="empty" style="margin-bottom:14px">Audit not run yet.</div>
 <div class="form-grid"><div class="field full"><label>Issue status</label><select id="ih-status"><option>PLANNED</option><option>BUILDING</option><option>QA</option><option>READY FOR LETTERMAN</option><option>PUBLISHED</option></select></div><div class="field full"><label>Main theme</label><textarea id="ih-theme"></textarea></div><div class="field full"><label>Subject line</label><input id="ih-subject"></div><div class="field full"><label>Preheader</label><textarea id="ih-preheader"></textarea></div><div class="field full"><label>Send date</label><input id="ih-date" type="date"></div></div><h3>Minimum section gate</h3><div id="gate" class="checklist"></div><div class="warning" style="margin-top:14px"><strong>Phase 1B discipline</strong><br>One primary Hot Button. One useful action. Named local proof. No unresolved placeholders in final copy.</div></aside></div></section></main></div>
 <dialog id="issue-dialog"><form method="dialog" class="modal"><h2>Create issue</h2><div class="form-grid"><div class="field full"><label>Publication</label><select id="new-publication"></select></div><div class="field"><label>Issue number</label><input id="new-number" type="number"></div><div class="field"><label>Send date</label><input id="new-date" type="date" value="2026-07-16"></div><div class="field full"><label>Main theme</label><textarea id="new-theme" placeholder="The question or tension holding the issue together"></textarea></div></div><div class="savebar"><button class="btn secondary" value="cancel">Cancel</button><button class="btn" id="create-issue" value="default">Create and open</button></div></form></dialog><dialog id="preview-dialog"><div class="modal"><h2>Production / Letterman copy</h2><textarea id="preview-text" style="width:100%;min-height:430px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#preview-dialog').close()">Close</button><button class="btn" id="copy-preview">Copy</button></div></div></dialog>
@@ -101,6 +104,41 @@ async function repairBuildBriefs(){
   E('save-state').textContent=`Brief repair complete: ${changed} updated${missing.length?' · missing '+missing.join(', '):''}.`;
   alert(`Brief repair complete. ${changed} Publish Now sections updated. Run Build issue again.`);
  }catch(err){alert('Brief repair error: '+err.message);E('save-state').textContent='Brief repair failed.'}
+}
+function productionClassForFields(f){return buildProfile(f).cls}
+async function productionSections(){
+ const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+ S.sections=r.records||[];
+ return S.sections.filter(s=>/PUBLISH NOW — Final Running Order \d{2}\./.test(String(val(s.fields,'Notes')||''))).map(s=>{const m=String(val(s.fields,'Notes')||'').match(/Final Running Order (\d{2})/);return{s,run:m?Number(m[1]):999}}).sort((a,b)=>a.run-b.run)
+}
+function productionDone(s){return val(s.fields,'Section Status')==='Ready'&&val(s.fields,'Section Final Copy')&&['Pass'].includes(val(s.fields,'Section QA Result'))}
+async function produceOne(item){
+ const cls=productionClassForFields(item.s.fields);
+ const d=await api('produce-section',{method:'POST',body:JSON.stringify({sectionId:item.s.id,productionClass:cls})});
+ item.s=d.record;
+ S.sections=S.sections.map(x=>x.id===d.record.id?d.record:x);
+ return d;
+}
+async function runProduction({one=false}={}){
+ if(!S.issue){alert('Open an issue first.');return}
+ let queue;
+ try{queue=await productionSections()}catch(e){alert(e.message);return}
+ const pending=queue.filter(x=>!productionDone(x.s));
+ if(!pending.length){E('production-progress').className='philosophy-box';E('production-progress').innerHTML='<strong>Production complete.</strong><div class="muted">All Publish Now sections are Ready with QA Pass.</div>';return}
+ const work=one?pending.slice(0,1):pending;
+ if(!one&&!confirm(`Run the production service for ${work.length} pending sections? This uses the OpenAI API, researches B/C sections and writes drafts/evidence back to Airtable.`))return;
+ let pass=0,fix=0,failed=0;
+ E('run-production').disabled=true;E('run-next-production').disabled=true;
+ for(let i=0;i<work.length;i++){
+   const item=work[i];
+   E('production-progress').className='philosophy-box';
+   E('production-progress').innerHTML=`<strong>Producing ${i+1} of ${work.length}</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Pass ${pass} · Review ${fix} · Failed ${failed}</div>`;
+   try{const d=await produceOne(item);if(d.qaResult==='Pass')pass++;else fix++}catch(e){failed++;E('save-state').textContent=`Production error on ${val(item.s.fields,'Section Title')}: ${e.message}`;if(one)alert(e.message)}
+ }
+ E('run-production').disabled=false;E('run-next-production').disabled=false;
+ renderSections();
+ E('production-progress').innerHTML=`<strong>Production run finished</strong><div class="muted">Pass ${pass} · Human review ${fix} · Failed ${failed}</div>`;
+ E('save-state').textContent='Production run complete. Open Fix Required sections first, then export Letterman copy when all are ready.';
 }
 function buildProfile(f){
  const title=String(val(f,'Section Title')||'');
@@ -377,5 +415,5 @@ async function saveIssue(){if(!S.issue)return;const fields={'Issue Status':E('ih
 function letterman(){if(!S.issue)return '';const f=S.issue.fields;const sections=[...S.sections].sort((a,b)=>Number(val(a.fields,'Section Order')||999)-Number(val(b.fields,'Section Order')||999));let out=`SUBJECT\n${val(f,'Subject Line')}\n\nPREHEADER\n${val(f,'Preheader')}\n\n`;for(const s of sections){const sf=s.fields;if(!val(sf,'Section Final Copy'))continue;out+=`${val(sf,'Section Final Copy').trim()}\n`;if(val(sf,'Primary Next Action'))out+=`\nBUTTON: ${val(sf,'Primary Next Action')}`;if(val(sf,'Action Destination URL'))out+=`\nURL: ${val(sf,'Action Destination URL')}`;out+='\n\n---\n\n'}return out.trim()}
 async function copyText(t){await navigator.clipboard.writeText(t);alert('Copied.')}
 async function createIssue(ev){ev.preventDefault();const fields={Publication:[E('new-publication').value],'Issue Number':Number(E('new-number').value)||undefined,'Send Date':E('new-date').value,'Issue Status':'PLANNED','Main Theme':E('new-theme').value};const d=await api('issues',{method:'POST',body:JSON.stringify({fields})});S.issues.unshift(d.record);E('issue-dialog').close();render();await openIssue(d.record.id)}
-E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));E('new-issue').onclick=()=>E('issue-dialog').showModal();E('create-issue').onclick=createIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-norfolk').onclick=()=>{const n=S.publications.find(p=>/Norfolk Spotlight/i.test(val(p.fields,'Publication Name')));const issue=S.issues.find(i=>n&&(i.fields.Publication||[]).includes(n.id)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue)openIssue(issue.id);else{E('new-publication').value=n?.id||'';E('new-date').value='2026-07-16';E('issue-dialog').showModal()}};loadAll().then(()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))openIssue(last)});
+E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));E('new-issue').onclick=()=>E('issue-dialog').showModal();E('create-issue').onclick=createIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>runProduction({one:true});E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-norfolk').onclick=()=>{const n=S.publications.find(p=>/Norfolk Spotlight/i.test(val(p.fields,'Publication Name')));const issue=S.issues.find(i=>n&&(i.fields.Publication||[]).includes(n.id)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue)openIssue(issue.id);else{E('new-publication').value=n?.id||'';E('new-date').value='2026-07-16';E('issue-dialog').showModal()}};loadAll().then(()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))openIssue(last)});
 </script></body></html>
