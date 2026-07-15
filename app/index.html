@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ICS Issue Command Centre</title><style>
 :root{--bg:#f4f7fb;--panel:#fff;--ink:#172033;--muted:#657089;--line:#dfe5ef;--nav:#13213a;--accent:#2366d1;--good:#117a55;--warn:#a15c00;--bad:#a02d36;--shadow:0 10px 30px rgba(20,35,65,.08)}*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}.shell{min-height:100vh;display:grid;grid-template-columns:220px 1fr}.sidebar{background:var(--nav);color:#fff;padding:20px 15px;position:sticky;top:0;height:100vh}.brand{font-weight:850;font-size:18px;margin:4px 8px 24px}.brand span{display:block;font-size:12px;color:#aebbd1;margin-top:5px}.nav{display:grid;gap:6px}.nav button{border:0;background:transparent;color:#c9d3e4;text-align:left;padding:11px 12px;border-radius:8px;cursor:pointer}.nav button.active,.nav button:hover{background:#243653;color:#fff}.phase{position:absolute;bottom:18px;left:18px;color:#b7c5d9;font-size:12px}.main{padding:24px 28px 48px;min-width:0}.topbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.eyebrow{color:var(--accent);font-size:12px;font-weight:800;text-transform:uppercase}.topbar h1{margin:4px 0;font-size:28px}.sub{color:var(--muted);font-size:13px}.status{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#999;margin-right:6px}.dot.ok{background:var(--good)}.dot.bad{background:var(--bad)}.view{display:none}.view.active{display:block}.card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px;box-shadow:var(--shadow)}.grid{display:grid;gap:14px}.metrics{grid-template-columns:repeat(4,1fr)}.metric span,.label{font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.04em}.metric strong{font-size:27px;display:block;margin-top:4px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:20px 0 10px}.section-head h2{font-size:18px;margin:0}.btn{border:0;border-radius:8px;padding:9px 12px;background:var(--accent);color:#fff;font-weight:750;cursor:pointer}.btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.danger{background:var(--bad)}.btn:disabled{opacity:.5}.table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:13px}table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:11px 13px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}th{font-size:10px;text-transform:uppercase;color:var(--muted);background:#f8fafc}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf2f8;font-size:11px;font-weight:750}.pill.good{background:#e5f5ee;color:var(--good)}.pill.warn{background:#fff2dc;color:var(--warn)}.builder{display:grid;grid-template-columns:290px minmax(420px,1fr) 330px;gap:14px;align-items:start}.rail,.editor,.intel{min-height:650px}.rail-list{display:grid;gap:7px;max-height:580px;overflow:auto}.section-item{padding:10px;border:1px solid var(--line);border-radius:9px;background:#fff;cursor:pointer}.section-item.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(35,102,209,.12)}.section-item strong{display:block;font-size:13px}.section-item small{color:var(--muted)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field{display:grid;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;background:#fff}.field textarea{min-height:82px;resize:vertical}.field textarea.copy{min-height:240px}.savebar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:12px}.muted{color:var(--muted);font-size:12px}.warning{background:#fff7e8;border-left:4px solid var(--warn);padding:12px;border-radius:8px}.checklist{display:grid;gap:8px;margin-top:10px}.check{padding:9px;border-radius:8px;background:#f6f8fb;font-size:12px}.check.good{background:#eaf7f1;color:var(--good)}dialog{border:0;border-radius:14px;padding:0;max-width:650px;width:calc(100% - 30px);box-shadow:0 25px 80px rgba(0,0,0,.25)}dialog::backdrop{background:rgba(10,20,35,.55)}.modal{padding:20px}.modal h2{margin-top:0}.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.toolbar select{padding:9px;border:1px solid var(--line);border-radius:8px}.empty{padding:30px;text-align:center;color:var(--muted)}@media(max-width:1200px){.builder{grid-template-columns:250px 1fr}.intel{grid-column:1/-1;min-height:auto}}@media(max-width:850px){.shell{grid-template-columns:1fr}.sidebar{height:auto;position:static}.nav{grid-template-columns:repeat(4,1fr)}.phase{display:none}.main{padding:18px}.builder{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button></nav><div class="phase">Phase 1B v1.5<br><strong>Assisted section intelligence</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Norfolk Spotlight live production test.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button></nav><div class="phase">Phase 1B v1.6<br><strong>Context-aware section intelligence</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Norfolk Spotlight live production test.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view active" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Norfolk target</span><strong style="font-size:17px">Thu 16 Jul</strong></div><div class="card metric"><span>Hard fallback</span><strong style="font-size:17px">Sat 18 Jul</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Build Norfolk Spotlight first.</strong><p>Use the Issue Command Centre to plan and write the issue. Keep sections short, specific and locally evidenced. Export only when core reader question, Hot Button, reader value, evidence status, one action and final copy are complete.</p><button class="btn" id="open-norfolk">Open Norfolk production</button></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -23,22 +23,108 @@ function hotLabel(x){return String(x).replace(/^(\d+)\s+—\s+THE\s+[“\"](.+?)
 function formFields(){const out={};document.querySelectorAll('#section-form [data-field]').forEach(x=>{let v=x.value;if(x.type==='number')v=v===''?null:Number(v);out[x.dataset.field]=v});return out}function setField(k,v,overwrite=false){const x=document.querySelector(`#section-form [data-field="${CSS.escape(k)}"]`);if(!x)return;if(overwrite||!String(x.value||'').trim()){x.value=v??'';x.dispatchEvent(new Event('change',{bubbles:true}))}}
 function hotByNumber(n){return S.hot.find(x=>String(x).startsWith(String(n).padStart(2,'0')+' '))||''}
 function generateIntelligence(){if(!S.section)return;const f=formFields();const text=[f['Section Title'],f['Reader Hook'],f['Core Reader Question'],f['Universal Reader Problem'],f['Primary Next Action']].join(' ').toLowerCase();
-let hot=38;if(/worth|price|overpriced|pay|value/.test(text))hot=2;else if(/trust|recommend|who would you use|who would you call/.test(text))hot=3;else if(/which|choose|versus| vs /.test(text))hot=4;else if(/hard|difficult|friction|why is this/.test(text))hot=5;else if(/local|visitor|insider|regulars know|advice/.test(text))hot=33;else if(/cost overall|really cost|total cost|longer term/.test(text))hot=35;else if(/changed|what changed/.test(text))hot=19;else if(/unfair|fair/.test(text))hot=9;else if(/miss|too late|caught out|regret/.test(text))hot=1;else if(/what happens next|future|end of|next/.test(text))hot=38;
-setField('Primary Hot Button',hotByNumber(hot));
-const action=(f['Primary Next Action']||'').trim();let cta='Reply';if(/^nominate\b/i.test(action))cta='Nominate';else if(/^vote\b/i.test(action))cta='Vote';else if(/^comment\b/i.test(action))cta='Comment';else if(/^share\b/i.test(action))cta='Share';else if(/^save\b/i.test(action))cta='Save';else if(/click|read|download|open/i.test(action))cta='Button';setField('CTA Type',cta);
-if(action)setField('CTA Text',action.replace(/^(send|tell|give|share|nominate|vote|comment|reply|ask)\s+(norfolk spotlight\s+)?/i,'').replace(/[.!?]+$/,'').toUpperCase().slice(0,70));
-let lane='Community',path='Community organisations and local businesses connected to the reader question.';if(/mortgage|debt|finance|dentist|physio|legal|accountant|insurance|estate agent|letting/.test(text)){lane='Authority';path='A qualified local expert who can explain the decision, risk and next step clearly.'}else if(/cafe|café|pub|restaurant|breakfast|food|takeaway|attraction|hotel|event|shop|venue/.test(text)){lane='Activation';path='Relevant local venues and businesses that can help answer the reader question through specific proof or an offer.'}setField('Commercial Lane',lane);setField('Commercial Pathway',path);
-setField('Reader Type',/visitor|day trip|holiday/.test(text)?'Local residents, visitors and people planning a Norfolk day out':'Norfolk residents directly affected by this question');
-setField('Decision Constraint',/£|price|cost|budget|pay/.test(text)?'Budget, total cost and whether the outcome feels worth it.':'Time, location and the reader’s real-life circumstances.');
-setField('Emotional Outcome',/warning|risk|cost|cancel|debt/.test(text)?'Concerned':'Curious');
-setField('Reader Value',f['Core Reader Question']?`A clear, locally useful answer to: ${f['Core Reader Question']}`:'A specific local answer that helps the reader decide or act.');
-setField('Local Proof Needed','Named Norfolk places, current examples, prices, dates or reader experiences relevant to the question.');
-setField('Evidence Required',/nominate|reader|what is your|tell us|share your/.test(text)?'Reader-supplied examples; verify factual claims before publication.':'At least one reliable current source plus named local proof.');
-setField('Evidence Status',/nominate|reader|what is your|tell us|share your/.test(text)?'Question Only':'Needs Update');
-setField('Social Question Shape',f['Core Reader Question']||'What is your Norfolk verdict?');
-setField('Archive Similarity Status','Review');setField('Reuse / Localisation Potential',/sandringham|norfolk/.test(text)&&/cancel|breaking|estate/.test(text)?'Multi-edition':'Reusable');setField('Section QA Result','Not Checked');
-E('save-state').textContent='Suggested intelligence added. Review highlighted fields, then save.';renderGate()}
-function renderGate(){const f=S.section?.fields||{};const checks=[['Core reader question',!!val(f,'Core Reader Question')],['One primary Hot Button',!!val(f,'Primary Hot Button')],['Clear reader value',!!val(f,'Reader Value')],['Evidence handled',['Verified','Question Only','Illustrative Example'].includes(val(f,'Evidence Status'))],['One primary action',!!val(f,'Primary Next Action')],['Final copy ready',!!val(f,'Section Final Copy')&&!/\[[^\]]+\]|TBC|TODO/i.test(val(f,'Section Final Copy'))]];E('gate').innerHTML=checks.map(([n,ok])=>`<div class="check ${ok?'good':''}">${ok?'✓':'○'} ${n}</div>`).join('')}
+const isCar=/car|driver|drive|journey|tyre|tire|coolant|air conditioning|breakdown|vehicle|mot\b|garage/.test(text);
+const isMortgage=/mortgage|debt|credit card|loan|overdraft|remortgage|interest/.test(text);
+const isFood=/cafe|café|pub|restaurant|breakfast|food|takeaway|meal|plate|beans|sausage/.test(text);
+const isVisitor=/visitor|day trip|holiday|tourist|visiting friends|visiting relatives/.test(text);
+const isEvent=/concert|festival|event|ticket|sandringham|performer|promoter/.test(text);
+const isCommunity=/nominate|reader|what is your|tell us|share your|your verdict|give us/.test(text);
+let hot=38;
+if(isCar&&/check|before|overlook|assume|ready/.test(text))hot=49;
+else if(/worth|overpriced|good value|feels worth/.test(text))hot=2;
+else if(/trust|recommend|who would you use|who would you call/.test(text))hot=3;
+else if(/which|choose|versus| vs /.test(text))hot=4;
+else if(/hard|difficult|friction|why is this/.test(text))hot=5;
+else if(/local advice|locals know|visitor|insider|regulars know/.test(text))hot=33;
+else if(/cost overall|really cost|total cost|longer term|paying for/.test(text))hot=35;
+else if(/changed|what changed/.test(text))hot=19;
+else if(/unfair|fair/.test(text))hot=9;
+else if(/miss something|too late|caught out|regret/.test(text))hot=1;
+else if(/what happens next|future|end of|next/.test(text))hot=38;
+setField('Primary Hot Button',hotByNumber(hot),true);
+
+const action=(f['Primary Next Action']||'').trim();let cta='Reply';
+if(/\bnominate\b/i.test(action))cta='Nominate';
+else if(/\bvote\b/i.test(action))cta='Vote';
+else if(/\bcomment\b/i.test(action))cta='Comment';
+else if(/\bshare\b/i.test(action))cta='Share';
+else if(/\bsave\b/i.test(action))cta='Save';
+else if(/\bask\b/i.test(action))cta='Reply';
+else if(/\breply\b|\bsend\b|\btell\b|\bgive .* verdict\b/i.test(action))cta='Reply';
+else if(/click|read|download|open/i.test(action))cta='Button';
+setField('CTA Type',cta,true);
+
+let ctaText='';
+if(cta==='Save'&&isCar)ctaText='SAVE THE FIVE-MINUTE CAR CHECK';
+else if(cta==='Nominate'&&isFood)ctaText='NOMINATE YOUR NORFOLK FAVOURITE';
+else if(cta==='Nominate')ctaText='MAKE YOUR NOMINATION';
+else if(cta==='Vote')ctaText='CAST YOUR VOTE';
+else if(cta==='Reply')ctaText='TELL US WHAT YOU THINK';
+else if(cta==='Comment')ctaText='JOIN THE CONVERSATION';
+else if(cta==='Share')ctaText='SHARE THIS';
+else if(cta==='Button')ctaText='FIND OUT MORE';
+if(ctaText)setField('CTA Text',ctaText,true);
+
+let lane='Community',path='Community organisations and local businesses connected to the reader question.';
+if(isCar){lane='Authority';path='Garages, tyre specialists, MOT centres, breakdown providers and vehicle air-conditioning specialists.'}
+else if(isMortgage){lane='Authority';path='Mortgage advisers, debt advisers and financial specialists who can explain suitability, total cost and risk clearly.'}
+else if(isFood){lane='Activation';path='Independent cafés, pubs, farm shops, hotels and local food businesses with specific local proof.'}
+else if(isEvent){lane='Activation';path='Hotels, pubs, restaurants, taxis, attractions, entertainment venues and event businesses affected by major visitor events.'}
+setField('Commercial Lane',lane,true);setField('Commercial Pathway',path,true);
+
+let reader='Norfolk residents directly affected by this question';
+if(isCar)reader='Norfolk drivers, families and visitors planning longer summer journeys';
+else if(isVisitor)reader='Norfolk residents, visitors and people planning a Norfolk day out';
+else if(isMortgage)reader='Norfolk homeowners weighing up a financial decision';
+else if(isFood)reader='Norfolk locals and visitors looking for specific food recommendations';
+setField('Reader Type',reader,true);
+
+let constraint='Time, location and the reader’s real-life circumstances.';
+if(isCar)constraint='Five minutes before departure; checks must be simple, visible and realistic for an ordinary driver.';
+else if(/£|price|cost|budget|pay/.test(text))constraint='Budget, total cost and whether the outcome feels worth it.';
+setField('Decision Constraint',constraint,true);
+
+let emotion='Curious';
+if(isCar)emotion='Ready To Act';
+else if(/warning|risk|cancel|debt/.test(text))emotion='Concerned';
+setField('Emotional Outcome',emotion,true);
+
+let value=f['Core Reader Question']?`A clear, locally useful answer to: ${f['Core Reader Question']}`:'A specific local answer that helps the reader decide or act.';
+if(isCar)value='A quick pre-journey checklist that helps drivers spot simple problems before a longer summer trip.';
+setField('Reader Value',value,true);
+
+let proof='Named Norfolk places, current examples, prices, dates or reader experiences relevant to the question.';
+let evidence='At least one reliable current source plus named local proof.';
+let evidenceStatus=isCommunity?'Question Only':'Needs Update';
+if(isCar){
+  proof='Named Norfolk summer routes such as the A47 or A11, plus a realistic pre-journey example relevant to local drivers.';
+  evidence='Current authoritative motoring or road-safety guidance covering tyres, coolant, warning lights and pre-journey vehicle checks.';
+  evidenceStatus='Needs Update';
+}else if(isMortgage){
+  proof='A realistic Norfolk homeowner example showing the monthly-payment versus total-cost trade-off.';
+  evidence='A worked example plus current authoritative guidance on total borrowing cost and the risk of securing previously unsecured debt against a home.';
+}else if(isFood){
+  proof='Named Norfolk venues, current prices and exactly what the reader gets.';
+  evidence='Venue name, location, current menu price and current offer or menu details.';
+}
+setField('Local Proof Needed',proof,true);
+setField('Evidence Required',evidence,true);
+setField('Evidence Status',evidenceStatus,true);
+
+let social=f['Core Reader Question']||'What is your Norfolk verdict?';
+if(isCar)social='What is the one car check you always do before a long summer drive — and what do most people forget?';
+else if(isMortgage)social='Would you accept a lower monthly payment if it meant paying the debt for much longer?';
+else if(isFood)social='What is the one detail that makes or breaks this for you?';
+setField('Social Question Shape',social,true);
+
+setField('Archive Similarity Status','Review',true);
+let reuse='Reusable';
+if(isCar||isMortgage)reuse='Multi-edition';
+else if(/sandringham/.test(text)&&/cancel|concert|event/.test(text))reuse='Multi-edition';
+else if(isFood)reuse='Niche adaptable';
+setField('Reuse / Localisation Potential',reuse,true);
+setField('Section QA Result','Not Checked',true);
+E('save-state').textContent='Improved intelligence added. Review the suggestions, then save.';renderGate()}function renderGate(){const f=S.section?.fields||{};const checks=[['Core reader question',!!val(f,'Core Reader Question')],['One primary Hot Button',!!val(f,'Primary Hot Button')],['Clear reader value',!!val(f,'Reader Value')],['Evidence handled',['Verified','Question Only','Illustrative Example'].includes(val(f,'Evidence Status'))],['One primary action',!!val(f,'Primary Next Action')],['Final copy ready',!!val(f,'Section Final Copy')&&!/\[[^\]]+\]|TBC|TODO/i.test(val(f,'Section Final Copy'))]];E('gate').innerHTML=checks.map(([n,ok])=>`<div class="check ${ok?'good':''}">${ok?'✓':'○'} ${n}</div>`).join('')}
 async function saveSection(){if(!S.section)return;E('save-state').textContent='Saving…';const fields=formFields();localStorage.setItem('ics:recovery:'+S.section.id,JSON.stringify({fields,savedAt:new Date().toISOString()}));try{const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:S.section.id,fields})});S.section=d.record;S.sections=S.sections.map(x=>x.id===d.record.id?d.record:x);localStorage.removeItem('ics:recovery:'+S.section.id);E('save-state').textContent='Saved to Airtable.';renderSections();renderForm()}catch(e){E('save-state').textContent='Network save failed. Recovery draft kept in this browser.';alert(e.message)}}
 async function addSection(){if(!S.issue){alert('Open an issue before adding a section.');return}const button=E('add-section');const original=button.textContent;button.disabled=true;button.textContent='Adding…';E('save-state').textContent='Creating section in Airtable…';try{const order=(Math.max(0,...S.sections.map(s=>Number(val(s.fields,'Section Order')||0)))+1);const d=await api('sections',{method:'POST',body:JSON.stringify({fields:{Issues:[S.issue.id],'Section Title':'New section','Section Order':order}})});S.sections.push(d.record);S.section=d.record;renderSections();renderForm();E('save-state').textContent='New section created in Airtable.'}catch(e){E('save-state').textContent='Section was not created.';alert('Unable to add section: '+e.message)}finally{button.disabled=false;button.textContent=original}}
 async function saveIssue(){if(!S.issue)return;const fields={'Issue Status':E('ih-status').value,'Main Theme':E('ih-theme').value,'Subject Line':E('ih-subject').value,'Preheader':E('ih-preheader').value,'Send Date':E('ih-date').value};const d=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields})});S.issue=d.record;S.issues=S.issues.map(x=>x.id===d.record.id?d.record:x);E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')}`;render()}
