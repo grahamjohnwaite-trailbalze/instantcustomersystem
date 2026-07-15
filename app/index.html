@@ -6,10 +6,10 @@
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
 <section class="view" id="view-build"><div class="section-head"><div><h2 id="build-title">Choose an issue</h2><div class="muted" id="build-meta">Open an issue from the Issues screen.</div></div><div class="toolbar"><button class="btn secondary" id="save-issue">Save issue header</button><button class="btn secondary" id="preview-copy">Preview Letterman copy</button><button class="btn" id="copy-letterman">Copy Letterman copy</button></div></div><div id="no-issue" class="card empty">No issue selected.</div><div id="builder" class="builder" hidden><aside class="card rail"><div class="section-head" style="margin-top:0"><h2>Sections</h2><button class="btn" id="add-section">+ Add</button></div><div id="section-list" class="rail-list"></div><div class="rail-actions"><button class="btn" id="add-section-bottom" style="width:100%">+ Add next section</button><div class="muted" style="margin-top:6px;text-align:center">No fixed section limit · next order is automatic</div></div></aside><section class="card editor"><div class="form-grid" id="section-form"></div><div class="savebar"><span class="muted" id="save-state">Select a section.</span><div class="toolbar"><button class="btn secondary" id="generate-intelligence" type="button">Generate section intelligence</button><button class="btn" id="save-section">Save section</button></div></div></section><aside class="card intel"><h2 style="margin-top:0">Issue controls</h2>
 <button class="btn secondary" id="run-map-audit" style="width:100%;margin-bottom:8px">Run issue map audit</button>
-<button class="btn secondary" id="copy-issue-map" style="width:100%;margin-bottom:12px">Copy production map</button>
+<button class="btn secondary" id="copy-issue-map" style="width:100%;margin-bottom:12px">Open production map</button>
 <div id="map-audit" class="empty" style="margin-bottom:14px">Audit not run yet.</div>
 <div class="form-grid"><div class="field full"><label>Issue status</label><select id="ih-status"><option>PLANNED</option><option>BUILDING</option><option>QA</option><option>READY FOR LETTERMAN</option><option>PUBLISHED</option></select></div><div class="field full"><label>Main theme</label><textarea id="ih-theme"></textarea></div><div class="field full"><label>Subject line</label><input id="ih-subject"></div><div class="field full"><label>Preheader</label><textarea id="ih-preheader"></textarea></div><div class="field full"><label>Send date</label><input id="ih-date" type="date"></div></div><h3>Minimum section gate</h3><div id="gate" class="checklist"></div><div class="warning" style="margin-top:14px"><strong>Phase 1B discipline</strong><br>One primary Hot Button. One useful action. Named local proof. No unresolved placeholders in final copy.</div></aside></div></section></main></div>
-<dialog id="issue-dialog"><form method="dialog" class="modal"><h2>Create issue</h2><div class="form-grid"><div class="field full"><label>Publication</label><select id="new-publication"></select></div><div class="field"><label>Issue number</label><input id="new-number" type="number"></div><div class="field"><label>Send date</label><input id="new-date" type="date" value="2026-07-16"></div><div class="field full"><label>Main theme</label><textarea id="new-theme" placeholder="The question or tension holding the issue together"></textarea></div></div><div class="savebar"><button class="btn secondary" value="cancel">Cancel</button><button class="btn" id="create-issue" value="default">Create and open</button></div></form></dialog><dialog id="preview-dialog"><div class="modal"><h2>Letterman-ready copy</h2><textarea id="preview-text" style="width:100%;min-height:430px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#preview-dialog').close()">Close</button><button class="btn" id="copy-preview">Copy</button></div></div></dialog>
+<dialog id="issue-dialog"><form method="dialog" class="modal"><h2>Create issue</h2><div class="form-grid"><div class="field full"><label>Publication</label><select id="new-publication"></select></div><div class="field"><label>Issue number</label><input id="new-number" type="number"></div><div class="field"><label>Send date</label><input id="new-date" type="date" value="2026-07-16"></div><div class="field full"><label>Main theme</label><textarea id="new-theme" placeholder="The question or tension holding the issue together"></textarea></div></div><div class="savebar"><button class="btn secondary" value="cancel">Cancel</button><button class="btn" id="create-issue" value="default">Create and open</button></div></form></dialog><dialog id="preview-dialog"><div class="modal"><h2>Production / Letterman copy</h2><textarea id="preview-text" style="width:100%;min-height:430px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#preview-dialog').close()">Close</button><button class="btn" id="copy-preview">Copy</button></div></div></dialog>
 <script>
 const S={publications:[],issues:[],sections:[],issue:null,section:null,hot:[]};const E=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));const val=(f,k)=>f?.[k]??'';const fmt=d=>d?new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00')):'—';
 async function api(path,opt={}){const r=await fetch('/.netlify/functions/'+path,{headers:{'content-type':'application/json',accept:'application/json'},...opt});const d=await r.json().catch(()=>({ok:false,error:'Invalid server response'}));if(!r.ok||!d.ok)throw Error(d.error||'Request failed');return d}function conn(ok,msg){E('dot').className='dot '+(ok?'ok':'bad');E('connection').textContent=msg}function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));E('view-'+v).classList.add('active');document.querySelector(`[data-view="${v}"]`).classList.add('active');E('page-title').textContent={dashboard:'Dashboard',publications:'Publications',issues:'Issues',build:'Issue Command Centre'}[v];E('page-sub').textContent=v==='build'?'Plan, write and export one real issue.':'Norfolk Spotlight live production test.'}
@@ -53,15 +53,17 @@ function issueTopicTokens(s){return new Set(String(s||'').toLowerCase().replace(
 function issueSimilarity(a,b){const A=issueTopicTokens(a),B=issueTopicTokens(b);if(!A.size||!B.size)return 0;let hit=0;A.forEach(x=>{if(B.has(x))hit++});return hit/Math.min(A.size,B.size)}
 async function copyProductionMap(){
  E('save-state').textContent='Loading current issue map…';
+ let records=[];
  try{
    const id=S.issue?.id;
-   if(!id){E('save-state').textContent='Open an issue first.';return}
+   if(!id){alert('Open an issue first.');E('save-state').textContent='Open an issue first.';return}
    const r=await api('sections?issueId='+encodeURIComponent(id));
-   S.sections=r.records||[];
+   records=r.records||[];
+   S.sections=records;
    sortSections();
  }catch(err){
-   E('save-state').textContent='Could not load the current issue map: '+err.message;
    alert('Production map error: '+err.message);
+   E('save-state').textContent='Could not load production map.';
    return;
  }
  const lines=['ISSUE PRODUCTION MAP',`${S.sections.length} sections`,''];
@@ -70,14 +72,9 @@ async function copyProductionMap(){
    lines.push(`${val(f,'Section Order')} | ${val(f,'Section Title')||'[BLANK TITLE]'} | Type: ${val(f,'Section Type')||'[blank]'} | Lane: ${val(f,'Commercial Lane')||'[blank]'} | CTA: ${val(f,'CTA Type')||'[blank]'} | Evidence: ${val(f,'Evidence Status')||'[blank]'}`);
  });
  const output=lines.join('\n');
- try{
-   await navigator.clipboard.writeText(output);
-   E('save-state').textContent='Production map copied. Paste it into ChatGPT for final selection and order review.';
- }catch(err){
-   E('save-state').textContent='Clipboard blocked. Production map printed below.';
-   E('map-audit').className='';
-   E('map-audit').innerHTML=`<textarea style="width:100%;min-height:420px">${esc(output)}</textarea>`;
- }
+ E('preview-text').value=output;
+ E('preview-dialog').showModal();
+ E('save-state').textContent='Production map opened. Use Copy in the dialog or select the text manually.';
 }
 function auditMap(){
  sortSections();
