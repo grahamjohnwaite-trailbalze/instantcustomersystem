@@ -26,6 +26,7 @@ STYLE AND SAFETY
 - Raw clean destination URLs only.
 - Short paragraphs suitable for a narrow article page.
 - The article must stand alone outside the newsletter.
+- Aim for 650-950 words unless the approved brief genuinely needs less.
 ${useEvidence?'- Search the current web. Prefer official/primary sources. Every material current claim must be supported by a returned source.':'- Do not search merely to decorate a question-led article. Avoid unnecessary factual claims.'}
 
 APPROVED BRIEF
@@ -87,18 +88,29 @@ function packageBlock(result,sources,model){
 }
 
 export default async(request)=>{
+  const runId=(globalThis.crypto?.randomUUID?.()||Math.random().toString(36).slice(2,10));
+  const started=Date.now();
+  const log=(stage,extra={})=>console.log('master-article-stage',{runId,stage,elapsedMs:Date.now()-started,...extra});
   try{
+    log('request_received',{method:request.method});
     if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
     const data=await readJson(request);
+    log('request_parsed',{sectionId:data.sectionId||'',requestedClass:data.productionClass||''});
     if(!data.sectionId)return json(400,{ok:false,error:'sectionId is required.'});
+    log('airtable_lookup_started');
     const lookup=await airtableRequest(TABLES.sections,{params:{filterByFormula:`RECORD_ID()='${String(data.sectionId).replace(/'/g,"\\'")}'`,maxRecords:'1'}});
     const rawRecord=lookup.records?.[0];
     if(!rawRecord)return json(404,{ok:false,error:'The selected section could not be found in Airtable.'});
     const record=cleanRecord(rawRecord);
+    log('airtable_lookup_completed',{recordId:record.id,title:String(record.fields?.['Section Title']||'')});
     const fields=record.fields||{};
     const cls=ALLOWED_CLASSES.has(data.productionClass)?data.productionClass:productionClass(fields);
+    log('openai_started',{productionClass:cls,useWeb:cls!=='A — Question Only'});
     const response=await createResponse({input:promptFor(fields,cls),useWeb:cls!=='A — Question Only'});
+    log('openai_completed',{model:response._model_used||'',outputChars:outputText(response).length});
+    log('json_parse_started');
     const result=parseJsonText(outputText(response));
+    log('json_parse_completed',{qaResult:result.qa_result||'',sourceCount:Array.isArray(result.sources)?result.sources.length:0});
     const sources=(Array.isArray(result.sources)?result.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||'')})).filter(s=>s.url).slice(0,5);
     const qa=result.qa_result==='Pass'?'Pass':'Fix Required';
     const priorNotes=String(value(fields,'Notes')).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v1[\s\S]*$/,'').trim();
@@ -115,7 +127,13 @@ export default async(request)=>{
       'Section Status':qa==='Pass'?'Ready':'Researching',
       'Notes':priorNotes?`${priorNotes}\n\n${serviceNotes}`:serviceNotes
     };
+    log('airtable_save_started',{qaResult:qa,bodyChars:String(result.article_body||'').length});
     const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:update}],typecast:true}});
+    log('airtable_save_completed',{savedRecordId:saved.records?.[0]?.id||''});
+    log('request_completed',{qaResult:qa});
     return json(200,{ok:true,record:cleanRecord(saved.records[0]),productionClass:cls,qaResult:qa,sources,articlePackage:parseJsonText(block.split('\n').slice(1,-1).join('\n')),exception:qa==='Pass'?'':String(result.exception||'Human review required.')});
-  }catch(error){return publicError(error,'produce-section')}
+  }catch(error){
+    console.error('master-article-failed',{runId,elapsedMs:Date.now()-started,message:error?.message,status:error?.status,details:error?.details,stack:error?.stack});
+    return publicError(error,'produce-section')
+  }
 };
