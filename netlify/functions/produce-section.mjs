@@ -91,7 +91,10 @@ export default async(request)=>{
     if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
     const data=await readJson(request);
     if(!data.sectionId)return json(400,{ok:false,error:'sectionId is required.'});
-    const record=cleanRecord(await airtableRequest(`${TABLES.sections}/${data.sectionId}`));
+    const lookup=await airtableRequest(TABLES.sections,{params:{filterByFormula:`RECORD_ID()='${String(data.sectionId).replace(/'/g,"\\'")}'`,maxRecords:'1'}});
+    const rawRecord=lookup.records?.[0];
+    if(!rawRecord)return json(404,{ok:false,error:'The selected section could not be found in Airtable.'});
+    const record=cleanRecord(rawRecord);
     const fields=record.fields||{};
     const cls=ALLOWED_CLASSES.has(data.productionClass)?data.productionClass:productionClass(fields);
     const response=await createResponse({input:promptFor(fields,cls),useWeb:cls!=='A — Question Only'});
