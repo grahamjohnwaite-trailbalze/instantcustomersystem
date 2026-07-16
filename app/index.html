@@ -119,6 +119,9 @@ async function produceOne(item){
  const d=await api('produce-section',{method:'POST',body:JSON.stringify({sectionId:item.s.id,productionClass:cls})});
  item.s=d.record;
  S.sections=S.sections.map(x=>x.id===d.record.id?d.record:x);
+ // Keep the selected editor record in sync with the Airtable record returned by production.
+ // Without this, Preview reads the stale pre-production Notes value until a page reload/reselect.
+ if(S.section?.id===d.record.id)S.section=d.record;
  return d;
 }
 async function runProduction({one=false}={}){
@@ -138,7 +141,9 @@ async function runProduction({one=false}={}){
    try{const d=await produceOne(item);if(d.qaResult==='Pass')pass++;else fix++}catch(e){failed++;E('save-state').textContent=`Production error on ${val(item.s.fields,'Section Title')}: ${e.message}`;if(one)alert(e.message)}
  }
  E('run-production').disabled=false;E('run-next-production').disabled=false;
+ if(one&&work[0]?.s){S.section=S.sections.find(x=>x.id===work[0].s.id)||work[0].s;}
  renderSections();
+ renderForm();
  E('production-progress').innerHTML=`<strong>Production run finished</strong><div class="muted">Pass ${pass} · Human review ${fix} · Failed ${failed}</div>`;
  E('save-state').textContent='Master Article run complete. Open Fix Required records first, then preview each Letterman package.';
 }
