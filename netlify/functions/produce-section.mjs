@@ -88,15 +88,18 @@ function packageBlock(result,sources,model){
 }
 
 export default async(request)=>{
-  const runId=(globalThis.crypto?.randomUUID?.()||Math.random().toString(36).slice(2,10));
+  let runId=(globalThis.crypto?.randomUUID?.()||Math.random().toString(36).slice(2,10));
   const started=Date.now();
+  let selectedSectionId='';
   const log=(stage,extra={})=>console.log('master-article-stage',{runId,stage,elapsedMs:Date.now()-started,...extra});
   try{
     log('request_received',{method:request.method});
     if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
     const data=await readJson(request);
+    runId=String(data.runId||runId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80)||runId;
     log('request_parsed',{sectionId:data.sectionId||'',requestedClass:data.productionClass||''});
     if(!data.sectionId)return json(400,{ok:false,error:'sectionId is required.'});
+    selectedSectionId=String(data.sectionId);
     log('airtable_lookup_started');
     const lookup=await airtableRequest(TABLES.sections,{params:{filterByFormula:`RECORD_ID()='${String(data.sectionId).replace(/'/g,"\\'")}'`,maxRecords:'1'}});
     const rawRecord=lookup.records?.[0];
@@ -105,6 +108,10 @@ export default async(request)=>{
     log('airtable_lookup_completed',{recordId:record.id,title:String(record.fields?.['Section Title']||'')});
     const fields=record.fields||{};
     const cls=ALLOWED_CLASSES.has(data.productionClass)?data.productionClass:productionClass(fields);
+    const originalNotes=String(value(fields,'Notes')||'').replace(/\n?MASTER ARTICLE RUNNING v2\.7[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'').replace(/\n?MASTER ARTICLE FAILED v2\.7[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'').trim();
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.7`,`Run ID: ${runId}`,`Stage: Researching and writing`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
+    log('running_marker_saved');
     log('openai_started',{productionClass:cls,useWeb:cls!=='A — Question Only'});
     const response=await createResponse({input:promptFor(fields,cls),useWeb:cls!=='A — Question Only'});
     log('openai_completed',{model:response._model_used||'',outputChars:outputText(response).length});
@@ -113,9 +120,9 @@ export default async(request)=>{
     log('json_parse_completed',{qaResult:result.qa_result||'',sourceCount:Array.isArray(result.sources)?result.sources.length:0});
     const sources=(Array.isArray(result.sources)?result.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||'')})).filter(s=>s.url).slice(0,5);
     const qa=result.qa_result==='Pass'?'Pass':'Fix Required';
-    const priorNotes=String(value(fields,'Notes')).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v1[\s\S]*$/,'').trim();
+    const priorNotes=originalNotes.replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.7`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -134,6 +141,20 @@ export default async(request)=>{
     return json(200,{ok:true,record:cleanRecord(saved.records[0]),productionClass:cls,qaResult:qa,sources,articlePackage:parseJsonText(block.split('\n').slice(1,-1).join('\n')),exception:qa==='Pass'?'':String(result.exception||'Human review required.')});
   }catch(error){
     console.error('master-article-failed',{runId,elapsedMs:Date.now()-started,message:error?.message,status:error?.status,details:error?.details,stack:error?.stack});
+    try{
+      if(selectedSectionId){
+        const lookup=await airtableRequest(TABLES.sections,{params:{filterByFormula:`RECORD_ID()='${selectedSectionId.replace(/'/g,"\\'")}'`,maxRecords:'1'}});
+        const current=lookup.records?.[0];
+        if(current){
+          const notes=String(current.fields?.Notes||'').replace(/\n?MASTER ARTICLE RUNNING v2\.7[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'').trim();
+          const failed=[`MASTER ARTICLE FAILED v2.7`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:current.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':notes?`${notes}\n\n${failed}`:failed}}],typecast:true}});
+        }
+      }
+    }catch(markerError){console.error('failure-marker-save-failed',{runId,message:markerError?.message});}
     return publicError(error,'produce-section')
   }
 };
+
+
+export const config={background:true};

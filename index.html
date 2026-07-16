@@ -114,32 +114,59 @@ async function productionSections(){
  return S.sections.filter(s=>/PUBLISH NOW — Final Running Order \d{2}\./.test(String(val(s.fields,'Notes')||''))).map(s=>{const m=String(val(s.fields,'Notes')||'').match(/Final Running Order (\d{2})/);return{s,run:m?Number(m[1]):999}}).sort((a,b)=>a.run-b.run)
 }
 function productionDone(s){return val(s.fields,'Section Status')==='Ready'&&val(s.fields,'Section Final Copy')&&['Pass'].includes(val(s.fields,'Section QA Result'))}
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+async function refreshProducedRecord(sectionId){
+ const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+ S.sections=r.records||[];
+ return S.sections.find(x=>x.id===sectionId)||null;
+}
 async function produceOne(item){
  const cls=productionClassForFields(item.s.fields);
- const d=await api('produce-section',{method:'POST',body:JSON.stringify({sectionId:item.s.id,productionClass:cls})});
- item.s=d.record;
- S.sections=S.sections.map(x=>x.id===d.record.id?d.record:x);
- // Keep the selected editor record in sync with the Airtable record returned by production.
- // Without this, Preview reads the stale pre-production Notes value until a page reload/reselect.
- if(S.section?.id===d.record.id)S.section=d.record;
- return d;
+ const runId='ma_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
+ const response=await fetch('/.netlify/functions/produce-section',{
+   method:'POST',headers:{'content-type':'application/json',accept:'application/json'},
+   body:JSON.stringify({sectionId:item.s.id,productionClass:cls,runId})
+ });
+ if(response.status!==202){
+   const raw=await response.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={error:`Invalid server response (${response.status}). ${raw.slice(0,300)||'No response body.'}`}}
+   throw new Error(d.error||`Unable to start background production (${response.status}).`);
+ }
+ const deadline=Date.now()+12*60*1000;
+ let polls=0;
+ while(Date.now()<deadline){
+   await sleep(polls<3?3000:5000);polls++;
+   const current=await refreshProducedRecord(item.s.id);
+   if(!current)continue;
+   const notes=String(val(current.fields,'Notes')||'');
+   item.s=current;
+   if(S.section?.id===current.id)S.section=current;
+   if(notes.includes(`MASTER ARTICLE FAILED v2.7`)&&notes.includes(`Run ID: ${runId}`)){
+     const m=notes.match(new RegExp(`MASTER ARTICLE FAILED v2\\.7[\\s\\S]*?Run ID: ${runId}[\\s\\S]*?Error: ([^\\n]+)`));
+     throw new Error(m?.[1]||'Background production failed. Check the Netlify function log for this run.');
+   }
+   if(notes.includes(`PRODUCTION SERVICE v2.7`)&&notes.includes(`Run ID: ${runId}`)){
+     const qa=String(val(current.fields,'Section QA Result')||'Fix Required');
+     return {ok:true,record:current,productionClass:cls,qaResult:qa,sources:[],background:true,runId};
+   }
+   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">Background production is running · ${Math.round((Date.now()-(deadline-12*60*1000))/1000)} seconds</div>`;
+ }
+ throw new Error('Background production did not finish within 12 minutes. Check the Netlify produce-section log and the Airtable Notes field.');
 }
 async function runProduction({one=false}={}){
  if(!S.issue){alert('Open an issue first.');return}
- let queue;
- try{queue=await productionSections()}catch(e){alert(e.message);return}
- const pending=queue.filter(x=>!productionDone(x.s));
- if(!pending.length){E('production-progress').className='philosophy-box';E('production-progress').innerHTML='<strong>Production complete.</strong><div class="muted">All Publish Now sections are Ready with QA Pass.</div>';return}
  let work;
  if(one){
    if(!S.section){alert('Select the Master Article you want to produce first.');return}
-   const selected=queue.find(x=>x.s.id===S.section.id);
-   if(!selected){alert('The selected record is not in the current Publish Now queue.');return}
+   const selected={s:S.section,run:999};
    if(productionDone(selected.s)){
      if(!confirm('This Master Article is already marked Ready with QA Pass. Produce it again and replace the current package?'))return;
    }
    work=[selected];
  }else{
+   let queue;
+   try{queue=await productionSections()}catch(e){alert(e.message);return}
+   const pending=queue.filter(x=>!productionDone(x.s));
+   if(!pending.length){E('production-progress').className='philosophy-box';E('production-progress').innerHTML='<strong>Production complete.</strong><div class="muted">All Publish Now sections are Ready with QA Pass.</div>';return}
    work=pending;
    if(!confirm(`Run the production service for ${work.length} pending sections? This uses the OpenAI API, researches B/C sections and writes drafts/evidence back to Airtable.`))return;
  }
@@ -148,7 +175,7 @@ async function runProduction({one=false}={}){
  for(let i=0;i<work.length;i++){
    const item=work[i];
    E('production-progress').className='philosophy-box';
-   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Researching, writing, checking and saving. This may take 30–60 seconds.</div><div class="muted">Pass ${pass} · Review ${fix} · Failed ${failed}</div>`;
+   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Researching, writing, checking and saving in the background. This may take several minutes.</div><div class="muted">Pass ${pass} · Review ${fix} · Failed ${failed}</div>`;
    try{const d=await produceOne(item);if(d.qaResult==='Pass')pass++;else fix++}catch(e){failed++;E('save-state').textContent=`Production error on ${val(item.s.fields,'Section Title')}: ${e.message}`;if(one)alert(e.message)}
  }
  E('run-production').disabled=false;E('run-next-production').disabled=false;
