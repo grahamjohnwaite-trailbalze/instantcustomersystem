@@ -126,20 +126,19 @@ async function produceOne(item){
 }
 async function runProduction({one=false}={}){
  if(!S.issue){alert('Open an issue first.');return}
- let queue;
- try{queue=await productionSections()}catch(e){alert(e.message);return}
- const pending=queue.filter(x=>!productionDone(x.s));
- if(!pending.length){E('production-progress').className='philosophy-box';E('production-progress').innerHTML='<strong>Production complete.</strong><div class="muted">All Publish Now sections are Ready with QA Pass.</div>';return}
  let work;
  if(one){
    if(!S.section){alert('Select the Master Article you want to produce first.');return}
-   const selected=queue.find(x=>x.s.id===S.section.id);
-   if(!selected){alert('The selected record is not in the current Publish Now queue.');return}
+   const selected={s:S.section,run:999};
    if(productionDone(selected.s)){
      if(!confirm('This Master Article is already marked Ready with QA Pass. Produce it again and replace the current package?'))return;
    }
    work=[selected];
  }else{
+   let queue;
+   try{queue=await productionSections()}catch(e){alert(e.message);return}
+   const pending=queue.filter(x=>!productionDone(x.s));
+   if(!pending.length){E('production-progress').className='philosophy-box';E('production-progress').innerHTML='<strong>Production complete.</strong><div class="muted">All Publish Now sections are Ready with QA Pass.</div>';return}
    work=pending;
    if(!confirm(`Run the production service for ${work.length} pending sections? This uses the OpenAI API, researches B/C sections and writes drafts/evidence back to Airtable.`))return;
  }
