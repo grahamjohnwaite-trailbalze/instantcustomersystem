@@ -38,13 +38,28 @@ export async function listAccessibleModels(){
   return (payload.data||[]).map(x=>x.id).filter(Boolean).sort();
 }
 
-function preferredModels(available=[]){
+function unique(values){return values.filter((v,i,a)=>v&&a.indexOf(v)===i)}
+
+function preferredModels(available=[],useWeb=false){
   const configured=String(process.env.OPENAI_MODEL||'').trim();
-  const preferences=[configured,'gpt-4.1-mini','gpt-4.1','gpt-4o-mini','gpt-4o'].filter(Boolean);
   const visible=new Set(available);
-  const matched=preferences.filter((m,i,a)=>a.indexOf(m)===i&&visible.has(m));
-  if(matched.length)return matched;
-  return available.filter(m=>/^gpt-(?:4\.1|4o)(?:-|$)/.test(m)&&!/(audio|realtime|transcribe|tts|search-preview)/i.test(m)).slice(0,8);
+
+  // A successful plain-text request does not prove that the same model can use
+  // hosted web search. For research requests, try models documented for the
+  // Responses API web_search tool before any configured legacy model.
+  const preferences=useWeb
+    ? ['gpt-5.6-luna','gpt-5.6-terra','gpt-5.6','gpt-4.1-mini','gpt-4.1',configured]
+    : [configured,'gpt-5.6-luna','gpt-5.6-terra','gpt-5.6','gpt-4.1-mini','gpt-4.1','gpt-4o-mini','gpt-4o'];
+
+  const matched=unique(preferences).filter(model=>visible.has(model));
+  const additional=available.filter(model=>{
+    if(matched.includes(model))return false;
+    if(/audio|realtime|transcribe|tts|search-preview|image|embedding|moderation/i.test(model))return false;
+    return useWeb
+      ? /^(?:gpt-5(?:\.|-|$)|gpt-4\.1(?:-|$)|o[34](?:-|$))/.test(model)
+      : /^(?:gpt-5(?:\.|-|$)|gpt-4\.1(?:-|$)|gpt-4o(?:-|$)|o[34](?:-|$))/.test(model);
+  });
+  return unique([...matched,...additional]).slice(0,12);
 }
 
 async function requestModel({model,input,useWeb}){
@@ -55,10 +70,10 @@ async function requestModel({model,input,useWeb}){
 
 export async function createResponse({input,useWeb=false}){
   const available=await listAccessibleModels();
-  const candidates=preferredModels(available);
+  const candidates=preferredModels(available,useWeb);
   if(!candidates.length){
-    const error=new Error('The API key connected successfully, but no compatible text model was visible to this project.');
-    error.status=403;error.details={visibleModels:available.slice(0,100)};throw error;
+    const error=new Error(`The API key connected successfully, but no compatible ${useWeb?'web-search ':''}text model was visible to this project.`);
+    error.status=403;error.details={useWeb,candidates,visibleModels:available.slice(0,100)};throw error;
   }
   const attempts=[];
   for(const model of candidates){
@@ -66,13 +81,15 @@ export async function createResponse({input,useWeb=false}){
     if(response.ok)return {...payload,_model_used:model};
     const message=payload?.error?.message||`OpenAI request failed (${response.status})`;
     const code=payload?.error?.code||payload?.error?.type||'';
-    attempts.push({model,status:response.status,message,code});
+    attempts.push({model,status:response.status,message,code,useWeb});
     const retryable=[400,403,404].includes(response.status)||/model|permission|access|tool|web.search/i.test(message);
-    if(!retryable){const error=new Error(message);error.status=response.status;error.details={attempts,last:payload};throw error;}
+    if(!retryable){
+      const error=new Error(message);error.status=response.status;error.details={useWeb,attempts,last:payload};throw error;
+    }
   }
   const summary=attempts.map(a=>`${a.model}: ${a.status} ${a.message}${a.code?` [${a.code}]`:''}`).join(' | ');
-  const error=new Error(`No visible model completed the request. ${summary}`);
-  error.status=403;error.details={attempts,visibleModels:available.slice(0,100)};throw error;
+  const error=new Error(`No visible model completed the ${useWeb?'web-search':'text'} request. ${summary}`);
+  error.status=403;error.details={useWeb,attempts,visibleModels:available.slice(0,100)};throw error;
 }
 
 export function outputText(response){
