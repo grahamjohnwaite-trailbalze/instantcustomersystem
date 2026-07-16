@@ -17,11 +17,20 @@ export function cleanUrl(value){
   }catch{return ''}
 }
 
-function candidateModels(){
-  // Compatibility-first list. OPENAI_MODEL is intentionally ignored while
-  // the production service is being validated so an old invalid Netlify
-  // value cannot block the fallback chain.
-  return ['gpt-4.1-mini','gpt-4.1','gpt-5.6-luna','gpt-5.6-terra','gpt-5.6'];
+async function availableModels(apiKey){
+  const response=await fetch(`${API_ROOT}/models`,{headers:{authorization:`Bearer ${apiKey}`}});
+  const text=await response.text();
+  let payload;try{payload=text?JSON.parse(text):{}}catch{payload={raw:text}}
+  if(!response.ok){
+    const error=new Error(payload?.error?.message||`Unable to list OpenAI models (${response.status})`);
+    error.status=response.status;error.details=payload;throw error;
+  }
+  return new Set((payload.data||[]).map(x=>x.id));
+}
+
+function preferredModels(accessible){
+  const preferred=['gpt-4o-mini','gpt-4.1-mini','gpt-4.1','gpt-4o','gpt-5-mini','gpt-5'];
+  return preferred.filter(x=>accessible.has(x));
 }
 
 async function requestModel({apiKey,model,input,useWeb}){
@@ -39,21 +48,40 @@ async function requestModel({apiKey,model,input,useWeb}){
 
 export async function createResponse({input,useWeb=false}){
   const apiKey=env('OPENAI_API_KEY');
+  const accessible=await availableModels(apiKey);
+  const candidates=preferredModels(accessible);
+  if(!candidates.length){
+    const sample=[...accessible].filter(x=>/^gpt-/i.test(x)).slice(0,30);
+    const error=new Error(`The API key is valid, but none of the service's supported text models are visible to this project. Visible GPT models: ${sample.join(', ')||'none'}`);
+    error.status=403;error.details={visibleModels:sample};throw error;
+  }
   const attempts=[];
-  for(const model of candidateModels()){
+  for(const model of candidates){
     const {response,payload}=await requestModel({apiKey,model,input,useWeb});
     if(response.ok)return {...payload,_model_used:model};
     const message=payload?.error?.message||`OpenAI request failed (${response.status})`;
     const code=payload?.error?.code||payload?.error?.type||'';
     attempts.push(`${model}: ${message}${code?` [${code}]`:''}`);
-    const retryable=response.status===404||response.status===403||/model|permission|access/i.test(message);
-    if(!retryable){
-      const error=new Error(message);
-      error.status=response.status;error.details=payload;throw error;
-    }
+    const retryable=response.status===404||response.status===403||/model|permission|access|tool/i.test(message);
+    if(!retryable){const error=new Error(message);error.status=response.status;error.details=payload;throw error;}
   }
-  const error=new Error(`OpenAI model diagnostic failed. Attempts: ${attempts.join(' | ')}`);
-  error.status=403;error.details={attempts,advice:'Check the exact model attempts shown. If every model returns the same permission error, create a fresh project API key after billing became active and replace OPENAI_API_KEY in Netlify.'};throw error;
+  const error=new Error(`OpenAI request failed. Accessible models were found, but every attempt failed: ${attempts.join(' | ')}`);
+  error.status=403;error.details={attempts};throw error;
+}
+
+export async function diagnoseOpenAI(){
+  const apiKey=env('OPENAI_API_KEY');
+  const accessible=await availableModels(apiKey);
+  const candidates=preferredModels(accessible);
+  const visible=[...accessible].filter(x=>/^gpt-/i.test(x)).sort().slice(0,50);
+  if(!candidates.length)return {ok:false,stage:'models',visibleModels:visible,error:'No supported text model found in this API project.'};
+  const attempts=[];
+  for(const model of candidates){
+    const {response,payload}=await requestModel({apiKey,model,input:'Reply with exactly OK',useWeb:false});
+    if(response.ok)return {ok:true,model,visibleModels:visible};
+    attempts.push({model,status:response.status,message:payload?.error?.message||'Unknown error',code:payload?.error?.code||payload?.error?.type||''});
+  }
+  return {ok:false,stage:'response',visibleModels:visible,attempts,error:'Models are visible but a basic response could not be created.'};
 }
 
 export function outputText(response){

@@ -50,5 +50,5 @@ export default async(request)=>{
     };
     const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:update}],typecast:true}});
     return json(200,{ok:true,record:cleanRecord(saved.records[0]),productionClass:cls,qaResult:qa,sources,exception:qa==='Pass'?'':String(result.exception||'Human review required.')});
-  }catch(error){return publicError(error,'produce-section')}
+  }catch(error){console.error('produce-section',{message:error.message,status:error.status,details:error.details});return json(error.status||500,{ok:false,error:error.message,details:error.details||null,context:'produce-section'})}
 };
