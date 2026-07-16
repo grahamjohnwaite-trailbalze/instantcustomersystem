@@ -18,8 +18,10 @@ export function cleanUrl(value){
 }
 
 function candidateModels(){
-  const configured=String(env('OPENAI_MODEL',{required:false,fallback:''})||'').trim();
-  return [...new Set([configured,'gpt-5.6-luna','gpt-5.6-terra','gpt-5.6'].filter(Boolean))];
+  // Compatibility-first list. OPENAI_MODEL is intentionally ignored while
+  // the production service is being validated so an old invalid Netlify
+  // value cannot block the fallback chain.
+  return ['gpt-4.1-mini','gpt-4.1','gpt-5.6-luna','gpt-5.6-terra','gpt-5.6'];
 }
 
 async function requestModel({apiKey,model,input,useWeb}){
@@ -50,8 +52,8 @@ export async function createResponse({input,useWeb=false}){
       error.status=response.status;error.details=payload;throw error;
     }
   }
-  const error=new Error(`No configured OpenAI model was available. Attempts: ${attempts.join(' | ')}`);
-  error.status=403;error.details={attempts};throw error;
+  const error=new Error(`OpenAI model diagnostic failed. Attempts: ${attempts.join(' | ')}`);
+  error.status=403;error.details={attempts,advice:'Check the exact model attempts shown. If every model returns the same permission error, create a fresh project API key after billing became active and replace OPENAI_API_KEY in Netlify.'};throw error;
 }
 
 export function outputText(response){
