@@ -17,81 +17,68 @@ export function cleanUrl(value){
   }catch{return ''}
 }
 
-async function availableModels(apiKey){
-  const response=await fetch(`${API_ROOT}/models`,{headers:{authorization:`Bearer ${apiKey}`}});
-  const text=await response.text();
-  let payload;try{payload=text?JSON.parse(text):{}}catch{payload={raw:text}}
-  if(!response.ok){
-    const error=new Error(payload?.error?.message||`Unable to list OpenAI models (${response.status})`);
-    error.status=response.status;error.details=payload;throw error;
-  }
-  return new Set((payload.data||[]).map(x=>x.id));
-}
-
-function preferredModels(accessible){
-  const preferred=['gpt-4o-mini','gpt-4.1-mini','gpt-4.1','gpt-4o','gpt-5-mini','gpt-5'];
-  return preferred.filter(x=>accessible.has(x));
-}
-
-async function requestModel({apiKey,model,input,useWeb}){
-  const body={model,input};
-  if(useWeb)body.tools=[{type:'web_search'}];
-  const response=await fetch(`${API_ROOT}/responses`,{
-    method:'POST',
+async function openAIRequest(path,{method='GET',body}={}){
+  const apiKey=env('OPENAI_API_KEY');
+  const response=await fetch(`${API_ROOT}${path}`,{
+    method,
     headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/json'},
-    body:JSON.stringify(body)
+    body:body?JSON.stringify(body):undefined
   });
   const text=await response.text();
   let payload;try{payload=text?JSON.parse(text):{}}catch{payload={raw:text}}
   return {response,payload};
 }
 
+export async function listAccessibleModels(){
+  const {response,payload}=await openAIRequest('/models');
+  if(!response.ok){
+    const message=payload?.error?.message||`OpenAI model-list request failed (${response.status})`;
+    const error=new Error(message);error.status=response.status;error.details=payload;throw error;
+  }
+  return (payload.data||[]).map(x=>x.id).filter(Boolean).sort();
+}
+
+function preferredModels(available=[]){
+  const configured=String(process.env.OPENAI_MODEL||'').trim();
+  const preferences=[configured,'gpt-4.1-mini','gpt-4.1','gpt-4o-mini','gpt-4o'].filter(Boolean);
+  const visible=new Set(available);
+  const matched=preferences.filter((m,i,a)=>a.indexOf(m)===i&&visible.has(m));
+  if(matched.length)return matched;
+  return available.filter(m=>/^gpt-(?:4\.1|4o)(?:-|$)/.test(m)&&!/(audio|realtime|transcribe|tts|search-preview)/i.test(m)).slice(0,8);
+}
+
+async function requestModel({model,input,useWeb}){
+  const body={model,input};
+  if(useWeb)body.tools=[{type:'web_search'}];
+  return openAIRequest('/responses',{method:'POST',body});
+}
+
 export async function createResponse({input,useWeb=false}){
-  const apiKey=env('OPENAI_API_KEY');
-  const accessible=await availableModels(apiKey);
-  const candidates=preferredModels(accessible);
+  const available=await listAccessibleModels();
+  const candidates=preferredModels(available);
   if(!candidates.length){
-    const sample=[...accessible].filter(x=>/^gpt-/i.test(x)).slice(0,30);
-    const error=new Error(`The API key is valid, but none of the service's supported text models are visible to this project. Visible GPT models: ${sample.join(', ')||'none'}`);
-    error.status=403;error.details={visibleModels:sample};throw error;
+    const error=new Error('The API key connected successfully, but no compatible text model was visible to this project.');
+    error.status=403;error.details={visibleModels:available.slice(0,100)};throw error;
   }
   const attempts=[];
   for(const model of candidates){
-    const {response,payload}=await requestModel({apiKey,model,input,useWeb});
+    const {response,payload}=await requestModel({model,input,useWeb});
     if(response.ok)return {...payload,_model_used:model};
     const message=payload?.error?.message||`OpenAI request failed (${response.status})`;
     const code=payload?.error?.code||payload?.error?.type||'';
-    attempts.push(`${model}: ${message}${code?` [${code}]`:''}`);
-    const retryable=response.status===404||response.status===403||/model|permission|access|tool/i.test(message);
-    if(!retryable){const error=new Error(message);error.status=response.status;error.details=payload;throw error;}
+    attempts.push({model,status:response.status,message,code});
+    const retryable=[400,403,404].includes(response.status)||/model|permission|access|tool|web.search/i.test(message);
+    if(!retryable){const error=new Error(message);error.status=response.status;error.details={attempts,last:payload};throw error;}
   }
-  const error=new Error(`OpenAI request failed. Accessible models were found, but every attempt failed: ${attempts.join(' | ')}`);
-  error.status=403;error.details={attempts};throw error;
-}
-
-export async function diagnoseOpenAI(){
-  const apiKey=env('OPENAI_API_KEY');
-  const accessible=await availableModels(apiKey);
-  const candidates=preferredModels(accessible);
-  const visible=[...accessible].filter(x=>/^gpt-/i.test(x)).sort().slice(0,50);
-  if(!candidates.length)return {ok:false,stage:'models',visibleModels:visible,error:'No supported text model found in this API project.'};
-  const attempts=[];
-  for(const model of candidates){
-    const {response,payload}=await requestModel({apiKey,model,input:'Reply with exactly OK',useWeb:false});
-    if(response.ok)return {ok:true,model,visibleModels:visible};
-    attempts.push({model,status:response.status,message:payload?.error?.message||'Unknown error',code:payload?.error?.code||payload?.error?.type||''});
-  }
-  return {ok:false,stage:'response',visibleModels:visible,attempts,error:'Models are visible but a basic response could not be created.'};
+  const summary=attempts.map(a=>`${a.model}: ${a.status} ${a.message}${a.code?` [${a.code}]`:''}`).join(' | ');
+  const error=new Error(`No visible model completed the request. ${summary}`);
+  error.status=403;error.details={attempts,visibleModels:available.slice(0,100)};throw error;
 }
 
 export function outputText(response){
   if(response.output_text)return response.output_text;
   const parts=[];
-  for(const item of response.output||[]){
-    for(const content of item.content||[]){
-      if(content.type==='output_text'&&content.text)parts.push(content.text);
-    }
-  }
+  for(const item of response.output||[])for(const content of item.content||[])if(content.type==='output_text'&&content.text)parts.push(content.text);
   return parts.join('\n').trim();
 }
 

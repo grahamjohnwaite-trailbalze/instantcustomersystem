@@ -1,6 +1,11 @@
-import {json} from './_airtable.mjs';
-import {diagnoseOpenAI} from './_openai.mjs';
-export default async()=>{
-  try{return json(200,await diagnoseOpenAI())}
-  catch(error){return json(error.status||500,{ok:false,error:error.message,details:error.details||null})}
+import {json,publicError} from './_airtable.mjs';
+import {createResponse,listAccessibleModels,outputText} from './_openai.mjs';
+
+export default async(request)=>{
+  try{
+    if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
+    const models=await listAccessibleModels();
+    const response=await createResponse({input:'Reply with exactly: ICS CONNECTION OK',useWeb:false});
+    return json(200,{ok:true,message:outputText(response),modelUsed:response._model_used,visibleModelCount:models.length,visibleModels:models.slice(0,40)});
+  }catch(error){return publicError(error,'openai-diagnostic')}
 };
