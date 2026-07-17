@@ -1,0 +1,15 @@
+ICS Background Production Fix v2.7
+
+Upload/replace these three files in GitHub:
+- /index.html
+- /app/index.html
+- /netlify/functions/produce-section.mjs
+
+What changed:
+- Produce selected Master Article now starts as a Netlify Background Function.
+- Browser receives HTTP 202 immediately instead of waiting until a 504 timeout.
+- The interface polls Airtable until the exact production run is saved.
+- Airtable Notes shows RUNNING, COMPLETED (PRODUCTION SERVICE v2.7), or FAILED with a Run ID.
+- Bulk Publish Now queue behaviour is unchanged.
+
+After Netlify deploy completes, hard refresh with Ctrl+F5 and test Norfolk's £10 Test once.
