@@ -1,81 +1,503 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Instant Customer System</title>
-<style>
-:root{--bg:#f4f7fb;--panel:#fff;--ink:#172033;--muted:#657089;--line:#dfe5ef;--nav:#13213a;--accent:#2366d1;--good:#117a55;--warn:#a15c00;--bad:#a02d36;--shadow:0 10px 30px rgba(20,35,65,.08)}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}button,select{font:inherit}.shell{min-height:100vh;display:grid;grid-template-columns:238px 1fr}.sidebar{background:var(--nav);color:white;padding:22px 16px;position:sticky;top:0;height:100vh}.brand{font-weight:850;font-size:19px;line-height:1.2;margin:3px 8px 28px}.brand span{display:block;font-size:12px;color:#aebbd1;font-weight:600;margin-top:6px}.nav{display:grid;gap:7px}.nav button{border:0;background:transparent;color:#c9d3e4;text-align:left;padding:11px 13px;border-radius:9px;cursor:pointer}.nav button.active,.nav button:hover{background:#243653;color:white}.phase{position:absolute;bottom:18px;left:18px;right:18px;padding:11px;border:1px solid #314866;border-radius:10px;color:#b7c5d9;font-size:12px}.main{padding:26px 30px 50px;min-width:0}.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:22px}.eyebrow{color:var(--accent);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.08em}.topbar h1{margin:5px 0 5px;font-size:29px}.sub{color:var(--muted);font-size:14px}.status{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:12px;box-shadow:var(--shadow)}.dot{width:9px;height:9px;border-radius:50%;background:#8f9bae}.dot.ok{background:var(--good)}.dot.error{background:var(--bad)}.grid{display:grid;gap:16px}.metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}.metric strong{display:block;font-size:28px;margin-top:5px}.metric span,.label{font-size:12px;color:var(--muted);font-weight:700}.section-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:24px 0 12px}.section-head h2{font-size:18px;margin:0}.btn{border:0;border-radius:9px;padding:10px 13px;background:var(--accent);color:white;font-weight:750;cursor:pointer}.btn.secondary{background:white;color:var(--ink);border:1px solid var(--line)}.btn:disabled{opacity:.5;cursor:not-allowed}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.toolbar select{min-width:220px;border:1px solid var(--line);border-radius:9px;background:white;padding:9px 11px}.table-wrap{overflow:auto;background:white;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}table{width:100%;border-collapse:collapse;min-width:780px}th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;background:#f8fafc}tr:last-child td{border-bottom:0}.pill{display:inline-flex;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:750;background:#edf2f8;color:#4b5b73}.pill.good{background:#e6f6ef;color:var(--good)}.pill.warn{background:#fff2dc;color:var(--warn)}.link{color:var(--accent);text-decoration:none}.empty{padding:32px;text-align:center;color:var(--muted)}.view{display:none}.view.active{display:block}.warning{border-left:4px solid var(--warn);background:#fff9ee;padding:14px 16px;border-radius:8px;margin-bottom:16px;color:#704500}.setup{max-width:760px}.setup code{background:#edf2f8;border-radius:5px;padding:2px 5px}.quick{grid-template-columns:repeat(4,minmax(0,1fr))}.quick button{text-align:left;background:white;border:1px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;box-shadow:var(--shadow)}.quick strong{display:block;margin-bottom:5px}.quick span{font-size:12px;color:var(--muted)}@media(max-width:900px){.shell{grid-template-columns:1fr}.sidebar{height:auto;position:static}.nav{grid-template-columns:repeat(3,1fr)}.phase{display:none}.metrics,.quick{grid-template-columns:repeat(2,1fr)}.main{padding:20px}}@media(max-width:560px){.metrics,.quick{grid-template-columns:1fr}.nav{grid-template-columns:1fr 1fr}.topbar{display:block}.status{margin-top:14px;width:max-content}}
-</style>
-</head>
-<body>
-<div class="shell">
-<aside class="sidebar">
-  <div class="brand">Instant Customer System<span>Issue Command Centre</span></div>
-  <nav class="nav" aria-label="Primary">
-    <button class="active" data-view="dashboard">Dashboard</button>
-    <button data-view="publications">Publications</button>
-    <button data-view="issues">Issues</button>
-    <button data-view="build" disabled title="Enabled in the next build">Build Issue</button>
-    <button data-view="qa" disabled title="Enabled in the next build">QA</button>
-    <button data-view="library" disabled title="Enabled in the next build">Library</button>
-  </nav>
-  <div class="phase">Phase 1A<br><strong>Connected read-only shell</strong></div>
-</aside>
-<main class="main">
-  <header class="topbar">
-    <div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-subtitle">Current issues, deadlines and production warnings.</div></div>
-    <div class="status"><span class="dot" id="connection-dot"></span><span id="connection-text">Connecting to Airtable…</span></div>
-  </header>
-
-  <section class="view active" id="view-dashboard">
-    <div id="setup-warning"></div>
-    <div class="grid metrics">
-      <div class="card metric"><span>Active publications</span><strong id="metric-publications">—</strong></div>
-      <div class="card metric"><span>Open issues</span><strong id="metric-open">—</strong></div>
-      <div class="card metric"><span>Production warnings</span><strong id="metric-warnings">—</strong></div>
-      <div class="card metric"><span>Next send</span><strong id="metric-next" style="font-size:18px">—</strong></div>
-    </div>
-    <div class="section-head"><h2>Quick actions</h2></div>
-    <div class="grid quick">
-      <button data-go="issues"><strong>Open issues</strong><span>Review all current production work.</span></button>
-      <button disabled><strong>Create issue</strong><span>Enabled when write connection is added.</span></button>
-      <button disabled><strong>Run QA</strong><span>Enabled with the Issue Command Centre.</span></button>
-      <button disabled><strong>Generate Letterman copy</strong><span>Enabled after publish checks pass.</span></button>
-    </div>
-    <div class="section-head"><h2>Issues needing attention</h2><button class="btn secondary" data-go="issues">View all issues</button></div>
-    <div class="table-wrap" id="attention-table"><div class="empty">Loading issues…</div></div>
-  </section>
-
-  <section class="view" id="view-publications">
-    <div class="section-head"><h2>Active publications</h2><button class="btn secondary" id="refresh-publications">Refresh</button></div>
-    <div class="table-wrap" id="publication-table"><div class="empty">Loading publications…</div></div>
-  </section>
-
-  <section class="view" id="view-issues">
-    <div class="section-head"><h2>Issue production list</h2><div class="toolbar"><select id="publication-filter"><option value="">All publications</option></select><button class="btn secondary" id="refresh-issues">Refresh</button></div></div>
-    <div class="table-wrap" id="issue-table"><div class="empty">Loading issues…</div></div>
-  </section>
-</main>
-</div>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ICS Issue Command Centre</title><style>
+:root{--bg:#f4f7fb;--panel:#fff;--ink:#172033;--muted:#657089;--line:#dfe5ef;--nav:#13213a;--accent:#2366d1;--good:#117a55;--warn:#a15c00;--bad:#a02d36;--shadow:0 10px 30px rgba(20,35,65,.08)}*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}.shell{min-height:100vh;display:grid;grid-template-columns:220px 1fr}.sidebar{background:var(--nav);color:#fff;padding:20px 15px;position:sticky;top:0;height:100vh}.brand{font-weight:850;font-size:18px;margin:4px 8px 24px}.brand span{display:block;font-size:12px;color:#aebbd1;margin-top:5px}.nav{display:grid;gap:6px}.nav button{border:0;background:transparent;color:#c9d3e4;text-align:left;padding:11px 12px;border-radius:8px;cursor:pointer}.nav button.active,.nav button:hover{background:#243653;color:#fff}.phase{position:absolute;bottom:18px;left:18px;color:#b7c5d9;font-size:12px}.main{padding:24px 28px 48px;min-width:0}.topbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.eyebrow{color:var(--accent);font-size:12px;font-weight:800;text-transform:uppercase}.topbar h1{margin:4px 0;font-size:28px}.sub{color:var(--muted);font-size:13px}.status{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#999;margin-right:6px}.dot.ok{background:var(--good)}.dot.bad{background:var(--bad)}.view{display:none}.view.active{display:block}.card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px;box-shadow:var(--shadow)}.grid{display:grid;gap:14px}.metrics{grid-template-columns:repeat(4,1fr)}.metric span,.label{font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.04em}.metric strong{font-size:27px;display:block;margin-top:4px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:20px 0 10px}.section-head h2{font-size:18px;margin:0}.btn{border:0;border-radius:8px;padding:9px 12px;background:var(--accent);color:#fff;font-weight:750;cursor:pointer}.btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.danger{background:var(--bad)}.btn:disabled{opacity:.5}.table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:13px}table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:11px 13px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}th{font-size:10px;text-transform:uppercase;color:var(--muted);background:#f8fafc}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf2f8;font-size:11px;font-weight:750}.pill.good{background:#e5f5ee;color:var(--good)}.pill.warn{background:#fff2dc;color:var(--warn)}.builder{display:grid;grid-template-columns:290px minmax(420px,1fr) 330px;gap:14px;align-items:start}.rail,.editor,.intel{min-height:650px}.rail-list{display:grid;gap:7px;max-height:580px;overflow:auto}.section-item{padding:10px;border:1px solid var(--line);border-radius:9px;background:#fff;cursor:pointer}.section-item.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(35,102,209,.12)}.section-item strong{display:block;font-size:13px}.section-item small{color:var(--muted)}.library-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}.library-summary div{background:#f6f8fb;border-radius:8px;padding:8px;text-align:center}.library-summary strong{display:block;font-size:16px}.library-summary span{font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:800}.qa-flag{display:inline-block;margin-top:5px;padding:3px 6px;border-radius:999px;background:#fff2dc;color:var(--warn);font-size:10px;font-weight:800}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field{display:grid;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;background:#fff}.field textarea{min-height:82px;resize:vertical}.field textarea.copy{min-height:240px}.savebar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:12px}.muted{color:var(--muted);font-size:12px}.warning{background:#fff7e8;border-left:4px solid var(--warn);padding:12px;border-radius:8px}.checklist{display:grid;gap:8px;margin-top:10px}.check{padding:9px;border-radius:8px;background:#f6f8fb;font-size:12px}.check.good{background:#eaf7f1;color:var(--good)}dialog{border:0;border-radius:14px;padding:0;max-width:650px;width:calc(100% - 30px);box-shadow:0 25px 80px rgba(0,0,0,.25)}dialog::backdrop{background:rgba(10,20,35,.55)}.modal{padding:20px}.modal h2{margin-top:0}.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.toolbar select{padding:9px;border:1px solid var(--line);border-radius:8px}.empty{padding:30px;text-align:center;color:var(--muted)}@media(max-width:1200px){.builder{grid-template-columns:250px 1fr}.intel{grid-column:1/-1;min-height:auto}}@media(max-width:850px){.shell{grid-template-columns:1fr}.sidebar{height:auto;position:static}.nav{grid-template-columns:repeat(4,1fr)}.phase{display:none}.main{padding:18px}.builder{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}}
+.assembly-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:16px}.assembly-library,.assembly-order{display:grid;gap:8px;max-height:560px;overflow:auto;padding-right:4px}.assembly-card,.order-card{border:1px solid #d8dee8;border-radius:10px;padding:10px;background:#fff}.assembly-card{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start}.assembly-card small,.order-card small{display:block;color:#667085;margin-top:4px}.order-card{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}.order-actions{display:flex;gap:5px}.order-actions button{padding:5px 8px}.component-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.component-grid label{border:1px solid #e4e7ec;border-radius:8px;padding:8px;background:#fafafa}@media(max-width:1050px){.assembly-grid{grid-template-columns:1fr}}</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Assemble Newsletter</button></nav><div class="phase">Newsletter Assembly v3.1<br><strong>Select, order and export an issue draft</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Norfolk Spotlight live production test.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+<section class="view active" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Norfolk target</span><strong style="font-size:17px">Thu 16 Jul</strong></div><div class="card metric"><span>Hard fallback</span><strong style="font-size:17px">Sat 18 Jul</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Build Norfolk Spotlight first.</strong><p>Use the Issue Command Centre to plan and write the issue. Keep sections short, specific and locally evidenced. Export only when core reader question, Hot Button, reader value, evidence status, one action and final copy are complete.</p><button class="btn" id="open-norfolk">Open Norfolk production</button></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
+<section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
+<section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
+<section class="view" id="view-build"><div class="section-head"><div><h2 id="build-title">Choose an issue</h2><div class="muted" id="build-meta">Open an issue from the Issues screen.</div></div><div class="toolbar"><button class="btn secondary" id="save-issue">Save issue header</button><button class="btn secondary" id="preview-copy">Preview Letterman copy</button><button class="btn" id="copy-letterman">Copy Letterman copy</button></div></div><div id="no-issue" class="card empty">No issue selected.</div><div id="builder" class="builder" hidden><aside class="card rail"><div class="section-head" style="margin-top:0"><h2>Content Library</h2><button class="btn" id="add-section">+ Add</button></div><div id="library-summary" class="library-summary"></div><div class="toolbar" style="margin-bottom:10px"><select id="library-filter" style="width:100%"><option value="all">All records</option><option value="produced">Produced articles</option><option value="queue">Needs production</option><option value="qa">QA warnings</option></select></div><div id="section-list" class="rail-list"></div><div class="rail-actions"><button class="btn" id="add-section-bottom" style="width:100%">+ Add next section</button><div class="muted" style="margin-top:6px;text-align:center">No fixed section limit · next order is automatic</div></div></aside><section class="card editor"><div class="form-grid" id="section-form"></div><div class="savebar"><span class="muted" id="save-state">Select a section.</span><div class="toolbar"><button class="btn secondary" id="generate-intelligence" type="button">Generate section intelligence</button><button class="btn" id="save-section">Save section</button></div></div></section><aside class="card intel"><h2 style="margin-top:0">Article intelligence</h2><div id="article-intelligence" class="philosophy-box"><span class="muted">Select a record to view its suggested classification.</span></div><h2>Issue controls</h2>
+<button class="btn secondary" id="run-map-audit" style="width:100%;margin-bottom:8px">Run issue map audit</button>
+<button class="btn secondary" id="copy-issue-map" style="width:100%;margin-bottom:8px">Open production map</button>
+<button class="btn secondary" id="apply-editorial-plan" style="width:100%;margin-bottom:8px">Apply current editorial plan</button>
+<button class="btn" id="build-issue" style="width:100%;margin-bottom:8px">Build issue</button>
+<button class="btn secondary" id="repair-build-briefs" style="width:100%;margin-bottom:8px">Repair issue briefs</button>
+<button class="btn secondary" id="test-openai" style="width:100%;margin-bottom:8px">Test OpenAI connection</button>
+<button class="btn" id="run-production" style="width:100%;margin-bottom:8px">Produce all ready Master Articles</button>
+<button class="btn secondary" id="run-next-production" style="width:100%;margin-bottom:8px">Produce selected Master Article</button>
+<button class="btn secondary" id="preview-article-package" style="width:100%;margin-bottom:12px">Preview selected article package</button>
+<div id="production-progress" class="empty" style="margin-bottom:14px">Production service not run yet.</div>
+<div id="map-audit" class="empty" style="margin-bottom:14px">Audit not run yet.</div>
+<div class="form-grid"><div class="field full"><label>Issue status</label><select id="ih-status"><option>PLANNED</option><option>BUILDING</option><option>QA</option><option>READY FOR LETTERMAN</option><option>PUBLISHED</option></select></div><div class="field full"><label>Main theme</label><textarea id="ih-theme"></textarea></div><div class="field full"><label>Subject line</label><input id="ih-subject"></div><div class="field full"><label>Preheader</label><textarea id="ih-preheader"></textarea></div><div class="field full"><label>Send date</label><input id="ih-date" type="date"></div></div><h3>Minimum section gate</h3><div id="gate" class="checklist"></div><div class="warning" style="margin-top:14px"><strong>Phase 1B discipline</strong><br>One primary Hot Button. One useful action. Named local proof. No unresolved placeholders in final copy.</div></aside></div></section></main></div>
+<section class="view" id="view-assemble"><div class="section-head"><div><h2>Newsletter Assembly</h2><div class="muted">Choose produced articles, arrange the running order and create a copy-ready issue draft.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-clear">Clear selection</button><button class="btn" id="assembly-generate">Generate issue draft</button></div></div><div class="assembly-grid"><section class="card"><div class="section-head" style="margin-top:0"><h2>1. Choose articles</h2><span class="muted" id="assembly-count">0 selected</span></div><div class="field"><label>Search library</label><input id="assembly-search" placeholder="Search title or topic"></div><div id="assembly-library" class="assembly-library"><div class="empty">Open a live issue first so ICS can load its article library.</div></div></section><section class="card"><div class="section-head" style="margin-top:0"><h2>2. Running order</h2><span class="muted">Use ↑ and ↓ to move items</span></div><div id="assembly-order" class="assembly-order"><div class="empty">No articles selected.</div></div><h3>Issue components</h3><div class="component-grid"><label><input type="checkbox" id="comp-opening" checked> Opening note</label><label><input type="checkbox" id="comp-poll" checked> Reader poll</label><label><input type="checkbox" id="comp-quiz"> Quiz / challenge</label><label><input type="checkbox" id="comp-sponsor" checked> Sponsor slot</label><label><input type="checkbox" id="comp-reader" checked> Reader recommendation</label><label><input type="checkbox" id="comp-outro" checked> Closing question</label></div><div class="field full" style="margin-top:14px"><label>Issue theme or promise</label><textarea id="assembly-theme" placeholder="What should this issue help Norfolk readers decide, discover or do?"></textarea></div></section></div></section><dialog id="issue-dialog"><form method="dialog" class="modal"><h2>Create issue</h2><div class="form-grid"><div class="field full"><label>Publication</label><select id="new-publication"></select></div><div class="field"><label>Issue number</label><input id="new-number" type="number"></div><div class="field"><label>Send date</label><input id="new-date" type="date" value="2026-07-16"></div><div class="field full"><label>Main theme</label><textarea id="new-theme" placeholder="The question or tension holding the issue together"></textarea></div></div><div class="savebar"><button class="btn secondary" value="cancel">Cancel</button><button class="btn" id="create-issue" value="default">Create and open</button></div></form></dialog><dialog id="article-dialog"><div class="modal"><h2>Master Article / Letterman package</h2><textarea id="article-package-text" style="width:100%;min-height:500px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#article-dialog').close()">Close</button><button class="btn" id="copy-article-package">Copy article package</button></div></div></dialog><dialog id="preview-dialog"><div class="modal"><h2>Production / Letterman copy</h2><textarea id="preview-text" style="width:100%;min-height:430px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#preview-dialog').close()">Close</button><button class="btn" id="copy-preview">Copy</button></div></div></dialog>
 <script>
-const state={publications:[],issues:[],connected:false};
-const views={dashboard:['Dashboard','Current issues, deadlines and production warnings.'],publications:['Publications','Publication identity, URLs, cadence and operating status.'],issues:['Issues','All issues across the active Spotlight and niche publications.']};
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-const fmtDate=v=>v?new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(v+'T12:00:00')):'—';
-function pill(value){const v=value||'Not set';const cls=/ready|complete|published|pass/i.test(v)?'good':/warning|blocked|late|fail|overdue/i.test(v)?'warn':'';return `<span class="pill ${cls}">${esc(v)}</span>`}
-async function api(path){const r=await fetch('/.netlify/functions/'+path,{headers:{accept:'application/json'}});const data=await r.json().catch(()=>({ok:false,error:'Invalid server response'}));if(!r.ok||!data.ok)throw new Error(data.error||'Request failed');return data}
-function connection(ok,message){state.connected=ok;document.querySelector('#connection-dot').className='dot '+(ok?'ok':'error');document.querySelector('#connection-text').textContent=message}
-function show(view){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));document.querySelector('#view-'+view)?.classList.add('active');document.querySelector(`.nav button[data-view="${view}"]`)?.classList.add('active');document.querySelector('#page-title').textContent=views[view]?.[0]||'Instant Customer System';document.querySelector('#page-subtitle').textContent=views[view]?.[1]||''}
-function publicationName(ids){const id=(ids||[])[0];return state.publications.find(p=>p.id===id)?.fields['Publication Name']||'Unlinked'}
-function renderPublications(){const el=document.querySelector('#publication-table');if(!state.publications.length){el.innerHTML='<div class="empty">No active publications found.</div>';return}el.innerHTML=`<table><thead><tr><th>Publication</th><th>Code</th><th>Status</th><th>Weekly target</th><th>Links</th></tr></thead><tbody>${state.publications.map(p=>{const f=p.fields;return `<tr><td><strong>${esc(f['Publication Name'])}</strong></td><td>${esc(f['Short Code']||'—')}</td><td>${pill(f.Status)}</td><td>${esc(f['Weekly Send Target']||'—')}</td><td>${f['Main URL']?`<a class="link" href="${esc(f['Main URL'])}" target="_blank" rel="noreferrer">Main</a>`:'—'} ${f['Latest URL']?` · <a class="link" href="${esc(f['Latest URL'])}" target="_blank" rel="noreferrer">Latest</a>`:''} ${f['Archive URL']?` · <a class="link" href="${esc(f['Archive URL'])}" target="_blank" rel="noreferrer">Archive</a>`:''}</td></tr>`}).join('')}</tbody></table>`}
-function issueRows(records){return records.map(i=>{const f=i.fields;return `<tr><td><strong>${esc(f['Issue Name']||`Issue ${f['Issue Number']||''}`)}</strong><div class="label">${esc(publicationName(f.Publication))}</div></td><td>${fmtDate(f['Send Date'])}</td><td>${pill(f['Issue Status'])}</td><td>${pill(f['QA Status'])}</td><td>${pill(f['Production Warning'])}</td><td>${esc(f['Main Theme']||'—')}</td></tr>`}).join('')}
-function renderIssues(){const selected=document.querySelector('#publication-filter').value;const records=selected?state.issues.filter(i=>(i.fields.Publication||[]).includes(selected)):state.issues;const el=document.querySelector('#issue-table');el.innerHTML=records.length?`<table><thead><tr><th>Issue</th><th>Send date</th><th>Status</th><th>QA</th><th>Warning</th><th>Main theme</th></tr></thead><tbody>${issueRows(records)}</tbody></table>`:'<div class="empty">No issues match this filter.</div>'}
-function renderAttention(){const attention=state.issues.filter(i=>{const f=i.fields;return (f['Production Warning']&&f['Production Warning']!=='None')||/fail|blocked|not ready/i.test(f['QA Status']||'')}).slice(0,6);document.querySelector('#attention-table').innerHTML=attention.length?`<table><thead><tr><th>Issue</th><th>Send date</th><th>Status</th><th>QA</th><th>Warning</th><th>Main theme</th></tr></thead><tbody>${issueRows(attention)}</tbody></table>`:'<div class="empty">No current issues have a production warning or blocking QA state.</div>'}
-function renderDashboard(){const open=state.issues.filter(i=>!['Published','Complete','Archived'].includes(i.fields['Issue Status'])).length;const warnings=state.issues.filter(i=>i.fields['Production Warning']&&i.fields['Production Warning']!=='None').length;const future=state.issues.filter(i=>i.fields['Send Date']&&new Date(i.fields['Send Date']+'T23:59:59')>=new Date()).sort((a,b)=>a.fields['Send Date'].localeCompare(b.fields['Send Date']))[0];document.querySelector('#metric-publications').textContent=state.publications.length;document.querySelector('#metric-open').textContent=open;document.querySelector('#metric-warnings').textContent=warnings;document.querySelector('#metric-next').textContent=future?`${fmtDate(future.fields['Send Date'])}`:'No future date';renderAttention()}
-function populateFilter(){const s=document.querySelector('#publication-filter');s.innerHTML='<option value="">All publications</option>'+state.publications.map(p=>`<option value="${esc(p.id)}">${esc(p.fields['Publication Name'])}</option>`).join('')}
-async function loadAll(){try{connection(false,'Connecting to Airtable…');const [p,i]=await Promise.all([api('publications'),api('issues')]);state.publications=p.records;state.issues=i.records;connection(true,`Connected · ${p.count} publications · ${i.count} issues`);document.querySelector('#setup-warning').innerHTML='';populateFilter();renderPublications();renderIssues();renderDashboard()}catch(e){connection(false,'Connection needs setup');document.querySelector('#setup-warning').innerHTML=`<div class="warning setup"><strong>Airtable is not connected on this Netlify deploy.</strong><br>Add <code>AIRTABLE_TOKEN</code> and <code>AIRTABLE_BASE_ID</code> to Netlify environment variables, then redeploy. No token belongs in this page or GitHub.<br><small>${esc(e.message)}</small></div>`;document.querySelector('#publication-table').innerHTML='<div class="empty">Airtable connection is not configured.</div>';document.querySelector('#issue-table').innerHTML='<div class="empty">Airtable connection is not configured.</div>';document.querySelector('#attention-table').innerHTML='<div class="empty">Airtable connection is not configured.</div>'}}
-document.querySelectorAll('.nav button[data-view]:not([disabled])').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));document.querySelector('#publication-filter').addEventListener('change',renderIssues);document.querySelector('#refresh-publications').addEventListener('click',loadAll);document.querySelector('#refresh-issues').addEventListener('click',loadAll);loadAll();
-</script>
-</body>
-</html>
+const S={publications:[],issues:[],sections:[],issue:null,section:null,hot:[]};const E=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));const val=(f,k)=>f?.[k]??'';const fmt=d=>d?new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00')):'—';
+async function api(path,opt={}){const r=await fetch('/.netlify/functions/'+path,{headers:{'content-type':'application/json',accept:'application/json'},...opt});const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={ok:false,error:`Invalid server response (${r.status}). ${raw.slice(0,300)||'No response body.'}`}}if(!r.ok||!d.ok){const err=new Error(d.error||`Request failed (${r.status})`);err.details=d.details;throw err}return d}function conn(ok,msg){E('dot').className='dot '+(ok?'ok':'bad');E('connection').textContent=msg}function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));E('view-'+v).classList.add('active');document.querySelector(`[data-view="${v}"]`).classList.add('active');E('page-title').textContent={dashboard:'Dashboard',publications:'Publications',issues:'Issues',build:'Issue Command Centre',assemble:'Newsletter Assembly'}[v];E('page-sub').textContent=v==='build'?'Plan, write and export one real issue.':v==='assemble'?'Select articles and assemble a copy-ready newsletter draft.':'Norfolk Spotlight live production test.';if(v==='assemble')renderAssembly()}
+function pubName(ids){return S.publications.find(p=>p.id===(ids||[])[0])?.fields['Publication Name']||'Unlinked'}function pill(v){return `<span class="pill ${/ready|published|complete/i.test(v)?'good':/warning|blocked|late/i.test(v)?'warn':''}">${esc(v||'Not set')}</span>`}
+function render(){E('m-pubs').textContent=S.publications.length;E('m-open').textContent=S.issues.filter(i=>!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase())).length;E('issue-filter').innerHTML='<option value="">All publications</option>'+S.publications.map(p=>`<option value="${p.id}">${esc(val(p.fields,'Publication Name'))}</option>`).join('');E('new-publication').innerHTML=S.publications.map(p=>`<option value="${p.id}">${esc(val(p.fields,'Publication Name'))}</option>`).join('');E('pub-table').innerHTML=`<table><thead><tr><th>Publication</th><th>Code</th><th>Status</th><th>Weekly target</th></tr></thead><tbody>${S.publications.map(p=>`<tr><td><strong>${esc(val(p.fields,'Publication Name'))}</strong></td><td>${esc(val(p.fields,'Short Code'))}</td><td>${pill(val(p.fields,'Status'))}</td><td>${esc(val(p.fields,'Weekly Send Target')||'—')}</td></tr>`).join('')}</tbody></table>`;renderIssues();const att=S.issues.filter(i=>!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase())).slice(0,8);E('attention').innerHTML=issueTable(att)}
+function issueTable(items){if(!items.length)return '<div class="empty">No issues found.</div>';return `<table><thead><tr><th>Publication</th><th>Issue</th><th>Send date</th><th>Status</th><th>Theme</th><th></th></tr></thead><tbody>${items.map(i=>`<tr><td>${esc(pubName(i.fields.Publication))}</td><td>#${esc(val(i.fields,'Issue Number')||'—')}</td><td>${fmt(val(i.fields,'Send Date'))}</td><td>${pill(val(i.fields,'Issue Status'))}</td><td>${esc(val(i.fields,'Main Theme')||'—')}</td><td><button class="btn secondary" onclick="openIssue('${i.id}')">Open</button></td></tr>`).join('')}</tbody></table>`}
+function renderIssues(){const f=E('issue-filter').value;E('issue-table').innerHTML=issueTable(S.issues.filter(i=>!f||(i.fields.Publication||[]).includes(f)))}
+async function loadAll(){try{conn(false,'Connecting…');const [p,i,h]=await Promise.all([api('publications'),api('issues'),fetch('/app/hot-buttons.json').then(r=>r.json())]);S.publications=p.records;S.issues=i.records;S.hot=h;conn(true,`Connected · ${p.count} publications · ${i.count} issues`);render()}catch(e){conn(false,e.message);alert(e.message)}}
+async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);show('build');E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);await loadSections()}
+function sectionOrderValue(s){const n=Number(val(s.fields,'Section Order'));return Number.isFinite(n)?n:999999}
+function sortSections(){S.sections=[...S.sections].sort((a,b)=>sectionOrderValue(a)-sectionOrderValue(b)||(a.createdTime||'').localeCompare(b.createdTime||''))}
+function sectionOrderDiagnostic(){
+  const orders=S.sections.map(sectionOrderValue).filter(n=>n<999999);
+  const duplicates=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
+  const max=orders.length?Math.max(...orders):0;
+  const missing=[];for(let i=1;i<=max;i++){if(!orders.includes(i))missing.push(i)}
+  const bits=[`${S.sections.length} records`];
+  if(missing.length)bits.push(`missing order: ${missing.join(', ')}`);
+  if(duplicates.length)bits.push(`duplicate order: ${duplicates.join(', ')}`);
+  return bits.join(' · ');
+}
+
+const AUTHORITY_LANES=[
+ ['Mortgage adviser',['mortgage','deposit','first-time buyer','remortgage']],
+ ['Lettings / property management',['letting','tenant','landlord','renting','rental']],
+ ['Estate agent',['estate agent','selling a home','house sale','property market']],
+ ['Conveyancer / solicitor',['conveyanc','solicitor','legal']],
+ ['Surveyor',['surveyor','survey','snagging']],
+ ['Financial adviser / accountant',['financial adviser','accountant','finance','saving']],
+ ['Health / dental / pharmacy',['health','dental','dentist','pharmacy','nhs']],
+ ['Physio / recovery',['physio','back pain','recovery','pain']],
+ ['Dog / pet specialist',['dog','pet','grooming','trainer','vet']],
+ ['Heating / energy',['heating','heat pump','energy','boiler']],
+ ['Planning / architecture / infrastructure',['planning','architect','infrastructure','water','sewage','drainage','housing growth']],
+ ['Motoring / garage',['motoring','garage','car','mot','vehicle']],
+ ['Education / childcare',['school','education','university','apprentice','childcare','college']]
+];
+function sectionText(s){return Object.values(s.fields||{}).filter(v=>typeof v==='string').join(' ').toLowerCase()}
+const ISSUE_STOP_WORDS=new Set('the a an and or of to in on for with is are was were be been being this that what which who how why your our norfolk spotlight unfiltered'.split(' '));
+function issueTopicTokens(s){return new Set(String(s||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>3&&!ISSUE_STOP_WORDS.has(w)))}
+function issueSimilarity(a,b){const A=issueTopicTokens(a),B=issueTopicTokens(b);if(!A.size||!B.size)return 0;let hit=0;A.forEach(x=>{if(B.has(x))hit++});return hit/Math.min(A.size,B.size)}
+async function repairBuildBriefs(){
+ if(!S.issue){alert('Open an issue first.');return}
+ const repairs={
+  23:["Norfolk-wide examples from this issue: Sandringham, housing growth, water pressure, extreme heat, road diversions and household costs.","No separate evidence burden for the intro. Any factual examples mentioned must be supported by the verified sections they preview."],
+  1:["Sandringham Estate, West Norfolk; cancelled August 2026 Heritage Live programme; named headline artists.","Official/promoter cancellation information, named performers, refund guidance and accurately attributed explanation for cancellation."],
+  18:["Named Norfolk growth locations and housing proposals; relevant water supply, wastewater or drainage infrastructure evidence.","Current planning, water-company, regulator or council evidence linking housing growth with water supply, sewage treatment or drainage capacity."],
+  17:["Named Norfolk villages or large developments; evidence of housing growth alongside shops, schools, buses, GP access, pubs or other community facilities.","Current council/planning or local-service evidence for the named examples. The article may ask a value judgement but must not invent service loss or population facts."],
+  25:["Named Norfolk diversion routes and communities currently or recently carrying displaced traffic.","Current roadworks/closure information and official diversion routes for any named example. Reader experiences must be genuine if quoted."],
+  19:["Norfolk temperature evidence and named NHS/health-service heat planning or public-health guidance.","Verified temperature figure, current NHS/UKHSA heat-health guidance and relevant Norfolk health-system or public-health planning evidence."],
+  31:["Norfolk hosepipe restriction area and named local garden/lawn context where useful.","Current water-company hosepipe rules plus authoritative horticultural guidance on lawn dormancy, watering and recovery."],
+  13:["Named Norfolk charity shops, reuse centres or community shops only if mentioned in the copy.","Question-led section. Verify business/place names and opening/service details only where included; do not invent reader finds."],
+  20:["Named Norfolk farm shops, their locations and a specific product or reason to visit.","Current official business information, product/service details and prices only where quoted. Reader nominations must be genuine."],
+  5:["Named Norfolk cafés, pubs, farm shops or breakfast venues with current breakfast prices and what is included.","Venue name, Norfolk location, current official menu price and breakfast contents for every compared venue."],
+  29:["Named Norfolk summer events or attractions, current family ticket costs, parking and material extras.","Official event/venue pricing and inclusions. Calculate a consistent family scenario and state assumptions clearly."],
+  24:["Named Norfolk education, apprenticeship and technical-training routes or providers.","Current official information on university, apprenticeships, T Levels/technical education and Norfolk provision. Avoid claiming one route is universally better."],
+  27:["Named current Norfolk property listings or market examples at approximately £250k, £350k and £500k.","Current listing price, location, property type, bedrooms and material features from clean property/agent sources; make clear listings are snapshots, not valuations."],
+  8:["Named Norfolk locations used in the housing-versus-transport comparison and a stated household travel scenario.","Current housing example plus transparent transport-cost assumptions. Any fuel, insurance or ownership figures must be sourced or clearly labelled illustrative."],
+  15:["Three explicit monthly saving levels and the same £20,000 target.","Arithmetic for each saving scenario; clearly state that interest, investment returns, house-price changes and buying costs are excluded unless separately modelled."],
+  4:["A realistic illustrative Norfolk homeowner scenario; no implication that it is an actual reader case.","Worked comparison of monthly payments, term and total repayment; current authoritative debt-consolidation/mortgage risk guidance; state that secured debt can put the home at risk."],
+  9:["Named Norfolk/local conveyancing context only where genuinely relevant; comparison should focus on service model, communication and fee scope.","Current regulator/consumer guidance and clearly sourced example fees if prices are compared. Do not imply local is always better or online is always cheaper."],
+  12:["Norfolk housing types or local risk context where relevant, without pretending a defect is location-wide.","Current RICS or other authoritative survey guidance covering significant defects, further investigation and renegotiation/walk-away decisions."],
+  7:["Norfolk access context only if current local dental availability is discussed.","Current NHS guidance on risk-based dental recall intervals for children and any current Norfolk access claim used in the article."],
+  14:["A normal everyday back-pain scenario; named Norfolk services only if signposting is included.","Current NHS guidance on staying active/self-care and red-flag symptoms requiring urgent or professional assessment."],
+  10:["Named Norfolk grooming businesses only if prices or service examples are included.","Authoritative coat/grooming guidance plus current official local prices where quoted. Frequency must be framed as breed, coat and individual dependent."],
+  6:["Named Norfolk summer routes such as the A47 or A11, plus a realistic pre-journey example relevant to local drivers.","Current authoritative motoring or road-safety guidance covering tyres, coolant, warning lights and pre-journey vehicle checks."],
+  28:["A realistic overheating Norfolk-home scenario and named local installer/business examples only if used.","Current authoritative energy/building guidance on fans, air conditioning and heat-pump cooling; sourced indicative purchase/installation costs and clear caveats."],
+  30:["Named Norfolk salons, barbers, beauty or wellbeing businesses with current treatment names, prices and inclusions.","Current official price lists/booking pages for every named treatment. Reader value judgements must be genuine or presented as an open nomination question."],
+  26:["Questions and themes actually published in this issue.","No separate evidence burden for the outro. Do not introduce new factual claims that have not been verified elsewhere in the issue."]
+ };
+ if(!confirm('Repair the Evidence Required and Local Proof Needed fields for the 25 Publish Now sections? Existing section titles, questions, lanes, CTAs, notes and order will not change.'))return;
+ E('save-state').textContent='Repairing issue briefs…';
+ try{
+  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+  S.sections=r.records||[];
+  let changed=0,missing=[];
+  for(const s of S.sections){
+   const f=s.fields||{}, n=Number(val(f,'Section Order'));
+   if(!/PUBLISH NOW — Final Running Order \d{2}\./.test(String(val(f,'Notes')||'')))continue;
+   const x=repairs[n];
+   if(!x){missing.push(n);continue}
+   const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:s.id,fields:{'Local Proof Needed':x[0],'Evidence Required':x[1]}})});
+   s.fields=d.record.fields;changed++;
+  }
+  sortSections();renderSections();
+  E('save-state').textContent=`Brief repair complete: ${changed} updated${missing.length?' · missing '+missing.join(', '):''}.`;
+  alert(`Brief repair complete. ${changed} Publish Now sections updated. Run Build issue again.`);
+ }catch(err){alert('Brief repair error: '+err.message);E('save-state').textContent='Brief repair failed.'}
+}
+function productionClassForFields(f){return buildProfile(f).cls}
+async function productionSections(){
+ const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+ S.sections=r.records||[];
+ return S.sections.filter(s=>/PUBLISH NOW — Final Running Order \d{2}\./.test(String(val(s.fields,'Notes')||''))).map(s=>{const m=String(val(s.fields,'Notes')||'').match(/Final Running Order (\d{2})/);return{s,run:m?Number(m[1]):999}}).sort((a,b)=>a.run-b.run)
+}
+function productionDone(s){return val(s.fields,'Section Status')==='Ready'&&val(s.fields,'Section Final Copy')&&['Pass'].includes(val(s.fields,'Section QA Result'))}
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+async function refreshProducedRecord(sectionId){
+ const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+ S.sections=r.records||[];
+ return S.sections.find(x=>x.id===sectionId)||null;
+}
+async function produceOne(item){
+ const cls=productionClassForFields(item.s.fields);
+ const runId='ma_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
+ const response=await fetch('/.netlify/functions/produce-section',{
+   method:'POST',headers:{'content-type':'application/json',accept:'application/json'},
+   body:JSON.stringify({sectionId:item.s.id,productionClass:cls,runId})
+ });
+ if(response.status!==202){
+   const raw=await response.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={error:`Invalid server response (${response.status}). ${raw.slice(0,300)||'No response body.'}`}}
+   throw new Error(d.error||`Unable to start background production (${response.status}).`);
+ }
+ const deadline=Date.now()+12*60*1000;
+ let polls=0;
+ while(Date.now()<deadline){
+   await sleep(polls<3?3000:5000);polls++;
+   const current=await refreshProducedRecord(item.s.id);
+   if(!current)continue;
+   const notes=String(val(current.fields,'Notes')||'');
+   item.s=current;
+   if(S.section?.id===current.id)S.section=current;
+   if(notes.includes(`MASTER ARTICLE FAILED v2.7`)&&notes.includes(`Run ID: ${runId}`)){
+     const m=notes.match(new RegExp(`MASTER ARTICLE FAILED v2\\.7[\\s\\S]*?Run ID: ${runId}[\\s\\S]*?Error: ([^\\n]+)`));
+     throw new Error(m?.[1]||'Background production failed. Check the Netlify function log for this run.');
+   }
+   if(notes.includes(`PRODUCTION SERVICE v2.7`)&&notes.includes(`Run ID: ${runId}`)){
+     const qa=String(val(current.fields,'Section QA Result')||'Fix Required');
+     return {ok:true,record:current,productionClass:cls,qaResult:qa,sources:[],background:true,runId};
+   }
+   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">Background production is running · ${Math.round((Date.now()-(deadline-12*60*1000))/1000)} seconds</div>`;
+ }
+ throw new Error('Background production did not finish within 12 minutes. Check the Netlify produce-section log and the Airtable Notes field.');
+}
+async function runProduction({one=false}={}){
+ if(!S.issue){alert('Open an issue first.');return}
+ let work;
+ if(one){
+   if(!S.section){alert('Select the Master Article you want to produce first.');return}
+   const selected={s:S.section,run:999};
+   if(productionDone(selected.s)){
+     if(!confirm('This Master Article is already marked Ready with QA Pass. Produce it again and replace the current package?'))return;
+   }
+   work=[selected];
+ }else{
+   let queue;
+   try{queue=await productionSections()}catch(e){alert(e.message);return}
+   const pending=queue.filter(x=>!productionDone(x.s));
+   if(!pending.length){E('production-progress').className='philosophy-box';E('production-progress').innerHTML='<strong>Production complete.</strong><div class="muted">All Publish Now sections are Ready with QA Pass.</div>';return}
+   work=pending;
+   if(!confirm(`Run the production service for ${work.length} pending sections? This uses the OpenAI API, researches B/C sections and writes drafts/evidence back to Airtable.`))return;
+ }
+ let pass=0,fix=0,failed=0;
+ E('run-production').disabled=true;E('run-next-production').disabled=true;
+ for(let i=0;i<work.length;i++){
+   const item=work[i];
+   E('production-progress').className='philosophy-box';
+   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Researching, writing, checking and saving in the background. This may take several minutes.</div><div class="muted">Pass ${pass} · Review ${fix} · Failed ${failed}</div>`;
+   try{const d=await produceOne(item);if(d.qaResult==='Pass')pass++;else fix++}catch(e){failed++;E('save-state').textContent=`Production error on ${val(item.s.fields,'Section Title')}: ${e.message}`;if(one)alert(e.message)}
+ }
+ E('run-production').disabled=false;E('run-next-production').disabled=false;
+ if(one&&work[0]?.s){S.section=S.sections.find(x=>x.id===work[0].s.id)||work[0].s;}
+ renderSections();
+ renderForm();
+ E('production-progress').innerHTML=`<strong>Production run finished</strong><div class="muted">Pass ${pass} · Human review ${fix} · Failed ${failed}</div>`;
+ E('save-state').textContent='Master Article run complete. Open Fix Required records first, then preview each Letterman package.';
+}
+function buildProfile(f){
+ const title=String(val(f,'Section Title')||'');
+ const q=String(val(f,'Core Reader Question')||'');
+ const type=String(val(f,'Section Type')||'');
+ const status=String(val(f,'Evidence Status')||'');
+ const blob=(title+' '+q).toLowerCase();
+ if(status==='Question Only'||/intro|outro/.test(type.toLowerCase())) return {cls:'A — Question Only',proof:'No external proof required unless the draft introduces a new factual claim.'};
+ if(/water|sewage|drainage|nhs|dentist|health service|37\.7|mortgage|debt|conveyanc|solicitor|survey|deposit|house|£250,000|£350,000|£500,000|heat pump|air con|hosepipe|ban|cancel|sandringham|university|apprentice|road|diversion/.test(blob))
+   return {cls:'C — Evidence Heavy',proof:'Verify material claims with current reliable sources and named Norfolk proof before drafting.'};
+ return {cls:'B — Light Proof',proof:'Check named Norfolk examples and any current prices, dates or service details before drafting.'};
+}
+function suspectedBriefMismatch(f){
+ const title=String(val(f,'Section Title')||'').toLowerCase();
+ const proof=(String(val(f,'Local Proof Needed')||'')+' '+String(val(f,'Evidence Required')||'')).toLowerCase();
+ if(/a47|a11|tyres|coolant|warning lights|pre-journey/.test(proof) && !/drive|car|road|diversion|journey/.test(title)) return true;
+ if(/menu price|menu details/.test(proof) && !/breakfast|full english|food|farm shop|beauty|family day|event/.test(title)) return true;
+ return false;
+}
+async function buildIssue(){
+ if(!S.issue){alert('Open an issue first.');return}
+ E('save-state').textContent='Preparing build run…';
+ try{
+   const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+   S.sections=r.records||[];
+   const publish=S.sections.filter(s=>/PUBLISH NOW — Final Running Order \d{2}\./.test(String(val(s.fields,'Notes')||''))).map(s=>{
+     const m=String(val(s.fields,'Notes')||'').match(/Final Running Order (\d{2})/);
+     return {s,run:m?Number(m[1]):999};
+   }).sort((a,b)=>a.run-b.run);
+   if(!publish.length){alert('No Publish Now editorial plan found. Apply the editorial plan first.');return}
+   const groups={'A — Question Only':[],'B — Light Proof':[],'C — Evidence Heavy':[]};
+   const mismatches=[];
+   publish.forEach(x=>{const p=buildProfile(x.s.fields);groups[p.cls].push(x);if(suspectedBriefMismatch(x.s.fields))mismatches.push(x)});
+   const lines=['ISSUE BUILD QA',`${publish.length} Publish Now sections`,'',
+     `A — Question Only: ${groups['A — Question Only'].length}`,
+     `B — Light Proof: ${groups['B — Light Proof'].length}`,
+     `C — Evidence Heavy: ${groups['C — Evidence Heavy'].length}`,
+     `Suspected copied/mismatched briefs: ${mismatches.length}`,''];
+   if(mismatches.length){
+     lines.push('STOP GATE — BRIEF REPAIR REQUIRED');
+     mismatches.forEach(({s,run})=>lines.push(`${String(run).padStart(2,'0')} | ${val(s.fields,'Section Title')}`));
+     lines.push('','These sections appear to contain evidence/local-proof text copied from a different topic. Repair the section brief before automated research or drafting.','');
+   } else lines.push('QA PASS — no obvious copied brief mismatch detected.','');
+   lines.push('BUILD QUEUE');
+   publish.forEach(({s,run})=>{
+     const f=s.fields||{}, profile=buildProfile(f), bad=suspectedBriefMismatch(f);
+     lines.push('',`${String(run).padStart(2,'0')} | ${val(f,'Section Title')}`,
+       `Class: ${profile.cls} | Lane: ${val(f,'Commercial Lane')} | CTA: ${val(f,'CTA Type')} | Brief QA: ${bad?'REPAIR':'PASS'}`,
+       `Question: ${val(f,'Core Reader Question')||'—'}`,
+       `Stored local proof: ${val(f,'Local Proof Needed')||'—'}`,
+       `Stored evidence: ${val(f,'Evidence Required')||'—'}`,
+       `Build rule: ${profile.proof}`);
+   });
+   E('preview-text').value=lines.join('\n');
+   E('preview-dialog').showModal();
+   E('save-state').textContent=`Build QA: ${groups['A — Question Only'].length} A · ${groups['B — Light Proof'].length} B · ${groups['C — Evidence Heavy'].length} C · ${mismatches.length} brief repairs.`;
+ }catch(err){alert('Build issue error: '+err.message);E('save-state').textContent='Build issue failed.'}
+}
+async function applyEditorialPlan(){
+ if(!S.issue){alert('Open an issue first.');return}
+ const publishOrder=[23,1,18,17,25,19,31,13,20,5,29,24,27,8,15,4,9,12,7,14,10,6,28,30,26];
+ const parked=new Set([2,3,11,16,21,22]);
+ if(!confirm('Apply the locked 25 publish / 6 park editorial plan to this issue? This writes editorial markers into Notes but does not change Section Order or delete records.'))return;
+ E('save-state').textContent='Applying editorial plan…';
+ try{
+   const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+   S.sections=r.records||[];
+   const orderMap=new Map(publishOrder.map((n,i)=>[n,i+1]));
+   let changed=0;
+   for(const s of S.sections){
+     const f=s.fields||{};
+     const n=Number(val(f,'Section Order'));
+     let marker='';
+     if(parked.has(n)) marker='PARKED — hold for a future Norfolk issue. Do not include in this build.';
+     else if(orderMap.has(n)) marker=`PUBLISH NOW — Final Running Order ${String(orderMap.get(n)).padStart(2,'0')}.`;
+     else continue;
+     const notes=String(val(f,'Notes')||'').replace(/(?:PARKED — hold for a future Norfolk issue\. Do not include in this build\.|PUBLISH NOW — Final Running Order \d{2}\.)\s*/g,'').trim();
+     const fields={'Notes':notes?marker+'\n\n'+notes:marker};
+     const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:s.id,fields})});
+     s.fields=d.record.fields;
+     changed++;
+   }
+   sortSections();renderSections();
+   E('save-state').textContent=`Editorial plan applied to ${changed} sections. Original Section Order preserved.`;
+   alert(`Editorial plan applied to ${changed} sections. 25 Publish Now and 6 Parked. Section Order was not changed.`);
+ }catch(err){
+   E('save-state').textContent='Editorial plan failed: '+err.message;
+   alert('Editorial plan error: '+err.message);
+ }
+}
+async function copyProductionMap(){
+ E('save-state').textContent='Loading current issue map…';
+ let records=[];
+ try{
+   const id=S.issue?.id;
+   if(!id){alert('Open an issue first.');E('save-state').textContent='Open an issue first.';return}
+   const r=await api('sections?issueId='+encodeURIComponent(id));
+   records=r.records||[];
+   S.sections=records;
+   sortSections();
+ }catch(err){
+   alert('Production map error: '+err.message);
+   E('save-state').textContent='Could not load production map.';
+   return;
+ }
+ const lines=['ISSUE PRODUCTION MAP',`${S.sections.length} sections`,''];
+ S.sections.forEach(s=>{
+   const f=s.fields||{};
+   lines.push(`${val(f,'Section Order')} | ${val(f,'Section Title')||'[BLANK TITLE]'} | Type: ${val(f,'Section Type')||'[blank]'} | Lane: ${val(f,'Commercial Lane')||'[blank]'} | CTA: ${val(f,'CTA Type')||'[blank]'} | Evidence: ${val(f,'Evidence Status')||'[blank]'}`);
+ });
+ const output=lines.join('\n');
+ E('preview-text').value=output;
+ E('preview-dialog').showModal();
+ E('save-state').textContent='Production map opened. Use Copy in the dialog or select the text manually.';
+}
+function auditMap(){
+ sortSections();
+ const counts={Authority:0,Activation:0,Community:0,Other:0};
+ const ctas={}; const evidence=[]; const pathways=[]; const archive=[]; const duplicates=[];
+ S.sections.forEach(s=>{
+   const lane=val(s.fields,'Commercial Lane')||'Other';
+   counts[lane]=(counts[lane]||0)+1;
+   const cta=val(s.fields,'CTA Type')||'Blank'; ctas[cta]=(ctas[cta]||0)+1;
+   if(!val(s.fields,'Evidence Status')||/needs update/i.test(val(s.fields,'Evidence Status'))) evidence.push(val(s.fields,'Section Order'));
+   if(!val(s.fields,'Commercial Pathway')) pathways.push(val(s.fields,'Section Order'));
+   if(!val(s.fields,'Archive Similarity Note')) archive.push(val(s.fields,'Section Order'));
+ });
+ for(let i=0;i<S.sections.length;i++)for(let j=i+1;j<S.sections.length;j++){
+   const a=S.sections[i],b=S.sections[j];
+   const score=issueSimilarity([val(a.fields,'Section Title'),val(a.fields,'Core Reader Question'),val(a.fields,'Universal Reader Problem')].join(' '),[val(b.fields,'Section Title'),val(b.fields,'Core Reader Question'),val(b.fields,'Universal Reader Problem')].join(' '));
+   if(score>=0.45)duplicates.push(`${val(a.fields,'Section Order')} ↔ ${val(b.fields,'Section Order')}`);
+ }
+ const lanes=AUTHORITY_LANES.map(([name,keys])=>{
+   const hits=S.sections.filter(s=>keys.some(k=>sectionText(s).includes(k)));
+   return `<div><strong>${hits.length?'✓':'✕'} ${esc(name)}</strong><br><span class="muted">${hits.length?'Sections '+hits.map(s=>esc(val(s.fields,'Section Order'))).join(', '):'MISSING'}</span></div>`;
+ }).join('');
+ const activationWarning=(counts.Activation||0)<6?`<div class="warn"><strong>Activation gap:</strong> ${(counts.Activation||0)} mapped; target is 6–8 clear activation routes.</div>`:'';
+ E('map-audit').className='';
+ E('map-audit').innerHTML=`<div class="philosophy-box"><strong>Map audit</strong><div class="muted">${S.sections.length} sections</div></div>
+ <div class="grid3" style="margin-top:10px"><div><strong>${counts.Authority||0}</strong><br><span class="muted">Authority</span></div><div><strong>${counts.Activation||0}</strong><br><span class="muted">Activation</span></div><div><strong>${counts.Community||0}</strong><br><span class="muted">Community</span></div></div>
+ ${activationWarning}
+ <h3>Locked authority lane coverage</h3><div style="display:grid;gap:8px">${lanes}</div>
+ <h3>CTA mix</h3><div class="muted">${Object.entries(ctas).map(([k,v])=>`${esc(k)} ${v}`).join(' · ')}</div>
+ <h3>Pre-build gaps</h3><div class="muted">Evidence needs update: ${evidence.length?evidence.join(', '):'none'}<br>Missing commercial pathway: ${pathways.length?pathways.join(', '):'none'}<br>Missing archive note: ${archive.length?archive.join(', '):'none'}<br>Current issue similarity warnings: ${duplicates.length?duplicates.join(' · '):'none'}</div>
+ <div class="muted" style="margin-top:10px">Similarity warnings are review prompts, not automatic duplicate deletions.<br>URLs: use clean raw destination URLs only. Tracking is applied later in Global Control.</div>`;
+}
+
+
+function masterArticlePackage(fields){
+ const notes=String(val(fields,'Notes')||'');
+ const match=notes.match(/MASTER ARTICLE PACKAGE v1\n([\s\S]*?)\nEND MASTER ARTICLE PACKAGE/);
+ if(!match)return null;
+ try{return JSON.parse(match[1])}catch{return null}
+}
+function selectedArticleExport(){
+ if(!S.section)return 'No article selected.';
+ const f=S.section.fields||{},p=masterArticlePackage(f);
+ if(!p)return 'This record does not yet contain a Master Article package. Produce it first.';
+ const sources=(p.sources||[]).map((x,i)=>`${i+1}. ${x.title||x.url}\n${x.url}\nSupports: ${x.supports||''}`).join('\n\n');
+ return `LETTERMAN MASTER ARTICLE\n\nARTICLE TITLE\n${val(f,'Section Title')}\n\nARTICLE SUBHEAD\n${p.article_subhead||''}\n\nARTICLE BODY\n${val(f,'Section Final Copy')}\n\nARTICLE SUMMARY TITLE\n${p.summary_title||''}\n\nARTICLE SUMMARY SUBHEAD\n${p.summary_subhead||''}\n\nARTICLE SUMMARY CONTENT\n${p.summary_content||''}\n\nSEO TITLE\n${p.seo_title||''}\n\nSEO DESCRIPTION\n${p.seo_description||''}\n\nURL PATH\n${p.url_path||''}\n\nKEYWORDS\n${p.keywords||''}\n\nFEATURED IMAGE BRIEF\n${p.featured_image_brief||''}\n\nFEATURED IMAGE ALT TEXT\n${p.featured_image_alt||''}\n\nNEWSLETTER HEADLINE\n${p.newsletter_headline||''}\n\nNEWSLETTER TEASER\n${p.newsletter_teaser||''}\n\nBUTTON TEXT\n${val(f,'CTA Text')}\n\nFACEBOOK\n${p.social_facebook||''}\n\nLINKEDIN\n${p.social_linkedin||''}\n\nX\n${p.social_x||''}\n\nSOURCES / INTERNAL QA\n${sources}`;
+}
+async function testOpenAI(){
+ const b=E('test-openai'),old=b.textContent;b.disabled=true;b.textContent='Testing…';
+ try{const d=await api('openai-diagnostic',{method:'POST',body:'{}'});alert(`OpenAI connection passed.\n\nModel used: ${d.modelUsed}\nVisible models: ${d.visibleModelCount}\nResponse: ${d.message}`)}
+ catch(e){alert('OpenAI connection failed:\n\n'+e.message)}finally{b.disabled=false;b.textContent=old}
+}
+async function loadSections(){E('section-list').innerHTML='<div class="empty">Loading…</div>';const d=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=d.records;sortSections();S.section=S.sections[0]||null;renderSections();renderForm()}
+function completion(s){const f=s.fields;const keys=['Core Reader Question','Primary Hot Button','Reader Value','Evidence Status','Primary Next Action','Section Final Copy'];return Math.round(keys.filter(k=>val(f,k)&&val(f,k)!=='Not Started').length/keys.length*100)}
+function isProducedArticle(s){return String(val(s.fields,'Section Final Copy')||'').trim().length>=1500}
+function qaFlags(s){const f=s.fields,title=String(val(f,'Section Title')).toLowerCase(),cta=String(val(f,'CTA Text')).toLowerCase(),flags=[];if(/car check|five-minute car/.test(cta)&&!/car|drive|vehicle|motor/.test(title))flags.push('CTA appears copied from car article');if(isProducedArticle(s)&&!String(val(f,'CTA Text')).trim())flags.push('Missing CTA');if(isProducedArticle(s)&&!['Pass'].includes(String(val(f,'Section QA Result'))))flags.push('QA not passed');if(isProducedArticle(s)&&String(val(f,'Section Status'))!=='Ready'&&String(val(f,'Section Status'))!=='Published')flags.push('Status needs review');return flags}
+function filteredSections(){const mode=E('library-filter')?.value||'all';if(mode==='produced')return S.sections.filter(isProducedArticle);if(mode==='queue')return S.sections.filter(s=>!isProducedArticle(s));if(mode==='qa')return S.sections.filter(s=>qaFlags(s).length);return S.sections}
+function renderSections(){sortSections();const produced=S.sections.filter(isProducedArticle).length,queue=S.sections.length-produced,warnings=S.sections.filter(s=>qaFlags(s).length).length;E('library-summary').innerHTML=`<div><strong>${produced}</strong><span>Produced</span></div><div><strong>${queue}</strong><span>Queue</span></div><div><strong>${warnings}</strong><span>Warnings</span></div>`;const rows=filteredSections();const diagnostic=S.sections.length?`<div class="muted" style="padding:4px 2px 10px">${esc(sectionOrderDiagnostic())}</div>`:'';E('section-list').innerHTML=diagnostic+(rows.length?rows.map((s,n)=>{const flags=qaFlags(s);return `<div class="section-item ${S.section?.id===s.id?'active':''}" onclick="selectSection('${s.id}')"><strong>${esc(val(s.fields,'Section Order')||n+1)}. ${esc(val(s.fields,'Section Title')||'Untitled section')}</strong><small>${esc(val(s.fields,'Primary Hot Button')||'No Hot Button')} · ${completion(s)}%</small>${flags.length?`<span class="qa-flag">${esc(flags[0])}</span>`:''}</div>`}).join(''):'<div class="empty">No records match this filter.</div>')}
+function selectSection(id){S.section=S.sections.find(s=>s.id===id);renderSections();renderForm()}
+const fields=[['Section Title','input'],['Section Order','number'],['Section Type','select',['Intro','Lead / Unfiltered','Anchor','Medium','Short','Quick Hit','Community','Expert','Activation','Outro']],['Section Status','select',['Planned','Researching','Drafting','Ready','Published']],['Reader Hook','textarea','full'],['Core Reader Question','textarea','full'],['Universal Reader Problem','textarea','full'],['Primary Hot Button','hot','full'],['Reader Type','input'],['Decision Constraint','textarea'],['Emotional Outcome','select',['Curious','Reassured','Warned','Recognised','Clearer','Confident','Motivated','Amused','Concerned','Hopeful','Ready To Act']],['Reader Value','textarea','full'],['Local Proof Needed','textarea','full'],['Evidence Required','textarea','full'],['Evidence Status','select',['Not Started','Researching','Verified','Needs Update','Question Only','Illustrative Example']],['Evidence Checked Date','date'],['Source / Reference Link 1','url','full'],['Commercial Lane','select',['Not Assessed','Authority','Featured Partner','Activation','Community','None']],['Commercial Pathway','textarea','full'],['Primary Next Action','textarea','full'],['CTA Type','select',['None','Button','Link','Reply','Comment','Nominate','Vote','Save','Share']],['CTA Text','input','full'],['Action Destination URL','url','full'],['Social Question Shape','textarea','full'],['Archive Similarity Status','select',['Clear','Review','Too Similar']],['Archive Similarity Note','textarea','full'],['Reuse / Localisation Potential','select',['Not Assessed','Local only','Reusable','Niche adaptable','Multi-edition']],['Notes','textarea','full'],['Section QA Result','select',['Not Checked','Pass','Fix Required']],['Section Final Copy','copy','full']];
+function hotLabel(x){return String(x).replace(/^(\d+)\s+—\s+THE\s+[“\"](.+?)[”\"]\s+TEST$/i,'$1 — $2').replace(/\b([A-Z]{2,})\b/g,m=>m.charAt(0)+m.slice(1).toLowerCase())}const fieldLabels={'Section Title':'Section title','Primary Hot Button':'Primary Hot Button','Local Proof Needed':'Named local proof needed','Reuse / Localisation Potential':'Reuse / localisation potential','CTA Text':'Button / CTA text','Commercial Pathway':'Commercial pathway'};function inferArticleIntelligence(s){const f=s?.fields||{},text=[val(f,'Section Title'),val(f,'Core Reader Question'),val(f,'Universal Reader Problem'),val(f,'Section Final Copy'),val(f,'Commercial Pathway')].join(' ').toLowerCase();let topic='Local Life';if(/mortgage|remortgage|debt|loan|credit|interest/.test(text))topic='Money & Mortgages';else if(/house|property|homebuy|seller|conveyanc|survey|rent|landlord|tenant/.test(text))topic='Property & Housing';else if(/car|driver|drive|vehicle|garage|tyre|mot|road/.test(text))topic='Motoring & Transport';else if(/dentist|nhs|health|pain|physio|doctor|wellbeing/.test(text))topic='Health & Wellbeing';else if(/cafe|café|pub|restaurant|breakfast|food|farm shop|takeaway|meal/.test(text))topic='Food & Drink';else if(/event|festival|ticket|attraction|day out|sandringham|visitor/.test(text))topic='Days Out & Events';let expert='Local community or public-service source';if(topic==='Money & Mortgages')expert='Mortgage adviser or debt specialist';else if(topic==='Property & Housing')expert='Estate agent, conveyancer or surveyor';else if(topic==='Motoring & Transport')expert='Garage, tyre specialist or motoring expert';else if(topic==='Health & Wellbeing')expert='Relevant regulated health professional';else if(topic==='Food & Drink')expert='Independent food business or hospitality expert';else if(topic==='Days Out & Events')expert='Venue, attraction or event organiser';let role='Newsletter Card';if(/poll|vote|which would you choose/.test(text))role='Poll / Reader Verdict';else if(/quiz|how many|test your/.test(text))role='Quiz / Challenge';else if(/nominate|recommend|tell us your|reader/.test(text))role='Reader Recommendation';else if(!isProducedArticle(s))role='Newsletter Component / Queue';let freshness='Evergreen';if(/today|this week|this weekend|2026|current price|latest|opening date|deadline/.test(text))freshness='Time-sensitive / Review before reuse';let localisation=String(val(f,'Reuse / Localisation Potential')||'Not assessed');return{topic,expert,role,freshness,localisation}}
+function renderArticleIntelligence(){const box=E('article-intelligence');if(!box)return;if(!S.section){box.innerHTML='<span class="muted">Select a record to view its suggested classification.</span>';return}const x=inferArticleIntelligence(S.section);box.innerHTML=`<strong>${esc(x.topic)}</strong><div class="muted" style="margin-top:6px"><b>Expert lane:</b> ${esc(x.expert)}<br><b>Newsletter role:</b> ${esc(x.role)}<br><b>Freshness:</b> ${esc(x.freshness)}<br><b>Localisation:</b> ${esc(x.localisation)}</div><div class="muted" style="margin-top:8px">Preview only — nothing is written to Airtable.</div>`}
+function renderForm(){if(!S.section){E('section-form').innerHTML='<div class="empty">Add or select a section.</div>';E('save-state').textContent='No section selected.';E('gate').innerHTML='';renderArticleIntelligence();return}const f=S.section.fields;E('section-form').innerHTML=fields.map(([k,t,o])=>{const v=val(f,k);let c='';if(t==='select')c=`<select data-field="${esc(k)}"><option value="" ${!v?'selected':''}>— Select —</option>${o.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('')}</select>`;else if(t==='hot')c=`<select data-field="${esc(k)}"><option value="">Choose one primary Hot Button</option>${S.hot.map(x=>`<option value="${esc(x)}" ${x===v?'selected':''}>${esc(hotLabel(x))}</option>`).join('')}</select><div class="muted">Choose the main reader thought. The exact locked Airtable value is preserved.</div>`;else if(['textarea','copy'].includes(t))c=`<textarea class="${t==='copy'?'copy':''}" data-field="${esc(k)}">${esc(v)}</textarea>`;else c=`<input type="${t}" data-field="${esc(k)}" value="${esc(v)}">`;return `<div class="field ${o==='full'||t==='hot'?'full':''}"><label>${esc(fieldLabels[k]||k)}</label>${c}</div>`}).join('');E('save-state').textContent='Loaded from Airtable.';renderGate();renderArticleIntelligence()}
+function formFields(){const out={};document.querySelectorAll('#section-form [data-field]').forEach(x=>{let v=x.value;if(x.type==='number')v=v===''?null:Number(v);out[x.dataset.field]=v});return out}function setField(k,v,overwrite=false){const x=document.querySelector(`#section-form [data-field="${CSS.escape(k)}"]`);if(!x)return;if(overwrite||!String(x.value||'').trim()){x.value=v??'';x.dispatchEvent(new Event('change',{bubbles:true}))}}
+function hotByNumber(n){return S.hot.find(x=>String(x).startsWith(String(n).padStart(2,'0')+' '))||''}
+function generateIntelligence(){if(!S.section)return;const f=formFields();const text=[f['Section Title'],f['Reader Hook'],f['Core Reader Question'],f['Universal Reader Problem'],f['Primary Next Action']].join(' ').toLowerCase();
+const isCar=/car|driver|drive|journey|tyre|tire|coolant|air conditioning|breakdown|vehicle|mot\b|garage/.test(text);
+const isMortgage=/mortgage|debt|credit card|loan|overdraft|remortgage|interest/.test(text);
+const isFood=/cafe|café|pub|restaurant|breakfast|food|takeaway|meal|plate|beans|sausage/.test(text);
+const isVisitor=/visitor|day trip|holiday|tourist|visiting friends|visiting relatives/.test(text);
+const isEvent=/concert|festival|event|ticket|sandringham|performer|promoter/.test(text);
+const isCommunity=/nominate|reader|what is your|tell us|share your|your verdict|give us/.test(text);
+const currentIssuePeers=S.sections.filter(s=>s.id!==S.section.id);
+const proposedCore=[f['Section Title'],f['Core Reader Question'],f['Universal Reader Problem']].join(' ').toLowerCase();
+const issueMatches=currentIssuePeers.map(s=>({s,score:issueSimilarity(proposedCore,[val(s.fields,'Section Title'),val(s.fields,'Core Reader Question'),val(s.fields,'Universal Reader Problem')].join(' '))})).filter(x=>x.score>=0.45).sort((a,b)=>b.score-a.score);
+let hot=38;
+if(isCar&&/check|before|overlook|assume|ready/.test(text))hot=49;
+else if(/worth|overpriced|good value|feels worth/.test(text))hot=2;
+else if(/trust|recommend|who would you use|who would you call/.test(text))hot=3;
+else if(/which|choose|versus| vs /.test(text))hot=4;
+else if(/hard|difficult|friction|why is this/.test(text))hot=5;
+else if(/local advice|locals know|visitor|insider|regulars know/.test(text))hot=33;
+else if(/cost overall|really cost|total cost|longer term|paying for/.test(text))hot=35;
+else if(/changed|what changed/.test(text))hot=19;
+else if(/unfair|fair/.test(text))hot=9;
+else if(/miss something|too late|caught out|regret/.test(text))hot=1;
+else if(/what happens next|future|end of|next/.test(text))hot=38;
+setField('Primary Hot Button',hotByNumber(hot),true);
+
+const action=(f['Primary Next Action']||'').trim();let cta='Reply';
+if(/\bnominate\b/i.test(action))cta='Nominate';
+else if(/\bvote\b/i.test(action))cta='Vote';
+else if(/\bcomment\b/i.test(action))cta='Comment';
+else if(/\bshare\b/i.test(action))cta='Share';
+else if(/\bsave\b/i.test(action))cta='Save';
+else if(/\bask\b/i.test(action))cta='Reply';
+else if(/\breply\b|\bsend\b|\btell\b|\bgive .* verdict\b/i.test(action))cta='Reply';
+else if(/click|read|download|open/i.test(action))cta='Button';
+setField('CTA Type',cta,true);
+
+let ctaText='';
+if(cta==='Save'&&isCar)ctaText='SAVE THE FIVE-MINUTE CAR CHECK';
+else if(cta==='Nominate'&&isFood)ctaText='NOMINATE YOUR NORFOLK FAVOURITE';
+else if(cta==='Nominate')ctaText='MAKE YOUR NOMINATION';
+else if(cta==='Vote')ctaText='CAST YOUR VOTE';
+else if(cta==='Reply')ctaText='TELL US WHAT YOU THINK';
+else if(cta==='Comment')ctaText='JOIN THE CONVERSATION';
+else if(cta==='Share')ctaText='SHARE THIS';
+else if(cta==='Button')ctaText='FIND OUT MORE';
+if(ctaText)setField('CTA Text',ctaText,true);
+
+let lane='Community',path='Community organisations and local businesses connected to the reader question.';
+if(isCar){lane='Authority';path='Garages, tyre specialists, MOT centres, breakdown providers and vehicle air-conditioning specialists.'}
+else if(isMortgage){lane='Authority';path='Mortgage advisers, debt advisers and financial specialists who can explain suitability, total cost and risk clearly.'}
+else if(isFood){lane='Activation';path='Independent cafés, pubs, farm shops, hotels and local food businesses with specific local proof.'}
+else if(isEvent){lane='Activation';path='Event organisers, attractions, venues and family-experience partners who can demonstrate real value through transparent pricing, inclusions and practical visitor information.'}
+setField('Commercial Lane',lane,true);
+const existingPath=(f['Commercial Pathway']||'').trim();
+const stalePath=/garages|tyre specialists|mot centres|independent cafés|independent cafes|farm shops|event businesses affected by major visitor events/i.test(existingPath);
+if(!existingPath||stalePath)setField('Commercial Pathway',path,true);
+
+let reader='Norfolk residents directly affected by this question';
+if(isCar)reader='Norfolk drivers, families and visitors planning longer summer journeys';
+else if(isVisitor)reader='Norfolk residents, visitors and people planning a Norfolk day out';
+else if(isMortgage)reader='Norfolk homeowners weighing up a financial decision';
+else if(isFood)reader='Norfolk locals and visitors looking for specific food recommendations';
+setField('Reader Type',reader,true);
+
+let constraint='Time, location and the reader’s real-life circumstances.';
+if(isCar)constraint='Five minutes before departure; checks must be simple, visible and realistic for an ordinary driver.';
+else if(/£|price|cost|budget|pay/.test(text))constraint='Budget, total cost and whether the outcome feels worth it.';
+setField('Decision Constraint',constraint,true);
+
+let emotion='Curious';
+if(isCar)emotion='Ready To Act';
+else if(/warning|risk|cancel|debt/.test(text))emotion='Concerned';
+setField('Emotional Outcome',emotion,true);
+
+let value=f['Core Reader Question']?`A clear, locally useful answer to: ${f['Core Reader Question']}`:'A specific local answer that helps the reader decide or act.';
+if(isCar)value='A quick pre-journey checklist that helps drivers spot simple problems before a longer summer trip.';
+setField('Reader Value',value,true);
+
+let proof='Named Norfolk places, current examples, prices, dates or reader experiences relevant to the question.';
+let evidence='At least one reliable current source plus named local proof.';
+let evidenceStatus=isCommunity?'Question Only':'Needs Update';
+if(isCar){
+  proof='Named Norfolk summer routes such as the A47 or A11, plus a realistic pre-journey example relevant to local drivers.';
+  evidence='Current authoritative motoring or road-safety guidance covering tyres, coolant, warning lights and pre-journey vehicle checks.';
+  evidenceStatus='Needs Update';
+}else if(isMortgage){
+  proof='A realistic Norfolk homeowner example showing the monthly-payment versus total-cost trade-off.';
+  evidence='A worked example plus current authoritative guidance on total borrowing cost and the risk of securing previously unsecured debt against a home.';
+}else if(isFood){
+  proof='Named Norfolk venues, current prices and exactly what the reader gets.';
+  evidence='Venue name, location, current menu price and current offer or menu details.';
+}
+setField('Local Proof Needed',proof,true);
+setField('Evidence Required',evidence,true);
+setField('Evidence Status',evidenceStatus,true);
+
+let social=f['Core Reader Question']||'What is your Norfolk verdict?';
+if(isCar)social='What is the one car check you always do before a long summer drive — and what do most people forget?';
+else if(isMortgage)social='Would you accept a lower monthly payment if it meant paying the debt for much longer?';
+else if(isFood)social='What is the one detail that makes or breaks this for you?';
+setField('Social Question Shape',social,true);
+
+setField('Archive Similarity Status','Review',true);
+if(issueMatches.length){
+ const top=issueMatches[0];
+ setField('Archive Similarity Note',`CURRENT ISSUE WARNING: Similar to Section ${val(top.s.fields,'Section Order')} — ${val(top.s.fields,'Section Title')}. Review before saving.`,true);
+ E('save-state').textContent=`Current issue duplicate warning: compare with Section ${val(top.s.fields,'Section Order')}.`;
+}else if(/CURRENT ISSUE WARNING:/i.test(f['Archive Similarity Note']||'')){
+ setField('Archive Similarity Note','No close current-issue match detected by ICS. Archive review still required.',true);
+}
+let reuse='Reusable';
+if(isCar||isMortgage)reuse='Multi-edition';
+else if(/sandringham/.test(text)&&/cancel|concert|event/.test(text))reuse='Multi-edition';
+else if(isFood)reuse='Niche adaptable';
+setField('Reuse / Localisation Potential',reuse,true);
+setField('Section QA Result','Not Checked',true);
+E('save-state').textContent='Improved intelligence added. Review the suggestions, then save.';renderGate()}function renderGate(){const f=S.section?.fields||{};const checks=[['Core reader question',!!val(f,'Core Reader Question')],['One primary Hot Button',!!val(f,'Primary Hot Button')],['Clear reader value',!!val(f,'Reader Value')],['Evidence handled',['Verified','Question Only','Illustrative Example'].includes(val(f,'Evidence Status'))],['One primary action',!!val(f,'Primary Next Action')],['Final copy ready',!!val(f,'Section Final Copy')&&!/\[[^\]]+\]|TBC|TODO/i.test(val(f,'Section Final Copy'))]];E('gate').innerHTML=checks.map(([n,ok])=>`<div class="check ${ok?'good':''}">${ok?'✓':'○'} ${n}</div>`).join('')}
+async function saveSection(){if(!S.section)return;E('save-state').textContent='Saving…';const fields=formFields();localStorage.setItem('ics:recovery:'+S.section.id,JSON.stringify({fields,savedAt:new Date().toISOString()}));try{const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:S.section.id,fields})});S.section=d.record;S.sections=S.sections.map(x=>x.id===d.record.id?d.record:x);localStorage.removeItem('ics:recovery:'+S.section.id);E('save-state').textContent='Saved to Airtable.';renderSections();renderForm()}catch(e){E('save-state').textContent='Network save failed. Recovery draft kept in this browser.';alert(e.message)}}
+async function addSection(){if(!S.issue){alert('Open an issue before adding a section.');return}const button=E('add-section');const original=button.textContent;button.disabled=true;button.textContent='Adding…';E('save-state').textContent='Creating section in Airtable…';try{const order=(Math.max(0,...S.sections.map(s=>Number(val(s.fields,'Section Order')||0)))+1);const d=await api('sections',{method:'POST',body:JSON.stringify({fields:{Issues:[S.issue.id],'Section Title':'New section','Section Order':order}})});S.sections.push(d.record);S.section=d.record;sortSections();renderSections();renderForm();E('save-state').textContent='New section created in Airtable.'}catch(e){E('save-state').textContent='Section was not created.';alert('Unable to add section: '+e.message)}finally{button.disabled=false;button.textContent=original}}
+async function saveIssue(){if(!S.issue)return;const fields={'Issue Status':E('ih-status').value,'Main Theme':E('ih-theme').value,'Subject Line':E('ih-subject').value,'Preheader':E('ih-preheader').value,'Send Date':E('ih-date').value};const d=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields})});S.issue=d.record;S.issues=S.issues.map(x=>x.id===d.record.id?d.record:x);E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')}`;render()}
+function letterman(){if(!S.issue)return '';const f=S.issue.fields;const sections=[...S.sections].sort((a,b)=>Number(val(a.fields,'Section Order')||999)-Number(val(b.fields,'Section Order')||999));let out=`SUBJECT\n${val(f,'Subject Line')}\n\nPREHEADER\n${val(f,'Preheader')}\n\n`;for(const s of sections){const sf=s.fields;if(!val(sf,'Section Final Copy'))continue;out+=`${val(sf,'Section Final Copy').trim()}\n`;if(val(sf,'Primary Next Action'))out+=`\nBUTTON: ${val(sf,'Primary Next Action')}`;if(val(sf,'Action Destination URL'))out+=`\nURL: ${val(sf,'Action Destination URL')}`;out+='\n\n---\n\n'}return out.trim()}
+async function copyText(t){await navigator.clipboard.writeText(t);alert('Copied.')}
+async function createIssue(ev){ev.preventDefault();const fields={Publication:[E('new-publication').value],'Issue Number':Number(E('new-number').value)||undefined,'Send Date':E('new-date').value,'Issue Status':'PLANNED','Main Theme':E('new-theme').value};const d=await api('issues',{method:'POST',body:JSON.stringify({fields})});S.issues.unshift(d.record);E('issue-dialog').close();render();await openIssue(d.record.id)}
+
+function assemblyKey(){return 'ics:assembly:'+(S.issue?.id||'none')}
+function getAssemblyIds(){try{return JSON.parse(localStorage.getItem(assemblyKey())||'[]')}catch{return[]}}
+function setAssemblyIds(ids){localStorage.setItem(assemblyKey(),JSON.stringify(ids));renderAssembly()}
+function articleTeaser(s){const p=masterArticlePackage(s.fields||{});return p?.newsletter_teaser||String(val(s.fields,'Reader Value')||val(s.fields,'Core Reader Question')||'').trim()}
+function articleButton(s){return String(val(s.fields,'CTA Text')||'READ THE FULL STORY').trim()}
+function articleUrl(s){const f=s.fields||{},p=masterArticlePackage(f);return String(val(f,'Action Destination URL')||p?.url_path||'').trim()}
+function renderAssembly(){const lib=E('assembly-library'),order=E('assembly-order');if(!lib||!order)return;const q=String(E('assembly-search')?.value||'').toLowerCase();const produced=S.sections.filter(isProducedArticle);let ids=getAssemblyIds().filter(id=>produced.some(s=>s.id===id));if(ids.length!==getAssemblyIds().length)localStorage.setItem(assemblyKey(),JSON.stringify(ids));const rows=produced.filter(s=>!q||[val(s.fields,'Section Title'),inferArticleIntelligence(s).topic].join(' ').toLowerCase().includes(q));lib.innerHTML=rows.length?rows.map(s=>{const x=inferArticleIntelligence(s),checked=ids.includes(s.id);return `<label class="assembly-card"><input type="checkbox" ${checked?'checked':''} onchange="toggleAssembly('${s.id}',this.checked)"><span><strong>${esc(val(s.fields,'Section Title')||'Untitled')}</strong><small>${esc(x.topic)} · ${esc(x.freshness)}</small></span></label>`}).join(''):'<div class="empty">No produced articles match this search.</div>';const selected=ids.map(id=>produced.find(s=>s.id===id)).filter(Boolean);order.innerHTML=selected.length?selected.map((s,i)=>`<div class="order-card"><span><strong>${i+1}. ${esc(val(s.fields,'Section Title')||'Untitled')}</strong><small>${esc(articleTeaser(s).slice(0,120))}${articleTeaser(s).length>120?'…':''}</small></span><span class="order-actions"><button class="btn secondary" onclick="moveAssembly(${i},-1)" ${i===0?'disabled':''}>↑</button><button class="btn secondary" onclick="moveAssembly(${i},1)" ${i===selected.length-1?'disabled':''}>↓</button><button class="btn secondary" onclick="toggleAssembly('${s.id}',false)">×</button></span></div>`).join(''):'<div class="empty">No articles selected.</div>';E('assembly-count').textContent=`${selected.length} selected`;}
+function toggleAssembly(id,on){let ids=getAssemblyIds();ids=on?[...ids.filter(x=>x!==id),id]:ids.filter(x=>x!==id);setAssemblyIds(ids)}
+function moveAssembly(index,dir){const ids=getAssemblyIds(),j=index+dir;if(j<0||j>=ids.length)return;[ids[index],ids[j]]=[ids[j],ids[index]];setAssemblyIds(ids)}
+function componentLine(id,title,body){return E(id)?.checked?`\n\n${title}\n${body}`:''}
+function assemblyDraft(){const ids=getAssemblyIds(),selected=ids.map(id=>S.sections.find(s=>s.id===id)).filter(Boolean),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();if(!selected.length)return 'Select at least one produced article first.';let out=`NEWSLETTER ASSEMBLY DRAFT\n\nISSUE\n${val(S.issue?.fields||{},'Issue Number')||''}\n\nTHEME / PROMISE\n${theme||'[ADD ISSUE THEME]'}\n`;out+=componentLine('comp-opening','OPENING NOTE',`[Write a short opening that connects the issue to: ${theme||'the selected stories'}]`);selected.forEach((s,i)=>{const title=val(s.fields,'Section Title')||'Untitled',teaser=articleTeaser(s)||'[Add a short teaser]',button=articleButton(s),url=articleUrl(s)||'[ADD PUBLISHED ARTICLE URL]';out+=`\n\nARTICLE ${i+1}\n${title}\n\n${teaser}\n\nBUTTON: ${button}\nLINK: ${url}`});out+=componentLine('comp-poll','READER POLL','[Add one clear either/or or multiple-choice question connected to the issue.]');out+=componentLine('comp-quiz','QUIZ / CHALLENGE','[Add a short local quiz or challenge.]');out+=componentLine('comp-sponsor','SPONSOR / EXPERT SLOT','[Add one relevant partner who helps answer a reader question. Use one CTA only.]');out+=componentLine('comp-reader','READER RECOMMENDATION','[Ask readers to nominate one named local business, place or expert.]');out+=componentLine('comp-outro','CLOSING QUESTION','[End with one specific question readers can reply to or discuss on Facebook.]');out+='\n\nASSEMBLY QA\n- Check issue rhythm and topic repetition\n- Check every article has one button and live URL\n- Add named local proof to components\n- Confirm sponsor or expert pathway\n- Final Letterman formatting pass';return out}
+function generateAssembly(){E('preview-text').value=assemblyDraft();E('preview-dialog').showModal()}
+
+E('library-filter').onchange=renderSections;E('assembly-search').oninput=renderAssembly;E('assembly-clear').onclick=()=>setAssemblyIds([]);E('assembly-generate').onclick=generateAssembly;E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));E('new-issue').onclick=()=>E('issue-dialog').showModal();E('create-issue').onclick=createIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>runProduction({one:true});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-norfolk').onclick=()=>{const n=S.publications.find(p=>/Norfolk Spotlight/i.test(val(p.fields,'Publication Name')));const issue=S.issues.find(i=>n&&(i.fields.Publication||[]).includes(n.id)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue)openIssue(issue.id);else{E('new-publication').value=n?.id||'';E('new-date').value='2026-07-16';E('issue-dialog').showModal()}};loadAll().then(()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))openIssue(last)});
+</script></body></html>
