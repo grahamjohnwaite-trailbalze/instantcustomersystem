@@ -418,7 +418,25 @@ async function testOpenAI(){
  catch(e){alert('OpenAI connection failed:\n\n'+e.message)}finally{b.disabled=false;b.textContent=old}
 }
 async function loadSections(){E('section-list').innerHTML='<div class="empty">Loading…</div>';const d=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=d.records;sortSections();S.section=S.sections[0]||null;renderSections();renderForm()}
-async function loadArticleLibrary(){if(!S.issue){S.articleLibrary=[];return}try{const d=await api('master-articles?issueId='+encodeURIComponent(S.issue.id));S.articleLibrary=(d.records||[]).filter(isProducedArticle)}catch(e){console.warn('Master Article library fallback',e);S.articleLibrary=S.sections.filter(isProducedArticle)}}
+async function loadArticleLibrary(){
+  if(!S.issue){S.articleLibrary=[];return}
+  const publicationIds=Array.isArray(S.issue.fields?.Publication)?S.issue.fields.Publication:[];
+  const publicationIssues=S.issues.filter(i=>{const links=Array.isArray(i.fields?.Publication)?i.fields.Publication:[];return links.some(id=>publicationIds.includes(id))});
+  try{
+    const results=await Promise.all(publicationIssues.map(i=>api('sections?issueId='+encodeURIComponent(i.id)).then(d=>d.records||[])));
+    const all=results.flat().filter(isProducedArticle);
+    const seenTitles=new Set(),seenIds=new Set(),records=[];
+    for(const record of all){
+      const title=String(record.fields?.['Section Title']||'').trim().toLowerCase().replace(/\s+/g,' ');
+      if(seenIds.has(record.id)||(title&&seenTitles.has(title)))continue;
+      seenIds.add(record.id);if(title)seenTitles.add(title);records.push(record);
+    }
+    S.articleLibrary=records;
+  }catch(e){
+    console.warn('Master Article library fallback failed',e);
+    S.articleLibrary=S.sections.filter(isProducedArticle);
+  }
+}
 function completion(s){const f=s.fields;const keys=['Core Reader Question','Primary Hot Button','Reader Value','Evidence Status','Primary Next Action','Section Final Copy'];return Math.round(keys.filter(k=>val(f,k)&&val(f,k)!=='Not Started').length/keys.length*100)}
 function isProducedArticle(s){const f=s.fields||{},notes=String(val(f,'Notes')||''),copy=String(val(f,'Section Final Copy')||val(f,'Final Copy')||'').trim(),status=String(val(f,'Section Status')||'').trim().toLowerCase(),dest=String(val(f,'Action Destination URL')||'').trim();return !!masterArticlePackage(f)||/MASTER ARTICLE PACKAGE(?: v1)?/i.test(notes)||/\b(article_(?:body|subhead)|newsletter_(?:headline|teaser)|seo_title|url_path)\b/i.test(notes)||copy.length>=350||((status==='ready'||status==='published')&&(dest||copy.length>=150))}
 function qaFlags(s){const f=s.fields,title=String(val(f,'Section Title')).toLowerCase(),cta=String(val(f,'CTA Text')).toLowerCase(),flags=[];if(/car check|five-minute car/.test(cta)&&!/car|drive|vehicle|motor/.test(title))flags.push('CTA appears copied from car article');if(isProducedArticle(s)&&!String(val(f,'CTA Text')).trim())flags.push('Missing CTA');if(isProducedArticle(s)&&!['Pass'].includes(String(val(f,'Section QA Result'))))flags.push('QA not passed');if(isProducedArticle(s)&&String(val(f,'Section Status'))!=='Ready'&&String(val(f,'Section Status'))!=='Published')flags.push('Status needs review');return flags}
