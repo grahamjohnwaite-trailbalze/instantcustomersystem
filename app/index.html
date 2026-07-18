@@ -23,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.8<br><strong>Drag, drop and assemble the complete issue</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Norfolk Spotlight live production test.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.3<br><strong>Drag, drop and assemble the complete issue</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Norfolk Spotlight live production test.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view active" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Norfolk target</span><strong style="font-size:17px">Thu 16 Jul</strong></div><div class="card metric"><span>Hard fallback</span><strong style="font-size:17px">Sat 18 Jul</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Build Norfolk Spotlight first.</strong><p>Use the Issue Command Centre to plan and write the issue. Keep sections short, specific and locally evidenced. Export only when core reader question, Hot Button, reader value, evidence status, one action and final copy are complete.</p><button class="btn" id="open-norfolk">Open Norfolk production</button></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -606,33 +606,10 @@ function articleButton(s){return String(val(s.fields,'CTA Text')||'READ THE FULL
 function articleUrl(s){const f=s.fields||{},p=masterArticlePackage(f);return String(val(f,'Action Destination URL')||p?.url_path||'').trim()}
 function makeArticleBlock(s){return {uid:uid(),kind:'article',refId:s.id,type:'ARTICLE',title:val(s.fields,'Section Title')||'Untitled article',purpose:val(s.fields,'Reader Value')||val(s.fields,'Core Reader Question')||'',partner:'',category:val(s.fields,'Potential Sponsor Category')||'',commitment:'',cta:val(s.fields,'CTA Text')||val(s.fields,'Primary Next Action')||'',button:val(s.fields,'CTA Text')||'',url:articleUrl(s),proof:val(s.fields,'Local Proof Needed')||val(s.fields,'Evidence Required')||'',content:val(s.fields,'Section Final Copy')||val(s.fields,'Final Copy')||'',status:'READY'}}
 function makeComponentBlock(def){return {uid:uid(),kind:'component',refId:'',type:def.type,title:def.title,purpose:def.purpose,partner:'',category:'',commitment:'',cta:'',button:'',url:'',proof:'',content:'',status:'NEEDS PRODUCTION'}}
-function canvasContextFor(uidValue){const items=getCanvas();const i=items.findIndex(x=>x.uid===uidValue);const prev=i>0?items[i-1]:null;const next=i>=0&&i<items.length-1?items[i+1]:null;return {items,i,prev,next,issuePromise:String(E('assembly-theme')?.value||'').trim()}}
-function applyComponentDefaults(block){if(!block||block.kind==='article')return block;const {prev,next,issuePromise}=canvasContextFor(block.uid);const anchor=prev&&prev.kind==='article'?prev:(next&&next.kind==='article'?next:null);const topic=anchor?.title||issuePromise||'this issue';const low=String(topic).toLowerCase();
- let title=block.title,purpose=block.purpose,cta=block.cta,button=block.button,url=block.url,proof=block.proof;
- if(block.type==='POLL'||block.type==='READER VOTE'){
-  if(/sandringham|concert|heritage live/.test(low)){title='Would You Buy Tickets For Another Big Sandringham Concert?';purpose='Capture immediate reader reaction to the Sandringham cancellations and test whether confidence in future major concerts has been affected.'}
-  else {title=`Quick Vote: ${topic}`;purpose=`Ask one specific, easy-to-answer reader question that follows naturally from “${topic}”.`}
-  cta='Vote';button='Vote';url='https://trailblazelocal.com/tell-spotlight/norfolk';proof=`Use the ${anchor?'article immediately beside this block':'current issue context'} as the source. Do not introduce new factual claims.`;
- }else if(block.type==='Q&A'){
-  title=`Quick Question: ${topic}`;purpose=`Answer one practical reader question raised by “${topic}” without repeating the full article.`;cta='Ask a question';button='Ask a question';url='https://trailblazelocal.com/tell-spotlight/norfolk';proof=`Use the adjacent article and its verified sources. Do not add unsupported claims.`;
- }else if(block.type==='TIP / HACK'){
-  title=`Save This: ${topic}`;purpose=`Turn the adjacent article into one short, practical action readers can use immediately.`;cta='Save';button='';proof=`Use only verified advice already supported by the adjacent article.`;
- }else if(block.type==='MYTH V FACT'){
-  title=`Myth Or Fact: ${topic}`;purpose=`Test one common belief raised by the adjacent article and give the fair, useful answer.`;cta='';button='';proof=`Use the adjacent article and verified source material only.`;
- }else if(block.type==='READER RECOMMENDATION'){
-  title=`Your Recommendation: ${topic}`;purpose=`Collect named reader recommendations that can feed a future Norfolk guide or list.`;cta='Nominate';button='Nominate';url='https://trailblazelocal.com/tell-spotlight/norfolk';proof='Do not invent recommendations or reader quotes.';
- }else if(block.type==='CLOSING QUESTION'){
-  title='Which Norfolk Question Should We Refuse To Drop?';purpose='End the issue with one specific invitation for readers to tell Norfolk Spotlight what to investigate or revisit next.';cta='Reply';button='Reply';url='https://trailblazelocal.com/tell-spotlight/norfolk';proof='Refer only to themes genuinely included in this issue.';
- }else if(block.type==='OPENING NOTE'){
-  title='Norfolk Spotlight: The Questions Norfolk Can’t Ignore This Week';purpose='Set up the issue with a short, lively introduction that previews the strongest themes without summarising every article.';proof='Use only topics genuinely included in this issue. Do not introduce new factual claims.';
- }
- return {...block,title,purpose,cta,button,url,proof};}
-function refreshSelectedComponentDefaults(){const items=getCanvas(),i=items.findIndex(x=>x.uid===canvasSelectedUid);if(i<0||items[i].kind==='article')return;items[i]=applyComponentDefaults(items[i]);localStorage.setItem(assemblyKey(),JSON.stringify(items));renderAssembly();}
-
 function makePartnerBlock(){return {uid:uid(),kind:'partner',refId:'',type:'PARTNER PRESENCE',title:'Partner Presence',purpose:'Fulfil a paid or authority partner commitment in the format that best fits this issue.',partner:'',category:'',commitment:'Weekly presence',cta:'',button:'',url:'',proof:'',content:'',status:'NEEDS DECISION'}}
 function addBlock(block,index=null){const items=getCanvas();if(index===null||index<0||index>items.length)items.push(block);else items.splice(index,0,block);saveCanvas(items);canvasSelectedUid=block.uid;setTimeout(()=>selectCanvasBlock(block.uid),0)}
 function addArticleToCanvas(id,index=null){const s=S.articleLibrary.find(x=>x.id===id)||S.sections.find(x=>x.id===id);if(!s)return;const title=String(val(s.fields,'Section Title')||'').trim().toLowerCase().replace(/\s+/g,' ');const duplicate=getCanvas().some(b=>b.kind==='article'&&(b.refId===s.id||String(b.title||'').trim().toLowerCase().replace(/\s+/g,' ')===title));if(duplicate){canvasSelectedUid=getCanvas().find(b=>b.kind==='article'&&(b.refId===s.id||String(b.title||'').trim().toLowerCase().replace(/\s+/g,' ')===title))?.uid||canvasSelectedUid;renderAssembly();return;}addBlock(makeArticleBlock(s),index)}
-function addComponentToCanvas(type,index=null){const def=COMPONENT_DEFS.find(x=>x.type===type);if(!def)return;const block=makeComponentBlock(def);addBlock(block,index);setTimeout(()=>refreshSelectedComponentDefaults(),0)}
+function addComponentToCanvas(type,index=null){const def=COMPONENT_DEFS.find(x=>x.type===type);if(!def)return;addBlock(makeComponentBlock(def),index)}
 function renderAssembly(){
  const lib=E('assembly-library'),order=E('assembly-order'),palette=E('component-palette');if(!lib||!order||!palette)return;
  const q=String(E('assembly-search')?.value||'').toLowerCase();const produced=(S.articleLibrary?.length?S.articleLibrary:S.sections.filter(isProducedArticle));
@@ -655,60 +632,15 @@ function moveCanvasUid(moveUid,index){let items=getCanvas();const from=items.fin
 function removeCanvasBlock(uidValue){let items=getCanvas().filter(x=>x.uid!==uidValue);if(canvasSelectedUid===uidValue)canvasSelectedUid=null;saveCanvas(items)}
 function selectCanvasBlock(uidValue){canvasSelectedUid=uidValue;renderAssembly()}
 function renderInspector(){const empty=E('inspector-empty'),form=E('inspector-form');if(!empty||!form)return;const b=getCanvas().find(x=>x.uid===canvasSelectedUid);if(!b){empty.hidden=false;form.hidden=true;return}empty.hidden=true;form.hidden=false;E('inspect-type').value=b.type||'';E('inspect-title').value=b.title||'';E('inspect-purpose').value=b.purpose||'';E('inspect-partner').value=b.partner||'';E('inspect-category').value=b.category||'';E('inspect-commitment').value=b.commitment||'';E('inspect-cta').value=b.cta||'';E('inspect-button').value=b.button||'';E('inspect-url').value=b.url||'';E('inspect-proof').value=b.proof||'';E('inspect-content').value=b.content||'';E('inspect-status').value=b.status||'NEEDS DECISION'}
-function saveInspector(){const items=getCanvas(),i=items.findIndex(x=>x.uid===canvasSelectedUid);if(i<0)return;items[i]={...items[i],title:E('inspect-title').value,purpose:E('inspect-purpose').value,partner:E('inspect-partner').value,category:E('inspect-category').value,commitment:E('inspect-commitment').value,cta:E('inspect-cta').value,button:E('inspect-button').value,url:E('inspect-url').value,proof:E('inspect-proof').value,content:E('inspect-content').value,status:E('inspect-status').value};localStorage.setItem(assemblyKey(),JSON.stringify(items));renderAssembly();const btn=E('save-inspector');if(btn){const old=btn.textContent;btn.textContent='Saved ✓';setTimeout(()=>{btn.textContent=old},1200)}}
-function createStarterCopy(){const items=getCanvas(),idx=items.findIndex(x=>x.uid===canvasSelectedUid);if(idx<0)return;let b=items[idx];if(!b||b.kind==='article')return;b=applyComponentDefaults(b);items[idx]=b;const {prev,next,issuePromise}=canvasContextFor(b.uid);const anchor=prev&&prev.kind==='article'?prev:(next&&next.kind==='article'?next:null);const topic=anchor?.title||b.title||issuePromise||'this issue';const low=String(topic).toLowerCase();let text='';
- if(b.type==='POLL'||b.type==='READER VOTE'){
-  if(/sandringham|concert|heritage live/.test(low))text=`Would you buy tickets for another major concert at Sandringham?
-
-A. Yes — if the line-up was good enough
-B. Yes — but I would wait before booking
-C. No — this has put me off
-D. It depends on the promoter and refund protection
-
-Vote and tell us why.`;
-  else text=`${b.title}
-
-A. Yes
-B. No
-C. It depends
-D. Something else — tell us
-
-Vote and tell us what would change your answer.`;
- }else if(b.type==='OPENING NOTE'){
-  const articleTitles=items.filter(x=>x.kind==='article').slice(0,6).map(x=>x.title);
-  text=`Norfolk can look calm from a distance. Then you start asking questions.
-
-${articleTitles.length?`This week we’re digging into ${articleTitles.slice(0,3).join(', ')}${articleTitles.length>3?' and a few other Norfolk questions worth arguing about':''}.`:issuePromise}
-
-The aim is simple: useful answers, local proof and a few questions you’ll probably have an opinion on. Let’s get into it.`;
- }else if(b.type==='Q&A')text=`QUICK QUESTION
-
-What is the one thing a reader should understand after reading “${topic}”?
-
-Give a short, evidence-based answer in 2–4 sentences. Do not repeat the full article.`;
- else if(b.type==='TIP / HACK')text=`SAVE THIS
-
-Pull out the single most useful practical action from “${topic}” and turn it into a short 3–5 point checklist. Keep it reader-facing and do not add new claims.`;
- else if(b.type==='MYTH V FACT')text=`MYTH OR FACT?
-
-Choose one common belief raised by “${topic}”. State the belief in one line, then give the fair answer in 2–4 sentences using only the article’s verified evidence.`;
- else if(b.type==='READER RECOMMENDATION')text=`${b.title}
-
-Tell us the name, the Norfolk town or village, and the one thing you would actually recommend. No vague nominations — give us the reason.`;
- else if(b.type==='CLOSING QUESTION')text=`Which question from this issue should Norfolk Spotlight refuse to drop?
-
-Tell us what you want investigated, explained or revisited next.`;
- else if(b.type==='QUIZ')text=`QUESTION: Create one short quiz question directly from “${topic}”.
-
-ANSWER / REVEAL: Use only a verified fact already present in the article or source material.`;
- else text=`${b.title}
-
-Create a short, finished Letterman-ready ${b.type.toLowerCase()} that follows naturally from “${topic}”.
-
-Purpose: ${b.purpose}
-
-Do not introduce unsupported factual claims.`;
- E('inspect-title').value=b.title||'';E('inspect-purpose').value=b.purpose||'';E('inspect-cta').value=b.cta||'';E('inspect-button').value=b.button||'';E('inspect-url').value=b.url||'';E('inspect-proof').value=b.proof||'';E('inspect-content').value=text;}
+function saveInspector(){const items=getCanvas(),i=items.findIndex(x=>x.uid===canvasSelectedUid);if(i<0)return;items[i]={...items[i],title:E('inspect-title').value,purpose:E('inspect-purpose').value,partner:E('inspect-partner').value,category:E('inspect-category').value,commitment:E('inspect-commitment').value,cta:E('inspect-cta').value,button:E('inspect-button').value,url:E('inspect-url').value,proof:E('inspect-proof').value,content:E('inspect-content').value,status:E('inspect-status').value};localStorage.setItem(assemblyKey(),JSON.stringify(items));renderAssembly()}
+function createStarterCopy(){const items=getCanvas(),b=items.find(x=>x.uid===canvasSelectedUid);if(!b||b.kind==='article')return;const theme=String(E('assembly-theme')?.value||'this issue').trim();let text='';if(b.type==='POLL')text=`QUESTION: What matters most to you about ${theme}?\n\nA. Value for money\nB. Convenience\nC. Quality\nD. Something else — tell us`;else if(b.type==='QUIZ')text=`QUESTION: How well do you know the local story behind ${theme}?\n\nANSWER / REVEAL: [ADD VERIFIED ANSWER AND SOURCE]`;else if(b.type==='Q&A')text=`QUESTION: [ADD THE READER QUESTION]\n\nANSWER: [ADD A USEFUL, EVIDENCE-BASED ANSWER${b.partner?' FROM '+b.partner.toUpperCase():''}]`;else if(b.type==='OPENING NOTE')text=`This week we're asking: ${theme}\n\n[ADD 2–4 SHORT LINES THAT SET UP THE ISSUE AND GIVE READERS A REASON TO KEEP GOING.]`;else if(b.type==='CLOSING QUESTION')text=`What is the one thing you would add to this week's conversation about ${theme}?`;else if(b.type==='READER RECOMMENDATION')text=`What local place, person or service would you recommend when it comes to ${theme}? Tell us the name and why.`;else if(b.type==='FACEBOOK DISCUSSION')text=`FACEBOOK QUESTION: ${theme}\n\nWhat do you think — and what local example proves your point?`;else if(b.type==='PARTNER PRESENCE')text=`PARTNER: ${b.partner||'[ADD PARTNER]'}\nFORMAT: [Q&A / TIP / MYTH V FACT / OFFER / ARTICLE / RECOMMENDATION]\nREADER QUESTION: [ADD QUESTION]\nUSEFUL ANSWER / VALUE: [ADD CONTENT]\nCTA: ${b.cta||'[ADD ONE PRIMARY ACTION]'}`;else text=`${b.type}\n\nPURPOSE: ${b.purpose}\n\n[CREATE FINISHED LETTERMAN-READY CONTENT HERE]\n\nSOURCE / LOCAL PROOF: ${b.proof||'[ADD IF REQUIRED]'}`;
+ E('inspect-content').value=text;E('inspect-status').value='NEEDS PRODUCTION'}
+function assemblyDraft(){const items=getCanvas(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();if(!items.length)return 'Add at least one block to the issue canvas first.';let out=`ISSUE BUILD PACK\n\nISSUE\n${val(S.issue?.fields||{},'Issue Number')||''}\n\nISSUE PROMISE / QUESTION\n${theme||'[ADD ISSUE PROMISE]'}\n\nCOMPLETE RUNNING ORDER`;items.forEach((b,i)=>{out+=`\n\n${i+1}. ${b.title||b.type}\nTYPE: ${b.type}\nSTATUS: ${b.status||'NEEDS DECISION'}`;if(b.partner)out+=`\nPARTNER: ${b.partner}`;if(b.category)out+=`\nCATEGORY: ${b.category}`;if(b.commitment)out+=`\nCOMMITMENT: ${b.commitment}`;if(b.purpose)out+=`\nPURPOSE: ${b.purpose}`;if(b.proof)out+=`\nLOCAL PROOF / SOURCE: ${b.proof}`;if(b.cta)out+=`\nPRIMARY CTA: ${b.cta}`;if(b.button)out+=`\nBUTTON: ${b.button}`;if(b.url)out+=`\nURL: ${b.url}`;if(b.content)out+=`\nCONTENT / BRIEF:\n${b.content}`});const notReady=items.filter(x=>x.status!=='READY');out+=`\n\nPRODUCTION SUMMARY\n${items.filter(x=>x.status==='READY').length} ready\n${notReady.length} still needs production or a decision`;if(notReady.length)out+=`\n\nNOT READY\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+x.status).join('\n')}`;out+='\n\nFINAL QA\n- CHECK: all active paid partners included\n- CHECK: locked categories protected\n- CHECK: one primary action/button per article or slot\n- CHECK: named local proof and source accuracy\n- CHECK: no repeated question/angle from recent issues\n- CHECK: issue rhythm balances serious, useful, interactive and commercial content';return out}
+function generateAssembly(){E('preview-text').value=assemblyDraft();E('preview-dialog').showModal()}
+E('library-filter').onchange=renderSections;E('assembly-search').oninput=renderAssembly;
+E('assembly-order').ondragover=e=>{e.preventDefault();E('assembly-order').classList.add('drag-over')};
+E('assembly-order').ondragleave=()=>E('assembly-order').classList.remove('drag-over');
+E('assembly-order').ondrop=e=>dropOnCanvas(e);
 E('assembly-clear').onclick=()=>{if(confirm('Clear the entire issue canvas?')){canvasSelectedUid=null;saveCanvas([])}};
 E('assembly-generate').onclick=generateAssembly;
 E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
