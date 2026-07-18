@@ -421,10 +421,12 @@ async function loadSections(){E('section-list').innerHTML='<div class="empty">Lo
 async function loadArticleLibrary(){
   if(!S.issue){S.articleLibrary=[];return}
   const publicationIds=Array.isArray(S.issue.fields?.Publication)?S.issue.fields.Publication:[];
-  const publicationIssues=S.issues.filter(i=>{const links=Array.isArray(i.fields?.Publication)?i.fields.Publication:[];return links.some(id=>publicationIds.includes(id))});
+  const publicationId=publicationIds[0];
+  if(!publicationId){S.articleLibrary=[];console.warn('No publication linked to current issue');return}
   try{
-    const results=await Promise.all(publicationIssues.map(i=>api('sections?issueId='+encodeURIComponent(i.id)).then(d=>d.records||[])));
-    const all=results.flat().filter(isProducedArticle);
+    // One server call for the whole publication. Avoids parallel per-issue requests and Airtable rate-limit failures.
+    const d=await api('sections?publicationId='+encodeURIComponent(publicationId));
+    const all=(d.records||[]).filter(isProducedArticle);
     const seenTitles=new Set(),seenIds=new Set(),records=[];
     for(const record of all){
       const title=String(record.fields?.['Section Title']||'').trim().toLowerCase().replace(/\s+/g,' ');
@@ -433,8 +435,9 @@ async function loadArticleLibrary(){
     }
     S.articleLibrary=records;
   }catch(e){
-    console.warn('Master Article library fallback failed',e);
-    S.articleLibrary=S.sections.filter(isProducedArticle);
+    console.warn('Master Article library load failed',e);
+    // Current issue articles are a safe local fallback, but do not silently present this as the full library.
+    S.articleLibrary=(S.sections||[]).filter(isProducedArticle);
   }
 }
 function completion(s){const f=s.fields;const keys=['Core Reader Question','Primary Hot Button','Reader Value','Evidence Status','Primary Next Action','Section Final Copy'];return Math.round(keys.filter(k=>val(f,k)&&val(f,k)!=='Not Started').length/keys.length*100)}
