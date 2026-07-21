@@ -17,13 +17,24 @@ export function cleanUrl(value){
   }catch{return ''}
 }
 
-async function openAIRequest(path,{method='GET',body}={}){
+async function openAIRequest(path,{method='GET',body,timeoutMs=90000}={}){
   const apiKey=env('OPENAI_API_KEY');
-  const response=await fetch(`${API_ROOT}${path}`,{
-    method,
-    headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/json'},
-    body:body?JSON.stringify(body):undefined
-  });
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(new Error(`OpenAI request timed out after ${Math.round(timeoutMs/1000)} seconds`)),timeoutMs);
+  let response;
+  try{
+    response=await fetch(`${API_ROOT}${path}`,{
+      method,
+      headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/json'},
+      body:body?JSON.stringify(body):undefined,
+      signal:controller.signal
+    });
+  }catch(err){
+    if(err?.name==='AbortError'||/timed out|abort/i.test(String(err?.message||''))){
+      const e=new Error(`OpenAI request timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;throw e;
+    }
+    throw err;
+  }finally{clearTimeout(timer);}
   const text=await response.text();
   let payload;try{payload=text?JSON.parse(text):{}}catch{payload={raw:text}}
   return {response,payload};
@@ -65,8 +76,9 @@ function preferredModels(available=[],useWeb=false){
 async function requestModel({model,input,useWeb}){
   const body={model,input};
   if(useWeb)body.tools=[{type:'web_search'}];
-  return openAIRequest('/responses',{method:'POST',body});
+  return openAIRequest('/responses',{method:'POST',body,timeoutMs:useWeb?120000:90000});
 }
+
 
 export async function createResponse({input,useWeb=false}){
   const available=await listAccessibleModels();
@@ -77,7 +89,13 @@ export async function createResponse({input,useWeb=false}){
   }
   const attempts=[];
   for(const model of candidates){
-    const {response,payload}=await requestModel({model,input,useWeb});
+    let response,payload;
+    try{({response,payload}=await requestModel({model,input,useWeb}));}
+    catch(err){
+      attempts.push({model,status:err.status||0,message:String(err.message||err),code:'timeout_or_network',useWeb});
+      if((err.status||0)===408)continue;
+      throw err;
+    }
     if(response.ok)return {...payload,_model_used:model};
     const message=payload?.error?.message||`OpenAI request failed (${response.status})`;
     const code=payload?.error?.code||payload?.error?.type||'';

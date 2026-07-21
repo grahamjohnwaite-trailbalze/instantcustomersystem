@@ -276,7 +276,7 @@ async function produceOne(item){
      const m=notes.match(new RegExp(`MASTER ARTICLE FAILED v2\\.7[\\s\\S]*?Run ID: ${runId}[\\s\\S]*?Error: ([^\\n]+)`));
      throw new Error(m?.[1]||'Background production failed. Check the Netlify function log for this run.');
    }
-   if(notes.includes(`PRODUCTION SERVICE v2.7`)&&notes.includes(`Run ID: ${runId}`)){
+   if(/PRODUCTION SERVICE v2\.\d+/.test(notes)&&notes.includes(`Run ID: ${runId}`)){
      const qa=String(val(current.fields,'Section QA Result')||'Fix Required');
      return {ok:true,record:current,productionClass:cls,qaResult:qa,sources:[],background:true,runId};
    }

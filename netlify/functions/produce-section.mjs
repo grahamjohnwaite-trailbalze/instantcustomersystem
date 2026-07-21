@@ -161,7 +161,7 @@ export default async(request)=>{
     log('airtable_lookup_completed',{recordId:record.id,title:String(record.fields?.['Section Title']||'')});
     const fields=record.fields||{};
     const cls=ALLOWED_CLASSES.has(data.productionClass)?data.productionClass:productionClass(fields);
-    const originalNotes=String(value(fields,'Notes')||'').replace(/\n?MASTER ARTICLE RUNNING v2\.7[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'').replace(/\n?MASTER ARTICLE FAILED v2\.7[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'').trim();
+    const originalNotes=String(value(fields,'Notes')||'').replace(/\n?MASTER ARTICLE RUNNING v2\.\d+[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'').replace(/\n?MASTER ARTICLE FAILED v2\.\d+[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'').trim();
     const runningBlock=[`MASTER ARTICLE RUNNING v2.8`,`Run ID: ${runId}`,`Stage: Researching and writing`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
@@ -223,7 +223,7 @@ export default async(request)=>{
         const lookup=await airtableRequest(TABLES.sections,{params:{filterByFormula:`RECORD_ID()='${selectedSectionId.replace(/'/g,"\\'")}'`,maxRecords:'1'}});
         const current=lookup.records?.[0];
         if(current){
-          const notes=String(current.fields?.Notes||'').replace(/\n?MASTER ARTICLE RUNNING v2\.7[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'').trim();
+          const notes=String(current.fields?.Notes||'').replace(/\n?MASTER ARTICLE RUNNING v2\.\d+[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'').trim();
           const failed=[`MASTER ARTICLE FAILED v2.8`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:current.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':notes?`${notes}\n\n${failed}`:failed}}],typecast:true}});
         }
