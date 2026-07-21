@@ -1,4 +1,5 @@
 const API_ROOT='https://api.openai.com/v1';
+let modelCache={at:0,models:[]};
 
 function env(name,{required=true,fallback}={}){
   const value=process.env[name]||fallback;
@@ -41,12 +42,17 @@ async function openAIRequest(path,{method='GET',body,timeoutMs=90000}={}){
 }
 
 export async function listAccessibleModels(){
-  const {response,payload}=await openAIRequest('/models');
+  // Model discovery is helpful, but it must never consume most of an article's
+  // production budget. Reuse the last successful list for ten minutes.
+  if(modelCache.models.length && Date.now()-modelCache.at < 10*60*1000)return modelCache.models;
+  const {response,payload}=await openAIRequest('/models',{timeoutMs:10000});
   if(!response.ok){
     const message=payload?.error?.message||`OpenAI model-list request failed (${response.status})`;
     const error=new Error(message);error.status=response.status;error.details=payload;throw error;
   }
-  return (payload.data||[]).map(x=>x.id).filter(Boolean).sort();
+  const models=(payload.data||[]).map(x=>x.id).filter(Boolean).sort();
+  modelCache={at:Date.now(),models};
+  return models;
 }
 
 function unique(values){return values.filter((v,i,a)=>v&&a.indexOf(v)===i)}
@@ -86,9 +92,9 @@ export async function createResponse({input,useWeb=false}){
   // Keep production bounded. A single article must never spend minutes cycling
   // through every visible model. Try only the strongest few models within one
   // global deadline, then return a controlled failure to the QA layer.
-  const candidates=allCandidates.slice(0,3);
+  const candidates=allCandidates.slice(0,2);
   const started=Date.now();
-  const globalTimeoutMs=useWeb?150000:120000;
+  const globalTimeoutMs=useWeb?80000:60000;
   if(!candidates.length){
     const error=new Error(`The API key connected successfully, but no compatible ${useWeb?'web-search ':''}text model was visible to this project.`);
     error.status=403;error.details={useWeb,candidates,visibleModels:available.slice(0,100)};throw error;
@@ -98,7 +104,7 @@ export async function createResponse({input,useWeb=false}){
     const remaining=globalTimeoutMs-(Date.now()-started);
     if(remaining<=5000)break;
     let response,payload;
-    try{({response,payload}=await requestModel({model,input,useWeb,timeoutMs:Math.min(60000,remaining)}));}
+    try{({response,payload}=await requestModel({model,input,useWeb,timeoutMs:Math.min(useWeb?40000:45000,remaining)}));}
     catch(err){
       attempts.push({model,status:err.status||0,message:String(err.message||err),code:'timeout_or_network',useWeb});
       if((err.status||0)===408)continue;
