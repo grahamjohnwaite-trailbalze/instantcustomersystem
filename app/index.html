@@ -143,8 +143,10 @@ async function repairBuildBriefs(){
    try{
      let changed=0,missing=[];
      for(const {s,run} of publishRows){
-       const x=PETERBOROUGH_EDITORIAL_PLAN[run-1];
-       if(!x){missing.push(run);continue}
+       // Match by the current article title, never by legacy section position/order.
+       const currentTitle=String(val(s.fields,'Section Title')||'').trim().toLowerCase();
+       const x=PETERBOROUGH_EDITORIAL_PLAN.find(item=>item.title.trim().toLowerCase()===currentTitle);
+       if(!x){missing.push(`${run}: ${val(s.fields,'Section Title')||'Untitled'}`);continue}
        const patch={
          'Local Proof Needed':x.proof,
          'Evidence Required':x.evidence,
@@ -304,10 +306,26 @@ function buildProfile(f){
  return {cls:'B — Light Proof',proof:`Check named ${currentPlaceName()} examples and any current prices, dates or service details before drafting.`};
 }
 function suspectedBriefMismatch(f){
- const title=String(val(f,'Section Title')||'').toLowerCase();
+ const title=String(val(f,'Section Title')||'').trim();
+ const titleLower=title.toLowerCase();
  const proof=(String(val(f,'Local Proof Needed')||'')+' '+String(val(f,'Evidence Required')||'')).toLowerCase();
- if(/a47|a11|tyres|coolant|warning lights|pre-journey/.test(proof) && !/drive|car|road|diversion|journey/.test(title)) return true;
- if(/menu price|menu details/.test(proof) && !/breakfast|full english|food|farm shop|beauty|family day|event/.test(title)) return true;
+ // For locked Peterborough articles, the strongest QA is exact comparison with the approved plan.
+ if(typeof PETERBOROUGH_EDITORIAL_PLAN!=='undefined'){
+   const expected=PETERBOROUGH_EDITORIAL_PLAN.find(item=>item.title.trim().toLowerCase()===titleLower);
+   if(expected){
+     const actualProof=String(val(f,'Local Proof Needed')||'').trim();
+     const actualEvidence=String(val(f,'Evidence Required')||'').trim();
+     if(actualProof!==expected.proof || actualEvidence!==expected.evidence) return true;
+   }
+ }
+ // Generic cross-topic contamination guards retained for other publications.
+ if(/sandringham|heritage live|headline artists|promoter cancellation/.test(proof) && !/concert|sandringham|event.*cancel|cancelled.*event/.test(titleLower)) return true;
+ if(/homeowner|debt.consolidation|secured debt|mortgage risk/.test(proof) && !/mortgage|debt|monthly payment|homeowner/.test(titleLower)) return true;
+ if(/dentist|dental recall|nhs guidance/.test(proof) && !/dentist|dental/.test(titleLower)) return true;
+ if(/conveyanc|solicitor|regulator\/consumer guidance/.test(proof) && !/conveyanc|solicitor|legal/.test(titleLower)) return true;
+ if(/grooming|coat\/grooming|breed, coat/.test(proof) && !/groom|dog|pet/.test(titleLower)) return true;
+ if(/a47|a11|tyres|coolant|warning lights|pre-journey/.test(proof) && !/drive|car|road|diversion|journey/.test(titleLower)) return true;
+ if(/menu price|menu details|breakfast prices/.test(proof) && !/breakfast|full english|food|farm shop|beauty|family day|event/.test(titleLower)) return true;
  return false;
 }
 async function buildIssue(){
