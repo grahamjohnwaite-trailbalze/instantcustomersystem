@@ -131,6 +131,44 @@ function issueTopicTokens(s){return new Set(String(s||'').toLowerCase().replace(
 function issueSimilarity(a,b){const A=issueTopicTokens(a),B=issueTopicTokens(b);if(!A.size||!B.size)return 0;let hit=0;A.forEach(x=>{if(B.has(x))hit++});return hit/Math.min(A.size,B.size)}
 async function repairBuildBriefs(){
  if(!S.issue){alert('Open an issue first.');return}
+ const publication=currentPublicationName();
+ const publishRows=await productionSections();
+ if(!publishRows.length){alert('No Publish Now editorial plan found. Apply the editorial plan first.');return}
+
+ // Peterborough repairs must come from the current approved PBS editorial plan.
+ // Never repair PBS records from the legacy Norfolk position-based repair map.
+ if(/Peterborough Spotlight/i.test(publication)){
+   if(!confirm('Repair the Local Proof Needed and Evidence Required fields for the 10 Peterborough Publish Now articles from the approved PBS editorial plan? Existing titles, questions, lanes, CTAs and order will not change.'))return;
+   E('save-state').textContent='Repairing Peterborough issue briefs…';
+   try{
+     let changed=0,missing=[];
+     for(const {s,run} of publishRows){
+       const x=PETERBOROUGH_EDITORIAL_PLAN[run-1];
+       if(!x){missing.push(run);continue}
+       const patch={
+         'Local Proof Needed':x.proof,
+         'Evidence Required':x.evidence,
+         'Evidence Status':'Needs Update',
+         'Commercial Lane':x.lane,
+         'Commercial Pathway':x.path,
+         'Primary Next Action':x.action,
+         'CTA Type':x.cta,
+         'CTA Text':x.ctaText,
+         'Social Question Shape':x.social,
+         'Reuse / Localisation Potential':x.reuse,
+         'Section QA Result':'Not Checked'
+       };
+       const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:s.id,fields:patch})});
+       s.fields=d.record.fields;changed++;
+     }
+     sortSections();renderSections();renderForm();
+     E('save-state').textContent=`Peterborough brief repair complete: ${changed} updated${missing.length?' · missing '+missing.join(', '):''}.`;
+     alert(`Peterborough brief repair complete. ${changed} Publish Now sections updated from the approved PBS plan. Run Build issue again and confirm suspected copied/mismatched briefs = 0.`);
+   }catch(err){alert('Peterborough brief repair error: '+err.message);E('save-state').textContent='Brief repair failed.'}
+   return;
+ }
+
+ // Legacy locked Norfolk repair map retained for the existing Norfolk production plan.
  const repairs={
   23:["Norfolk-wide examples from this issue: Sandringham, housing growth, water pressure, extreme heat, road diversions and household costs.","No separate evidence burden for the intro. Any factual examples mentioned must be supported by the verified sections they preview."],
   1:["Sandringham Estate, West Norfolk; cancelled August 2026 Heritage Live programme; named headline artists.","Official/promoter cancellation information, named performers, refund guidance and accurately attributed explanation for cancellation."],
@@ -158,24 +196,23 @@ async function repairBuildBriefs(){
   30:["Named Norfolk salons, barbers, beauty or wellbeing businesses with current treatment names, prices and inclusions.","Current official price lists/booking pages for every named treatment. Reader value judgements must be genuine or presented as an open nomination question."],
   26:["Questions and themes actually published in this issue.","No separate evidence burden for the outro. Do not introduce new factual claims that have not been verified elsewhere in the issue."]
  };
- if(!confirm('Repair the Evidence Required and Local Proof Needed fields for the 25 Publish Now sections? Existing section titles, questions, lanes, CTAs, notes and order will not change.'))return;
- E('save-state').textContent='Repairing issue briefs…';
+ if(!/Norfolk Spotlight/i.test(publication)){
+   alert(`Brief repair is not configured for ${publication||'this publication'} yet.`);return;
+ }
+ if(!confirm('Repair the Evidence Required and Local Proof Needed fields for the locked Norfolk Publish Now sections? Existing section titles, questions, lanes, CTAs, notes and order will not change.'))return;
+ E('save-state').textContent='Repairing Norfolk issue briefs…';
  try{
-  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
-  S.sections=r.records||[];
   let changed=0,missing=[];
-  for(const s of S.sections){
-   const f=s.fields||{}, n=Number(val(f,'Section Order'));
-   if(!/PUBLISH NOW — Final Running Order \d{2}\./.test(String(val(f,'Notes')||'')))continue;
-   const x=repairs[n];
-   if(!x){missing.push(n);continue}
+  for(const {s,run} of publishRows){
+   const x=repairs[run];
+   if(!x){missing.push(run);continue}
    const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:s.id,fields:{'Local Proof Needed':x[0],'Evidence Required':x[1]}})});
    s.fields=d.record.fields;changed++;
   }
-  sortSections();renderSections();
-  E('save-state').textContent=`Brief repair complete: ${changed} updated${missing.length?' · missing '+missing.join(', '):''}.`;
-  alert(`Brief repair complete. ${changed} Publish Now sections updated. Run Build issue again.`);
- }catch(err){alert('Brief repair error: '+err.message);E('save-state').textContent='Brief repair failed.'}
+  sortSections();renderSections();renderForm();
+  E('save-state').textContent=`Norfolk brief repair complete: ${changed} updated${missing.length?' · missing '+missing.join(', '):''}.`;
+  alert(`Norfolk brief repair complete. ${changed} Publish Now sections updated. Run Build issue again.`);
+ }catch(err){alert('Norfolk brief repair error: '+err.message);E('save-state').textContent='Brief repair failed.'}
 }
 function productionClassForFields(f){return buildProfile(f).cls}
 async function productionSections(){
