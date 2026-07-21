@@ -129,24 +129,29 @@ function sectionText(s){return Object.values(s.fields||{}).filter(v=>typeof v===
 const ISSUE_STOP_WORDS=new Set('the a an and or of to in on for with is are was were be been being this that what which who how why your our norfolk spotlight unfiltered'.split(' '));
 function issueTopicTokens(s){return new Set(String(s||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>3&&!ISSUE_STOP_WORDS.has(w)))}
 function issueSimilarity(a,b){const A=issueTopicTokens(a),B=issueTopicTokens(b);if(!A.size||!B.size)return 0;let hit=0;A.forEach(x=>{if(B.has(x))hit++});return hit/Math.min(A.size,B.size)}
+function normalizePlanTitle(v){return String(v||'').toLowerCase().replace(/[’‘]/g,"'").replace(/[^a-z0-9£']+/g,' ').replace(/\s+/g,' ').trim()}
+function peterboroughPlanForRow(s,run){
+ const byTitle=PETERBOROUGH_EDITORIAL_PLAN.find(item=>normalizePlanTitle(item.title)===normalizePlanTitle(val(s.fields,'Section Title')));
+ if(byTitle)return byTitle;
+ const idx=Number(run)-1;
+ const byRun=Number.isInteger(idx)&&idx>=0&&idx<PETERBOROUGH_EDITORIAL_PLAN.length?PETERBOROUGH_EDITORIAL_PLAN[idx]:null;
+ if(byRun&&normalizePlanTitle(byRun.title)===normalizePlanTitle(val(s.fields,'Section Title')))return byRun;
+ return null;
+}
 async function repairBuildBriefs(){
  if(!S.issue){alert('Open an issue first.');return}
  const publication=currentPublicationName();
  const publishRows=await productionSections();
  if(!publishRows.length){alert('No Publish Now editorial plan found. Apply the editorial plan first.');return}
 
- // Peterborough repairs must come from the current approved PBS editorial plan.
- // Never repair PBS records from the legacy Norfolk position-based repair map.
  if(/Peterborough Spotlight/i.test(publication)){
-   if(!confirm('Repair the Local Proof Needed and Evidence Required fields for the 10 Peterborough Publish Now articles from the approved PBS editorial plan? Existing titles, questions, lanes, CTAs and order will not change.'))return;
-   E('save-state').textContent='Repairing Peterborough issue briefs…';
+   if(!confirm('Force-repair the 10 Peterborough Publish Now briefs from the locked PBS plan and verify the saved Airtable values?'))return;
+   E('save-state').textContent='Force-repairing Peterborough issue briefs…';
    try{
      let changed=0,missing=[];
      for(const {s,run} of publishRows){
-       // Match by the current article title, never by legacy section position/order.
-       const currentTitle=String(val(s.fields,'Section Title')||'').trim().toLowerCase();
-       const x=PETERBOROUGH_EDITORIAL_PLAN.find(item=>item.title.trim().toLowerCase()===currentTitle);
-       if(!x){missing.push(`${run}: ${val(s.fields,'Section Title')||'Untitled'}`);continue}
+       const x=peterboroughPlanForRow(s,run);
+       if(!x){missing.push(`${String(run).padStart(2,'0')}: ${val(s.fields,'Section Title')||'Untitled'}`);continue}
        const patch={
          'Local Proof Needed':x.proof,
          'Evidence Required':x.evidence,
@@ -160,15 +165,33 @@ async function repairBuildBriefs(){
          'Reuse / Localisation Potential':x.reuse,
          'Section QA Result':'Not Checked'
        };
-       const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:s.id,fields:patch})});
-       s.fields=d.record.fields;changed++;
+       await api('sections',{method:'PATCH',body:JSON.stringify({id:s.id,fields:patch})});
+       changed++;
+     }
+     const verify=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+     S.sections=verify.records||[];
+     const verifyRows=S.sections.filter(s=>/PUBLISH NOW — Final Running Order \d{2}\./.test(String(val(s.fields,'Notes')||''))).map(s=>{const m=String(val(s.fields,'Notes')||'').match(/Final Running Order (\d{2})/);return{s,run:m?Number(m[1]):999}}).sort((a,b)=>a.run-b.run);
+     const failed=[];
+     for(const row of verifyRows){
+       const x=peterboroughPlanForRow(row.s,row.run);
+       if(!x)continue;
+       const gotProof=String(val(row.s.fields,'Local Proof Needed')||'').trim();
+       const gotEvidence=String(val(row.s.fields,'Evidence Required')||'').trim();
+       if(gotProof!==x.proof||gotEvidence!==x.evidence)failed.push(`${String(row.run).padStart(2,'0')} ${val(row.s.fields,'Section Title')}`);
      }
      sortSections();renderSections();renderForm();
-     E('save-state').textContent=`Peterborough brief repair complete: ${changed} updated${missing.length?' · missing '+missing.join(', '):''}.`;
-     alert(`Peterborough brief repair complete. ${changed} Publish Now sections updated from the approved PBS plan. Run Build issue again and confirm suspected copied/mismatched briefs = 0.`);
+     if(missing.length||failed.length){
+       const detail=[missing.length?`unmatched: ${missing.join(' | ')}`:'',failed.length?`not persisted: ${failed.join(' | ')}`:''].filter(Boolean).join(' · ');
+       E('save-state').textContent=`Peterborough repair verification failed · ${detail}`;
+       alert(`Peterborough repair did not fully verify. ${detail}`);
+       return;
+     }
+     E('save-state').textContent=`Peterborough brief repair verified: ${changed} updated and re-read from Airtable.`;
+     alert(`Peterborough brief repair verified. ${changed} Publish Now sections were force-updated and the saved values were re-read from Airtable. Run Build issue now.`);
    }catch(err){alert('Peterborough brief repair error: '+err.message);E('save-state').textContent='Brief repair failed.'}
    return;
  }
+
 
  // Legacy locked Norfolk repair map retained for the existing Norfolk production plan.
  const repairs={
@@ -311,7 +334,7 @@ function suspectedBriefMismatch(f){
  const proof=(String(val(f,'Local Proof Needed')||'')+' '+String(val(f,'Evidence Required')||'')).toLowerCase();
  // For locked Peterborough articles, the strongest QA is exact comparison with the approved plan.
  if(typeof PETERBOROUGH_EDITORIAL_PLAN!=='undefined'){
-   const expected=PETERBOROUGH_EDITORIAL_PLAN.find(item=>item.title.trim().toLowerCase()===titleLower);
+   const expected=PETERBOROUGH_EDITORIAL_PLAN.find(item=>normalizePlanTitle(item.title)===normalizePlanTitle(title));
    if(expected){
      const actualProof=String(val(f,'Local Proof Needed')||'').trim();
      const actualEvidence=String(val(f,'Evidence Required')||'').trim();

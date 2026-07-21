@@ -13,21 +13,56 @@ function productionClass(fields){
   return 'B — Light Proof';
 }
 
-function promptFor(fields,cls){
+function researchPromptFor(fields,cls){
+  const localProof=String(value(fields,'Local Proof Needed')||'').trim();
+  const evidence=String(value(fields,'Evidence Required')||'').trim();
+  const title=String(value(fields,'Section Title')||'').trim();
+  const question=String(value(fields,'Core Reader Question')||'').trim();
+  return `You are the evidence researcher for a local-news MASTER ARTICLE. Research BEFORE drafting.
+
+ARTICLE
+Title: ${title}
+Core question: ${question}
+Local proof required: ${localProof}
+Evidence required: ${evidence}
+Production class: ${cls}
+
+RESEARCH RULES
+- Search the current web thoroughly.
+- Prefer primary/official sources: local councils, GOV.UK, regulators, NHS/NICE, water companies, transport/highway bodies, official venue/business pages, official menus and ticket pages.
+- The returned evidence MUST satisfy the LOCAL PROOF requirement, not merely provide generic national background.
+- For a Peterborough article, include at least one genuinely Peterborough-specific or directly relevant regional primary source whenever the brief requires local proof.
+- If the brief names a body such as Anglian Water, NHS, NICE, FCA, MoneyHelper, a promoter, ticket agent or local council, actively search that body.
+- Current prices, dates, availability, service details and material current claims require current sources.
+- Do not invent a source or claim.
+- If adequate evidence cannot be found, say so explicitly.
+
+Return ONLY valid JSON:
+{
+ "research_status":"Sufficient or Insufficient",
+ "research_summary":"short description of what was verified and what remains uncertain",
+ "sources":[{"title":"","url":"clean raw URL","supports":"specific claim(s) this source supports","source_type":"official/local/primary/other"}],
+ "missing_evidence":["anything required by the brief that could not be verified"]
+}
+Return 2-8 strongest sources. Do not pad with irrelevant generic sources.`;
+}
+
+function promptFor(fields,cls,research){
   const useEvidence=cls!=='A — Question Only';
-  return `You are the production editor for Norfolk Spotlight. Build one complete MASTER ARTICLE PACKAGE ready for manual upload to Letterman.
+  const sourcePack=JSON.stringify(research||{},null,2);
+  return `You are the production editor for Spotlight. Build one complete MASTER ARTICLE PACKAGE ready for manual upload to Letterman.
 
 STYLE AND SAFETY
 - UK English. Human, lively, specific and useful. Avoid generic AI phrasing.
 - Never invent quotes, consensus, recommendations, prices, dates, businesses or factual claims.
-- Use named Norfolk proof where supported.
+- Use named local proof only where supported by the supplied research pack.
 - Distinguish fact, opinion and reader questions.
 - One primary CTA only.
 - Raw clean destination URLs only.
 - Short paragraphs suitable for a narrow article page.
 - The article must stand alone outside the newsletter.
 - Aim for 650-950 words unless the approved brief genuinely needs less.
-${useEvidence?'- Search the current web. Prefer official/primary sources. Every material current claim must be supported by a returned source.':'- Do not search merely to decorate a question-led article. Avoid unnecessary factual claims.'}
+${useEvidence?'- Use ONLY material claims supported by the research pack below. If local evidence is missing, do not disguise that with generic national background. Mark QA Fix Required.':'- Avoid unnecessary factual claims.'}
 
 APPROVED BRIEF
 Working title: ${value(fields,'Section Title')}
@@ -43,6 +78,9 @@ Commercial pathway: ${value(fields,'Commercial Pathway')}
 Primary action: ${value(fields,'Primary Next Action')}
 CTA type: ${value(fields,'CTA Type')}
 Existing CTA text: ${value(fields,'CTA Text')}
+
+RESEARCH PACK
+${sourcePack}
 
 Return ONLY valid JSON in this exact shape:
 {
@@ -64,12 +102,27 @@ Return ONLY valid JSON in this exact shape:
  "social_facebook":"standalone Facebook caption ending with a natural discussion prompt",
  "social_linkedin":"professional but local LinkedIn caption",
  "social_x":"concise X caption",
- "evidence_summary":"what was verified or why proof was not required",
+ "evidence_summary":"what was verified and any important limits",
  "sources":[{"title":"","url":"clean raw URL","supports":"claim supported"}],
  "qa_result":"Pass or Fix Required",
  "exception":"blank when Pass"
 }
-Limit sources to the strongest 1-5. Do not include unused sources.`;
+Use the strongest 1-5 sources from the research pack. Do not include unused sources.`;
+}
+
+function evidenceGate(fields,cls,research){
+  if(cls==='A — Question Only')return {pass:true,reasons:[]};
+  const sources=Array.isArray(research?.sources)?research.sources:[];
+  const reasons=[];
+  if(research?.research_status!=='Sufficient')reasons.push('Research stage reported insufficient evidence.');
+  if(cls==='C — Evidence Heavy'&&sources.length<2)reasons.push('Evidence-heavy article requires at least two relevant sources.');
+  const blob=[value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Local Proof Needed'),value(fields,'Evidence Required')].join(' ').toLowerCase();
+  const srcBlob=sources.map(s=>[s.title,s.url,s.supports,s.source_type].join(' ')).join(' ').toLowerCase();
+  if(blob.includes('peterborough')&&!/(peterborough|peterborough\.gov\.uk|cambridgeshire|anglianwater)/.test(srcBlob))reasons.push('No Peterborough-specific or directly relevant regional source was returned.');
+  if(/anglian water/.test(blob)&&!/anglian/.test(srcBlob))reasons.push('Brief requires Anglian Water evidence but none was returned.');
+  if(/nhs|nice/.test(blob)&&!/(nhs|nice)/.test(srcBlob))reasons.push('Brief requires NHS/NICE evidence but none was returned.');
+  if(/fca|moneyhelper/.test(blob)&&!/(fca|moneyhelper)/.test(srcBlob))reasons.push('Brief requires FCA/MoneyHelper evidence but none was returned.');
+  return {pass:reasons.length===0,reasons};
 }
 
 function packageBlock(result,sources,model){
@@ -109,20 +162,44 @@ export default async(request)=>{
     const fields=record.fields||{};
     const cls=ALLOWED_CLASSES.has(data.productionClass)?data.productionClass:productionClass(fields);
     const originalNotes=String(value(fields,'Notes')||'').replace(/\n?MASTER ARTICLE RUNNING v2\.7[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'').replace(/\n?MASTER ARTICLE FAILED v2\.7[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'').trim();
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.7`,`Run ID: ${runId}`,`Stage: Researching and writing`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.8`,`Run ID: ${runId}`,`Stage: Researching and writing`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
-    log('openai_started',{productionClass:cls,useWeb:cls!=='A — Question Only'});
-    const response=await createResponse({input:promptFor(fields,cls),useWeb:cls!=='A — Question Only'});
+    let research={research_status:'Sufficient',research_summary:'Question-only article; no research required.',sources:[],missing_evidence:[]};
+    let researchResponse=null;
+    if(cls!=='A — Question Only'){
+      log('research_started',{productionClass:cls});
+      researchResponse=await createResponse({input:researchPromptFor(fields,cls),useWeb:true});
+      log('research_completed',{model:researchResponse._model_used||'',outputChars:outputText(researchResponse).length});
+      research=parseJsonText(outputText(researchResponse));
+      research.sources=(Array.isArray(research.sources)?research.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||''),source_type:String(s.source_type||'')})).filter(s=>s.url).slice(0,8);
+      const gate=evidenceGate(fields,cls,research);
+      if(!gate.pass){
+        research.research_status='Insufficient';
+        research.missing_evidence=[...(Array.isArray(research.missing_evidence)?research.missing_evidence:[]),...gate.reasons];
+      }
+      log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0});
+    }
+    log('openai_started',{productionClass:cls,useWeb:false});
+    const response=await createResponse({input:promptFor(fields,cls,research),useWeb:false});
     log('openai_completed',{model:response._model_used||'',outputChars:outputText(response).length});
     log('json_parse_started');
     const result=parseJsonText(outputText(response));
     log('json_parse_completed',{qaResult:result.qa_result||'',sourceCount:Array.isArray(result.sources)?result.sources.length:0});
-    const sources=(Array.isArray(result.sources)?result.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||'')})).filter(s=>s.url).slice(0,5);
-    const qa=result.qa_result==='Pass'?'Pass':'Fix Required';
+    const writerSources=(Array.isArray(result.sources)?result.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||'')})).filter(s=>s.url);
+    const researchSources=(research.sources||[]).map(s=>({title:s.title,url:s.url,supports:s.supports}));
+    const merged=[];
+    for(const src of [...writerSources,...researchSources])if(src.url&&!merged.some(x=>x.url===src.url))merged.push(src);
+    const sources=merged.slice(0,5);
+    const gate=evidenceGate(fields,cls,research);
+    const qa=(result.qa_result==='Pass'&&gate.pass)?'Pass':'Fix Required';
+    if(!gate.pass){
+      result.exception=[String(result.exception||'').trim(),...gate.reasons].filter(Boolean).join(' ');
+      result.evidence_summary=[String(result.evidence_summary||'').trim(),String(research.research_summary||'').trim(),`Missing evidence: ${(research.missing_evidence||[]).join('; ')}`].filter(Boolean).join(' ');
+    }
     const priorNotes=originalNotes.replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.7`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.8`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -147,7 +224,7 @@ export default async(request)=>{
         const current=lookup.records?.[0];
         if(current){
           const notes=String(current.fields?.Notes||'').replace(/\n?MASTER ARTICLE RUNNING v2\.7[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'').trim();
-          const failed=[`MASTER ARTICLE FAILED v2.7`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          const failed=[`MASTER ARTICLE FAILED v2.8`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:current.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':notes?`${notes}\n\n${failed}`:failed}}],typecast:true}});
         }
       }
