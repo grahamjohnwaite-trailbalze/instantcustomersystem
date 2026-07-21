@@ -210,7 +210,7 @@ async function produceOne(item){
    const notes=String(val(current.fields,'Notes')||'');
    item.s=current;
    if(S.section?.id===current.id)S.section=current;
-   if(notes.includes(`MASTER ARTICLE FAILED v2.7`)&&notes.includes(`Run ID: ${runId}`)){
+   if(/MASTER ARTICLE FAILED v2\.\d+/.test(notes)&&notes.includes(`Run ID: ${runId}`)){
      const m=notes.match(new RegExp(`MASTER ARTICLE FAILED v2\\.7[\\s\\S]*?Run ID: ${runId}[\\s\\S]*?Error: ([^\\n]+)`));
      throw new Error(m?.[1]||'Background production failed. Check the Netlify function log for this run.');
    }

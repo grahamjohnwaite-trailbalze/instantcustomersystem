@@ -73,24 +73,32 @@ function preferredModels(available=[],useWeb=false){
   return unique([...matched,...additional]).slice(0,12);
 }
 
-async function requestModel({model,input,useWeb}){
+async function requestModel({model,input,useWeb,timeoutMs}){
   const body={model,input};
   if(useWeb)body.tools=[{type:'web_search'}];
-  return openAIRequest('/responses',{method:'POST',body,timeoutMs:useWeb?120000:90000});
+  return openAIRequest('/responses',{method:'POST',body,timeoutMs:timeoutMs|| (useWeb?60000:60000)});
 }
 
 
 export async function createResponse({input,useWeb=false}){
   const available=await listAccessibleModels();
-  const candidates=preferredModels(available,useWeb);
+  const allCandidates=preferredModels(available,useWeb);
+  // Keep production bounded. A single article must never spend minutes cycling
+  // through every visible model. Try only the strongest few models within one
+  // global deadline, then return a controlled failure to the QA layer.
+  const candidates=allCandidates.slice(0,3);
+  const started=Date.now();
+  const globalTimeoutMs=useWeb?150000:120000;
   if(!candidates.length){
     const error=new Error(`The API key connected successfully, but no compatible ${useWeb?'web-search ':''}text model was visible to this project.`);
     error.status=403;error.details={useWeb,candidates,visibleModels:available.slice(0,100)};throw error;
   }
   const attempts=[];
   for(const model of candidates){
+    const remaining=globalTimeoutMs-(Date.now()-started);
+    if(remaining<=5000)break;
     let response,payload;
-    try{({response,payload}=await requestModel({model,input,useWeb}));}
+    try{({response,payload}=await requestModel({model,input,useWeb,timeoutMs:Math.min(60000,remaining)}));}
     catch(err){
       attempts.push({model,status:err.status||0,message:String(err.message||err),code:'timeout_or_network',useWeb});
       if((err.status||0)===408)continue;
@@ -106,7 +114,8 @@ export async function createResponse({input,useWeb=false}){
     }
   }
   const summary=attempts.map(a=>`${a.model}: ${a.status} ${a.message}${a.code?` [${a.code}]`:''}`).join(' | ');
-  const error=new Error(`No visible model completed the ${useWeb?'web-search':'text'} request. ${summary}`);
+  const elapsed=Math.round((Date.now()-started)/1000);
+  const error=new Error(`No visible model completed the ${useWeb?'web-search':'text'} request within the production limit (${elapsed}s). ${summary}`);
   error.status=403;error.details={useWeb,attempts,visibleModels:available.slice(0,100)};throw error;
 }
 

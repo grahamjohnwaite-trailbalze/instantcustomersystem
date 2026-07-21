@@ -263,7 +263,7 @@ async function produceOne(item){
    const raw=await response.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={error:`Invalid server response (${response.status}). ${raw.slice(0,300)||'No response body.'}`}}
    throw new Error(d.error||`Unable to start background production (${response.status}).`);
  }
- const deadline=Date.now()+12*60*1000;
+ const deadline=Date.now()+5*60*1000;
  let polls=0;
  while(Date.now()<deadline){
    await sleep(polls<3?3000:5000);polls++;
@@ -272,17 +272,18 @@ async function produceOne(item){
    const notes=String(val(current.fields,'Notes')||'');
    item.s=current;
    if(S.section?.id===current.id)S.section=current;
-   if(notes.includes(`MASTER ARTICLE FAILED v2.7`)&&notes.includes(`Run ID: ${runId}`)){
-     const m=notes.match(new RegExp(`MASTER ARTICLE FAILED v2\\.7[\\s\\S]*?Run ID: ${runId}[\\s\\S]*?Error: ([^\\n]+)`));
+   if(/MASTER ARTICLE FAILED v2\.\d+/.test(notes)&&notes.includes(`Run ID: ${runId}`)){
+     const failedBlock=notes.slice(notes.indexOf(`Run ID: ${runId}`));
+     const m=failedBlock.match(/Error: ([^\n]+)/);
      throw new Error(m?.[1]||'Background production failed. Check the Netlify function log for this run.');
    }
    if(/PRODUCTION SERVICE v2\.\d+/.test(notes)&&notes.includes(`Run ID: ${runId}`)){
      const qa=String(val(current.fields,'Section QA Result')||'Fix Required');
      return {ok:true,record:current,productionClass:cls,qaResult:qa,sources:[],background:true,runId};
    }
-   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">Background production is running · ${Math.round((Date.now()-(deadline-12*60*1000))/1000)} seconds</div>`;
+   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">Background production is running · ${Math.round((Date.now()-(deadline-5*60*1000))/1000)} seconds</div>`;
  }
- throw new Error('Background production did not finish within 12 minutes. Check the Netlify produce-section log and the Airtable Notes field.');
+ throw new Error('Background production did not finish within 5 minutes. Check the Netlify produce-section log and the Airtable Notes field.');
 }
 async function runProduction({one=false}={}){
  if(!S.issue){alert('Open an issue first.');return}
