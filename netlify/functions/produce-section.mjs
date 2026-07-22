@@ -4,7 +4,7 @@ import {cleanUrl,createResponse,outputText,parseJsonText} from './_openai.mjs';
 const ALLOWED_CLASSES=new Set(['A — Question Only','B — Light Proof','C — Evidence Heavy']);
 const value=(f,k)=>f?.[k]??'';
 
-const TOTAL_BUDGET_MS=145000;
+const TOTAL_BUDGET_MS=190000;
 function withTimeout(promise,timeoutMs,label){
   let timer;
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
@@ -256,7 +256,7 @@ export default async(request)=>{
       traceLine('Research model','DONE',researchModel);
       await saveTrace();
       log('research_started',{productionClass:cls,model:researchModel});
-      researchResponse=await stage('Research request',()=>createResponse({input:researchPromptFor(fields,cls),useWeb:true,model:researchModel,timeoutMs:55000}),60000);
+      researchResponse=await stage('Research request',()=>createResponse({input:researchPromptFor(fields,cls),useWeb:true,model:researchModel,timeoutMs:85000}),90000);
       log('research_completed',{model:researchResponse._model_used||'',outputChars:outputText(researchResponse).length});
       research=parseJsonText(outputText(researchResponse));
       research.sources=(Array.isArray(research.sources)?research.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||''),source_type:String(s.source_type||'')})).filter(s=>s.url).slice(0,8);
@@ -271,7 +271,7 @@ export default async(request)=>{
     traceLine('Writer model','DONE',writerModel||'auto-select');
     await saveTrace();
     log('openai_started',{productionClass:cls,useWeb:false,model:writerModel||'auto-select'});
-    const response=await stage('Writer request',()=>createResponse({input:promptFor(fields,cls,research),useWeb:false,model:writerModel,timeoutMs:50000}),55000);
+    const response=await stage('Writer request',()=>createResponse({input:promptFor(fields,cls,research),useWeb:false,model:writerModel,timeoutMs:70000}),75000);
     log('openai_completed',{model:response._model_used||'',outputChars:outputText(response).length});
     log('json_parse_started');
     const result=parseJsonText(outputText(response));
@@ -329,7 +329,15 @@ export default async(request)=>{
         if(current){
           const notes=stripRuntimeBlocks(current.fields?.Notes||'');
           const failed=[`MASTER ARTICLE FAILED v2.10`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
-          await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:current.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':notes?`${notes}\n\n${failed}`:failed}}],typecast:true}});
+          await withTimeout(
+            airtableRequest(TABLES.sections,{
+              method:'PATCH',
+              body:{records:[{id:current.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':notes?`${notes}\n\n${failed}`:failed}}],typecast:true},
+              timeoutMs:18000
+            }),
+            20000,
+            'Failure marker save'
+          );
         }
       }
     }catch(markerError){console.error('failure-marker-save-failed',{runId,message:markerError?.message});}
