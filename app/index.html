@@ -23,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.35<br><strong>Persistent, copyable Final QA report</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.36<br><strong>Human voice guard and smarter issue QA</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view active" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -1016,7 +1016,7 @@ Write ONLY the finished newsletter component copy. Keep it concise and human, no
   }
   btn.disabled=false;
   btn.textContent=original;
-  alert(`Persistent, copyable Final QA report finished.\nReady ${passed} · Failed ${failed}\nPartner blocks remain for real partner assignment.`);
+  alert(`Human voice guard and smarter issue QA finished.\nReady ${passed} · Failed ${failed}\nPartner blocks remain for real partner assignment.`);
 }
 
 function sponsorField(fields,names){
@@ -1163,7 +1163,7 @@ RULES:
 function qaKey(){return `${assemblyKey()}:finalqa`}
 function qaText(b){return [b.title,b.purpose,b.content,b.cta,b.button,b.url,b.partner,b.category,b.proof].filter(Boolean).join(' ')}
 function qaWords(text){
-  const stop=new Set(['this','that','with','from','have','your','what','when','where','which','about','into','they','their','there','will','would','could','should','peterborough','spotlight','local','reader','article','question','support','partner']);
+  const stop=new Set(['this','that','with','from','have','your','what','when','where','which','about','into','they','their','there','will','would','could','should','peterborough','spotlight','local','reader','article','question','support','partner','before','answer','around','rather','first','issue','place','practical','useful','really','quite','also','just','more','most','some','than','then','them','over','under','after','because','while','whereas','important','matter','matters','straightforward','clear','help','helps','helpful','worth','knowing']);
   return [...new Set(String(text||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>4&&!stop.has(w)))];
 }
 function qaSimilarity(a,b){
@@ -1219,6 +1219,28 @@ function deterministicQA(items){
   const concentrated=[...counts.entries()].filter(([,n])=>n>=5).sort((a,b)=>b[1]-a[1]).slice(0,6);
   if(concentrated.length)add('WARNING','TOPIC_CONCENTRATION',`Repeated issue themes detected: ${concentrated.map(([w,n])=>`${w} (${n})`).join(', ')}. Review whether the issue is circling the same question too often.`);
   else add('PASS','TOPIC_BALANCE','No obvious single-word topic concentration across five or more blocks.');
+
+
+  // Human-language / AI-tell guard: frequency, not blanket bans.
+  const humanGuardWords=['useful','practical','straightforward','meaningful','valuable','importantly','helpful','navigate','whether','matters','key','crucial','worth knowing'];
+  const issueBlob=items.map(b=>String(b.content||'').toLowerCase()).join(' ');
+  const overused=[];
+  for(const term of humanGuardWords){
+    const rx=new RegExp(`\\b${term.replace(/\s+/g,'\\s+')}\\b`,'g');
+    const n=(issueBlob.match(rx)||[]).length;
+    const limit=term.includes(' ')?2:3;
+    if(n>limit)overused.push(`${term} (${n})`);
+  }
+  const phrasePatterns=[
+    {label:'The question is…',rx:/\bthe question is\b/gi,limit:2},
+    {label:'That matters because…',rx:/\bthat matters because\b/gi,limit:1},
+    {label:'The key point…',rx:/\bthe key point\b/gi,limit:1},
+    {label:'It is important to…',rx:/\bit is important to\b/gi,limit:1}
+  ];
+  const overusedPhrases=phrasePatterns.map(p=>({label:p.label,n:(issueBlob.match(p.rx)||[]).length,limit:p.limit})).filter(x=>x.n>x.limit);
+  if(overused.length||overusedPhrases.length){
+    add('WARNING','HUMAN_VOICE',`Human-language check: repeated AI-ish wording/patterns detected — ${[...overused,...overusedPhrases.map(x=>`${x.label} (${x.n})`)].join(', ')}. Prefer specific everyday wording and vary sentence shape.`,[],true);
+  }else add('PASS','HUMAN_VOICE','No obvious overuse of common AI-ish words or repeated polished sentence patterns.');
 
   // Partner overexposure: count partner name across blocks, but do not auto-remove.
   for(const p of partnerBlocks){
@@ -1330,6 +1352,7 @@ async function applySafeFixes(){
       btn.textContent=`Fixing ${fixed+failed+1}/${targets.length}…`;
       const relevant=safe.filter(f=>(f.blocks||[]).includes(block.uid)).map(f=>`${f.code}: ${f.message}`).join('\n');
       const context=partnerContext(items,items.findIndex(x=>x.uid===block.uid));
+      const wholeIssue=items.map((x,i)=>`${i+1}. ${x.title} — ${String(x.content||x.purpose||'').slice(0,260)}`).join('\n');
       const prompt=`Safely rewrite ONE existing newsletter block after Final QA.
 
 PUBLICATION: ${currentPublicationName()}
@@ -1344,6 +1367,9 @@ ${relevant}
 NEARBY ARTICLE CONTEXT:
 ${context||'None supplied'}
 
+WHOLE ISSUE MAP:
+${wholeIssue}
+
 ${block.kind==='partner'?`REAL ASSIGNED PARTNER: ${block.partner||''}
 APPROVED CATEGORY: ${block.category||''}
 CTA: ${block.cta||block.button||''}
@@ -1351,7 +1377,11 @@ IMPORTANT: Keep the assigned partner. Do not alter commercial commitments or inv
 
 RULES:
 - Return only replacement reader-facing copy.
-- Preserve the purpose of the block but remove internal/commercial notes and avoid duplicating nearby content.
+- Preserve the function of the block, but if QA says the topic/action is repetitive, choose a DIFFERENT subject or reader job from the whole issue rather than paraphrasing the same idea.
+- Remove internal/commercial notes and avoid duplicating nearby or issue-wide content.
+- Write like an informed local person talking to another local person: plain, specific, sometimes conversational, never literary or over-polished.
+- Avoid overusing words such as useful, practical, straightforward, meaningful, valuable, importantly, helpful, navigate, whether, matters, key and crucial.
+- Prefer concrete specifics over adjectives.
 - Do not invent local facts, businesses, prices, quotes, events, experts or sponsors.
 - If factual evidence is missing, turn the component into a reader question/opinion prompt instead of inventing an answer.
 - First-party information supplied directly by a named featured organisation is usable; do not reject it merely because it lacks public web corroboration.
