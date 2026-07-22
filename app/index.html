@@ -23,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.34<br><strong>Whole-issue Final QA and safe fixes</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.35<br><strong>Persistent, copyable Final QA report</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view active" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -62,7 +62,15 @@
 </section>
 
 <section class="canvas-panel canvas-inspector">
-<h2>Block Inspector</h2>
+<section class="panel" id="qa-report-panel" style="display:none">
+  <h2>Final QA Results</h2>
+  <div class="small muted" id="qa-report-summary">Run Final QA to review the complete issue.</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+    <button class="btn secondary" id="qa-copy">Copy QA Report</button>
+    <button class="btn secondary" id="qa-hide">Hide Report</button>
+  </div>
+  <textarea id="qa-report-text" readonly style="width:100%;min-height:300px;resize:vertical;white-space:pre-wrap"></textarea>
+</section><h2>Block Inspector</h2>
 <div id="inspector-empty" class="empty">Click a block in the issue canvas to edit it.</div>
 <div id="inspector-form" class="inspector-grid" hidden>
 <div class="field"><label>Block type</label><input id="inspect-type" disabled></div>
@@ -1008,7 +1016,7 @@ Write ONLY the finished newsletter component copy. Keep it concise and human, no
   }
   btn.disabled=false;
   btn.textContent=original;
-  alert(`Whole-issue Final QA and safe fixes finished.\nReady ${passed} · Failed ${failed}\nPartner blocks remain for real partner assignment.`);
+  alert(`Persistent, copyable Final QA report finished.\nReady ${passed} · Failed ${failed}\nPartner blocks remain for real partner assignment.`);
 }
 
 function sponsorField(fields,names){
@@ -1238,6 +1246,35 @@ function renderQAReport(report){
   }
   return lines.join('\n');
 }
+
+function showQAReport(report,scroll=true){
+  const panel=E('qa-report-panel'),text=E('qa-report-text'),summary=E('qa-report-summary');
+  if(!panel||!text||!summary)return;
+  panel.style.display='block';
+  text.value=renderQAReport(report);
+  summary.textContent=`${report.summary.fix} Fix · ${report.summary.warning} Warning · ${report.summary.pass} Pass · saved in this browser`;
+  if(scroll)setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+function loadSavedQAReport(){
+  try{
+    const report=JSON.parse(localStorage.getItem(qaKey())||'null');
+    if(report)showQAReport(report,false);
+  }catch{}
+}
+async function copyQAReport(){
+  const text=E('qa-report-text')?.value||'';
+  if(!text){alert('There is no QA report to copy yet.');return}
+  try{
+    await navigator.clipboard.writeText(text);
+    const b=E('qa-copy'),old=b.textContent;
+    b.textContent='Copied ✓';
+    setTimeout(()=>b.textContent=old,1400);
+  }catch{
+    E('qa-report-text').focus();
+    E('qa-report-text').select();
+    alert('The report is selected. Press Ctrl+C to copy it.');
+  }
+}
 async function runFinalQA(){
   if(!S.issue){alert('Open an issue first.');return}
   const items=getCanvas();
@@ -1268,7 +1305,8 @@ async function runFinalQA(){
     };
     const report={createdAt:new Date().toISOString(),summary,findings};
     localStorage.setItem(qaKey(),JSON.stringify(report));
-    alert(renderQAReport(report));
+    showQAReport(report,true);
+    alert(`Final QA complete. ${summary.fix} Fix · ${summary.warning} Warning · ${summary.pass} Pass. The full report is saved in the Final QA Results panel.`);
   }finally{
     btn.disabled=false;btn.textContent=original;
   }
@@ -1330,7 +1368,7 @@ RULES:
         failed++;
       }
       localStorage.setItem(assemblyKey(),JSON.stringify(items));
-      renderAssembly();
+      renderAssembly();loadSavedQAReport();
     }
     localStorage.removeItem(qaKey());
     alert(`Safe fixes finished.\nFixed ${fixed} · Failed ${failed}\nRun Final QA again to verify the issue.`);
@@ -1345,7 +1383,7 @@ E('assembly-order').ondragover=e=>{e.preventDefault();E('assembly-order').classL
 E('assembly-order').ondragleave=()=>E('assembly-order').classList.remove('drag-over');
 E('assembly-order').ondrop=e=>dropOnCanvas(e);
 E('assembly-clear').onclick=()=>{if(confirm('Clear the entire issue canvas?')){canvasSelectedUid=null;saveCanvas([])}};
-E('assembly-auto').onclick=autoAssembleIssue;E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('assembly-generate').onclick=generateAssembly;
+E('assembly-auto').onclick=autoAssembleIssue;E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;
 E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
 E('save-inspector').onclick=saveInspector;
 E('remove-canvas-block').onclick=()=>{if(canvasSelectedUid)removeCanvasBlock(canvasSelectedUid)};
