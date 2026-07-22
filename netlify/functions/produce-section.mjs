@@ -191,6 +191,27 @@ export default async(request)=>{
     const traceStarted=Date.now();
     const trace=[];
     const remaining=()=>Math.max(1000,TOTAL_BUDGET_MS-(Date.now()-started));
+
+    const assertRunOwnership=async(label='Run ownership check')=>{
+      const latest=await withTimeout(
+        airtableRequest(TABLES.sections,{params:{filterByFormula:`RECORD_ID()='${record.id.replace(/'/g,"\\'")}'`,maxRecords:'1'}}),
+        16000,
+        label
+      );
+      const latestRecord=latest.records?.[0];
+      const latestNotes=String(latestRecord?.fields?.Notes||'');
+      const runningBlocks=[...latestNotes.matchAll(/MASTER ARTICLE RUNNING v2\.\d+[\s\S]*?END MASTER ARTICLE RUNNING/g)].map(m=>m[0]);
+      const active=runningBlocks[runningBlocks.length-1]||'';
+      const ownerLine=active.split('\n').find(line=>line.startsWith('Run ID: '))||'';
+      const ownerId=ownerLine.replace('Run ID: ','').trim();
+      if(ownerId && ownerId!==runId){
+        const e=new Error(`Superseded by newer production run ${ownerId}`);
+        e.status=409;
+        e.code='RUN_SUPERSEDED';
+        throw e;
+      }
+      return true;
+    };
     const traceLine=(stage,status='START',detail='')=>{
       const seconds=Math.round((Date.now()-traceStarted)/1000);
       const line=`${status==='DONE'?'✓':status==='FAIL'?'✖':'▶'} ${stage} · ${seconds}s${detail?` · ${detail}`:''}`;
@@ -198,6 +219,7 @@ export default async(request)=>{
       return line;
     };
     const saveTrace=async()=>{
+      await assertRunOwnership('Trace ownership check');
       const block=[`MASTER ARTICLE TRACE v1`,`Run ID: ${runId}`,...trace.slice(-12),`END MASTER ARTICLE TRACE`].join('\n');
       const notes=originalNotes?`${originalNotes}\n\n${runningBlock}\n\n${block}`:`${runningBlock}\n\n${block}`;
       await withTimeout(
@@ -277,6 +299,7 @@ export default async(request)=>{
       'Notes':priorNotes?`${priorNotes}\n\n${serviceNotes}`:serviceNotes
     };
     log('airtable_save_started',{qaResult:qa,bodyChars:String(result.article_body||'').length});
+    await assertRunOwnership('Final save ownership check');
     traceLine('Final Airtable save','START'); await saveTrace();
     const saved=await withTimeout(
       airtableRequest(TABLES.sections,{
@@ -293,6 +316,9 @@ export default async(request)=>{
     return json(200,{ok:true,record:cleanRecord(saved.records[0]),productionClass:cls,qaResult:qa,sources,articlePackage:parseJsonText(block.split('\n').slice(1,-1).join('\n')),exception:qa==='Pass'?'':String(result.exception||'Human review required.')});
   }catch(error){
     console.error('master-article-failed',{runId,elapsedMs:Date.now()-started,message:error?.message,status:error?.status,details:error?.details,stack:error?.stack});
+    if(error?.code==='RUN_SUPERSEDED'){
+      return json(409,{ok:false,error:String(error.message||'This run was superseded by a newer production run.'),runId,superseded:true});
+    }
     try{
       if(selectedSectionId){
         const lookup=await airtableRequest(TABLES.sections,{params:{filterByFormula:`RECORD_ID()='${selectedSectionId.replace(/'/g,"\\'")}'`,maxRecords:'1'}});
