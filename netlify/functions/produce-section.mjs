@@ -76,7 +76,11 @@ STYLE AND SAFETY
 - Short paragraphs suitable for a narrow article page.
 - The article must stand alone outside the newsletter.
 - Aim for 650-950 words unless the approved brief genuinely needs less.
-${useEvidence?'- Use ONLY material claims supported by the research pack below. If local evidence is missing, do not disguise that with generic national background. Mark QA Fix Required.':'- Avoid unnecessary factual claims.'}
+${useEvidence?`- Use ONLY material claims supported by the research pack below.
+- If an optional or non-essential detail in the brief could not be verified, OMIT that detail from the article rather than forcing it into the copy.
+- A missing optional detail does NOT by itself require QA Fix Required.
+- Mark QA Fix Required only when evidence needed to answer the CORE QUESTION is missing, or when the drafted article still contains a material claim that is not adequately supported.
+- In evidence_summary, mention useful verification limits without turning every omitted peripheral detail into a publication blocker.`:'- Avoid unnecessary factual claims.'}
 
 APPROVED BRIEF
 Working title: ${value(fields,'Section Title')}
@@ -121,6 +125,11 @@ Return ONLY valid JSON in this exact shape:
  "qa_result":"Pass or Fix Required",
  "exception":"blank when Pass"
 }
+QA DECISION
+- Pass: the core reader question is answered with adequate support, and unsupported peripheral details have been omitted.
+- Fix Required: a material claim used in the article is unsupported, or evidence essential to the core answer is missing.
+- Do not fail an otherwise publishable article merely because the original brief requested extra details that were not needed and were left out.
+
 Use the strongest 1-5 sources from the research pack. Do not include unused sources.`;
 }
 
