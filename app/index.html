@@ -23,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.18<br><strong>Diagnostic production trace</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.14<br><strong>Production library sync and issue assembly</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view active" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -263,7 +263,7 @@ async function produceOne(item){
    const raw=await response.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={error:`Invalid server response (${response.status}). ${raw.slice(0,300)||'No response body.'}`}}
    throw new Error(d.error||`Unable to start background production (${response.status}).`);
  }
- const deadline=Date.now()+210*1000;
+ const deadline=Date.now()+3*60*1000;
  let polls=0;
  while(Date.now()<deadline){
    await sleep(polls<3?3000:5000);polls++;
@@ -281,11 +281,11 @@ async function produceOne(item){
      const qa=String(val(current.fields,'Section QA Result')||'Fix Required');
      return {ok:true,record:current,productionClass:cls,qaResult:qa,sources:[],background:true,runId};
    }
-   const traceMatch=notes.match(/MASTER ARTICLE TRACE v1\n([\s\S]*?)\nEND MASTER ARTICLE TRACE/);
-   const trace=traceMatch?traceMatch[1].split('\n').filter(Boolean).map(line=>`<div class="muted">${esc(line)}</div>`).join(''):'';
-   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">Background production is running · ${Math.round((Date.now()-(deadline-210*1000))/1000)} seconds</div>${trace?`<div style="margin-top:10px;padding-top:8px;border-top:1px solid #ddd"><strong>Diagnostic trace</strong>${trace}</div>`:''}`;
+   const traceMatches=[...notes.matchAll(/(?:✓|✖|▶) [^\n]+/g)];
+   const latestTrace=traceMatches.length?traceMatches[traceMatches.length-1][0]:'';
+   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">${latestTrace?esc(latestTrace)+' · ':''}Background production is running · ${Math.round((Date.now()-(deadline-3*60*1000))/1000)} seconds</div>`;
  }
- throw new Error('Background production did not finish within 3½ minutes. Check the Netlify produce-section log and the Airtable Notes field.');
+ throw new Error('Background production did not finish within 3 minutes. Check the Airtable Notes trace for the last completed stage.');
 }
 async function runProduction({one=false}={}){
  if(!S.issue){alert('Open an issue first.');return}

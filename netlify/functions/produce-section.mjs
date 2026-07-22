@@ -4,7 +4,7 @@ import {cleanUrl,createResponse,outputText,parseJsonText} from './_openai.mjs';
 const ALLOWED_CLASSES=new Set(['A — Question Only','B — Light Proof','C — Evidence Heavy']);
 const value=(f,k)=>f?.[k]??'';
 
-const TOTAL_BUDGET_MS=180000;
+const TOTAL_BUDGET_MS=145000;
 function withTimeout(promise,timeoutMs,label){
   let timer;
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
@@ -176,7 +176,7 @@ export default async(request)=>{
     const fields=record.fields||{};
     const cls=ALLOWED_CLASSES.has(data.productionClass)?data.productionClass:productionClass(fields);
     const originalNotes=stripRuntimeBlocks(value(fields,'Notes'));
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.9`,`Run ID: ${runId}`,`Stage: Researching and writing`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.10`,`Run ID: ${runId}`,`Stage: Researching and writing`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
@@ -222,7 +222,7 @@ export default async(request)=>{
     let researchResponse=null;
     if(cls!=='A — Question Only'){
       log('research_started',{productionClass:cls});
-      researchResponse=await stage('Research request',()=>createResponse({input:researchPromptFor(fields,cls),useWeb:true}),85000);
+      researchResponse=await stage('Research request',()=>createResponse({input:researchPromptFor(fields,cls),useWeb:true}),65000);
       log('research_completed',{model:researchResponse._model_used||'',outputChars:outputText(researchResponse).length});
       research=parseJsonText(outputText(researchResponse));
       research.sources=(Array.isArray(research.sources)?research.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||''),source_type:String(s.source_type||'')})).filter(s=>s.url).slice(0,8);
@@ -233,8 +233,11 @@ export default async(request)=>{
       }
       log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0});
     }
-    log('openai_started',{productionClass:cls,useWeb:false});
-    const response=await stage('Writer request',()=>createResponse({input:promptFor(fields,cls,research),useWeb:false}),65000);
+    const writerModel=String(researchResponse?._model_used||process.env.OPENAI_MODEL||'').trim();
+    traceLine('Writer model','DONE',writerModel||'auto-select');
+    await saveTrace();
+    log('openai_started',{productionClass:cls,useWeb:false,model:writerModel||'auto-select'});
+    const response=await stage('Writer request',()=>createResponse({input:promptFor(fields,cls,research),useWeb:false,model:writerModel,timeoutMs:50000}),55000);
     log('openai_completed',{model:response._model_used||'',outputChars:outputText(response).length});
     log('json_parse_started');
     const result=parseJsonText(outputText(response));
@@ -252,7 +255,7 @@ export default async(request)=>{
     }
     const priorNotes=originalNotes.replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.9`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.10`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -287,7 +290,7 @@ export default async(request)=>{
         const current=lookup.records?.[0];
         if(current){
           const notes=stripRuntimeBlocks(current.fields?.Notes||'');
-          const failed=[`MASTER ARTICLE FAILED v2.9`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          const failed=[`MASTER ARTICLE FAILED v2.10`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:current.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':notes?`${notes}\n\n${failed}`:failed}}],typecast:true}});
         }
       }

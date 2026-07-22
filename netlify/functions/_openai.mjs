@@ -1,5 +1,4 @@
 const API_ROOT='https://api.openai.com/v1';
-let modelCache={at:0,models:[]};
 
 function env(name,{required=true,fallback}={}){
   const value=process.env[name]||fallback;
@@ -42,17 +41,12 @@ async function openAIRequest(path,{method='GET',body,timeoutMs=90000}={}){
 }
 
 export async function listAccessibleModels(){
-  // Model discovery is helpful, but it must never consume most of an article's
-  // production budget. Reuse the last successful list for ten minutes.
-  if(modelCache.models.length && Date.now()-modelCache.at < 10*60*1000)return modelCache.models;
-  const {response,payload}=await openAIRequest('/models',{timeoutMs:10000});
+  const {response,payload}=await openAIRequest('/models');
   if(!response.ok){
     const message=payload?.error?.message||`OpenAI model-list request failed (${response.status})`;
     const error=new Error(message);error.status=response.status;error.details=payload;throw error;
   }
-  const models=(payload.data||[]).map(x=>x.id).filter(Boolean).sort();
-  modelCache={at:Date.now(),models};
-  return models;
+  return (payload.data||[]).map(x=>x.id).filter(Boolean).sort();
 }
 
 function unique(values){return values.filter((v,i,a)=>v&&a.indexOf(v)===i)}
@@ -86,15 +80,31 @@ async function requestModel({model,input,useWeb,timeoutMs}){
 }
 
 
-export async function createResponse({input,useWeb=false}){
+export async function createResponse({input,useWeb=false,model='',timeoutMs}={}){
+  // Production can pin a model that has already succeeded earlier in the same
+  // article run. This avoids a second /models lookup and model-shopping loop
+  // during the writer stage.
+  const pinnedModel=String(model||'').trim();
+  if(pinnedModel){
+    const limit=Math.max(5000,Number(timeoutMs)||(useWeb?55000:50000));
+    let response,payload;
+    try{({response,payload}=await requestModel({model:pinnedModel,input,useWeb,timeoutMs:limit}));}
+    catch(err){
+      err.details={...(err.details||{}),useWeb,model:pinnedModel,pinned:true};
+      throw err;
+    }
+    if(response.ok)return {...payload,_model_used:pinnedModel};
+    const message=payload?.error?.message||`OpenAI request failed (${response.status})`;
+    const error=new Error(message);error.status=response.status;error.details={useWeb,model:pinnedModel,pinned:true,last:payload};throw error;
+  }
+
   const available=await listAccessibleModels();
   const allCandidates=preferredModels(available,useWeb);
-  // Keep production bounded. A single article must never spend minutes cycling
-  // through every visible model. Try only the strongest few models within one
-  // global deadline, then return a controlled failure to the QA layer.
+  // Discovery is only used when no known-good model has been supplied. Keep it
+  // tightly bounded so a production article can fail cleanly rather than spin.
   const candidates=allCandidates.slice(0,2);
   const started=Date.now();
-  const globalTimeoutMs=useWeb?80000:60000;
+  const globalTimeoutMs=useWeb?70000:60000;
   if(!candidates.length){
     const error=new Error(`The API key connected successfully, but no compatible ${useWeb?'web-search ':''}text model was visible to this project.`);
     error.status=403;error.details={useWeb,candidates,visibleModels:available.slice(0,100)};throw error;
@@ -104,7 +114,7 @@ export async function createResponse({input,useWeb=false}){
     const remaining=globalTimeoutMs-(Date.now()-started);
     if(remaining<=5000)break;
     let response,payload;
-    try{({response,payload}=await requestModel({model,input,useWeb,timeoutMs:Math.min(useWeb?40000:45000,remaining)}));}
+    try{({response,payload}=await requestModel({model,input,useWeb,timeoutMs:Math.min(useWeb?55000:50000,remaining)}));}
     catch(err){
       attempts.push({model,status:err.status||0,message:String(err.message||err),code:'timeout_or_network',useWeb});
       if((err.status||0)===408)continue;
