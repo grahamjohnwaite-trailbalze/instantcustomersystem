@@ -23,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.33<br><strong>Active partner assignment and clearer canvas states</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.34<br><strong>Whole-issue Final QA and safe fixes</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view active" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -40,7 +40,7 @@
 <div id="production-progress" class="empty" style="margin-bottom:14px">Production service not run yet.</div>
 <div id="map-audit" class="empty" style="margin-bottom:14px">Audit not run yet.</div>
 <div class="form-grid"><div class="field full"><label>Issue status</label><select id="ih-status"><option>PLANNED</option><option>BUILDING</option><option>QA</option><option>READY FOR LETTERMAN</option><option>PUBLISHED</option></select></div><div class="field full"><label>Main theme</label><textarea id="ih-theme"></textarea></div><div class="field full"><label>Subject line</label><input id="ih-subject"></div><div class="field full"><label>Preheader</label><textarea id="ih-preheader"></textarea></div><div class="field full"><label>Send date</label><input id="ih-date" type="date"></div></div><h3>Minimum section gate</h3><div id="gate" class="checklist"></div><div class="warning" style="margin-top:14px"><strong>Phase 1B discipline</strong><br>One primary Hot Button. One useful action. Named local proof. No unresolved placeholders in final copy.</div></aside></div></section><section class="view" id="view-assemble">
-<div class="section-head planner-head"><div><h2>Issue Canvas</h2><div class="muted">Drag articles and components into one running order. Click any card to edit the information that block needs.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-clear">Clear canvas</button><button class="btn" id="assembly-auto">Auto Assemble Issue</button><button class="btn" id="assembly-produce">Produce Supporting Components</button><button class="btn" id="assembly-partners">Assign Active Partners</button><button class="btn" id="assembly-generate">Generate Issue Build Pack</button></div></div>
+<div class="section-head planner-head"><div><h2>Issue Canvas</h2><div class="muted">Drag articles and components into one running order. Click any card to edit the information that block needs.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-clear">Clear canvas</button><button class="btn" id="assembly-auto">Auto Assemble Issue</button><button class="btn" id="assembly-produce">Produce Supporting Components</button><button class="btn" id="assembly-partners">Assign Active Partners</button><button class="btn" id="assembly-qa">Run Final QA</button><button class="btn secondary" id="assembly-fix">Apply Safe Fixes</button><button class="btn" id="assembly-generate">Generate Issue Build Pack</button></div></div>
 <div class="planner-score" id="planner-score"><div><strong id="score-headlines">0</strong><span>Articles in Canvas</span></div><div><strong id="score-interactive">0</strong><span>Components</span></div><div><strong id="score-authority">0</strong><span>Partner blocks</span></div><div><strong id="score-activation">0</strong><span>Ready</span></div><div><strong id="score-commitments">0</strong><span>Total blocks</span></div></div>
 <div class="issue-promise-bar"><div class="field"><label>Issue promise / organising question</label><textarea id="assembly-theme" placeholder="What should readers decide, discover, feel or do by the end of this issue?"></textarea></div><button class="btn secondary" id="save-canvas-theme">Save promise</button></div>
 <div class="canvas-layout">
@@ -1008,7 +1008,7 @@ Write ONLY the finished newsletter component copy. Keep it concise and human, no
   }
   btn.disabled=false;
   btn.textContent=original;
-  alert(`Active partner assignment and clearer canvas states finished.\nReady ${passed} · Failed ${failed}\nPartner blocks remain for real partner assignment.`);
+  alert(`Whole-issue Final QA and safe fixes finished.\nReady ${passed} · Failed ${failed}\nPartner blocks remain for real partner assignment.`);
 }
 
 function sponsorField(fields,names){
@@ -1151,6 +1151,193 @@ RULES:
     button.textContent=original;
   }
 }
+
+function qaKey(){return `${assemblyKey()}:finalqa`}
+function qaText(b){return [b.title,b.purpose,b.content,b.cta,b.button,b.url,b.partner,b.category,b.proof].filter(Boolean).join(' ')}
+function qaWords(text){
+  const stop=new Set(['this','that','with','from','have','your','what','when','where','which','about','into','they','their','there','will','would','could','should','peterborough','spotlight','local','reader','article','question','support','partner']);
+  return [...new Set(String(text||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>4&&!stop.has(w)))];
+}
+function qaSimilarity(a,b){
+  const A=new Set(qaWords(a)),B=new Set(qaWords(b));
+  if(!A.size||!B.size)return 0;
+  let n=0; for(const w of A)if(B.has(w))n++;
+  return n/Math.min(A.size,B.size);
+}
+function deterministicQA(items){
+  const findings=[];
+  const add=(severity,code,message,blocks=[],safeFix=false)=>findings.push({severity,code,message,blocks,safeFix});
+  const ready=items.filter(b=>String(b.status||'').toUpperCase()==='READY').length;
+  const notReady=items.length-ready;
+  if(notReady)add('FIX','NOT_READY',`${notReady} block${notReady===1?' is':'s are'} not Ready.`,items.filter(b=>String(b.status||'').toUpperCase()!=='READY').map(b=>b.uid));
+  else add('PASS','ALL_READY',`All ${items.length} blocks are Ready.`);
+
+  const partnerBlocks=items.filter(b=>b.kind==='partner');
+  if(partnerBlocks.length){
+    const missing=partnerBlocks.filter(b=>!b.partner||String(b.status||'').toUpperCase()!=='READY');
+    if(missing.length)add('FIX','PARTNER_MISSING',`${missing.length} partner block${missing.length===1?' needs':'s need'} a real active partner assignment.`,missing.map(b=>b.uid));
+    else add('PASS','PARTNERS_PRESENT',`${partnerBlocks.length}/${partnerBlocks.length} partner blocks have real assignments.`);
+  }
+
+  const leakRx=/(discounted arrangement|reviewed later|internal note|for now|commercial arrangement|sponsorship amount|sponsor rate|pricing tier|discount rate|our deal|our agreement)/i;
+  const leaks=items.filter(b=>leakRx.test(qaText(b)));
+  if(leaks.length)add('FIX','INTERNAL_NOTE_LEAK',`Possible internal/commercial wording appears in ${leaks.length} reader-facing block${leaks.length===1?'':'s'}.`,leaks.map(b=>b.uid),true);
+  else add('PASS','NO_INTERNAL_LEAK','No obvious internal commercial notes detected in reader-facing copy.');
+
+  const multiCta=items.filter(b=>{
+    const vals=[b.cta,b.button].filter(x=>String(x||'').trim());
+    return vals.length>1&&new Set(vals.map(x=>String(x).trim().toLowerCase())).size>1;
+  });
+  if(multiCta.length)add('WARNING','CTA_CONFLICT',`${multiCta.length} block${multiCta.length===1?' has':'s have'} more than one differing primary CTA/button.`,multiCta.map(b=>b.uid));
+  else add('PASS','ONE_BUTTON','No conflicting primary CTA/button pairs detected.');
+
+  // Semantic-ish duplicate scan across supporting components.
+  const comps=items.filter(b=>b.kind==='component');
+  const dupPairs=[];
+  for(let i=0;i<comps.length;i++)for(let j=i+1;j<comps.length;j++){
+    const sim=qaSimilarity(qaText(comps[i]),qaText(comps[j]));
+    if(sim>=0.42)dupPairs.push({a:comps[i],b:comps[j],sim});
+  }
+  if(dupPairs.length){
+    const ids=[...new Set(dupPairs.flatMap(p=>[p.a.uid,p.b.uid]))];
+    add('WARNING','SUPPORTING_DUPLICATION',`${dupPairs.length} supporting-component pair${dupPairs.length===1?' looks':'s look'} substantially similar.`,ids,true);
+  } else add('PASS','SUPPORTING_VARIETY','Supporting components do not show obvious word-level duplication.');
+
+  // Topic concentration using useful content words.
+  const counts=new Map();
+  for(const b of items){
+    for(const w of qaWords(qaText(b)))counts.set(w,(counts.get(w)||0)+1);
+  }
+  const concentrated=[...counts.entries()].filter(([,n])=>n>=5).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(concentrated.length)add('WARNING','TOPIC_CONCENTRATION',`Repeated issue themes detected: ${concentrated.map(([w,n])=>`${w} (${n})`).join(', ')}. Review whether the issue is circling the same question too often.`);
+  else add('PASS','TOPIC_BALANCE','No obvious single-word topic concentration across five or more blocks.');
+
+  // Partner overexposure: count partner name across blocks, but do not auto-remove.
+  for(const p of partnerBlocks){
+    if(!p.partner)continue;
+    const needle=String(p.partner).toLowerCase();
+    const appearances=items.filter(b=>qaText(b).toLowerCase().includes(needle));
+    if(appearances.length>=3)add('WARNING','PARTNER_EXPOSURE',`${p.partner} appears in ${appearances.length} blocks. Confirm that this level of visibility is intentional.`,appearances.map(b=>b.uid));
+  }
+
+  // Rhythm: warn on runs of 3 articles.
+  let run=0,maxRun=0;
+  for(const b of items){run=b.kind==='article'?run+1:0;maxRun=Math.max(maxRun,run)}
+  if(maxRun>=3)add('WARNING','HEAVY_RHYTHM',`The running order contains ${maxRun} Master Articles in a row. Consider a lighter/interactivity break.`);
+  else add('PASS','RHYTHM',`No run of three or more Master Articles detected.`);
+
+  // First-party supplied info rule: informational only, never a failure.
+  add('PASS','FIRST_PARTY_RULE','Named information supplied directly by a featured partner/organisation may be used as first-party information. Public corroboration is helpful but not mandatory; attribute or qualify it where appropriate.');
+
+  return findings;
+}
+function renderQAReport(report){
+  const lines=[`FINAL QA — ${report.summary.fix} Fix · ${report.summary.warning} Warning · ${report.summary.pass} Pass`,''];
+  for(const f of report.findings){
+    lines.push(`${f.severity}: ${f.message}`);
+  }
+  return lines.join('\n');
+}
+async function runFinalQA(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const items=getCanvas();
+  if(!items.length){alert('Add or assemble the issue first.');return}
+  const btn=E('assembly-qa'),original=btn.textContent;
+  btn.disabled=true;btn.textContent='Running Final QA…';
+  try{
+    let findings=deterministicQA(items);
+    try{
+      const payload={
+        publication:currentPublicationName(),
+        issuePromise:E('assembly-promise')?.value||'',
+        blocks:items.map((b,i)=>({
+          order:i+1,uid:b.uid,kind:b.kind,type:b.type,title:b.title,purpose:b.purpose,
+          content:b.content,partner:b.partner,category:b.category,cta:b.cta,button:b.button,url:b.url,status:b.status,
+          sourceRule:b.kind==='partner'?'Partner information may include first-party information supplied directly by the organisation. Do not treat lack of public web corroboration alone as a failure.':''
+        }))
+      };
+      const ai=await api('final-qa',{method:'POST',body:JSON.stringify(payload)});
+      if(Array.isArray(ai.findings))findings=findings.concat(ai.findings);
+    }catch(error){
+      findings.push({severity:'WARNING',code:'AI_QA_UNAVAILABLE',message:`Editorial AI review was unavailable, so deterministic QA only was used: ${error.message}`,blocks:[],safeFix:false});
+    }
+    const summary={
+      fix:findings.filter(f=>f.severity==='FIX').length,
+      warning:findings.filter(f=>f.severity==='WARNING').length,
+      pass:findings.filter(f=>f.severity==='PASS').length
+    };
+    const report={createdAt:new Date().toISOString(),summary,findings};
+    localStorage.setItem(qaKey(),JSON.stringify(report));
+    alert(renderQAReport(report));
+  }finally{
+    btn.disabled=false;btn.textContent=original;
+  }
+}
+async function applySafeFixes(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const items=getCanvas();
+  const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
+  if(!saved){alert('Run Final QA first.');return}
+  const safe=saved.findings.filter(f=>f.safeFix&&['FIX','WARNING'].includes(f.severity));
+  const ids=[...new Set(safe.flatMap(f=>f.blocks||[]))];
+  const targets=items.filter(b=>ids.includes(b.uid)&&b.kind!=='article');
+  if(!targets.length){alert('Final QA found no safe automatic fixes. Master Articles and partner assignments are never changed automatically.');return}
+  if(!confirm(`Apply safe fixes to ${targets.length} supporting/partner block${targets.length===1?'':'s'}? Master Articles and partner assignments will not be removed or changed.`))return;
+
+  const btn=E('assembly-fix'),original=btn.textContent;
+  btn.disabled=true;
+  let fixed=0,failed=0;
+  try{
+    for(const block of targets){
+      btn.textContent=`Fixing ${fixed+failed+1}/${targets.length}…`;
+      const relevant=safe.filter(f=>(f.blocks||[]).includes(block.uid)).map(f=>`${f.code}: ${f.message}`).join('\n');
+      const context=partnerContext(items,items.findIndex(x=>x.uid===block.uid));
+      const prompt=`Safely rewrite ONE existing newsletter block after Final QA.
+
+PUBLICATION: ${currentPublicationName()}
+BLOCK TYPE: ${block.kind} / ${block.type||''}
+TITLE: ${block.title}
+CURRENT COPY:
+${block.content||''}
+
+QA PROBLEMS TO FIX:
+${relevant}
+
+NEARBY ARTICLE CONTEXT:
+${context||'None supplied'}
+
+${block.kind==='partner'?`REAL ASSIGNED PARTNER: ${block.partner||''}
+APPROVED CATEGORY: ${block.category||''}
+CTA: ${block.cta||block.button||''}
+IMPORTANT: Keep the assigned partner. Do not alter commercial commitments or invent services, prices, offers, claims, sponsorship terms or contact details.`:''}
+
+RULES:
+- Return only replacement reader-facing copy.
+- Preserve the purpose of the block but remove internal/commercial notes and avoid duplicating nearby content.
+- Do not invent local facts, businesses, prices, quotes, events, experts or sponsors.
+- If factual evidence is missing, turn the component into a reader question/opinion prompt instead of inventing an answer.
+- First-party information supplied directly by a named featured organisation is usable; do not reject it merely because it lacks public web corroboration.
+- 35-100 words unless the format clearly needs less.
+- One primary action maximum.`;
+      try{
+        const generated=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
+        const text=String(generated.text||'').trim();
+        if(!text)throw new Error('No replacement copy returned');
+        block.content=text;
+        block.status='READY';
+        fixed++;
+      }catch(error){
+        failed++;
+      }
+      localStorage.setItem(assemblyKey(),JSON.stringify(items));
+      renderAssembly();
+    }
+    localStorage.removeItem(qaKey());
+    alert(`Safe fixes finished.\nFixed ${fixed} · Failed ${failed}\nRun Final QA again to verify the issue.`);
+  }finally{
+    btn.disabled=false;btn.textContent=original;
+  }
+}
 function assemblyDraft(){const items=getCanvas(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();if(!items.length)return 'Add at least one block to the issue canvas first.';let out=`ISSUE BUILD PACK\n\nISSUE\n${val(S.issue?.fields||{},'Issue Number')||''}\n\nISSUE PROMISE / QUESTION\n${theme||'[ADD ISSUE PROMISE]'}\n\nCOMPLETE RUNNING ORDER`;items.forEach((b,i)=>{out+=`\n\n${i+1}. ${b.title||b.type}\nTYPE: ${b.type}\nSTATUS: ${b.status||'NEEDS DECISION'}`;if(b.partner)out+=`\nPARTNER: ${b.partner}`;if(b.category)out+=`\nCATEGORY: ${b.category}`;if(b.commitment)out+=`\nCOMMITMENT: ${b.commitment}`;if(b.purpose)out+=`\nPURPOSE: ${b.purpose}`;if(b.proof)out+=`\nLOCAL PROOF / SOURCE: ${b.proof}`;if(b.cta)out+=`\nPRIMARY CTA: ${b.cta}`;if(b.button)out+=`\nBUTTON: ${b.button}`;if(b.url)out+=`\nURL: ${b.url}`;if(b.content)out+=`\nCONTENT / BRIEF:\n${b.content}`});const notReady=items.filter(x=>x.status!=='READY');out+=`\n\nPRODUCTION SUMMARY\n${items.filter(x=>x.status==='READY').length} ready\n${notReady.length} still needs production or a decision`;if(notReady.length)out+=`\n\nNOT READY\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+x.status).join('\n')}`;out+='\n\nFINAL QA\n- CHECK: all active paid partners included\n- CHECK: locked categories protected\n- CHECK: one primary action/button per article or slot\n- CHECK: named local proof and source accuracy\n- CHECK: no repeated question/angle from recent issues\n- CHECK: issue rhythm balances serious, useful, interactive and commercial content';return out}
 function generateAssembly(){E('preview-text').value=assemblyDraft();E('preview-dialog').showModal()}
 E('library-filter').onchange=renderSections;E('assembly-search').oninput=renderAssembly;
@@ -1158,7 +1345,7 @@ E('assembly-order').ondragover=e=>{e.preventDefault();E('assembly-order').classL
 E('assembly-order').ondragleave=()=>E('assembly-order').classList.remove('drag-over');
 E('assembly-order').ondrop=e=>dropOnCanvas(e);
 E('assembly-clear').onclick=()=>{if(confirm('Clear the entire issue canvas?')){canvasSelectedUid=null;saveCanvas([])}};
-E('assembly-auto').onclick=autoAssembleIssue;E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-generate').onclick=generateAssembly;
+E('assembly-auto').onclick=autoAssembleIssue;E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('assembly-generate').onclick=generateAssembly;
 E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
 E('save-inspector').onclick=saveInspector;
 E('remove-canvas-block').onclick=()=>{if(canvasSelectedUid)removeCanvasBlock(canvasSelectedUid)};
