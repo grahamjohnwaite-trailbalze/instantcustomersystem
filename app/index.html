@@ -23,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.26<br><strong>Authoritative run state and hard API deadlines</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.27<br><strong>Stale-run recovery and safe retry</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view active" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -576,7 +576,8 @@ function latestProductionMarker(s){
   const markers=[];
   for(const m of notes.matchAll(/MASTER ARTICLE RUNNING v2\.\d+[\s\S]*?END MASTER ARTICLE RUNNING/g)){
     const block=m[0],run=(block.match(/Run ID:\s*([^\n]+)/)||[])[1]||'';
-    markers.push({type:'running',index:m.index||0,runId:run.trim(),block});
+    const started=(block.match(/Started:\s*([^\n]+)/)||[])[1]||'';
+    markers.push({type:'running',index:m.index||0,runId:run.trim(),started:started.trim(),block});
   }
   for(const m of notes.matchAll(/MASTER ARTICLE FAILED v2\.\d+[\s\S]*?END MASTER ARTICLE FAILED/g)){
     const block=m[0],run=(block.match(/Run ID:\s*([^\n]+)/)||[])[1]||'';
@@ -589,7 +590,15 @@ function latestProductionMarker(s){
     markers.push({type:/^None$/i.test(exception.trim())?'complete':'review',index:m.index||0,runId:run.trim(),error:exception.trim(),block});
   }
   markers.sort((a,b)=>a.index-b.index);
-  return markers[markers.length-1]||null;
+  const latest=markers[markers.length-1]||null;
+  if(latest?.type==='running'){
+    const startedMs=Date.parse(latest.started||'');
+    const staleAfterMs=5*60*1000;
+    if(Number.isFinite(startedMs)&&Date.now()-startedMs>staleAfterMs){
+      return {...latest,type:'failed',stale:true,error:'Stale production run — no terminal result was recorded within 5 minutes.'};
+    }
+  }
+  return latest;
 }
 function masterArticleState(s){
   const transient=S.productionUi?.[s.id];
@@ -622,7 +631,7 @@ function renderSections(){
     const stateText=isComplete?'MASTER ARTICLE COMPLETE ✓':isReview?'MASTER ARTICLE — NEEDS REVIEW':isRunning?'PRODUCING…':isFailed?'MASTER ARTICLE FAILED':'IN PRODUCTION QUEUE';
     const hot=String(val(s.fields,'Primary Hot Button')||'').trim();
     const transient=S.productionUi?.[s.id],latestMarker=latestProductionMarker(s);
-    const persistedError=isFailed&&latestMarker?.type==='failed'?latestMarker.error:'';
+    const persistedError=isFailed&&latestMarker?.type==='failed'?(latestMarker.stale?'Stale run — safe to retry':latestMarker.error):'';
     const err=isFailed&&(transient?.error||persistedError)?`<span class="qa-flag">${esc(String(transient?.error||persistedError).slice(0,120))}</span>`:(flags.length?`<span class="qa-flag">${esc(flags[0])}</span>`:'');
     return `<div class="section-item ${isComplete?'produced-complete':isReview?'produced-review':isRunning?'production-running':isFailed?'production-failed':''} ${S.section?.id===s.id?'active':''}" onclick="selectSection('${s.id}')"><strong>${esc(val(s.fields,'Section Order')||n+1)}. ${esc(val(s.fields,'Section Title')||'Untitled section')}</strong><span class="production-state ${isComplete?'complete':isReview?'review':isRunning?'running':isFailed?'failed':'queue'}">${stateText}</span><small style="display:block;margin-top:5px">${hot?esc(hot):'Hot Button not set'} · ${completion(s)}%</small>${err}${isProducedArticle(s)?`<div class="article-card-actions"><button class="btn secondary" onclick="previewArticleFromCard('${s.id}',event)">Preview Master Article</button></div>`:''}</div>`;
   }).join(''):'<div class="empty">No records match this filter.</div>')
