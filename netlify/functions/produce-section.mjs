@@ -252,8 +252,11 @@ export default async(request)=>{
     let research={research_status:'Sufficient',research_summary:'Question-only article; no research required.',sources:[],missing_evidence:[]};
     let researchResponse=null;
     if(cls!=='A — Question Only'){
-      log('research_started',{productionClass:cls});
-      researchResponse=await stage('Research request',()=>createResponse({input:researchPromptFor(fields,cls),useWeb:true}),65000);
+      const researchModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_MODEL||'gpt-5.6-luna').trim();
+      traceLine('Research model','DONE',researchModel);
+      await saveTrace();
+      log('research_started',{productionClass:cls,model:researchModel});
+      researchResponse=await stage('Research request',()=>createResponse({input:researchPromptFor(fields,cls),useWeb:true,model:researchModel,timeoutMs:55000}),60000);
       log('research_completed',{model:researchResponse._model_used||'',outputChars:outputText(researchResponse).length});
       research=parseJsonText(outputText(researchResponse));
       research.sources=(Array.isArray(research.sources)?research.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||''),source_type:String(s.source_type||'')})).filter(s=>s.url).slice(0,8);
