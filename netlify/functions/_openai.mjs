@@ -20,24 +20,43 @@ export function cleanUrl(value){
 async function openAIRequest(path,{method='GET',body,timeoutMs=90000}={}){
   const apiKey=env('OPENAI_API_KEY');
   const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(new Error(`OpenAI request timed out after ${Math.round(timeoutMs/1000)} seconds`)),timeoutMs);
-  let response;
-  try{
-    response=await fetch(`${API_ROOT}${path}`,{
+  const limit=Math.max(5000,Number(timeoutMs)||90000);
+  const requestPromise=(async()=>{
+    const response=await fetch(`${API_ROOT}${path}`,{
       method,
       headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/json'},
       body:body?JSON.stringify(body):undefined,
       signal:controller.signal
     });
+    const text=await response.text();
+    let payload;try{payload=text?JSON.parse(text):{}}catch{payload={raw:text}}
+    return {response,payload};
+  })();
+
+  let timer;
+  const deadline=new Promise((_,reject)=>{
+    timer=setTimeout(()=>{
+      try{controller.abort()}catch{}
+      const e=new Error(`OpenAI request timed out after ${Math.round(limit/1000)} seconds`);
+      e.status=408;
+      e.code='OPENAI_TIMEOUT';
+      reject(e);
+    },limit);
+  });
+
+  try{
+    return await Promise.race([requestPromise,deadline]);
   }catch(err){
-    if(err?.name==='AbortError'||/timed out|abort/i.test(String(err?.message||''))){
-      const e=new Error(`OpenAI request timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;throw e;
+    if(err?.code==='OPENAI_TIMEOUT'||err?.name==='AbortError'||/timed out|abort/i.test(String(err?.message||''))){
+      const e=new Error(`OpenAI request timed out after ${Math.round(limit/1000)} seconds`);
+      e.status=408;
+      e.code='OPENAI_TIMEOUT';
+      throw e;
     }
     throw err;
-  }finally{clearTimeout(timer);}
-  const text=await response.text();
-  let payload;try{payload=text?JSON.parse(text):{}}catch{payload={raw:text}}
-  return {response,payload};
+  }finally{
+    clearTimeout(timer);
+  }
 }
 
 export async function listAccessibleModels(){

@@ -4,7 +4,7 @@ import {cleanUrl,createResponse,outputText,parseJsonText} from './_openai.mjs';
 const ALLOWED_CLASSES=new Set(['A — Question Only','B — Light Proof','C — Evidence Heavy']);
 const value=(f,k)=>f?.[k]??'';
 
-const TOTAL_BUDGET_MS=190000;
+const TOTAL_BUDGET_MS=175000;
 function withTimeout(promise,timeoutMs,label){
   let timer;
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
@@ -252,11 +252,11 @@ export default async(request)=>{
     let research={research_status:'Sufficient',research_summary:'Question-only article; no research required.',sources:[],missing_evidence:[]};
     let researchResponse=null;
     if(cls!=='A — Question Only'){
-      const researchModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_MODEL||'gpt-5.6-luna').trim();
+      const researchModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
       traceLine('Research model','DONE',researchModel);
       await saveTrace();
       log('research_started',{productionClass:cls,model:researchModel});
-      researchResponse=await stage('Research request',()=>createResponse({input:researchPromptFor(fields,cls),useWeb:true,model:researchModel,timeoutMs:85000}),90000);
+      researchResponse=await stage('Research request',()=>createResponse({input:researchPromptFor(fields,cls),useWeb:true,model:researchModel,timeoutMs:65000}),70000);
       log('research_completed',{model:researchResponse._model_used||'',outputChars:outputText(researchResponse).length});
       research=parseJsonText(outputText(researchResponse));
       research.sources=(Array.isArray(research.sources)?research.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||''),source_type:String(s.source_type||'')})).filter(s=>s.url).slice(0,8);
@@ -267,11 +267,11 @@ export default async(request)=>{
       }
       log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0});
     }
-    const writerModel=String(researchResponse?._model_used||process.env.OPENAI_MODEL||'').trim();
+    const writerModel=String(process.env.OPENAI_WRITER_MODEL||process.env.OPENAI_PRODUCTION_MODEL||researchResponse?._model_used||'gpt-5.6-luna').trim();
     traceLine('Writer model','DONE',writerModel||'auto-select');
     await saveTrace();
     log('openai_started',{productionClass:cls,useWeb:false,model:writerModel||'auto-select'});
-    const response=await stage('Writer request',()=>createResponse({input:promptFor(fields,cls,research),useWeb:false,model:writerModel,timeoutMs:70000}),75000);
+    const response=await stage('Writer request',()=>createResponse({input:promptFor(fields,cls,research),useWeb:false,model:writerModel,timeoutMs:65000}),70000);
     log('openai_completed',{model:response._model_used||'',outputChars:outputText(response).length});
     log('json_parse_started');
     const result=parseJsonText(outputText(response));
