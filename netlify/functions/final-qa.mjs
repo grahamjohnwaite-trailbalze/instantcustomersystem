@@ -42,7 +42,11 @@ Return strict JSON only:
 {"findings":[{"severity":"FIX|WARNING|PASS","code":"SHORT_CODE","message":"specific concise finding","blocks":["uid"],"safeFix":true|false}]}
 
 Use FIX only for clear publication problems. Use WARNING for editorial judgement. safeFix may be true only for supporting/partner-copy rewrites, never for Master Articles, partner removal, factual changes or commercial commitments.
-Also check for over-polished/AI-ish language across the whole issue. Do not ban normal words used once, but warn when words or constructions such as useful, practical, straightforward, meaningful, valuable, importantly, helpful, navigate, whether, matters, key, crucial, “The question is…”, “That matters because…”, or similar polished patterns are repeated enough to make the issue sound machine-written. Prefer everyday spoken UK English and specificity over adjectives.
+Also check for over-polished/AI-ish language across the whole issue. Judge it against ordinary spoken UK English, not literary copy. Do not ban normal words used once, but warn when words or constructions such as useful, practical, straightforward, meaningful, valuable, importantly, helpful, navigate, whether, matters, key, crucial, “The question is…”, “That matters because…”, or similar polished patterns are repeated enough to make the issue sound machine-written. Prefer everyday spoken UK English and specificity over adjectives.
+
+Do not report a Master Article as truncated merely because a preview, excerpt or context field is shortened. Only flag incomplete copy when the actual supplied reader-facing content visibly ends mid-word, mid-sentence or with a clear missing continuation. A complete concluding sentence is not truncation.
+
+Internal/commercial leakage and genuinely incomplete reader-facing copy are publication blockers. Repetition, rhythm, partner overexposure and human-voice concerns are editorial issues, not technical failures.
 
 Do not emit generic PASS findings; if there are no extra editorial problems return {"findings":[]}.
 
