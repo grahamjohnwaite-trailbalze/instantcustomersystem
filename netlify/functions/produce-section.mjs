@@ -4,6 +4,20 @@ import {cleanUrl,createResponse,outputText,parseJsonText} from './_openai.mjs';
 const ALLOWED_CLASSES=new Set(['A — Question Only','B — Light Proof','C — Evidence Heavy']);
 const value=(f,k)=>f?.[k]??'';
 
+const TOTAL_BUDGET_MS=175000;
+function withTimeout(promise,timeoutMs,label){
+  let timer;
+  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
+  return Promise.race([promise,timeout]).finally(()=>clearTimeout(timer));
+}
+function stripRuntimeBlocks(notes){
+  return String(notes||'')
+    .replace(/\n?MASTER ARTICLE RUNNING v2\.\d+[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'')
+    .replace(/\n?MASTER ARTICLE FAILED v2\.\d+[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'')
+    .replace(/\n?MASTER ARTICLE TRACE v1[\s\S]*?END MASTER ARTICLE TRACE\s*/g,'')
+    .trim();
+}
+
 function productionClass(fields){
   const type=String(value(fields,'Section Type')).toLowerCase();
   const status=String(value(fields,'Evidence Status'));
@@ -62,7 +76,11 @@ STYLE AND SAFETY
 - Short paragraphs suitable for a narrow article page.
 - The article must stand alone outside the newsletter.
 - Aim for 650-950 words unless the approved brief genuinely needs less.
-${useEvidence?'- Use ONLY material claims supported by the research pack below. If local evidence is missing, do not disguise that with generic national background. Mark QA Fix Required.':'- Avoid unnecessary factual claims.'}
+${useEvidence?`- Use ONLY material claims supported by the research pack below.
+- If an optional or non-essential detail in the brief could not be verified, OMIT that detail from the article rather than forcing it into the copy.
+- A missing optional detail does NOT by itself require QA Fix Required.
+- Mark QA Fix Required only when evidence needed to answer the CORE QUESTION is missing, or when the drafted article still contains a material claim that is not adequately supported.
+- In evidence_summary, mention useful verification limits without turning every omitted peripheral detail into a publication blocker.`:'- Avoid unnecessary factual claims.'}
 
 APPROVED BRIEF
 Working title: ${value(fields,'Section Title')}
@@ -107,6 +125,11 @@ Return ONLY valid JSON in this exact shape:
  "qa_result":"Pass or Fix Required",
  "exception":"blank when Pass"
 }
+QA DECISION
+- Pass: the core reader question is answered with adequate support, and unsupported peripheral details have been omitted.
+- Fix Required: a material claim used in the article is unsupported, or evidence essential to the core answer is missing.
+- Do not fail an otherwise publishable article merely because the original brief requested extra details that were not needed and were left out.
+
 Use the strongest 1-5 sources from the research pack. Do not include unused sources.`;
 }
 
@@ -161,15 +184,79 @@ export default async(request)=>{
     log('airtable_lookup_completed',{recordId:record.id,title:String(record.fields?.['Section Title']||'')});
     const fields=record.fields||{};
     const cls=ALLOWED_CLASSES.has(data.productionClass)?data.productionClass:productionClass(fields);
-    const originalNotes=String(value(fields,'Notes')||'').replace(/\n?MASTER ARTICLE RUNNING v2\.\d+[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'').replace(/\n?MASTER ARTICLE FAILED v2\.\d+[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'').trim();
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.8`,`Run ID: ${runId}`,`Stage: Researching and writing`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const originalNotes=stripRuntimeBlocks(value(fields,'Notes'));
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.10`,`Run ID: ${runId}`,`Stage: Researching and writing`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
+    const traceStarted=Date.now();
+    const trace=[];
+    const remaining=()=>Math.max(1000,TOTAL_BUDGET_MS-(Date.now()-started));
+
+    const assertRunOwnership=async(label='Run ownership check')=>{
+      const latest=await withTimeout(
+        airtableRequest(TABLES.sections,{params:{filterByFormula:`RECORD_ID()='${record.id.replace(/'/g,"\\'")}'`,maxRecords:'1'}}),
+        16000,
+        label
+      );
+      const latestRecord=latest.records?.[0];
+      const latestNotes=String(latestRecord?.fields?.Notes||'');
+      const runningBlocks=[...latestNotes.matchAll(/MASTER ARTICLE RUNNING v2\.\d+[\s\S]*?END MASTER ARTICLE RUNNING/g)].map(m=>m[0]);
+      const active=runningBlocks[runningBlocks.length-1]||'';
+      const ownerLine=active.split('\n').find(line=>line.startsWith('Run ID: '))||'';
+      const ownerId=ownerLine.replace('Run ID: ','').trim();
+      if(ownerId && ownerId!==runId){
+        const e=new Error(`Superseded by newer production run ${ownerId}`);
+        e.status=409;
+        e.code='RUN_SUPERSEDED';
+        throw e;
+      }
+      return true;
+    };
+    const traceLine=(stage,status='START',detail='')=>{
+      const seconds=Math.round((Date.now()-traceStarted)/1000);
+      const line=`${status==='DONE'?'✓':status==='FAIL'?'✖':'▶'} ${stage} · ${seconds}s${detail?` · ${detail}`:''}`;
+      trace.push(line);
+      return line;
+    };
+    const saveTrace=async()=>{
+      await assertRunOwnership('Trace ownership check');
+      const block=[`MASTER ARTICLE TRACE v1`,`Run ID: ${runId}`,...trace.slice(-12),`END MASTER ARTICLE TRACE`].join('\n');
+      const notes=originalNotes?`${originalNotes}\n\n${runningBlock}\n\n${block}`:`${runningBlock}\n\n${block}`;
+      await withTimeout(
+        airtableRequest(TABLES.sections,{
+          method:'PATCH',
+          body:{records:[{id:record.id,fields:{'Notes':notes}}],typecast:true},
+          timeoutMs:15000
+        }),
+        16000,
+        'Diagnostic trace save'
+      );
+    };
+    const stage=async(name,fn,limitMs)=>{
+      traceLine(name,'START');
+      await saveTrace();
+      const stageStart=Date.now();
+      try{
+        const result=await withTimeout(fn(),Math.min(limitMs,remaining()),name);
+        traceLine(name,'DONE',`${Math.round((Date.now()-stageStart)/1000)}s`);
+        await saveTrace();
+        return result;
+      }catch(error){
+        traceLine(name,'FAIL',String(error?.message||error).slice(0,220));
+        try{await saveTrace()}catch{}
+        throw error;
+      }
+    };
+    traceLine('Request accepted','DONE');
+    await saveTrace();
     let research={research_status:'Sufficient',research_summary:'Question-only article; no research required.',sources:[],missing_evidence:[]};
     let researchResponse=null;
     if(cls!=='A — Question Only'){
-      log('research_started',{productionClass:cls});
-      researchResponse=await createResponse({input:researchPromptFor(fields,cls),useWeb:true});
+      const researchModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
+      traceLine('Research model','DONE',researchModel);
+      await saveTrace();
+      log('research_started',{productionClass:cls,model:researchModel});
+      researchResponse=await stage('Research request',()=>createResponse({input:researchPromptFor(fields,cls),useWeb:true,model:researchModel,timeoutMs:65000}),70000);
       log('research_completed',{model:researchResponse._model_used||'',outputChars:outputText(researchResponse).length});
       research=parseJsonText(outputText(researchResponse));
       research.sources=(Array.isArray(research.sources)?research.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||''),source_type:String(s.source_type||'')})).filter(s=>s.url).slice(0,8);
@@ -180,8 +267,11 @@ export default async(request)=>{
       }
       log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0});
     }
-    log('openai_started',{productionClass:cls,useWeb:false});
-    const response=await createResponse({input:promptFor(fields,cls,research),useWeb:false});
+    const writerModel=String(process.env.OPENAI_WRITER_MODEL||process.env.OPENAI_PRODUCTION_MODEL||researchResponse?._model_used||'gpt-5.6-luna').trim();
+    traceLine('Writer model','DONE',writerModel||'auto-select');
+    await saveTrace();
+    log('openai_started',{productionClass:cls,useWeb:false,model:writerModel||'auto-select'});
+    const response=await stage('Writer request',()=>createResponse({input:promptFor(fields,cls,research),useWeb:false,model:writerModel,timeoutMs:65000}),70000);
     log('openai_completed',{model:response._model_used||'',outputChars:outputText(response).length});
     log('json_parse_started');
     const result=parseJsonText(outputText(response));
@@ -199,7 +289,7 @@ export default async(request)=>{
     }
     const priorNotes=originalNotes.replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.8`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.10`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -212,20 +302,42 @@ export default async(request)=>{
       'Notes':priorNotes?`${priorNotes}\n\n${serviceNotes}`:serviceNotes
     };
     log('airtable_save_started',{qaResult:qa,bodyChars:String(result.article_body||'').length});
-    const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:update}],typecast:true}});
+    await assertRunOwnership('Final save ownership check');
+    traceLine('Final Airtable save','START'); await saveTrace();
+    const saved=await withTimeout(
+      airtableRequest(TABLES.sections,{
+        method:'PATCH',
+        body:{records:[{id:record.id,fields:update}],typecast:true},
+        timeoutMs:20000
+      }),
+      21000,
+      'Final Airtable save'
+    );
+    traceLine('Final Airtable save','DONE');
     log('airtable_save_completed',{savedRecordId:saved.records?.[0]?.id||''});
     log('request_completed',{qaResult:qa});
     return json(200,{ok:true,record:cleanRecord(saved.records[0]),productionClass:cls,qaResult:qa,sources,articlePackage:parseJsonText(block.split('\n').slice(1,-1).join('\n')),exception:qa==='Pass'?'':String(result.exception||'Human review required.')});
   }catch(error){
     console.error('master-article-failed',{runId,elapsedMs:Date.now()-started,message:error?.message,status:error?.status,details:error?.details,stack:error?.stack});
+    if(error?.code==='RUN_SUPERSEDED'){
+      return json(409,{ok:false,error:String(error.message||'This run was superseded by a newer production run.'),runId,superseded:true});
+    }
     try{
       if(selectedSectionId){
         const lookup=await airtableRequest(TABLES.sections,{params:{filterByFormula:`RECORD_ID()='${selectedSectionId.replace(/'/g,"\\'")}'`,maxRecords:'1'}});
         const current=lookup.records?.[0];
         if(current){
-          const notes=String(current.fields?.Notes||'').replace(/\n?MASTER ARTICLE RUNNING v2\.\d+[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'').trim();
-          const failed=[`MASTER ARTICLE FAILED v2.8`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
-          await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:current.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':notes?`${notes}\n\n${failed}`:failed}}],typecast:true}});
+          const notes=stripRuntimeBlocks(current.fields?.Notes||'');
+          const failed=[`MASTER ARTICLE FAILED v2.10`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          await withTimeout(
+            airtableRequest(TABLES.sections,{
+              method:'PATCH',
+              body:{records:[{id:current.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':notes?`${notes}\n\n${failed}`:failed}}],typecast:true},
+              timeoutMs:18000
+            }),
+            20000,
+            'Failure marker save'
+          );
         }
       }
     }catch(markerError){console.error('failure-marker-save-failed',{runId,message:markerError?.message});}

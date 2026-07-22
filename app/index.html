@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ICS Issue Command Centre</title><style>
-:root{--bg:#f4f7fb;--panel:#fff;--ink:#172033;--muted:#657089;--line:#dfe5ef;--nav:#13213a;--accent:#2366d1;--good:#117a55;--warn:#a15c00;--bad:#a02d36;--shadow:0 10px 30px rgba(20,35,65,.08)}*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}.shell{min-height:100vh;display:grid;grid-template-columns:220px 1fr}.sidebar{background:var(--nav);color:#fff;padding:20px 15px;position:sticky;top:0;height:100vh}.brand{font-weight:850;font-size:18px;margin:4px 8px 24px}.brand span{display:block;font-size:12px;color:#aebbd1;margin-top:5px}.nav{display:grid;gap:6px}.nav button{border:0;background:transparent;color:#c9d3e4;text-align:left;padding:11px 12px;border-radius:8px;cursor:pointer}.nav button.active,.nav button:hover{background:#243653;color:#fff}.phase{position:absolute;bottom:18px;left:18px;color:#b7c5d9;font-size:12px}.main{padding:24px 28px 48px;min-width:0}.topbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.eyebrow{color:var(--accent);font-size:12px;font-weight:800;text-transform:uppercase}.topbar h1{margin:4px 0;font-size:28px}.sub{color:var(--muted);font-size:13px}.status{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#999;margin-right:6px}.dot.ok{background:var(--good)}.dot.bad{background:var(--bad)}.view{display:none}.view.active{display:block}.card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px;box-shadow:var(--shadow)}.grid{display:grid;gap:14px}.metrics{grid-template-columns:repeat(4,1fr)}.metric span,.label{font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.04em}.metric strong{font-size:27px;display:block;margin-top:4px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:20px 0 10px}.section-head h2{font-size:18px;margin:0}.btn{border:0;border-radius:8px;padding:9px 12px;background:var(--accent);color:#fff;font-weight:750;cursor:pointer}.btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.danger{background:var(--bad)}.btn:disabled{opacity:.5}.table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:13px}table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:11px 13px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}th{font-size:10px;text-transform:uppercase;color:var(--muted);background:#f8fafc}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf2f8;font-size:11px;font-weight:750}.pill.good{background:#e5f5ee;color:var(--good)}.pill.warn{background:#fff2dc;color:var(--warn)}.builder{display:grid;grid-template-columns:290px minmax(420px,1fr) 330px;gap:14px;align-items:start}.rail,.editor,.intel{min-height:650px}.rail-list{display:grid;gap:7px;max-height:580px;overflow:auto}.section-item{padding:10px;border:1px solid var(--line);border-radius:9px;background:#fff;cursor:pointer}.section-item.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(35,102,209,.12)}.section-item strong{display:block;font-size:13px}.section-item small{color:var(--muted)}.library-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}.library-summary div{background:#f6f8fb;border-radius:8px;padding:8px;text-align:center}.library-summary strong{display:block;font-size:16px}.library-summary span{font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:800}.qa-flag{display:inline-block;margin-top:5px;padding:3px 6px;border-radius:999px;background:#fff2dc;color:var(--warn);font-size:10px;font-weight:800}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field{display:grid;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;background:#fff}.field textarea{min-height:82px;resize:vertical}.field textarea.copy{min-height:240px}.savebar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:12px}.muted{color:var(--muted);font-size:12px}.warning{background:#fff7e8;border-left:4px solid var(--warn);padding:12px;border-radius:8px}.checklist{display:grid;gap:8px;margin-top:10px}.check{padding:9px;border-radius:8px;background:#f6f8fb;font-size:12px}.check.good{background:#eaf7f1;color:var(--good)}dialog{border:0;border-radius:14px;padding:0;max-width:650px;width:calc(100% - 30px);box-shadow:0 25px 80px rgba(0,0,0,.25)}dialog::backdrop{background:rgba(10,20,35,.55)}.modal{padding:20px}.modal h2{margin-top:0}.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.toolbar select{padding:9px;border:1px solid var(--line);border-radius:8px}.empty{padding:30px;text-align:center;color:var(--muted)}@media(max-width:1200px){.builder{grid-template-columns:250px 1fr}.intel{grid-column:1/-1;min-height:auto}}@media(max-width:850px){.shell{grid-template-columns:1fr}.sidebar{height:auto;position:static}.nav{grid-template-columns:repeat(4,1fr)}.phase{display:none}.main{padding:18px}.builder{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}}
+:root{--bg:#f4f7fb;--panel:#fff;--ink:#172033;--muted:#657089;--line:#dfe5ef;--nav:#13213a;--accent:#2366d1;--good:#117a55;--warn:#a15c00;--bad:#a02d36;--shadow:0 10px 30px rgba(20,35,65,.08)}*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}.shell{min-height:100vh;display:grid;grid-template-columns:220px 1fr}.sidebar{background:var(--nav);color:#fff;padding:20px 15px;position:sticky;top:0;height:100vh}.brand{font-weight:850;font-size:18px;margin:4px 8px 24px}.brand span{display:block;font-size:12px;color:#aebbd1;margin-top:5px}.nav{display:grid;gap:6px}.nav button{border:0;background:transparent;color:#c9d3e4;text-align:left;padding:11px 12px;border-radius:8px;cursor:pointer}.nav button.active,.nav button:hover{background:#243653;color:#fff}.phase{position:absolute;bottom:18px;left:18px;color:#b7c5d9;font-size:12px}.main{padding:24px 28px 48px;min-width:0}.topbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.eyebrow{color:var(--accent);font-size:12px;font-weight:800;text-transform:uppercase}.topbar h1{margin:4px 0;font-size:28px}.sub{color:var(--muted);font-size:13px}.status{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#999;margin-right:6px}.dot.ok{background:var(--good)}.dot.bad{background:var(--bad)}.view{display:none}.view.active{display:block}.card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px;box-shadow:var(--shadow)}.grid{display:grid;gap:14px}.metrics{grid-template-columns:repeat(4,1fr)}.metric span,.label{font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.04em}.metric strong{font-size:27px;display:block;margin-top:4px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:20px 0 10px}.section-head h2{font-size:18px;margin:0}.btn{border:0;border-radius:8px;padding:9px 12px;background:var(--accent);color:#fff;font-weight:750;cursor:pointer}.btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.danger{background:var(--bad)}.btn:disabled{opacity:.5}.table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:13px}table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:11px 13px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}th{font-size:10px;text-transform:uppercase;color:var(--muted);background:#f8fafc}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf2f8;font-size:11px;font-weight:750}.pill.good{background:#e5f5ee;color:var(--good)}.pill.warn{background:#fff2dc;color:var(--warn)}.builder{display:grid;grid-template-columns:290px minmax(420px,1fr) 330px;gap:14px;align-items:start}.rail,.editor,.intel{min-height:650px}.rail-list{display:grid;gap:7px;max-height:580px;overflow:auto}.section-item{padding:10px;border:1px solid var(--line);border-radius:9px;background:#fff;cursor:pointer}.section-item.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(35,102,209,.12)}.section-item.produced-complete{border-color:#9fd7c2;background:#f0faf6}.section-item.produced-complete.active{border-color:var(--good);box-shadow:0 0 0 2px rgba(17,122,85,.14)}.section-item.produced-review{border-color:#efc978;background:#fffaf0}.section-item.production-running{border-color:#9bb9e8;background:#f3f7fd}.section-item.production-failed{border-color:#e0a4aa;background:#fff3f4}.production-state.running{background:#e8f0ff;color:#235bb5}.production-state.failed{background:#fde7e9;color:var(--bad)}.section-item strong{display:block;font-size:13px}.section-item small{color:var(--muted)}.production-state{display:inline-block;margin-top:6px;padding:4px 7px;border-radius:999px;font-size:10px;font-weight:850}.production-state.complete{background:#dff4ea;color:var(--good)}.production-state.review{background:#fff0cf;color:var(--warn)}.production-state.queue{background:#edf2f8;color:var(--muted)}.article-card-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.article-card-actions button{font-size:10px;padding:5px 7px}.library-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}.library-summary div{background:#f6f8fb;border-radius:8px;padding:8px;text-align:center}.library-summary strong{display:block;font-size:16px}.library-summary span{font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:800}.qa-flag{display:inline-block;margin-top:5px;padding:3px 6px;border-radius:999px;background:#fff2dc;color:var(--warn);font-size:10px;font-weight:800}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field{display:grid;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;background:#fff}.field textarea{min-height:82px;resize:vertical}.field textarea.copy{min-height:240px}.savebar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:12px}.muted{color:var(--muted);font-size:12px}.warning{background:#fff7e8;border-left:4px solid var(--warn);padding:12px;border-radius:8px}.checklist{display:grid;gap:8px;margin-top:10px}.check{padding:9px;border-radius:8px;background:#f6f8fb;font-size:12px}.check.good{background:#eaf7f1;color:var(--good)}dialog{border:0;border-radius:14px;padding:0;max-width:650px;width:calc(100% - 30px);box-shadow:0 25px 80px rgba(0,0,0,.25)}dialog::backdrop{background:rgba(10,20,35,.55)}.modal{padding:20px}.modal h2{margin-top:0}.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.toolbar select{padding:9px;border:1px solid var(--line);border-radius:8px}.empty{padding:30px;text-align:center;color:var(--muted)}@media(max-width:1200px){.builder{grid-template-columns:250px 1fr}.intel{grid-column:1/-1;min-height:auto}}@media(max-width:850px){.shell{grid-template-columns:1fr}.sidebar{height:auto;position:static}.nav{grid-template-columns:repeat(4,1fr)}.phase{display:none}.main{padding:18px}.builder{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}}
 .assembly-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:16px}.assembly-library,.assembly-order{display:grid;gap:8px;max-height:560px;overflow:auto;padding-right:4px}.assembly-card,.order-card{border:1px solid #d8dee8;border-radius:10px;padding:10px;background:#fff}.assembly-card{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start}.assembly-card small,.order-card small{display:block;color:#667085;margin-top:4px}.order-card{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}.order-actions{display:flex;gap:5px}.order-actions button{padding:5px 8px}.component-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.component-grid label{border:1px solid #e4e7ec;border-radius:8px;padding:8px;background:#fafafa}@media(max-width:1050px){.assembly-grid{grid-template-columns:1fr}}.planner-head{margin-top:0}.planner-score{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}.planner-score div{background:#fff;border:1px solid #d8dee8;border-radius:10px;padding:12px;text-align:center}.planner-score strong{display:block;font-size:24px}.planner-score span{font-size:12px;color:#667085}.planner-lower{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-top:16px}.component-grid.expanded{grid-template-columns:repeat(4,1fr)}.planner-note{margin-top:12px}.commitment-rule{margin-top:12px;padding:10px;border-left:4px solid #6b7280;background:#f8fafc;border-radius:6px}@media(max-width:1100px){.planner-lower{grid-template-columns:1fr}.component-grid.expanded{grid-template-columns:repeat(2,1fr)}.planner-score{grid-template-columns:repeat(2,1fr)}}
 .canvas-layout{display:grid;grid-template-columns:300px minmax(420px,1fr) 340px;gap:14px;align-items:start}
 .canvas-panel{background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px;box-shadow:var(--shadow);min-height:660px}
@@ -11,7 +11,7 @@
 .component-chip:hover{border-color:var(--accent);background:#eef5ff}
 .issue-canvas{display:grid;gap:8px;min-height:420px;padding:8px;border:2px dashed #cbd5e1;border-radius:11px;background:#f8fafc}
 .issue-canvas.drag-over{border-color:var(--accent);background:#eef5ff}
-.canvas-card{display:grid;grid-template-columns:28px 1fr auto;gap:9px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff;cursor:grab}
+.canvas-card{display:grid;grid-template-columns:28px 1fr auto;gap:9px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff;cursor:grab}.canvas-card.is-ready{border-color:#9fd7c2;background:#f0faf6}.canvas-card.is-needs{border-color:#efc978;background:#fffaf0}.canvas-card.is-failed{border-color:#e0a4aa;background:#fff3f4}.canvas-card.is-producing{border-color:#9bb9e8;background:#f3f7fd}
 .canvas-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(35,102,209,.12)}
 .drag-handle{font-size:18px;color:#98a2b3;text-align:center}.canvas-card strong{display:block;font-size:13px}.canvas-card small{display:block;color:var(--muted);margin-top:3px}
 .canvas-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.mini-badge{font-size:9px;font-weight:800;border-radius:999px;padding:3px 6px;background:#edf2f8}.mini-badge.ready{background:#e5f5ee;color:var(--good)}.mini-badge.needs{background:#fff2dc;color:var(--warn)}
@@ -23,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.14<br><strong>Production library sync and issue assembly</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.36<br><strong>Human voice guard and smarter issue QA</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view active" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -40,7 +40,7 @@
 <div id="production-progress" class="empty" style="margin-bottom:14px">Production service not run yet.</div>
 <div id="map-audit" class="empty" style="margin-bottom:14px">Audit not run yet.</div>
 <div class="form-grid"><div class="field full"><label>Issue status</label><select id="ih-status"><option>PLANNED</option><option>BUILDING</option><option>QA</option><option>READY FOR LETTERMAN</option><option>PUBLISHED</option></select></div><div class="field full"><label>Main theme</label><textarea id="ih-theme"></textarea></div><div class="field full"><label>Subject line</label><input id="ih-subject"></div><div class="field full"><label>Preheader</label><textarea id="ih-preheader"></textarea></div><div class="field full"><label>Send date</label><input id="ih-date" type="date"></div></div><h3>Minimum section gate</h3><div id="gate" class="checklist"></div><div class="warning" style="margin-top:14px"><strong>Phase 1B discipline</strong><br>One primary Hot Button. One useful action. Named local proof. No unresolved placeholders in final copy.</div></aside></div></section><section class="view" id="view-assemble">
-<div class="section-head planner-head"><div><h2>Issue Canvas</h2><div class="muted">Drag articles and components into one running order. Click any card to edit the information that block needs.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-clear">Clear canvas</button><button class="btn" id="assembly-generate">Generate Issue Build Pack</button></div></div>
+<div class="section-head planner-head"><div><h2>Issue Canvas</h2><div class="muted">Drag articles and components into one running order. Click any card to edit the information that block needs.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-clear">Clear canvas</button><button class="btn" id="assembly-auto">Auto Assemble Issue</button><button class="btn" id="assembly-produce">Produce Supporting Components</button><button class="btn" id="assembly-partners">Assign Active Partners</button><button class="btn" id="assembly-qa">Run Final QA</button><button class="btn secondary" id="assembly-fix">Apply Safe Fixes</button><button class="btn" id="assembly-generate">Generate Issue Build Pack</button></div></div>
 <div class="planner-score" id="planner-score"><div><strong id="score-headlines">0</strong><span>Articles in Canvas</span></div><div><strong id="score-interactive">0</strong><span>Components</span></div><div><strong id="score-authority">0</strong><span>Partner blocks</span></div><div><strong id="score-activation">0</strong><span>Ready</span></div><div><strong id="score-commitments">0</strong><span>Total blocks</span></div></div>
 <div class="issue-promise-bar"><div class="field"><label>Issue promise / organising question</label><textarea id="assembly-theme" placeholder="What should readers decide, discover, feel or do by the end of this issue?"></textarea></div><button class="btn secondary" id="save-canvas-theme">Save promise</button></div>
 <div class="canvas-layout">
@@ -62,7 +62,15 @@
 </section>
 
 <section class="canvas-panel canvas-inspector">
-<h2>Block Inspector</h2>
+<section class="panel" id="qa-report-panel" style="display:none">
+  <h2>Final QA Results</h2>
+  <div class="small muted" id="qa-report-summary">Run Final QA to review the complete issue.</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+    <button class="btn secondary" id="qa-copy">Copy QA Report</button>
+    <button class="btn secondary" id="qa-hide">Hide Report</button>
+  </div>
+  <textarea id="qa-report-text" readonly style="width:100%;min-height:300px;resize:vertical;white-space:pre-wrap"></textarea>
+</section><h2>Block Inspector</h2>
 <div id="inspector-empty" class="empty">Click a block in the issue canvas to edit it.</div>
 <div id="inspector-form" class="inspector-grid" hidden>
 <div class="field"><label>Block type</label><input id="inspect-type" disabled></div>
@@ -86,7 +94,7 @@
 </main></div>
 <dialog id="issue-dialog"><form method="dialog" class="modal"><h2>Create issue</h2><div class="form-grid"><div class="field full"><label>Publication</label><select id="new-publication"></select></div><div class="field"><label>Issue number</label><input id="new-number" type="number"></div><div class="field"><label>Send date</label><input id="new-date" type="date" value="2026-07-16"></div><div class="field full"><label>Main theme</label><textarea id="new-theme" placeholder="The question or tension holding the issue together"></textarea></div></div><div class="savebar"><button class="btn secondary" value="cancel">Cancel</button><button class="btn" id="create-issue" value="default">Create and open</button></div></form></dialog><dialog id="article-dialog"><div class="modal"><h2>Master Article / Letterman package</h2><textarea id="article-package-text" style="width:100%;min-height:500px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#article-dialog').close()">Close</button><button class="btn" id="copy-article-package">Copy article package</button></div></div></dialog><dialog id="preview-dialog"><div class="modal"><h2>Production / Letterman copy</h2><textarea id="preview-text" style="width:100%;min-height:430px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#preview-dialog').close()">Close</button><button class="btn" id="copy-preview">Copy</button></div></div></dialog>
 <script>
-const S={publications:[],issues:[],sections:[],articleLibrary:[],issue:null,section:null,hot:[]};const E=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));const val=(f,k)=>f?.[k]??'';const fmt=d=>d?new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00')):'—';
+const S={publications:[],issues:[],sections:[],articleLibrary:[],issue:null,section:null,hot:[],productionUi:{}};const E=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));const val=(f,k)=>f?.[k]??'';const fmt=d=>d?new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00')):'—';
 async function api(path,opt={}){const r=await fetch('/.netlify/functions/'+path,{headers:{'content-type':'application/json',accept:'application/json'},...opt});const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={ok:false,error:`Invalid server response (${r.status}). ${raw.slice(0,300)||'No response body.'}`}}if(!r.ok||!d.ok){const err=new Error(d.error||`Request failed (${r.status})`);err.details=d.details;throw err}return d}function conn(ok,msg){E('dot').className='dot '+(ok?'ok':'bad');E('connection').textContent=msg}function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));E('view-'+v).classList.add('active');document.querySelector(`[data-view="${v}"]`).classList.add('active');E('page-title').textContent={dashboard:'Dashboard',publications:'Publications',issues:'Issues',build:'Issue Command Centre',assemble:'Issue Planner'}[v];E('page-sub').textContent=v==='build'?'Plan, write and export one real issue.':v==='assemble'?'Drag and drop the complete newsletter running order from articles, components and partner blocks.':(S.issue?`${pubName(S.issue.fields.Publication)} production workspace.`:'Publication-aware production workspace.');if(v==='assemble')renderAssembly()}
 function pubName(ids){return S.publications.find(p=>p.id===(ids||[])[0])?.fields['Publication Name']||'Unlinked'}function pill(v){return `<span class="pill ${/ready|published|complete/i.test(v)?'good':/warning|blocked|late/i.test(v)?'warn':''}">${esc(v||'Not set')}</span>`}
 function currentPublicationName(){return S.issue?pubName(S.issue.fields.Publication):''}
@@ -248,12 +256,13 @@ async function productionSections(){
 function productionDone(s){return val(s.fields,'Section Status')==='Ready'&&val(s.fields,'Section Final Copy')&&['Pass'].includes(val(s.fields,'Section QA Result'))}
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 async function refreshProducedRecord(sectionId){
- const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+ const r=await api('sections?issueId='+encodeURIComponent(S.issue.id)+'&_ts='+Date.now());
  S.sections=r.records||[];
  return S.sections.find(x=>x.id===sectionId)||null;
 }
 async function produceOne(item){
  const cls=productionClassForFields(item.s.fields);
+ const startedAt=Date.now();
  const runId='ma_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
  const response=await fetch('/.netlify/functions/produce-section',{
    method:'POST',headers:{'content-type':'application/json',accept:'application/json'},
@@ -263,7 +272,7 @@ async function produceOne(item){
    const raw=await response.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={error:`Invalid server response (${response.status}). ${raw.slice(0,300)||'No response body.'}`}}
    throw new Error(d.error||`Unable to start background production (${response.status}).`);
  }
- const deadline=Date.now()+5*60*1000;
+ const pollWindowMs=3*60*1000;const deadline=Date.now()+pollWindowMs;
  let polls=0;
  while(Date.now()<deadline){
    await sleep(polls<3?3000:5000);polls++;
@@ -277,13 +286,21 @@ async function produceOne(item){
      const m=failedBlock.match(/Error: ([^\n]+)/);
      throw new Error(m?.[1]||'Background production failed. Check the Netlify function log for this run.');
    }
-   if(/PRODUCTION SERVICE v2\.\d+/.test(notes)&&notes.includes(`Run ID: ${runId}`)){
-     const qa=String(val(current.fields,'Section QA Result')||'Fix Required');
-     return {ok:true,record:current,productionClass:cls,qaResult:qa,sources:[],background:true,runId};
+   const qa=String(val(current.fields,'Section QA Result')||'Fix Required');
+   const status=String(val(current.fields,'Section Status')||'');
+   const serviceBlocks=[...notes.matchAll(/PRODUCTION SERVICE v2\.\d+[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|PRODUCTION SERVICE)|$)/g)].map(m=>m[0]);
+   const serviceBlockForRun=serviceBlocks.find(block=>block.split('\n').some(line=>line.trim()===`Run ID: ${runId}`))||'';
+   const hasCurrentService=!!serviceBlockForRun;
+   if(hasCurrentService){
+     const elapsedSec=Math.round((Date.now()-startedAt)/1000);
+     E('production-progress').innerHTML=`<strong>${qa==='Pass'?'Master Article complete ✓':'Master Article saved for review'}</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">Finished in ${elapsedSec} seconds · ${qa==='Pass'?'Ready for Letterman':'Human review required'}</div>`;
+     return {ok:true,record:current,productionClass:cls,qaResult:qa,sources:[],background:true,runId,elapsedSec};
    }
-   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">Background production is running · ${Math.round((Date.now()-(deadline-5*60*1000))/1000)} seconds</div>`;
+   const traceMatches=[...notes.matchAll(/(?:✓|✖|▶) [^\n]+/g)];
+   const latestTrace=traceMatches.length?traceMatches[traceMatches.length-1][0]:'';
+   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">${latestTrace?esc(latestTrace)+' · ':''}Background production is running · ${Math.round((Date.now()-(deadline-pollWindowMs))/1000)} seconds</div>`;
  }
- throw new Error('Background production did not finish within 5 minutes. Check the Netlify produce-section log and the Airtable Notes field.');
+ throw new Error('Background production did not finish within 3 minutes. Check the Airtable Notes trace for the last completed stage.');
 }
 async function runProduction({one=false}={}){
  if(!S.issue){alert('Open an issue first.');return}
@@ -304,12 +321,28 @@ async function runProduction({one=false}={}){
    if(!confirm(`Run the production service for ${work.length} pending sections? This uses the OpenAI API, researches B/C sections and writes drafts/evidence back to Airtable.`))return;
  }
  let pass=0,fix=0,failed=0;
+ const failureDetails=[];
  E('run-production').disabled=true;E('run-next-production').disabled=true;
  for(let i=0;i<work.length;i++){
    const item=work[i];
+   S.productionUi[item.s.id]={state:'running',error:''};
+   renderSections();
    E('production-progress').className='philosophy-box';
    E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Researching, writing, checking and saving in the background. This may take several minutes.</div><div class="muted">Pass ${pass} · Review ${fix} · Failed ${failed}</div>`;
-   try{const d=await produceOne(item);if(d.qaResult==='Pass')pass++;else fix++}catch(e){failed++;E('save-state').textContent=`Production error on ${val(item.s.fields,'Section Title')}: ${e.message}`;if(one)alert(e.message)}
+   try{
+     const d=await produceOne(item);
+     delete S.productionUi[item.s.id];
+     if(d.qaResult==='Pass')pass++;else fix++;
+   }catch(e){
+     failed++;
+     const msg=String(e?.message||e||'Production failed');
+     S.productionUi[item.s.id]={state:'failed',error:msg};
+     failureDetails.push({title:String(val(item.s.fields,'Section Title')||'Untitled'),error:msg});
+     E('save-state').textContent=`Production error on ${val(item.s.fields,'Section Title')}: ${msg}`;
+     if(one)alert(msg);
+   }
+   renderSections();
+   if(!one&&i<work.length-1)await sleep(2500);
  }
  E('run-production').disabled=false;E('run-next-production').disabled=false;
  if(one&&work[0]?.s){S.section=S.sections.find(x=>x.id===work[0].s.id)||work[0].s;}
@@ -319,7 +352,10 @@ async function runProduction({one=false}={}){
  // Previously the Issue Planner could continue showing a stale 0 count until the issue was reopened.
  try{await loadArticleLibrary();}catch(e){console.warn('Produced Articles library refresh failed after production',e)}
  if(document.querySelector('#view-assemble')?.classList.contains('active'))renderAssembly();
- E('production-progress').innerHTML=`<strong>Production run finished</strong><div class="muted">Pass ${pass} · Human review ${fix} · Failed ${failed}</div>`;
+ if(!one){
+   const failedList=failureDetails.length?`<div class="muted" style="margin-top:6px">${failureDetails.map(x=>`Failed: ${esc(x.title)} — ${esc(x.error)}`).join('<br>')}</div>`:'';
+   E('production-progress').innerHTML=`<strong>Production run finished</strong><div class="muted">Pass ${pass} · Human review ${fix} · Failed ${failed}</div>${failedList}`;
+ }
  E('save-state').textContent='Master Article run complete. Open Fix Required records first, then preview each Letterman package.';
 }
 function buildProfile(f){
@@ -543,15 +579,138 @@ async function loadArticleLibrary(){
   S.articleLibrary=records;
   S.articleLibraryDiag=`Scanned ${scanned}/${issueIds.length} ${currentPublicationName()||'publication'} issue${issueIds.length===1?'':'s'} · ${gathered.length} section records · ${records.length} produced articles${failed?` · ${failed} failed${lastError?': '+lastError:''}`:''}`;
 }
-function completion(s){const f=s.fields;const keys=['Core Reader Question','Primary Hot Button','Reader Value','Evidence Status','Primary Next Action','Section Final Copy'];return Math.round(keys.filter(k=>val(f,k)&&val(f,k)!=='Not Started').length/keys.length*100)}
+function parseRunStarted(value){
+  const raw=String(value||'').trim();
+  if(!raw)return NaN;
+  const direct=Date.parse(raw);
+  if(Number.isFinite(direct))return direct;
+  const normalized=/Z$|[+-]\d\d:\d\d$/.test(raw)?raw:`${raw}Z`;
+  const fallback=Date.parse(normalized);
+  return Number.isFinite(fallback)?fallback:NaN;
+}
+function latestProductionMarker(s){
+  const notes=String(val(s?.fields||{},'Notes')||'');
+  const markers=[];
+  for(const m of notes.matchAll(/MASTER ARTICLE RUNNING v2\.\d+[\s\S]*?END MASTER ARTICLE RUNNING/g)){
+    const block=m[0],run=(block.match(/Run ID:\s*([^\n]+)/)||[])[1]||'';
+    const started=(block.match(/Started:\s*([^\n]+)/)||[])[1]||'';
+    markers.push({type:'running',index:m.index||0,runId:run.trim(),started:started.trim(),block});
+  }
+  for(const m of notes.matchAll(/MASTER ARTICLE FAILED v2\.\d+[\s\S]*?END MASTER ARTICLE FAILED/g)){
+    const block=m[0],run=(block.match(/Run ID:\s*([^\n]+)/)||[])[1]||'';
+    const error=(block.match(/Error:\s*([^\n]+)/)||[])[1]||'Production failed';
+    markers.push({type:'failed',index:m.index||0,runId:run.trim(),error:error.trim(),block});
+  }
+  for(const m of notes.matchAll(/PRODUCTION SERVICE v2\.\d+[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|PRODUCTION SERVICE|MASTER ARTICLE FAILED)|$)/g)){
+    const block=m[0],run=(block.match(/Run ID:\s*([^\n]+)/)||[])[1]||'';
+    const exception=(block.match(/Exception:\s*([^\n]+)/)||[])[1]||'';
+    markers.push({type:/^None$/i.test(exception.trim())?'complete':'review',index:m.index||0,runId:run.trim(),error:exception.trim(),block});
+  }
+  markers.sort((a,b)=>a.index-b.index);
+  const latest=markers[markers.length-1]||null;
+  if(latest?.type==='running'){
+    const startedMs=parseRunStarted(latest.started);
+    const ageMs=Number.isFinite(startedMs)?Date.now()-startedMs:Infinity;
+    const staleAfterMs=5*60*1000;
+    if(ageMs>staleAfterMs){
+      return {...latest,type:'failed',stale:true,error:'Stale production run — no terminal result was recorded within 5 minutes.',ageMs};
+    }
+  }
+  return latest;
+}
+function masterArticleState(s){
+  const transient=S.productionUi?.[s.id];
+  if(transient?.state==='running')return 'running';
+  if(transient?.state==='failed')return 'failed';
+
+  const latest=latestProductionMarker(s);
+  if(latest?.type==='running')return 'running';
+  if(latest?.type==='failed')return 'failed';
+
+  const f=s.fields||{},produced=isProducedArticle(s),qa=String(val(f,'Section QA Result')||''),status=String(val(f,'Section Status')||'');
+  if(latest?.type==='complete'&&produced)return 'complete';
+  if(latest?.type==='review'&&produced)return 'review';
+  if(produced&&qa==='Pass'&&(status==='Ready'||status==='Published'))return 'complete';
+  if(produced)return 'review';
+  return 'queue'
+}function completion(s){if(masterArticleState(s)==='complete')return 100;const f=s.fields;const keys=['Core Reader Question','Primary Hot Button','Reader Value','Evidence Status','Primary Next Action','Section Final Copy'];return Math.round(keys.filter(k=>val(f,k)&&val(f,k)!=='Not Started').length/keys.length*100)}
 function isProducedArticle(s){const f=s.fields||{},notes=String(val(f,'Notes')||''),copy=String(val(f,'Section Final Copy')||val(f,'Final Copy')||'').trim(),status=String(val(f,'Section Status')||'').trim().toLowerCase(),dest=String(val(f,'Action Destination URL')||'').trim();return !!masterArticlePackage(f)||/MASTER ARTICLE PACKAGE(?: v1)?/i.test(notes)||/\b(article_(?:body|subhead)|newsletter_(?:headline|teaser)|seo_title|url_path)\b/i.test(notes)||copy.length>=350||((status==='ready'||status==='published')&&(dest||copy.length>=150))}
-function qaFlags(s){const f=s.fields,title=String(val(f,'Section Title')).toLowerCase(),cta=String(val(f,'CTA Text')).toLowerCase(),flags=[];if(/car check|five-minute car/.test(cta)&&!/car|drive|vehicle|motor/.test(title))flags.push('CTA appears copied from car article');if(isProducedArticle(s)&&!String(val(f,'CTA Text')).trim())flags.push('Missing CTA');if(isProducedArticle(s)&&!['Pass'].includes(String(val(f,'Section QA Result'))))flags.push('QA not passed');if(isProducedArticle(s)&&String(val(f,'Section Status'))!=='Ready'&&String(val(f,'Section Status'))!=='Published')flags.push('Status needs review');return flags}
+function qaFlags(s){const f=s.fields,title=String(val(f,'Section Title')).toLowerCase(),cta=String(val(f,'CTA Text')).toLowerCase(),flags=[];if(/car check|five-minute car/.test(cta)&&!/car|drive|vehicle|motor/.test(title))flags.push('CTA appears copied from car article');if(!String(val(f,'Primary Hot Button')||'').trim())flags.push('Hot Button not set');if(isProducedArticle(s)&&!String(val(f,'CTA Text')).trim())flags.push('Missing CTA');if(isProducedArticle(s)&&!['Pass'].includes(String(val(f,'Section QA Result'))))flags.push('QA not passed');if(isProducedArticle(s)&&String(val(f,'Section Status'))!=='Ready'&&String(val(f,'Section Status'))!=='Published')flags.push('Status needs review');return flags}
 function filteredSections(){const mode=E('library-filter')?.value||'all';if(mode==='produced')return S.sections.filter(isProducedArticle);if(mode==='queue')return S.sections.filter(s=>!isProducedArticle(s));if(mode==='qa')return S.sections.filter(s=>qaFlags(s).length);return S.sections}
-function renderSections(){sortSections();const produced=S.sections.filter(isProducedArticle).length,queue=S.sections.length-produced,warnings=S.sections.filter(s=>qaFlags(s).length).length;E('library-summary').innerHTML=`<div><strong>${produced}</strong><span>Produced</span></div><div><strong>${queue}</strong><span>Queue</span></div><div><strong>${warnings}</strong><span>Warnings</span></div>`;const rows=filteredSections();const diagnostic=S.sections.length?`<div class="muted" style="padding:4px 2px 10px">${esc(sectionOrderDiagnostic())}</div>`:'';E('section-list').innerHTML=diagnostic+(rows.length?rows.map((s,n)=>{const flags=qaFlags(s);return `<div class="section-item ${S.section?.id===s.id?'active':''}" onclick="selectSection('${s.id}')"><strong>${esc(val(s.fields,'Section Order')||n+1)}. ${esc(val(s.fields,'Section Title')||'Untitled section')}</strong><small>${esc(val(s.fields,'Primary Hot Button')||'No Hot Button')} · ${completion(s)}%</small>${flags.length?`<span class="qa-flag">${esc(flags[0])}</span>`:''}</div>`}).join(''):'<div class="empty">No records match this filter.</div>')}
-function selectSection(id){S.section=S.sections.find(s=>s.id===id);renderSections();renderForm()}
+function previewArticleFromCard(id,event){event?.stopPropagation?.();selectSection(id);E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()}
+function renderSections(){
+  sortSections();
+  const produced=S.sections.filter(isProducedArticle).length,queue=S.sections.length-produced,warnings=S.sections.filter(s=>qaFlags(s).length).length;
+  E('library-summary').innerHTML=`<div><strong>${produced}</strong><span>Produced</span></div><div><strong>${queue}</strong><span>Queue</span></div><div><strong>${warnings}</strong><span>Warnings</span></div>`;
+  const rows=filteredSections();
+  const diagnostic=S.sections.length?`<div class="muted" style="padding:4px 2px 10px">${esc(sectionOrderDiagnostic())}</div>`:'';
+  E('section-list').innerHTML=diagnostic+(rows.length?rows.map((s,n)=>{
+    const flags=qaFlags(s),state=masterArticleState(s),isComplete=state==='complete',isReview=state==='review',isRunning=state==='running',isFailed=state==='failed';
+    const stateText=isComplete?'MASTER ARTICLE COMPLETE ✓':isReview?'MASTER ARTICLE — NEEDS REVIEW':isRunning?'PRODUCING…':isFailed?'MASTER ARTICLE FAILED':'IN PRODUCTION QUEUE';
+    const hot=String(val(s.fields,'Primary Hot Button')||'').trim();
+    const transient=S.productionUi?.[s.id],latestMarker=latestProductionMarker(s);
+    const persistedError=isFailed&&latestMarker?.type==='failed'?(latestMarker.stale?`Stale run — safe to retry${Number.isFinite(latestMarker.ageMs)?` (${Math.floor(latestMarker.ageMs/60000)}m old)`:''}`:latestMarker.error):'';
+    const err=isFailed&&(transient?.error||persistedError)?`<span class="qa-flag">${esc(String(transient?.error||persistedError).slice(0,120))}</span>`:(flags.length?`<span class="qa-flag">${esc(flags[0])}</span>`:'');
+    return `<div class="section-item ${isComplete?'produced-complete':isReview?'produced-review':isRunning?'production-running':isFailed?'production-failed':''} ${S.section?.id===s.id?'active':''}" onclick="selectSection('${s.id}')"><strong>${esc(val(s.fields,'Section Order')||n+1)}. ${esc(val(s.fields,'Section Title')||'Untitled section')}</strong><span class="production-state ${isComplete?'complete':isReview?'review':isRunning?'running':isFailed?'failed':'queue'}">${stateText}</span><small style="display:block;margin-top:5px">${hot?esc(hot):'Hot Button not set'} · ${completion(s)}%</small>${err}${isProducedArticle(s)?`<div class="article-card-actions"><button class="btn secondary" onclick="previewArticleFromCard('${s.id}',event)">Preview Master Article</button></div>`:''}</div>`;
+  }).join(''):'<div class="empty">No records match this filter.</div>')
+}function selectSection(id){S.section=S.sections.find(s=>s.id===id);renderSections();renderForm()}
 const fields=[['Section Title','input'],['Section Order','number'],['Section Type','select',['Intro','Lead / Unfiltered','Anchor','Medium','Short','Quick Hit','Community','Expert','Activation','Outro']],['Section Status','select',['Planned','Researching','Drafting','Ready','Published']],['Reader Hook','textarea','full'],['Core Reader Question','textarea','full'],['Universal Reader Problem','textarea','full'],['Primary Hot Button','hot','full'],['Reader Type','input'],['Decision Constraint','textarea'],['Emotional Outcome','select',['Curious','Reassured','Warned','Recognised','Clearer','Confident','Motivated','Amused','Concerned','Hopeful','Ready To Act']],['Reader Value','textarea','full'],['Local Proof Needed','textarea','full'],['Evidence Required','textarea','full'],['Evidence Status','select',['Not Started','Researching','Verified','Needs Update','Question Only','Illustrative Example']],['Evidence Checked Date','date'],['Source / Reference Link 1','url','full'],['Commercial Lane','select',['Not Assessed','Authority','Featured Partner','Activation','Community','None']],['Commercial Pathway','textarea','full'],['Primary Next Action','textarea','full'],['CTA Type','select',['None','Button','Link','Reply','Comment','Nominate','Vote','Save','Share']],['CTA Text','input','full'],['Action Destination URL','url','full'],['Social Question Shape','textarea','full'],['Archive Similarity Status','select',['Clear','Review','Too Similar']],['Archive Similarity Note','textarea','full'],['Reuse / Localisation Potential','select',['Not Assessed','Local only','Reusable','Niche adaptable','Multi-edition']],['Notes','textarea','full'],['Section QA Result','select',['Not Checked','Pass','Fix Required']],['Section Final Copy','copy','full']];
-function hotLabel(x){return String(x).replace(/^(\d+)\s+—\s+THE\s+[“\"](.+?)[”\"]\s+TEST$/i,'$1 — $2').replace(/\b([A-Z]{2,})\b/g,m=>m.charAt(0)+m.slice(1).toLowerCase())}const fieldLabels={'Section Title':'Section title','Primary Hot Button':'Primary Hot Button','Local Proof Needed':'Named local proof needed','Reuse / Localisation Potential':'Reuse / localisation potential','CTA Text':'Button / CTA text','Commercial Pathway':'Commercial pathway'};function inferArticleIntelligence(s){const f=s?.fields||{},text=[val(f,'Section Title'),val(f,'Core Reader Question'),val(f,'Universal Reader Problem'),val(f,'Section Final Copy'),val(f,'Commercial Pathway')].join(' ').toLowerCase();let topic='Local Life';if(/mortgage|remortgage|debt|loan|credit|interest/.test(text))topic='Money & Mortgages';else if(/house|property|homebuy|seller|conveyanc|survey|rent|landlord|tenant/.test(text))topic='Property & Housing';else if(/car|driver|drive|vehicle|garage|tyre|mot|road/.test(text))topic='Motoring & Transport';else if(/dentist|nhs|health|pain|physio|doctor|wellbeing/.test(text))topic='Health & Wellbeing';else if(/cafe|café|pub|restaurant|breakfast|food|farm shop|takeaway|meal/.test(text))topic='Food & Drink';else if(/event|festival|ticket|attraction|day out|sandringham|visitor/.test(text))topic='Days Out & Events';let expert='Local community or public-service source';if(topic==='Money & Mortgages')expert='Mortgage adviser or debt specialist';else if(topic==='Property & Housing')expert='Estate agent, conveyancer or surveyor';else if(topic==='Motoring & Transport')expert='Garage, tyre specialist or motoring expert';else if(topic==='Health & Wellbeing')expert='Relevant regulated health professional';else if(topic==='Food & Drink')expert='Independent food business or hospitality expert';else if(topic==='Days Out & Events')expert='Venue, attraction or event organiser';let role='Newsletter Card';if(/poll|vote|which would you choose/.test(text))role='Poll / Reader Verdict';else if(/quiz|how many|test your/.test(text))role='Quiz / Challenge';else if(/nominate|recommend|tell us your|reader/.test(text))role='Reader Recommendation';else if(!isProducedArticle(s))role='Newsletter Component / Queue';let freshness='Evergreen';if(/today|this week|this weekend|2026|current price|latest|opening date|deadline/.test(text))freshness='Time-sensitive / Review before reuse';let localisation=String(val(f,'Reuse / Localisation Potential')||'Not assessed');return{topic,expert,role,freshness,localisation}}
-function renderArticleIntelligence(){const box=E('article-intelligence');if(!box)return;if(!S.section){box.innerHTML='<span class="muted">Select a record to view its suggested classification.</span>';return}const x=inferArticleIntelligence(S.section);box.innerHTML=`<strong>${esc(x.topic)}</strong><div class="muted" style="margin-top:6px"><b>Expert lane:</b> ${esc(x.expert)}<br><b>Newsletter role:</b> ${esc(x.role)}<br><b>Freshness:</b> ${esc(x.freshness)}<br><b>Localisation:</b> ${esc(x.localisation)}</div><div class="muted" style="margin-top:8px">Preview only — nothing is written to Airtable.</div>`}
+function hotLabel(x){return String(x).replace(/^(\d+)\s+—\s+THE\s+[“\"](.+?)[”\"]\s+TEST$/i,'$1 — $2').replace(/\b([A-Z]{2,})\b/g,m=>m.charAt(0)+m.slice(1).toLowerCase())}const fieldLabels={'Section Title':'Section title','Primary Hot Button':'Primary Hot Button','Local Proof Needed':'Named local proof needed','Reuse / Localisation Potential':'Reuse / localisation potential','CTA Text':'Button / CTA text','Commercial Pathway':'Commercial pathway'};function inferArticleIntelligence(s){
+  const f=s?.fields||{};
+  const identity=[
+    val(f,'Section Title'),
+    val(f,'Core Reader Question'),
+    val(f,'Reader Hook'),
+    val(f,'Commercial Lane'),
+    val(f,'Commercial Pathway')
+  ].join(' ').toLowerCase();
+  const wider=[
+    identity,
+    val(f,'Universal Reader Problem'),
+    val(f,'Section Final Copy')
+  ].join(' ').toLowerCase();
+
+  let topic='Local Life';
+  if(/mary.?s child|charity|food parcel|food bank|family support|community support|community caf[eé]|volunteer|crisis resilience/.test(identity)){
+    topic='Community & Support';
+  }else if(/mortgage|remortgage|debt consolidation|secured loan|unsecured loan|interest rate|credit card/.test(identity)){
+    topic='Money & Mortgages';
+  }else if(/house|property|homebuy|home buy|seller|conveyanc|survey|rent|landlord|tenant/.test(identity)){
+    topic='Property & Housing';
+  }else if(/car|driver|drive|vehicle|garage|tyre|mot\b|road/.test(identity)){
+    topic='Motoring & Transport';
+  }else if(/dentist|nhs|health|pain|physio|doctor|wellbeing/.test(identity)){
+    topic='Health & Wellbeing';
+  }else if(/cafe|café|pub|restaurant|breakfast|food|farm shop|takeaway|meal/.test(identity)){
+    topic='Food & Drink';
+  }else if(/event|festival|ticket|attraction|day out|sandringham|visitor/.test(identity)){
+    topic='Days Out & Events';
+  }else if(/mortgage|remortgage|debt consolidation|secured borrowing/.test(wider)){
+    topic='Money & Mortgages';
+  }
+
+  let expert='Local community or public-service source';
+  if(topic==='Community & Support')expert='Local charity, community organisation or relevant support service';
+  else if(topic==='Money & Mortgages')expert='Mortgage adviser or debt specialist';
+  else if(topic==='Property & Housing')expert='Estate agent, conveyancer or surveyor';
+  else if(topic==='Motoring & Transport')expert='Garage, tyre specialist or motoring expert';
+  else if(topic==='Health & Wellbeing')expert='Relevant regulated health professional';
+  else if(topic==='Food & Drink')expert='Independent food business or hospitality expert';
+  else if(topic==='Days Out & Events')expert='Venue, attraction or event organiser';
+
+  let role='Newsletter Card';
+  if(/poll|vote|which would you choose/.test(wider))role='Poll / Reader Verdict';
+  else if(/quiz|how many|test your/.test(wider))role='Quiz / Challenge';
+  else if(/nominate|recommend|tell us your|reader/.test(wider))role='Reader Recommendation';
+  else if(!isProducedArticle(s))role='Newsletter Component / Queue';
+
+  let freshness='Evergreen';
+  if(/today|this week|this weekend|current price|latest|opening date|deadline/.test(wider))freshness='Time-sensitive / Review before reuse';
+  else if(/\b2026\b/.test(wider))freshness='Dated evidence / Review before reuse';
+
+  let localisation=String(val(f,'Reuse / Localisation Potential')||'Not assessed');
+  return{topic,expert,role,freshness,localisation}
+}function renderArticleIntelligence(){const box=E('article-intelligence');if(!box)return;if(!S.section){box.innerHTML='<span class="muted">Select a record to view its suggested classification.</span>';return}const x=inferArticleIntelligence(S.section);box.innerHTML=`<strong>${esc(x.topic)}</strong><div class="muted" style="margin-top:6px"><b>Expert lane:</b> ${esc(x.expert)}<br><b>Newsletter role:</b> ${esc(x.role)}<br><b>Freshness:</b> ${esc(x.freshness)}<br><b>Localisation:</b> ${esc(x.localisation)}</div><div class="muted" style="margin-top:8px">Preview only — nothing is written to Airtable.</div>`}
 function renderForm(){if(!S.section){E('section-form').innerHTML='<div class="empty">Add or select a section.</div>';E('save-state').textContent='No section selected.';E('gate').innerHTML='';renderArticleIntelligence();return}const f=S.section.fields;E('section-form').innerHTML=fields.map(([k,t,o])=>{const v=val(f,k);let c='';if(t==='select')c=`<select data-field="${esc(k)}"><option value="" ${!v?'selected':''}>— Select —</option>${o.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('')}</select>`;else if(t==='hot')c=`<select data-field="${esc(k)}"><option value="">Choose one primary Hot Button</option>${S.hot.map(x=>`<option value="${esc(x)}" ${x===v?'selected':''}>${esc(hotLabel(x))}</option>`).join('')}</select><div class="muted">Choose the main reader thought. The exact locked Airtable value is preserved.</div>`;else if(['textarea','copy'].includes(t))c=`<textarea class="${t==='copy'?'copy':''}" data-field="${esc(k)}">${esc(v)}</textarea>`;else c=`<input type="${t}" data-field="${esc(k)}" value="${esc(v)}">`;return `<div class="field ${o==='full'||t==='hot'?'full':''}"><label>${esc(fieldLabels[k]||k)}</label>${c}</div>`}).join('');E('save-state').textContent='Loaded from Airtable.';renderGate();renderArticleIntelligence()}
 function formFields(){const out={};document.querySelectorAll('#section-form [data-field]').forEach(x=>{let v=x.value;if(x.type==='number')v=v===''?null:Number(v);out[x.dataset.field]=v});return out}function setField(k,v,overwrite=false){const x=document.querySelector(`#section-form [data-field="${CSS.escape(k)}"]`);if(!x)return;if(overwrite||!String(x.value||'').trim()){x.value=v??'';x.dispatchEvent(new Event('change',{bubbles:true}))}}
 function hotByNumber(n){return S.hot.find(x=>String(x).startsWith(String(n).padStart(2,'0')+' '))||''}
@@ -716,10 +875,10 @@ function renderAssembly(){
  const lib=E('assembly-library'),order=E('assembly-order'),palette=E('component-palette');if(!lib||!order||!palette)return;
  const q=String(E('assembly-search')?.value||'').toLowerCase();const produced=(S.articleLibrary?.length?S.articleLibrary:S.sections.filter(isProducedArticle));
  const rows=produced.filter(s=>!q||[val(s.fields,'Section Title'),inferArticleIntelligence(s).topic].join(' ').toLowerCase().includes(q));if(E('assembly-available-count'))E('assembly-available-count').textContent=`${produced.length} available`;
- lib.innerHTML=rows.length?rows.map(s=>{const x=inferArticleIntelligence(s),title=String(val(s.fields,'Section Title')||'').trim().toLowerCase().replace(/\s+/g,' '),added=getCanvas().some(b=>b.kind==='article'&&(b.refId===s.id||String(b.title||'').trim().toLowerCase().replace(/\s+/g,' ')===title));return `<div class="palette-item" draggable="${added?'false':'true'}" ${added?'style="opacity:.55;cursor:default"':'ondragstart="startPaletteDrag(event,\'article\',\''+s.id+'\')"'} ondblclick="${added?'':'addArticleToCanvas(\''+s.id+'\')'}"><strong>${esc(val(s.fields,'Section Title')||'Untitled')}</strong><small>${added?'Already in Canvas':esc(x.topic)+' · '+esc(x.freshness)+' · drag or double-click'}</small></div>`}).join(''):`<div class="empty">${produced.length?'No produced articles match this search.':'No produced Master Articles are available for this publication yet.'}</div>`;if(E('assembly-library-diag'))E('assembly-library-diag').textContent=S.articleLibraryDiag||'';
+ lib.innerHTML=rows.length?rows.map(s=>{const x=inferArticleIntelligence(s),title=String(val(s.fields,'Section Title')||'').trim().toLowerCase().replace(/\s+/g,' '),added=getCanvas().some(b=>b.kind==='article'&&(b.refId===s.id||String(b.title||'').trim().toLowerCase().replace(/\s+/g,' ')===title));return `<div class="palette-item" draggable="${added?'false':'true'}" ${added?'style="opacity:.55;cursor:default"':'ondragstart="startPaletteDrag(event,\'article\',\''+s.id+'\')"'} ondblclick="${added?'':'addArticleToCanvas(\''+s.id+'\')'}"><strong>${esc(val(s.fields,'Section Title')||'Untitled')}</strong><small>${added?'Already in Canvas':(masterArticleState(s)==='complete'?'MASTER ARTICLE COMPLETE ✓ · ':'MASTER ARTICLE — NEEDS REVIEW · ')+esc(x.topic)+' · '+esc(x.freshness)+' · drag or double-click'}</small></div>`}).join(''):`<div class="empty">${produced.length?'No produced articles match this search.':'No produced Master Articles are available for this publication yet.'}</div>`;if(E('assembly-library-diag'))E('assembly-library-diag').textContent=S.articleLibraryDiag||'';
  palette.innerHTML=COMPONENT_DEFS.map(d=>`<div class="component-chip" draggable="true" ondragstart="startPaletteDrag(event,'component','${esc(d.type)}')" ondblclick="addComponentToCanvas('${esc(d.type)}')">${esc(d.title)}</div>`).join('');
  const items=getCanvas();
- order.innerHTML=items.length?items.map((b,i)=>`<div class="canvas-card ${canvasSelectedUid===b.uid?'selected':''}" draggable="true" ondragstart="startCanvasDrag(event,'${b.uid}')" ondragover="event.preventDefault()" ondrop="dropOnCard(event,'${b.uid}')" onclick="selectCanvasBlock('${b.uid}')"><div class="drag-handle">⋮⋮</div><div><strong>${i+1}. ${esc(b.title||b.type)}</strong><small>${esc(b.type)}${b.partner?' · '+esc(b.partner):''}</small><div class="canvas-badges"><span class="mini-badge ${b.status==='READY'?'ready':'needs'}">${esc(b.status||'NEEDS DECISION')}</span>${b.kind==='partner'?'<span class="mini-badge">PARTNER</span>':''}</div></div><button class="btn secondary" onclick="event.stopPropagation();removeCanvasBlock('${b.uid}')">×</button></div>`).join(''):'<div class="drop-hint">Drag an article or component here to start assembling the issue.</div>';
+ order.innerHTML=items.length?items.map((b,i)=>`<div class="canvas-card ${b.status==='READY'?'is-ready':/FAIL/i.test(String(b.status||''))?'is-failed':/PRODUC/i.test(String(b.status||''))?'is-producing':'is-needs'} ${canvasSelectedUid===b.uid?'selected':''}" draggable="true" ondragstart="startCanvasDrag(event,'${b.uid}')" ondragover="event.preventDefault()" ondrop="dropOnCard(event,'${b.uid}')" onclick="selectCanvasBlock('${b.uid}')"><div class="drag-handle">⋮⋮</div><div><strong>${i+1}. ${esc(b.title||b.type)}</strong><small>${esc(b.type)}${b.partner?' · '+esc(b.partner):''}</small><div class="canvas-badges"><span class="mini-badge ${b.status==='READY'?'ready':'needs'}">${esc(b.status||'NEEDS DECISION')}</span>${b.kind==='partner'?'<span class="mini-badge">PARTNER</span>':''}</div></div><button class="btn secondary" onclick="event.stopPropagation();removeCanvasBlock('${b.uid}')">×</button></div>`).join(''):'<div class="drop-hint">Drag an article or component here to start assembling the issue.</div>';
  E('assembly-count').textContent=`${items.length} blocks`;
  const savedTheme=localStorage.getItem(themeKey());if(E('assembly-theme')&&!E('assembly-theme').value)E('assembly-theme').value=savedTheme||val(S.issue?.fields||{},'Main Theme')||'';
  updatePlannerScore();renderInspector();
@@ -737,6 +896,516 @@ function renderInspector(){const empty=E('inspector-empty'),form=E('inspector-fo
 function saveInspector(){const items=getCanvas(),i=items.findIndex(x=>x.uid===canvasSelectedUid);if(i<0)return;items[i]={...items[i],title:E('inspect-title').value,purpose:E('inspect-purpose').value,partner:E('inspect-partner').value,category:E('inspect-category').value,commitment:E('inspect-commitment').value,cta:E('inspect-cta').value,button:E('inspect-button').value,url:E('inspect-url').value,proof:E('inspect-proof').value,content:E('inspect-content').value,status:E('inspect-status').value};localStorage.setItem(assemblyKey(),JSON.stringify(items));renderAssembly()}
 function createStarterCopy(){const items=getCanvas(),b=items.find(x=>x.uid===canvasSelectedUid);if(!b||b.kind==='article')return;const theme=String(E('assembly-theme')?.value||'this issue').trim();let text='';if(b.type==='POLL')text=`QUESTION: What matters most to you about ${theme}?\n\nA. Value for money\nB. Convenience\nC. Quality\nD. Something else — tell us`;else if(b.type==='QUIZ')text=`QUESTION: How well do you know the local story behind ${theme}?\n\nANSWER / REVEAL: [ADD VERIFIED ANSWER AND SOURCE]`;else if(b.type==='Q&A')text=`QUESTION: [ADD THE READER QUESTION]\n\nANSWER: [ADD A USEFUL, EVIDENCE-BASED ANSWER${b.partner?' FROM '+b.partner.toUpperCase():''}]`;else if(b.type==='OPENING NOTE')text=`This week we're asking: ${theme}\n\n[ADD 2–4 SHORT LINES THAT SET UP THE ISSUE AND GIVE READERS A REASON TO KEEP GOING.]`;else if(b.type==='CLOSING QUESTION')text=`What is the one thing you would add to this week's conversation about ${theme}?`;else if(b.type==='READER RECOMMENDATION')text=`What local place, person or service would you recommend when it comes to ${theme}? Tell us the name and why.`;else if(b.type==='FACEBOOK DISCUSSION')text=`FACEBOOK QUESTION: ${theme}\n\nWhat do you think — and what local example proves your point?`;else if(b.type==='PARTNER PRESENCE')text=`PARTNER: ${b.partner||'[ADD PARTNER]'}\nFORMAT: [Q&A / TIP / MYTH V FACT / OFFER / ARTICLE / RECOMMENDATION]\nREADER QUESTION: [ADD QUESTION]\nUSEFUL ANSWER / VALUE: [ADD CONTENT]\nCTA: ${b.cta||'[ADD ONE PRIMARY ACTION]'}`;else text=`${b.type}\n\nPURPOSE: ${b.purpose}\n\n[CREATE FINISHED LETTERMAN-READY CONTENT HERE]\n\nSOURCE / LOCAL PROOF: ${b.proof||'[ADD IF REQUIRED]'}`;
  E('inspect-content').value=text;E('inspect-status').value='NEEDS PRODUCTION'}
+
+function autoAssembleIssue(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const produced=(S.articleLibrary||S.sections||[])
+    .filter(s=>masterArticleState(s)==='complete')
+    .sort((a,b)=>Number(val(a.fields,'Section Order')||999)-Number(val(b.fields,'Section Order')||999));
+  if(!produced.length){alert('No completed Master Articles are available for this issue.');return}
+
+  if(getCanvas().length&&!confirm('Replace the current canvas with an automatically assembled first draft?'))return;
+
+  const comp=(type,title='',purpose='')=>{
+    const def=COMPONENT_DEFS.find(x=>x.type===type);
+    const b=makeComponentBlock(def||{type,title:type,purpose:''});
+    if(title)b.title=title;
+    if(purpose)b.purpose=purpose;
+    return b;
+  };
+  const partner=(title,purpose)=>{
+    const b=makePartnerBlock();
+    b.title=title;
+    b.purpose=purpose;
+    b.status='NEEDS DECISION';
+    return b;
+  };
+
+  const articles=produced.slice(0,10).map(makeArticleBlock);
+  const items=[];
+  items.push(comp('OPENING NOTE',"Opening Note","Set up the Peterborough issue promise in 2–4 short lines and preview the strongest reasons to keep reading."));
+
+  const between=[
+    ()=>comp('READER POLL',"The Peterborough Quick Vote","One specific, easy-to-answer local question connected to the issue's strongest tension."),
+    ()=>comp('TIP / HACK',"One Useful Thing","Give readers one practical action they can use immediately."),
+    ()=>comp('JOKE',"Quick Breather","A short suitable joke or light local observation to break up heavier material."),
+    ()=>comp('Q&A',"Reader Question","Answer one useful question raised by the surrounding Master Articles."),
+    ()=>comp('INTERESTING FACT',"Worth Knowing","One verified, surprising Peterborough fact with a clear source requirement."),
+    ()=>comp('READER RECOMMENDATION',"Your Peterborough Recommendation","Ask for a named local recommendation that can feed a future guide or article."),
+    ()=>comp('MYTH V FACT',"Myth v Fact","Test one common belief raised by this issue and give the fair, sourced answer."),
+    ()=>comp('FACEBOOK DISCUSSION',"Take It To Facebook","Create one standalone stop-and-comment question connected to the issue."),
+    ()=>comp('TRIVIA',"Peterborough Quick Test","A short local knowledge question with a verified answer/reveal.")
+  ];
+
+  articles.forEach((a,i)=>{
+    items.push(a);
+    if(i<articles.length-1 && between[i])items.push(between[i]());
+  });
+
+  // Commercial presence is deliberately visible but not invented.
+  items.splice(Math.min(7,items.length),0,
+    partner("Partner / Expert Presence 1","Assign an active paid partner or authority lane and choose the format that best serves this issue. Do not invent a sponsor.")
+  );
+  items.splice(Math.min(15,items.length),0,
+    partner("Partner / Expert Presence 2","Assign another active paid partner or commercial activation without repeating the first category. Do not invent a sponsor.")
+  );
+
+  items.push(comp('READER VOTE',"Worth It Or Overpriced?","A quick value judgement or either/or vote tied to a lighter issue theme."));
+  items.push(comp('COMMUNITY VOICE',"Community Voice","Surface one useful local voice, cause or contribution with named proof."));
+  items.push(comp('ACTIVATION / OFFER',"Do Something This Week","One useful visit, booking, nomination, download, offer, event or reply action."));
+  items.push(comp('CLOSING QUESTION',"One Last Question","End with one specific question readers can reply to or answer on social."));
+
+  // Keep the first automatic draft within the agreed Spotlight range.
+  const finalItems=items.slice(0,25);
+  localStorage.setItem(assemblyKey(),JSON.stringify(finalItems));
+  canvasSelectedUid=finalItems[0]?.uid||null;
+  renderAssembly();
+  alert(`Auto assembly created ${finalItems.length} blocks from ${articles.length} completed Master Articles. Review the running order, assign real partners, then produce the supporting components.`);
+}
+
+async function produceSupportingComponents(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const canvas=getCanvas();
+  const pending=canvas.filter(b=>b.kind==='component'&&String(b.status||'').toUpperCase()!=='READY');
+  if(!pending.length){alert('No supporting components need production.');return}
+  if(!confirm(`Produce ${pending.length} supporting components? Partner blocks will be left for real partner assignment.`))return;
+
+  const btn=E('assembly-produce');
+  const original=btn.textContent;
+  btn.disabled=true;
+  let passed=0,failed=0;
+
+  const articleContext=canvas.filter(b=>b.kind==='article').map((b,i)=>`${i+1}. ${b.title}\n${String(b.content||b.purpose||'').slice(0,900)}`).join('\n\n');
+  const promise=E('assembly-promise')?.value||'';
+
+  for(const block of pending){
+    btn.textContent=`Producing ${passed+failed+1}/${pending.length}…`;
+    try{
+      const prompt=`You are producing one short supporting component for a Trail Blaze Local Spotlight newsletter.
+
+PUBLICATION: ${S.publication?.name||S.publication?.fields?.Name||'Peterborough Spotlight'}
+ISSUE PROMISE: ${promise}
+
+COMPONENT TYPE: ${block.type}
+HEADLINE/LABEL: ${block.title}
+PURPOSE/READER JOB: ${block.purpose||''}
+
+MASTER ARTICLE CONTEXT:
+${articleContext}
+
+Write ONLY the finished newsletter component copy. Keep it concise and human, normally 40-120 words unless the format clearly needs less. Use specific local relevance where supported by the supplied context. Do not invent facts, businesses, prices, quotes, events, experts or sponsors. Do not repeat a Master Article. Make the component earn its place through humour, curiosity, usefulness, interaction or a clear reader action. If a factual claim needs evidence that is not supplied, phrase the component as a question/request for reader input rather than inventing an answer. One primary action maximum. No markdown heading because the label is stored separately.`;
+
+      const data=await api('produce-component',{
+        method:'POST',
+        body:JSON.stringify({prompt,model:'gpt-5.6-luna'})
+      });
+      const text=String(data.text||'').trim();
+      if(!text)throw new Error('No component copy returned');
+      block.content=text;
+      block.status='READY';
+      passed++;
+      localStorage.setItem(assemblyKey(),JSON.stringify(canvas));
+      renderAssembly();
+    }catch(err){
+      block.status='NEEDS PRODUCTION';
+      block.productionError=String(err?.message||err);
+      failed++;
+      localStorage.setItem(assemblyKey(),JSON.stringify(canvas));
+      renderAssembly();
+    }
+  }
+  btn.disabled=false;
+  btn.textContent=original;
+  alert(`Human voice guard and smarter issue QA finished.\nReady ${passed} · Failed ${failed}\nPartner blocks remain for real partner assignment.`);
+}
+
+function sponsorField(fields,names){
+  for(const name of names){
+    const v=fields?.[name];
+    if(Array.isArray(v)&&v.length)return v;
+    if(v!==undefined&&v!==null&&String(v).trim()!=='')return v;
+  }
+  return '';
+}
+function sponsorText(value){
+  return Array.isArray(value)?value.join(' '):String(value||'');
+}
+function sponsorRecordView(record){
+  const f=record?.fields||{};
+  return {
+    id:record.id,
+    name:sponsorText(sponsorField(f,['Sponsor Name','Partner Name','Business Name','Organisation','Organization','Company','Name'])).trim(),
+    category:sponsorText(sponsorField(f,['Sponsor Category','Partner Category','Category','Expert Lane','Commercial Lane'])).trim(),
+    status:sponsorText(sponsorField(f,['Sponsor Status','Partner Status','Status','Active Status'])).trim(),
+    publication:sponsorField(f,['Publication','Publications','Publication Name','Newsletter','Brand']),
+    commitment:sponsorText(sponsorField(f,['Commitment','Presence Commitment','Package','Frequency','Placement','Terms'])).trim(),
+    cta:sponsorText(sponsorField(f,['CTA Text','Button Text','Primary CTA','Call To Action'])).trim(),
+    url:sponsorText(sponsorField(f,['Destination URL','Website','URL','Link','Landing Page'])).trim(),
+    description:sponsorText(sponsorField(f,['Description','Sponsor Description','Partner Description','Offer','Notes'])).trim(),
+    fields:f
+  };
+}
+function activeSponsorForPublication(sponsor){
+  const status=String(sponsor.status||'').toLowerCase();
+  if(status&&/(inactive|paused|ended|cancelled|canceled|expired|prospect)/.test(status))return false;
+  const pub=sponsor.publication;
+  if(!pub||((Array.isArray(pub)&&!pub.length)))return true;
+  const ids=Array.isArray(pub)?pub:[pub];
+  const currentId=(S.issue?.fields?.Publication||[])[0]||'';
+  const name=currentPublicationName().toLowerCase();
+  const blob=ids.map(String).join(' ').toLowerCase();
+  return ids.includes(currentId)||blob.includes(name)||name.split(' ')[0]&&blob.includes(name.split(' ')[0]);
+}
+function partnerContext(items,index){
+  const before=[...items.slice(0,index)].reverse().find(x=>x.kind==='article');
+  const after=items.slice(index+1).find(x=>x.kind==='article');
+  return [before?.title,before?.purpose,after?.title,after?.purpose].filter(Boolean).join(' ');
+}
+function wordsForMatch(text){
+  const stop=new Set(['the','and','for','with','from','this','that','your','into','about','local','partner','sponsor','support','weekly','presence']);
+  return [...new Set(String(text||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>3&&!stop.has(w)))];
+}
+function sponsorMatchScore(sponsor,context,used){
+  let score=used.has(sponsor.id)?-1000:0;
+  const hay=[sponsor.name,sponsor.category,sponsor.description].join(' ').toLowerCase();
+  for(const w of wordsForMatch(context))if(hay.includes(w))score+=3;
+  const ctx=String(context||'').toLowerCase();
+  const cat=String(sponsor.category||'').toLowerCase();
+  if(/rent|tenant|landlord|property|letting|housing/.test(ctx)&&/rent|tenant|landlord|property|letting|estate/.test(cat+' '+hay))score+=18;
+  if(/charity|community|family|food parcel|crisis|support/.test(ctx)&&/charity|community|family|food|cause|support/.test(cat+' '+hay))score+=18;
+  if(/mortgage|debt|money|deposit/.test(ctx)&&/mortgage|debt|finance|money|broker/.test(cat+' '+hay))score+=18;
+  if(/car|drive|vehicle|motoring/.test(ctx)&&/garage|motor|car|vehicle|tyre/.test(cat+' '+hay))score+=18;
+  if(/dog|pet/.test(ctx)&&/dog|pet|trainer|vet/.test(cat+' '+hay))score+=18;
+  return score;
+}
+async function assignActivePartners(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const items=getCanvas();
+  const partnerBlocks=items.filter(b=>b.kind==='partner'&&String(b.status||'').toUpperCase()!=='READY');
+  if(!partnerBlocks.length){alert('No partner blocks need assignment.');return}
+
+  const button=E('assembly-partners');
+  const original=button.textContent;
+  button.disabled=true;
+  button.textContent='Loading active partners…';
+
+  try{
+    const result=await api('active-sponsors');
+    const sponsors=(result.records||[]).map(sponsorRecordView).filter(s=>s.name&&activeSponsorForPublication(s));
+    if(!sponsors.length)throw new Error(`No active sponsors were found for ${currentPublicationName()||'this publication'}.`);
+
+    if(!confirm(`Assign ${Math.min(partnerBlocks.length,sponsors.length)} active partner${Math.min(partnerBlocks.length,sponsors.length)===1?'':'s'} to ${partnerBlocks.length} partner block${partnerBlocks.length===1?'':'s'}? ICS will use only Airtable sponsor data and the surrounding issue context.`))return;
+
+    const used=new Set();
+    let assigned=0,needs=0;
+    for(const block of partnerBlocks){
+      const index=items.findIndex(x=>x.uid===block.uid);
+      const context=partnerContext(items,index);
+      const ranked=sponsors.map(s=>({s,score:sponsorMatchScore(s,context,used)})).sort((a,b)=>b.score-a.score);
+      const chosen=ranked[0]?.s;
+      if(!chosen||used.has(chosen.id)){
+        block.status='NEEDS DECISION';
+        block.content='No unused active partner could be matched automatically. Assign a real partner in the inspector.';
+        needs++;
+        continue;
+      }
+      used.add(chosen.id);
+      block.partner=chosen.name;
+      block.category=chosen.category||'Active Partner';
+      block.commitment=chosen.commitment||'Weekly presence';
+      block.cta=chosen.cta||(chosen.url?'Find Out More':'');
+      block.button=chosen.cta||(chosen.url?'Find Out More':'');
+      block.url=chosen.url||'';
+      block.proof=`Active Sponsors record: ${chosen.name}${chosen.category?` · ${chosen.category}`:''}`;
+
+      button.textContent=`Writing ${assigned+needs+1}/${partnerBlocks.length}…`;
+      try{
+        const prompt=`Write one concise partner-presence block for a UK local newsletter.
+
+PUBLICATION: ${currentPublicationName()}
+PARTNER: ${chosen.name}
+CATEGORY: ${chosen.category||'Not specified'}
+COMMITMENT: ${chosen.commitment||'Not specified'}
+APPROVED DESCRIPTION / NOTES: ${chosen.description||'No additional description supplied'}
+SURROUNDING ISSUE CONTEXT: ${context||'General issue context'}
+CTA: ${block.cta||'No button required'}
+DESTINATION URL PRESENT: ${chosen.url?'Yes':'No'}
+
+RULES:
+- Use ONLY the partner information supplied above.
+- Do not invent services, prices, claims, awards, quotes, offers, sponsorship terms or contact details.
+- Do not repeat the nearby Master Article.
+- 45-90 words.
+- Make the partner feel useful and relevant, not like a generic advert.
+- One primary action maximum.
+- Return only the finished block copy.`;
+        const generated=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
+        block.content=String(generated.text||'').trim();
+        block.status=block.content?'READY':'NEEDS DECISION';
+        if(block.status==='READY')assigned++;else needs++;
+      }catch(error){
+        block.content=chosen.description||`${chosen.name} is an active partner for this publication.`;
+        block.status=chosen.description?'READY':'NEEDS DECISION';
+        if(block.status==='READY')assigned++;else needs++;
+      }
+      localStorage.setItem(assemblyKey(),JSON.stringify(items));
+      renderAssembly();
+    }
+    alert(`Partner assignment finished.\nReady ${assigned} · Needs decision ${needs}`);
+  }catch(error){
+    alert(`Partner assignment could not complete: ${error.message}`);
+  }finally{
+    button.disabled=false;
+    button.textContent=original;
+  }
+}
+
+function qaKey(){return `${assemblyKey()}:finalqa`}
+function qaText(b){return [b.title,b.purpose,b.content,b.cta,b.button,b.url,b.partner,b.category,b.proof].filter(Boolean).join(' ')}
+function qaWords(text){
+  const stop=new Set(['this','that','with','from','have','your','what','when','where','which','about','into','they','their','there','will','would','could','should','peterborough','spotlight','local','reader','article','question','support','partner','before','answer','around','rather','first','issue','place','practical','useful','really','quite','also','just','more','most','some','than','then','them','over','under','after','because','while','whereas','important','matter','matters','straightforward','clear','help','helps','helpful','worth','knowing']);
+  return [...new Set(String(text||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>4&&!stop.has(w)))];
+}
+function qaSimilarity(a,b){
+  const A=new Set(qaWords(a)),B=new Set(qaWords(b));
+  if(!A.size||!B.size)return 0;
+  let n=0; for(const w of A)if(B.has(w))n++;
+  return n/Math.min(A.size,B.size);
+}
+function deterministicQA(items){
+  const findings=[];
+  const add=(severity,code,message,blocks=[],safeFix=false)=>findings.push({severity,code,message,blocks,safeFix});
+  const ready=items.filter(b=>String(b.status||'').toUpperCase()==='READY').length;
+  const notReady=items.length-ready;
+  if(notReady)add('FIX','NOT_READY',`${notReady} block${notReady===1?' is':'s are'} not Ready.`,items.filter(b=>String(b.status||'').toUpperCase()!=='READY').map(b=>b.uid));
+  else add('PASS','ALL_READY',`All ${items.length} blocks are Ready.`);
+
+  const partnerBlocks=items.filter(b=>b.kind==='partner');
+  if(partnerBlocks.length){
+    const missing=partnerBlocks.filter(b=>!b.partner||String(b.status||'').toUpperCase()!=='READY');
+    if(missing.length)add('FIX','PARTNER_MISSING',`${missing.length} partner block${missing.length===1?' needs':'s need'} a real active partner assignment.`,missing.map(b=>b.uid));
+    else add('PASS','PARTNERS_PRESENT',`${partnerBlocks.length}/${partnerBlocks.length} partner blocks have real assignments.`);
+  }
+
+  const leakRx=/(discounted arrangement|reviewed later|internal note|for now|commercial arrangement|sponsorship amount|sponsor rate|pricing tier|discount rate|our deal|our agreement)/i;
+  const leaks=items.filter(b=>leakRx.test(qaText(b)));
+  if(leaks.length)add('FIX','INTERNAL_NOTE_LEAK',`Possible internal/commercial wording appears in ${leaks.length} reader-facing block${leaks.length===1?'':'s'}.`,leaks.map(b=>b.uid),true);
+  else add('PASS','NO_INTERNAL_LEAK','No obvious internal commercial notes detected in reader-facing copy.');
+
+  const multiCta=items.filter(b=>{
+    const vals=[b.cta,b.button].filter(x=>String(x||'').trim());
+    return vals.length>1&&new Set(vals.map(x=>String(x).trim().toLowerCase())).size>1;
+  });
+  if(multiCta.length)add('WARNING','CTA_CONFLICT',`${multiCta.length} block${multiCta.length===1?' has':'s have'} more than one differing primary CTA/button.`,multiCta.map(b=>b.uid));
+  else add('PASS','ONE_BUTTON','No conflicting primary CTA/button pairs detected.');
+
+  // Semantic-ish duplicate scan across supporting components.
+  const comps=items.filter(b=>b.kind==='component');
+  const dupPairs=[];
+  for(let i=0;i<comps.length;i++)for(let j=i+1;j<comps.length;j++){
+    const sim=qaSimilarity(qaText(comps[i]),qaText(comps[j]));
+    if(sim>=0.42)dupPairs.push({a:comps[i],b:comps[j],sim});
+  }
+  if(dupPairs.length){
+    const ids=[...new Set(dupPairs.flatMap(p=>[p.a.uid,p.b.uid]))];
+    add('WARNING','SUPPORTING_DUPLICATION',`${dupPairs.length} supporting-component pair${dupPairs.length===1?' looks':'s look'} substantially similar.`,ids,true);
+  } else add('PASS','SUPPORTING_VARIETY','Supporting components do not show obvious word-level duplication.');
+
+  // Topic concentration using useful content words.
+  const counts=new Map();
+  for(const b of items){
+    for(const w of qaWords(qaText(b)))counts.set(w,(counts.get(w)||0)+1);
+  }
+  const concentrated=[...counts.entries()].filter(([,n])=>n>=5).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(concentrated.length)add('WARNING','TOPIC_CONCENTRATION',`Repeated issue themes detected: ${concentrated.map(([w,n])=>`${w} (${n})`).join(', ')}. Review whether the issue is circling the same question too often.`);
+  else add('PASS','TOPIC_BALANCE','No obvious single-word topic concentration across five or more blocks.');
+
+
+  // Human-language / AI-tell guard: frequency, not blanket bans.
+  const humanGuardWords=['useful','practical','straightforward','meaningful','valuable','importantly','helpful','navigate','whether','matters','key','crucial','worth knowing'];
+  const issueBlob=items.map(b=>String(b.content||'').toLowerCase()).join(' ');
+  const overused=[];
+  for(const term of humanGuardWords){
+    const rx=new RegExp(`\\b${term.replace(/\s+/g,'\\s+')}\\b`,'g');
+    const n=(issueBlob.match(rx)||[]).length;
+    const limit=term.includes(' ')?2:3;
+    if(n>limit)overused.push(`${term} (${n})`);
+  }
+  const phrasePatterns=[
+    {label:'The question is…',rx:/\bthe question is\b/gi,limit:2},
+    {label:'That matters because…',rx:/\bthat matters because\b/gi,limit:1},
+    {label:'The key point…',rx:/\bthe key point\b/gi,limit:1},
+    {label:'It is important to…',rx:/\bit is important to\b/gi,limit:1}
+  ];
+  const overusedPhrases=phrasePatterns.map(p=>({label:p.label,n:(issueBlob.match(p.rx)||[]).length,limit:p.limit})).filter(x=>x.n>x.limit);
+  if(overused.length||overusedPhrases.length){
+    add('WARNING','HUMAN_VOICE',`Human-language check: repeated AI-ish wording/patterns detected — ${[...overused,...overusedPhrases.map(x=>`${x.label} (${x.n})`)].join(', ')}. Prefer specific everyday wording and vary sentence shape.`,[],true);
+  }else add('PASS','HUMAN_VOICE','No obvious overuse of common AI-ish words or repeated polished sentence patterns.');
+
+  // Partner overexposure: count partner name across blocks, but do not auto-remove.
+  for(const p of partnerBlocks){
+    if(!p.partner)continue;
+    const needle=String(p.partner).toLowerCase();
+    const appearances=items.filter(b=>qaText(b).toLowerCase().includes(needle));
+    if(appearances.length>=3)add('WARNING','PARTNER_EXPOSURE',`${p.partner} appears in ${appearances.length} blocks. Confirm that this level of visibility is intentional.`,appearances.map(b=>b.uid));
+  }
+
+  // Rhythm: warn on runs of 3 articles.
+  let run=0,maxRun=0;
+  for(const b of items){run=b.kind==='article'?run+1:0;maxRun=Math.max(maxRun,run)}
+  if(maxRun>=3)add('WARNING','HEAVY_RHYTHM',`The running order contains ${maxRun} Master Articles in a row. Consider a lighter/interactivity break.`);
+  else add('PASS','RHYTHM',`No run of three or more Master Articles detected.`);
+
+  // First-party supplied info rule: informational only, never a failure.
+  add('PASS','FIRST_PARTY_RULE','Named information supplied directly by a featured partner/organisation may be used as first-party information. Public corroboration is helpful but not mandatory; attribute or qualify it where appropriate.');
+
+  return findings;
+}
+function renderQAReport(report){
+  const lines=[`FINAL QA — ${report.summary.fix} Fix · ${report.summary.warning} Warning · ${report.summary.pass} Pass`,''];
+  for(const f of report.findings){
+    lines.push(`${f.severity}: ${f.message}`);
+  }
+  return lines.join('\n');
+}
+
+function showQAReport(report,scroll=true){
+  const panel=E('qa-report-panel'),text=E('qa-report-text'),summary=E('qa-report-summary');
+  if(!panel||!text||!summary)return;
+  panel.style.display='block';
+  text.value=renderQAReport(report);
+  summary.textContent=`${report.summary.fix} Fix · ${report.summary.warning} Warning · ${report.summary.pass} Pass · saved in this browser`;
+  if(scroll)setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+function loadSavedQAReport(){
+  try{
+    const report=JSON.parse(localStorage.getItem(qaKey())||'null');
+    if(report)showQAReport(report,false);
+  }catch{}
+}
+async function copyQAReport(){
+  const text=E('qa-report-text')?.value||'';
+  if(!text){alert('There is no QA report to copy yet.');return}
+  try{
+    await navigator.clipboard.writeText(text);
+    const b=E('qa-copy'),old=b.textContent;
+    b.textContent='Copied ✓';
+    setTimeout(()=>b.textContent=old,1400);
+  }catch{
+    E('qa-report-text').focus();
+    E('qa-report-text').select();
+    alert('The report is selected. Press Ctrl+C to copy it.');
+  }
+}
+async function runFinalQA(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const items=getCanvas();
+  if(!items.length){alert('Add or assemble the issue first.');return}
+  const btn=E('assembly-qa'),original=btn.textContent;
+  btn.disabled=true;btn.textContent='Running Final QA…';
+  try{
+    let findings=deterministicQA(items);
+    try{
+      const payload={
+        publication:currentPublicationName(),
+        issuePromise:E('assembly-promise')?.value||'',
+        blocks:items.map((b,i)=>({
+          order:i+1,uid:b.uid,kind:b.kind,type:b.type,title:b.title,purpose:b.purpose,
+          content:b.content,partner:b.partner,category:b.category,cta:b.cta,button:b.button,url:b.url,status:b.status,
+          sourceRule:b.kind==='partner'?'Partner information may include first-party information supplied directly by the organisation. Do not treat lack of public web corroboration alone as a failure.':''
+        }))
+      };
+      const ai=await api('final-qa',{method:'POST',body:JSON.stringify(payload)});
+      if(Array.isArray(ai.findings))findings=findings.concat(ai.findings);
+    }catch(error){
+      findings.push({severity:'WARNING',code:'AI_QA_UNAVAILABLE',message:`Editorial AI review was unavailable, so deterministic QA only was used: ${error.message}`,blocks:[],safeFix:false});
+    }
+    const summary={
+      fix:findings.filter(f=>f.severity==='FIX').length,
+      warning:findings.filter(f=>f.severity==='WARNING').length,
+      pass:findings.filter(f=>f.severity==='PASS').length
+    };
+    const report={createdAt:new Date().toISOString(),summary,findings};
+    localStorage.setItem(qaKey(),JSON.stringify(report));
+    showQAReport(report,true);
+    alert(`Final QA complete. ${summary.fix} Fix · ${summary.warning} Warning · ${summary.pass} Pass. The full report is saved in the Final QA Results panel.`);
+  }finally{
+    btn.disabled=false;btn.textContent=original;
+  }
+}
+async function applySafeFixes(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const items=getCanvas();
+  const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
+  if(!saved){alert('Run Final QA first.');return}
+  const safe=saved.findings.filter(f=>f.safeFix&&['FIX','WARNING'].includes(f.severity));
+  const ids=[...new Set(safe.flatMap(f=>f.blocks||[]))];
+  const targets=items.filter(b=>ids.includes(b.uid)&&b.kind!=='article');
+  if(!targets.length){alert('Final QA found no safe automatic fixes. Master Articles and partner assignments are never changed automatically.');return}
+  if(!confirm(`Apply safe fixes to ${targets.length} supporting/partner block${targets.length===1?'':'s'}? Master Articles and partner assignments will not be removed or changed.`))return;
+
+  const btn=E('assembly-fix'),original=btn.textContent;
+  btn.disabled=true;
+  let fixed=0,failed=0;
+  try{
+    for(const block of targets){
+      btn.textContent=`Fixing ${fixed+failed+1}/${targets.length}…`;
+      const relevant=safe.filter(f=>(f.blocks||[]).includes(block.uid)).map(f=>`${f.code}: ${f.message}`).join('\n');
+      const context=partnerContext(items,items.findIndex(x=>x.uid===block.uid));
+      const wholeIssue=items.map((x,i)=>`${i+1}. ${x.title} — ${String(x.content||x.purpose||'').slice(0,260)}`).join('\n');
+      const prompt=`Safely rewrite ONE existing newsletter block after Final QA.
+
+PUBLICATION: ${currentPublicationName()}
+BLOCK TYPE: ${block.kind} / ${block.type||''}
+TITLE: ${block.title}
+CURRENT COPY:
+${block.content||''}
+
+QA PROBLEMS TO FIX:
+${relevant}
+
+NEARBY ARTICLE CONTEXT:
+${context||'None supplied'}
+
+WHOLE ISSUE MAP:
+${wholeIssue}
+
+${block.kind==='partner'?`REAL ASSIGNED PARTNER: ${block.partner||''}
+APPROVED CATEGORY: ${block.category||''}
+CTA: ${block.cta||block.button||''}
+IMPORTANT: Keep the assigned partner. Do not alter commercial commitments or invent services, prices, offers, claims, sponsorship terms or contact details.`:''}
+
+RULES:
+- Return only replacement reader-facing copy.
+- Preserve the function of the block, but if QA says the topic/action is repetitive, choose a DIFFERENT subject or reader job from the whole issue rather than paraphrasing the same idea.
+- Remove internal/commercial notes and avoid duplicating nearby or issue-wide content.
+- Write like an informed local person talking to another local person: plain, specific, sometimes conversational, never literary or over-polished.
+- Avoid overusing words such as useful, practical, straightforward, meaningful, valuable, importantly, helpful, navigate, whether, matters, key and crucial.
+- Prefer concrete specifics over adjectives.
+- Do not invent local facts, businesses, prices, quotes, events, experts or sponsors.
+- If factual evidence is missing, turn the component into a reader question/opinion prompt instead of inventing an answer.
+- First-party information supplied directly by a named featured organisation is usable; do not reject it merely because it lacks public web corroboration.
+- 35-100 words unless the format clearly needs less.
+- One primary action maximum.`;
+      try{
+        const generated=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
+        const text=String(generated.text||'').trim();
+        if(!text)throw new Error('No replacement copy returned');
+        block.content=text;
+        block.status='READY';
+        fixed++;
+      }catch(error){
+        failed++;
+      }
+      localStorage.setItem(assemblyKey(),JSON.stringify(items));
+      renderAssembly();loadSavedQAReport();
+    }
+    localStorage.removeItem(qaKey());
+    alert(`Safe fixes finished.\nFixed ${fixed} · Failed ${failed}\nRun Final QA again to verify the issue.`);
+  }finally{
+    btn.disabled=false;btn.textContent=original;
+  }
+}
 function assemblyDraft(){const items=getCanvas(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();if(!items.length)return 'Add at least one block to the issue canvas first.';let out=`ISSUE BUILD PACK\n\nISSUE\n${val(S.issue?.fields||{},'Issue Number')||''}\n\nISSUE PROMISE / QUESTION\n${theme||'[ADD ISSUE PROMISE]'}\n\nCOMPLETE RUNNING ORDER`;items.forEach((b,i)=>{out+=`\n\n${i+1}. ${b.title||b.type}\nTYPE: ${b.type}\nSTATUS: ${b.status||'NEEDS DECISION'}`;if(b.partner)out+=`\nPARTNER: ${b.partner}`;if(b.category)out+=`\nCATEGORY: ${b.category}`;if(b.commitment)out+=`\nCOMMITMENT: ${b.commitment}`;if(b.purpose)out+=`\nPURPOSE: ${b.purpose}`;if(b.proof)out+=`\nLOCAL PROOF / SOURCE: ${b.proof}`;if(b.cta)out+=`\nPRIMARY CTA: ${b.cta}`;if(b.button)out+=`\nBUTTON: ${b.button}`;if(b.url)out+=`\nURL: ${b.url}`;if(b.content)out+=`\nCONTENT / BRIEF:\n${b.content}`});const notReady=items.filter(x=>x.status!=='READY');out+=`\n\nPRODUCTION SUMMARY\n${items.filter(x=>x.status==='READY').length} ready\n${notReady.length} still needs production or a decision`;if(notReady.length)out+=`\n\nNOT READY\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+x.status).join('\n')}`;out+='\n\nFINAL QA\n- CHECK: all active paid partners included\n- CHECK: locked categories protected\n- CHECK: one primary action/button per article or slot\n- CHECK: named local proof and source accuracy\n- CHECK: no repeated question/angle from recent issues\n- CHECK: issue rhythm balances serious, useful, interactive and commercial content';return out}
 function generateAssembly(){E('preview-text').value=assemblyDraft();E('preview-dialog').showModal()}
 E('library-filter').onchange=renderSections;E('assembly-search').oninput=renderAssembly;
@@ -744,7 +1413,7 @@ E('assembly-order').ondragover=e=>{e.preventDefault();E('assembly-order').classL
 E('assembly-order').ondragleave=()=>E('assembly-order').classList.remove('drag-over');
 E('assembly-order').ondrop=e=>dropOnCanvas(e);
 E('assembly-clear').onclick=()=>{if(confirm('Clear the entire issue canvas?')){canvasSelectedUid=null;saveCanvas([])}};
-E('assembly-generate').onclick=generateAssembly;
+E('assembly-auto').onclick=autoAssembleIssue;E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;
 E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
 E('save-inspector').onclick=saveInspector;
 E('remove-canvas-block').onclick=()=>{if(canvasSelectedUid)removeCanvasBlock(canvasSelectedUid)};
