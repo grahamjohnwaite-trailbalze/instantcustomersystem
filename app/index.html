@@ -23,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.28<br><strong>Reliable stale-run classification</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.30<br><strong>Automatic issue assembly</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view active" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -40,7 +40,7 @@
 <div id="production-progress" class="empty" style="margin-bottom:14px">Production service not run yet.</div>
 <div id="map-audit" class="empty" style="margin-bottom:14px">Audit not run yet.</div>
 <div class="form-grid"><div class="field full"><label>Issue status</label><select id="ih-status"><option>PLANNED</option><option>BUILDING</option><option>QA</option><option>READY FOR LETTERMAN</option><option>PUBLISHED</option></select></div><div class="field full"><label>Main theme</label><textarea id="ih-theme"></textarea></div><div class="field full"><label>Subject line</label><input id="ih-subject"></div><div class="field full"><label>Preheader</label><textarea id="ih-preheader"></textarea></div><div class="field full"><label>Send date</label><input id="ih-date" type="date"></div></div><h3>Minimum section gate</h3><div id="gate" class="checklist"></div><div class="warning" style="margin-top:14px"><strong>Phase 1B discipline</strong><br>One primary Hot Button. One useful action. Named local proof. No unresolved placeholders in final copy.</div></aside></div></section><section class="view" id="view-assemble">
-<div class="section-head planner-head"><div><h2>Issue Canvas</h2><div class="muted">Drag articles and components into one running order. Click any card to edit the information that block needs.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-clear">Clear canvas</button><button class="btn" id="assembly-generate">Generate Issue Build Pack</button></div></div>
+<div class="section-head planner-head"><div><h2>Issue Canvas</h2><div class="muted">Drag articles and components into one running order. Click any card to edit the information that block needs.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-clear">Clear canvas</button><button class="btn" id="assembly-auto">Auto Assemble Issue</button><button class="btn" id="assembly-generate">Generate Issue Build Pack</button></div></div>
 <div class="planner-score" id="planner-score"><div><strong id="score-headlines">0</strong><span>Articles in Canvas</span></div><div><strong id="score-interactive">0</strong><span>Components</span></div><div><strong id="score-authority">0</strong><span>Partner blocks</span></div><div><strong id="score-activation">0</strong><span>Ready</span></div><div><strong id="score-commitments">0</strong><span>Total blocks</span></div></div>
 <div class="issue-promise-bar"><div class="field"><label>Issue promise / organising question</label><textarea id="assembly-theme" placeholder="What should readers decide, discover, feel or do by the end of this issue?"></textarea></div><button class="btn secondary" id="save-canvas-theme">Save promise</button></div>
 <div class="canvas-layout">
@@ -888,6 +888,72 @@ function renderInspector(){const empty=E('inspector-empty'),form=E('inspector-fo
 function saveInspector(){const items=getCanvas(),i=items.findIndex(x=>x.uid===canvasSelectedUid);if(i<0)return;items[i]={...items[i],title:E('inspect-title').value,purpose:E('inspect-purpose').value,partner:E('inspect-partner').value,category:E('inspect-category').value,commitment:E('inspect-commitment').value,cta:E('inspect-cta').value,button:E('inspect-button').value,url:E('inspect-url').value,proof:E('inspect-proof').value,content:E('inspect-content').value,status:E('inspect-status').value};localStorage.setItem(assemblyKey(),JSON.stringify(items));renderAssembly()}
 function createStarterCopy(){const items=getCanvas(),b=items.find(x=>x.uid===canvasSelectedUid);if(!b||b.kind==='article')return;const theme=String(E('assembly-theme')?.value||'this issue').trim();let text='';if(b.type==='POLL')text=`QUESTION: What matters most to you about ${theme}?\n\nA. Value for money\nB. Convenience\nC. Quality\nD. Something else — tell us`;else if(b.type==='QUIZ')text=`QUESTION: How well do you know the local story behind ${theme}?\n\nANSWER / REVEAL: [ADD VERIFIED ANSWER AND SOURCE]`;else if(b.type==='Q&A')text=`QUESTION: [ADD THE READER QUESTION]\n\nANSWER: [ADD A USEFUL, EVIDENCE-BASED ANSWER${b.partner?' FROM '+b.partner.toUpperCase():''}]`;else if(b.type==='OPENING NOTE')text=`This week we're asking: ${theme}\n\n[ADD 2–4 SHORT LINES THAT SET UP THE ISSUE AND GIVE READERS A REASON TO KEEP GOING.]`;else if(b.type==='CLOSING QUESTION')text=`What is the one thing you would add to this week's conversation about ${theme}?`;else if(b.type==='READER RECOMMENDATION')text=`What local place, person or service would you recommend when it comes to ${theme}? Tell us the name and why.`;else if(b.type==='FACEBOOK DISCUSSION')text=`FACEBOOK QUESTION: ${theme}\n\nWhat do you think — and what local example proves your point?`;else if(b.type==='PARTNER PRESENCE')text=`PARTNER: ${b.partner||'[ADD PARTNER]'}\nFORMAT: [Q&A / TIP / MYTH V FACT / OFFER / ARTICLE / RECOMMENDATION]\nREADER QUESTION: [ADD QUESTION]\nUSEFUL ANSWER / VALUE: [ADD CONTENT]\nCTA: ${b.cta||'[ADD ONE PRIMARY ACTION]'}`;else text=`${b.type}\n\nPURPOSE: ${b.purpose}\n\n[CREATE FINISHED LETTERMAN-READY CONTENT HERE]\n\nSOURCE / LOCAL PROOF: ${b.proof||'[ADD IF REQUIRED]'}`;
  E('inspect-content').value=text;E('inspect-status').value='NEEDS PRODUCTION'}
+
+function autoAssembleIssue(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const produced=(S.articleLibrary||S.sections||[])
+    .filter(s=>masterArticleState(s)==='complete')
+    .sort((a,b)=>Number(val(a.fields,'Section Order')||999)-Number(val(b.fields,'Section Order')||999));
+  if(!produced.length){alert('No completed Master Articles are available for this issue.');return}
+
+  if(getCanvas().length&&!confirm('Replace the current canvas with an automatically assembled first draft?'))return;
+
+  const comp=(type,title='',purpose='')=>{
+    const def=COMPONENT_DEFS.find(x=>x.type===type);
+    const b=makeComponentBlock(def||{type,title:type,purpose:''});
+    if(title)b.title=title;
+    if(purpose)b.purpose=purpose;
+    return b;
+  };
+  const partner=(title,purpose)=>{
+    const b=makePartnerBlock();
+    b.title=title;
+    b.purpose=purpose;
+    b.status='NEEDS DECISION';
+    return b;
+  };
+
+  const articles=produced.slice(0,10).map(makeArticleBlock);
+  const items=[];
+  items.push(comp('OPENING NOTE',"Opening Note","Set up the Peterborough issue promise in 2–4 short lines and preview the strongest reasons to keep reading."));
+
+  const between=[
+    ()=>comp('READER POLL',"The Peterborough Quick Vote","One specific, easy-to-answer local question connected to the issue's strongest tension."),
+    ()=>comp('TIP / HACK',"One Useful Thing","Give readers one practical action they can use immediately."),
+    ()=>comp('JOKE',"Quick Breather","A short suitable joke or light local observation to break up heavier material."),
+    ()=>comp('Q&A',"Reader Question","Answer one useful question raised by the surrounding Master Articles."),
+    ()=>comp('INTERESTING FACT',"Worth Knowing","One verified, surprising Peterborough fact with a clear source requirement."),
+    ()=>comp('READER RECOMMENDATION',"Your Peterborough Recommendation","Ask for a named local recommendation that can feed a future guide or article."),
+    ()=>comp('MYTH V FACT',"Myth v Fact","Test one common belief raised by this issue and give the fair, sourced answer."),
+    ()=>comp('FACEBOOK DISCUSSION',"Take It To Facebook","Create one standalone stop-and-comment question connected to the issue."),
+    ()=>comp('TRIVIA',"Peterborough Quick Test","A short local knowledge question with a verified answer/reveal.")
+  ];
+
+  articles.forEach((a,i)=>{
+    items.push(a);
+    if(i<articles.length-1 && between[i])items.push(between[i]());
+  });
+
+  // Commercial presence is deliberately visible but not invented.
+  items.splice(Math.min(7,items.length),0,
+    partner("Partner / Expert Presence 1","Assign an active paid partner or authority lane and choose the format that best serves this issue. Do not invent a sponsor.")
+  );
+  items.splice(Math.min(15,items.length),0,
+    partner("Partner / Expert Presence 2","Assign another active paid partner or commercial activation without repeating the first category. Do not invent a sponsor.")
+  );
+
+  items.push(comp('READER VOTE',"Worth It Or Overpriced?","A quick value judgement or either/or vote tied to a lighter issue theme."));
+  items.push(comp('COMMUNITY VOICE',"Community Voice","Surface one useful local voice, cause or contribution with named proof."));
+  items.push(comp('ACTIVATION / OFFER',"Do Something This Week","One useful visit, booking, nomination, download, offer, event or reply action."));
+  items.push(comp('CLOSING QUESTION',"One Last Question","End with one specific question readers can reply to or answer on social."));
+
+  // Keep the first automatic draft within the agreed Spotlight range.
+  const finalItems=items.slice(0,25);
+  localStorage.setItem(assemblyKey(),JSON.stringify(finalItems));
+  canvasSelectedUid=finalItems[0]?.uid||null;
+  renderAssembly();
+  alert(`Auto assembly created ${finalItems.length} blocks from ${articles.length} completed Master Articles. Review the running order, assign real partners, then produce the supporting components.`);
+}
 function assemblyDraft(){const items=getCanvas(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();if(!items.length)return 'Add at least one block to the issue canvas first.';let out=`ISSUE BUILD PACK\n\nISSUE\n${val(S.issue?.fields||{},'Issue Number')||''}\n\nISSUE PROMISE / QUESTION\n${theme||'[ADD ISSUE PROMISE]'}\n\nCOMPLETE RUNNING ORDER`;items.forEach((b,i)=>{out+=`\n\n${i+1}. ${b.title||b.type}\nTYPE: ${b.type}\nSTATUS: ${b.status||'NEEDS DECISION'}`;if(b.partner)out+=`\nPARTNER: ${b.partner}`;if(b.category)out+=`\nCATEGORY: ${b.category}`;if(b.commitment)out+=`\nCOMMITMENT: ${b.commitment}`;if(b.purpose)out+=`\nPURPOSE: ${b.purpose}`;if(b.proof)out+=`\nLOCAL PROOF / SOURCE: ${b.proof}`;if(b.cta)out+=`\nPRIMARY CTA: ${b.cta}`;if(b.button)out+=`\nBUTTON: ${b.button}`;if(b.url)out+=`\nURL: ${b.url}`;if(b.content)out+=`\nCONTENT / BRIEF:\n${b.content}`});const notReady=items.filter(x=>x.status!=='READY');out+=`\n\nPRODUCTION SUMMARY\n${items.filter(x=>x.status==='READY').length} ready\n${notReady.length} still needs production or a decision`;if(notReady.length)out+=`\n\nNOT READY\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+x.status).join('\n')}`;out+='\n\nFINAL QA\n- CHECK: all active paid partners included\n- CHECK: locked categories protected\n- CHECK: one primary action/button per article or slot\n- CHECK: named local proof and source accuracy\n- CHECK: no repeated question/angle from recent issues\n- CHECK: issue rhythm balances serious, useful, interactive and commercial content';return out}
 function generateAssembly(){E('preview-text').value=assemblyDraft();E('preview-dialog').showModal()}
 E('library-filter').onchange=renderSections;E('assembly-search').oninput=renderAssembly;
@@ -895,7 +961,7 @@ E('assembly-order').ondragover=e=>{e.preventDefault();E('assembly-order').classL
 E('assembly-order').ondragleave=()=>E('assembly-order').classList.remove('drag-over');
 E('assembly-order').ondrop=e=>dropOnCanvas(e);
 E('assembly-clear').onclick=()=>{if(confirm('Clear the entire issue canvas?')){canvasSelectedUid=null;saveCanvas([])}};
-E('assembly-generate').onclick=generateAssembly;
+E('assembly-auto').onclick=autoAssembleIssue;E('assembly-generate').onclick=generateAssembly;
 E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
 E('save-inspector').onclick=saveInspector;
 E('remove-canvas-block').onclick=()=>{if(canvasSelectedUid)removeCanvasBlock(canvasSelectedUid)};
