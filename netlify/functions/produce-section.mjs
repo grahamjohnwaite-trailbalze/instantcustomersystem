@@ -78,11 +78,15 @@ STYLE, AUDIENCE AND SAFETY
 - Never invent recommendations, prices, dates, businesses or factual claims.
 - Use named local proof only where supported by the supplied research pack.
 - Distinguish fact, opinion and reader questions.
-- One primary CTA only. The CTA should match the reader's next natural action; do not manufacture a weak button just because a field exists.
+- One primary CTA only. The CTA should match the reader's next natural action. It may be engagement, list-building, a lead magnet, a Resident Expert, a Featured Partner, a booking, an offer, a directory/resource, a community action or another genuinely useful next step; do not manufacture a weak button just because a field exists.
 - Raw clean destination URLs only.
 - Short paragraphs suitable for a narrow article page.
 - The article must stand alone outside the newsletter.
-- Length is earned by the story: normally 450-850 words. Go longer only when the reader genuinely needs the extra detail; cut repetition rather than padding to a target.
+- QUESTION-FIRST RULE: answer ONE clear reader question well. Do not turn a broad topic into a catch-all guide.
+- SPLIT TEST: if the brief naturally contains two or more questions that could each make a useful standalone 250-600 word article, answer only the approved core question here and return the other distinct questions in related_questions for the content bank. Do not cram them into this article.
+- Length is earned by the question: normally 250-600 words, with roughly 350-500 as the sweet spot. Go beyond 600 only when the reader genuinely needs the extra detail; a 1,000+ word cornerstone piece should be exceptional, not the default. Cut repetition rather than padding to a target.
+- SPOTLIGHT VOICE: keep personality, humour and an Unfiltered edge where the subject earns it. Do not manufacture outrage or clickbait, but do challenge lazy assumptions and bland official framing when evidence supports a sharper question.
+- For contested subjects, do not force false certainty. A credible practical, challenge, contrarian or debate angle is allowed when it is supported and clearly distinguished from fact.
 ${useEvidence?`- Use ONLY material claims supported by the research pack below.
 - If an optional or non-essential detail in the brief could not be verified, OMIT that detail from the article rather than forcing it into the copy.
 - A missing optional detail does NOT by itself require QA Fix Required.
@@ -112,6 +116,8 @@ Return ONLY valid JSON in this exact shape:
  "article_title":"",
  "article_subhead":"",
  "article_body":"full article body without duplicated title or markdown citations",
+ "editorial_stance":"PRACTICAL|NEUTRAL|CHALLENGE|CONTRARIAN|DEBATE|UNFILTERED",
+ "related_questions":["distinct follow-up question to bank, not answered in this article"],
  "summary_title":"short title for Letterman article summary",
  "summary_subhead":"one sentence",
  "summary_content":"45-90 word teaser",
@@ -159,6 +165,7 @@ function packageBlock(result,sources,model){
   const payload={
     version:'MASTER_ARTICLE_V1',model_used:model||'',
     article_subhead:String(result.article_subhead||'').trim(),
+    editorial_stance:String(result.editorial_stance||'').trim(),related_questions:Array.isArray(result.related_questions)?result.related_questions.map(x=>String(x||'').trim()).filter(Boolean).slice(0,12):[],
     summary_title:String(result.summary_title||'').trim(),summary_subhead:String(result.summary_subhead||'').trim(),summary_content:String(result.summary_content||'').trim(),
     seo_title:String(result.seo_title||'').trim(),seo_description:String(result.seo_description||'').trim(),url_path:String(result.url_path||'').trim().replace(/^\/+/,''),keywords:String(result.keywords||'').trim(),
     featured_image_brief:String(result.featured_image_brief||'').trim(),featured_image_alt:String(result.featured_image_alt||'').trim(),

@@ -23,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.38<br><strong>Audience voice + localisation gate</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button data-view="assemble">Issue Planner</button></nav><div class="phase">Issue Canvas v3.4.39<br><strong>Question-first issue architecture</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Dashboard</h1><div class="sub" id="page-sub">Publication-aware production workspace.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view active" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -556,10 +556,10 @@ function auditMap(){
    const hits=S.sections.filter(s=>keys.some(k=>sectionText(s).includes(k)));
    return `<div><strong>${hits.length?'✓':'✕'} ${esc(name)}</strong><br><span class="muted">${hits.length?'Sections '+hits.map(s=>esc(val(s.fields,'Section Order'))).join(', '):'MISSING'}</span></div>`;
  }).join('');
- const activationWarning=(counts.Activation||0)<6?`<div class="warn"><strong>Activation gap:</strong> ${(counts.Activation||0)} mapped; target is 6–8 clear activation routes.</div>`:'';
+ const activationWarning=(counts.Activation||0)<6?`<div class="warn"><strong>Featured Partner opportunity gap:</strong> ${(counts.Activation||0)} legacy Activation lanes mapped; target is 6–8 clear short-term Featured Partner routes while the commercial model is being upgraded.</div>`:'';
  E('map-audit').className='';
  E('map-audit').innerHTML=`<div class="philosophy-box"><strong>Map audit</strong><div class="muted">${S.sections.length} sections</div></div>
- <div class="grid3" style="margin-top:10px"><div><strong>${counts.Authority||0}</strong><br><span class="muted">Authority</span></div><div><strong>${counts.Activation||0}</strong><br><span class="muted">Activation</span></div><div><strong>${counts.Community||0}</strong><br><span class="muted">Community</span></div></div>
+ <div class="grid3" style="margin-top:10px"><div><strong>${counts.Authority||0}</strong><br><span class="muted">Resident Expert / Authority</span></div><div><strong>${counts.Activation||0}</strong><br><span class="muted">Featured Partner (legacy Activation)</span></div><div><strong>${counts.Community||0}</strong><br><span class="muted">Community</span></div></div>
  ${activationWarning}
  <h3>Locked authority lane coverage</h3><div style="display:grid;gap:8px">${lanes}</div>
  <h3>CTA mix</h3><div class="muted">${Object.entries(ctas).map(([k,v])=>`${esc(k)} ${v}`).join(' · ')}</div>
@@ -579,7 +579,7 @@ function selectedArticleExport(){
  const f=S.section.fields||{},p=masterArticlePackage(f);
  if(!p)return 'This record does not yet contain a Master Article package. Produce it first.';
  const sources=(p.sources||[]).map((x,i)=>`${i+1}. ${x.title||x.url}\n${x.url}\nSupports: ${x.supports||''}`).join('\n\n');
- return `LETTERMAN MASTER ARTICLE\n\nARTICLE TITLE\n${val(f,'Section Title')}\n\nARTICLE SUBHEAD\n${p.article_subhead||''}\n\nARTICLE BODY\n${val(f,'Section Final Copy')}\n\nARTICLE SUMMARY TITLE\n${p.summary_title||''}\n\nARTICLE SUMMARY SUBHEAD\n${p.summary_subhead||''}\n\nARTICLE SUMMARY CONTENT\n${p.summary_content||''}\n\nSEO TITLE\n${p.seo_title||''}\n\nSEO DESCRIPTION\n${p.seo_description||''}\n\nURL PATH\n${p.url_path||''}\n\nKEYWORDS\n${p.keywords||''}\n\nFEATURED IMAGE BRIEF\n${p.featured_image_brief||''}\n\nFEATURED IMAGE ALT TEXT\n${p.featured_image_alt||''}\n\nNEWSLETTER HEADLINE\n${p.newsletter_headline||''}\n\nNEWSLETTER TEASER\n${p.newsletter_teaser||''}\n\nBUTTON TEXT\n${val(f,'CTA Text')}\n\nFACEBOOK\n${p.social_facebook||''}\n\nLINKEDIN\n${p.social_linkedin||''}\n\nX\n${p.social_x||''}\n\nSOURCES / INTERNAL QA\n${sources}`;
+ return `LETTERMAN MASTER ARTICLE\n\nARTICLE TITLE\n${val(f,'Section Title')}\n\nEDITORIAL STANCE\n${p.editorial_stance||''}\n\nARTICLE SUBHEAD\n${p.article_subhead||''}\n\nARTICLE BODY\n${val(f,'Section Final Copy')}\n\nRELATED QUESTIONS TO BANK\n${Array.isArray(p.related_questions)?p.related_questions.map(x=>'- '+x).join('\n'):''}\n\nARTICLE SUMMARY TITLE\n${p.summary_title||''}\n\nARTICLE SUMMARY SUBHEAD\n${p.summary_subhead||''}\n\nARTICLE SUMMARY CONTENT\n${p.summary_content||''}\n\nSEO TITLE\n${p.seo_title||''}\n\nSEO DESCRIPTION\n${p.seo_description||''}\n\nURL PATH\n${p.url_path||''}\n\nKEYWORDS\n${p.keywords||''}\n\nFEATURED IMAGE BRIEF\n${p.featured_image_brief||''}\n\nFEATURED IMAGE ALT TEXT\n${p.featured_image_alt||''}\n\nNEWSLETTER HEADLINE\n${p.newsletter_headline||''}\n\nNEWSLETTER TEASER\n${p.newsletter_teaser||''}\n\nBUTTON TEXT\n${val(f,'CTA Text')}\n\nFACEBOOK\n${p.social_facebook||''}\n\nLINKEDIN\n${p.social_linkedin||''}\n\nX\n${p.social_x||''}\n\nSOURCES / INTERNAL QA\n${sources}`;
 }
 async function testOpenAI(){
  const b=E('test-openai'),old=b.textContent;b.disabled=true;b.textContent='Testing…';
@@ -953,7 +953,7 @@ function autoAssembleIssue(){
     return b;
   };
 
-  const articles=produced.slice(0,10).map(makeArticleBlock);
+  const articles=produced.slice(0,15).map(makeArticleBlock);
   const items=[];
   items.push(comp('OPENING NOTE',"Opening Note","Set up the Peterborough issue promise in 2–4 short lines and preview the strongest reasons to keep reading."));
 
@@ -966,33 +966,51 @@ function autoAssembleIssue(){
     ()=>comp('READER RECOMMENDATION',"Your Peterborough Recommendation","Ask for a named local recommendation that can feed a future guide or article."),
     ()=>comp('MYTH V FACT',"Myth v Fact","Test one common belief raised by this issue and give the fair, sourced answer."),
     ()=>comp('FACEBOOK DISCUSSION',"Take It To Facebook","Create one standalone stop-and-comment question connected to the issue."),
-    ()=>comp('TRIVIA',"Peterborough Quick Test","A short local knowledge question with a verified answer/reveal.")
+    ()=>comp('TRIVIA',"Peterborough Quick Test","A short local knowledge question with a verified answer/reveal."),
+    ()=>comp('READER VOICE',"Over To You","Ask for one specific lived experience, example or opinion that can improve a future article."),
+    ()=>comp('MINI GUIDE',"Save This","A tiny 3-5 point checklist or decision aid that adds value without becoming another article."),
+    ()=>comp('LOCAL DISCOVERY',"One To Try","A named local discovery prompt or recommendation request tied to a lighter reader need; never invent the recommendation."),
+    ()=>comp('QUICK OPINION',"Unfiltered Take","A short fair challenge or contrary question where the issue has earned some edge; explain the tension, do not manufacture outrage."),
+    ()=>comp('SOCIAL PROMPT',"Your Turn","A specific reply/comment prompt that can seed a later article or guide without repeating an existing CTA.")
   ];
 
+  const desiredBetween=Math.min(8,Math.max(0,articles.length-1));
+  const supportGapIndexes=new Set(Array.from({length:desiredBetween},(_,j)=>Math.round(j*Math.max(0,articles.length-2)/Math.max(1,desiredBetween-1))));
+  let betweenUsed=0;
   articles.forEach((a,i)=>{
     items.push(a);
-    if(i<articles.length-1 && between[i])items.push(between[i]());
+    if(i<articles.length-1 && supportGapIndexes.has(i) && between[betweenUsed])items.push(between[betweenUsed++]());
   });
 
   // Commercial presence is deliberately visible but not invented.
   items.splice(Math.min(7,items.length),0,
-    partner("Partner / Expert Presence 1","Assign an active paid partner or authority lane and choose the format that best serves this issue. Do not invent a sponsor.")
+    partner("Resident Expert / Featured Partner 1","Assign an active Resident Expert or Featured Partner and choose the format that best serves this issue. Do not invent a sponsor.")
   );
   items.splice(Math.min(15,items.length),0,
-    partner("Partner / Expert Presence 2","Assign another active paid partner or commercial activation without repeating the first category. Do not invent a sponsor.")
+    partner("Resident Expert / Featured Partner 2","Assign another active Resident Expert or Featured Partner without repeating the first category. Do not invent a sponsor.")
   );
 
   items.push(comp('READER VOTE',"Worth It Or Overpriced?","A quick value judgement or either/or vote tied to a lighter issue theme."));
   items.push(comp('COMMUNITY VOICE',"Community Voice","Surface one useful local voice, cause or contribution with named proof."));
-  items.push(comp('ACTIVATION / OFFER',"Do Something This Week","One useful visit, booking, nomination, download, offer, event or reply action."));
+  items.push(comp('FEATURED PARTNER / OFFER',"Do Something This Week","One useful visit, booking, nomination, download, offer, event or reply action. This may expose a future Featured Partner opportunity but must still work editorially without one."));
   items.push(comp('CLOSING QUESTION',"One Last Question","End with one specific question readers can reply to or answer on social."));
 
-  // Keep the first automatic draft within the agreed Spotlight range.
-  const finalItems=items.slice(0,25);
+  // Fill a balanced Spotlight draft to the agreed 28-32 range without inventing more articles.
+  const extraSupport=[
+    ()=>comp('READER QUESTION',"What Should We Answer Next?","Ask for one precise reader question that can enter the Question Bank."),
+    ()=>comp('QUICK WIN',"Two-Minute Win","One tiny action, check or decision readers can make now without turning this into another article."),
+    ()=>comp('NOMINATION',"Name The Local One","Ask readers to nominate a specific local business, place, person or service for a future evidence-led guide."),
+    ()=>comp('HUMOUR',"You Know The Feeling…","A short relatable local observation or joke that gives the issue breathing room."),
+    ()=>comp('MYTH / QUESTION',"Are We Sure About That?","Challenge one assumption from the issue and invite evidence or experience; do not state an unsupported counter-claim.")
+  ];
+  let fill=0;
+  while(items.length<30){items.splice(Math.max(1,items.length-1),0,extraSupport[fill%extraSupport.length]());fill++;}
+  const finalItems=items.slice(0,30);
   localStorage.setItem(assemblyKey(),JSON.stringify(finalItems));
   canvasSelectedUid=finalItems[0]?.uid||null;
   renderAssembly();
-  alert(`Auto assembly created ${finalItems.length} blocks from ${articles.length} completed Master Articles. Review the running order, assign real partners, then produce the supporting components.`);
+  const articleNote=articles.length<12?`\nNOTE: only ${articles.length} completed Master Articles were available. Spotlight normally targets 12-15; add more question-led articles before Final QA where possible.`:'';
+  alert(`Auto assembly created ${finalItems.length} blocks from ${articles.length} completed Master Articles. Target: 28-32 total blocks with 12-15 proper articles.${articleNote}\nReview the running order, assign real partners, then produce the supporting components.`);
 }
 
 async function produceSupportingComponents(){
@@ -1026,12 +1044,13 @@ MASTER ARTICLE CONTEXT:
 ${articleContext}
 
 Write ONLY the finished newsletter component copy.
-- Keep it concise and human, normally 25-100 words unless the format clearly needs less.
+- Keep it concise and human, normally 25-100 words unless the format clearly needs less. Supporting blocks are pace changers, not mini Master Articles.
 - Write like a well-informed local person, not a brochure, council report or AI explainer. Plain spoken UK English; short sentences; natural humour where it fits.
 - Give this component ONE distinct job. It must add something the nearby Master Articles do not: a decision, laugh, fact, question, local recommendation, action or genuine voice. Do not paraphrase a nearby article or repeat its CTA/question in different words.
 - Use specific local relevance where supported by supplied context. A generic component that could run anywhere by swapping the place name has not earned its slot.
 - Never invent facts, businesses, prices, quotes, events, experts, sponsors or reader comments. If a factual claim needs evidence that is not supplied, turn it into a reader question/request for local input instead of inventing an answer.
 - Avoid machine-smoothed filler such as useful, practical, meaningful, key, crucial, straightforward, 'The question is…' or 'That matters because…'.
+- Keep Spotlight's human edge: humour, a cheeky observation or a fair challenge is welcome where it fits, but never invent controversy.
 - One primary action maximum. No markdown heading because the label is stored separately.`;
 
       const data=await api('produce-component',{
@@ -1219,6 +1238,15 @@ function deterministicQA(items){
   const notReady=items.length-ready;
   if(notReady)add('FIX','NOT_READY',`${notReady} block${notReady===1?' is':'s are'} not Ready.`,items.filter(b=>String(b.status||'').toUpperCase()!=='READY').map(b=>b.uid));
   else add('PASS','ALL_READY',`All ${items.length} blocks are Ready.`);
+
+  const articleCount=items.filter(b=>b.kind==='article').length;
+  if(items.length<28||items.length>32)add('WARNING','ISSUE_SIZE',`Spotlight target is 28-32 total blocks; this canvas has ${items.length}.`);
+  else add('PASS','ISSUE_SIZE',`Issue size is within the 28-32 block Spotlight target.`);
+  if(articleCount<12||articleCount>15)add('WARNING','ARTICLE_COUNT',`Spotlight target is 12-15 proper question-led articles; this canvas has ${articleCount}.`);
+  else add('PASS','ARTICLE_COUNT',`${articleCount} Master Articles is within the 12-15 target.`);
+  const longArticles=items.filter(b=>b.kind==='article'&&String(b.content||'').trim().split(/\s+/).filter(Boolean).length>650);
+  if(longArticles.length)add('WARNING','MEGA_ARTICLE',`${longArticles.length} Master Article${longArticles.length===1?' is':'s are'} over about 650 words. Run the Split Test: does each contain two or more questions that deserve separate 250-600 word answers?`,longArticles.map(b=>b.uid));
+  else add('PASS','ARTICLE_LENGTH',`No obvious mega-articles over about 650 words.`);
 
   const partnerBlocks=items.filter(b=>b.kind==='partner');
   if(partnerBlocks.length){
@@ -1450,7 +1478,7 @@ RULES:
     btn.disabled=false;btn.textContent=original;
   }
 }
-function assemblyDraft(){const items=getCanvas(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();if(!items.length)return 'Add at least one block to the issue canvas first.';let out=`ISSUE BUILD PACK\n\nISSUE\n${val(S.issue?.fields||{},'Issue Number')||''}\n\nISSUE PROMISE / QUESTION\n${theme||'[ADD ISSUE PROMISE]'}\n\nCOMPLETE RUNNING ORDER`;items.forEach((b,i)=>{out+=`\n\n${i+1}. ${b.title||b.type}\nTYPE: ${b.type}\nSTATUS: ${b.status||'NEEDS DECISION'}`;if(b.partner)out+=`\nPARTNER: ${b.partner}`;if(b.category)out+=`\nCATEGORY: ${b.category}`;if(b.commitment)out+=`\nCOMMITMENT: ${b.commitment}`;if(b.purpose)out+=`\nPURPOSE: ${b.purpose}`;if(b.proof)out+=`\nLOCAL PROOF / SOURCE: ${b.proof}`;if(b.cta)out+=`\nPRIMARY CTA: ${b.cta}`;if(b.button)out+=`\nBUTTON: ${b.button}`;if(b.url)out+=`\nURL: ${b.url}`;if(b.content)out+=`\nCONTENT / BRIEF:\n${b.content}`});const notReady=items.filter(x=>x.status!=='READY');out+=`\n\nPRODUCTION SUMMARY\n${items.filter(x=>x.status==='READY').length} ready\n${notReady.length} still needs production or a decision`;if(notReady.length)out+=`\n\nNOT READY\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+x.status).join('\n')}`;out+='\n\nFINAL QA\n- CHECK: all active paid partners included\n- CHECK: locked categories protected\n- CHECK: one primary action/button per article or slot\n- CHECK: named local proof and source accuracy\n- CHECK: no repeated question/angle from recent issues\n- CHECK: issue rhythm balances serious, useful, interactive and commercial content';return out}
+function assemblyDraft(){const items=getCanvas(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();if(!items.length)return 'Add at least one block to the issue canvas first.';let out=`ISSUE BUILD PACK\n\nISSUE\n${val(S.issue?.fields||{},'Issue Number')||''}\n\nISSUE PROMISE / QUESTION\n${theme||'[ADD ISSUE PROMISE]'}\n\nCOMPLETE RUNNING ORDER`;items.forEach((b,i)=>{out+=`\n\n${i+1}. ${b.title||b.type}\nTYPE: ${b.type}\nSTATUS: ${b.status||'NEEDS DECISION'}`;if(b.partner)out+=`\nPARTNER: ${b.partner}`;if(b.category)out+=`\nCATEGORY: ${b.category}`;if(b.commitment)out+=`\nCOMMITMENT: ${b.commitment}`;if(b.purpose)out+=`\nPURPOSE: ${b.purpose}`;if(b.proof)out+=`\nLOCAL PROOF / SOURCE: ${b.proof}`;if(b.cta)out+=`\nPRIMARY CTA: ${b.cta}`;if(b.button)out+=`\nBUTTON: ${b.button}`;if(b.url)out+=`\nURL: ${b.url}`;if(b.content)out+=`\nCONTENT / BRIEF:\n${b.content}`});const notReady=items.filter(x=>x.status!=='READY');out+=`\n\nPRODUCTION SUMMARY\n${items.filter(x=>x.status==='READY').length} ready\n${notReady.length} still needs production or a decision`;if(notReady.length)out+=`\n\nNOT READY\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+x.status).join('\n')}`;out+='\n\nFINAL QA\n- CHECK: all active paid partners included\n- CHECK: locked categories protected\n- CHECK: one primary action/button per article or slot\n- CHECK: named local proof and source accuracy\n- CHECK: no repeated question/angle from recent issues\n- CHECK: issue rhythm balances serious, useful, interactive and commercial content\n- CHECK: 28-32 total blocks with roughly 12-15 proper question-led articles\n- CHECK: Split Test applied to any article carrying more than one standalone reader question\n- CHECK: Spotlight retains human voice, humour and Unfiltered edge where earned\n- CHECK: Resident Expert / Featured Partner opportunities and the most natural CTA are visible without forcing an advert';return out}
 function generateAssembly(){E('preview-text').value=assemblyDraft();E('preview-dialog').showModal()}
 E('library-filter').onchange=renderSections;E('assembly-search').oninput=renderAssembly;
 E('assembly-order').ondragover=e=>{e.preventDefault();E('assembly-order').classList.add('drag-over')};

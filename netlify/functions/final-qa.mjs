@@ -30,8 +30,11 @@ Review the complete running order below. Detect ONLY meaningful issue-level prob
 - if a paid partner already has a Master Article in the issue, its Partner Presence must complement it with a distinct action/service/insight rather than summarise the article;
 - internal commercial/editorial notes leaking into reader-facing copy;
 - weak issue rhythm or several heavy sections together;
+- issue architecture outside the Spotlight target: normally 28-32 total blocks with roughly 12-15 proper Master Articles and the rest lighter pace/support components;
+- too many oversized/catch-all Master Articles where several distinct reader questions appear to have been crammed into one piece;
 - generic supporting copy that does not earn its place;
 - duplicated CTAs/social prompts;
+- a flat, over-safe issue voice: Spotlight is Unfiltered, so where the subject supports it there should be some humour, challenge, contrary thinking or clearly explained debate rather than thirty uniformly neutral blocks;
 - localisation failure: reader-facing copy that claims to be local but could be moved to another county/town by changing only the place name, when the subject reasonably allows named local proof.
 
 IMPORTANT SOURCE RULE:
