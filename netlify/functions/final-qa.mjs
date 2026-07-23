@@ -31,12 +31,13 @@ Review the complete running order below. Detect ONLY meaningful issue-level prob
 - internal commercial/editorial notes leaking into reader-facing copy;
 - weak issue rhythm or several heavy sections together;
 - generic supporting copy that does not earn its place;
-- duplicated CTAs/social prompts.
+- duplicated CTAs/social prompts;
+- localisation failure: reader-facing copy that claims to be local but could be moved to another county/town by changing only the place name, when the subject reasonably allows named local proof.
 
 IMPORTANT SOURCE RULE:
 Information supplied directly by a named featured partner or organisation is valid first-party information. Do NOT flag it merely because it lacks independent public-web corroboration. You may warn only when attribution/qualification is needed or the copy overstates what the supplied information supports.
 
-Never recommend removing a paid partner automatically. Never rewrite or fact-check Master Articles here.
+Never recommend removing a paid partner automatically. Never rewrite or fact-check Master Articles here. A localisation warning is editorial only unless a supporting block is plainly generic and can be safely reframed as a local reader-input prompt.
 
 Return strict JSON only:
 {"findings":[{"severity":"FIX|WARNING|PASS","code":"SHORT_CODE","message":"specific concise finding","blocks":["uid"],"safeFix":true|false}]}

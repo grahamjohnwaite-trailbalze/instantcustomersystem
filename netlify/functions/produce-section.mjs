@@ -45,7 +45,7 @@ RESEARCH RULES
 - Search the current web thoroughly.
 - Prefer primary/official sources: local councils, GOV.UK, regulators, NHS/NICE, water companies, transport/highway bodies, official venue/business pages, official menus and ticket pages.
 - The returned evidence MUST satisfy the LOCAL PROOF requirement, not merely provide generic national background.
-- For a Peterborough article, include at least one genuinely Peterborough-specific or directly relevant regional primary source whenever the brief requires local proof.
+- When the brief requires local proof, include genuinely place-specific or directly relevant regional primary sources for the named publication area. Generic national background is not enough.
 - If the brief names a body such as Anglian Water, NHS, NICE, FCA, MoneyHelper, a promoter, ticket agent or local council, actively search that body.
 - Current prices, dates, availability, service details and material current claims require current sources.
 - Do not invent a source or claim.
@@ -66,16 +66,23 @@ function promptFor(fields,cls,research){
   const sourcePack=JSON.stringify(research||{},null,2);
   return `You are the production editor for Spotlight. Build one complete MASTER ARTICLE PACKAGE ready for manual upload to Letterman.
 
-STYLE AND SAFETY
-- UK English. Human, lively, specific and useful. Avoid generic AI phrasing.
-- Never invent quotes, consensus, recommendations, prices, dates, businesses or factual claims.
+STYLE, AUDIENCE AND SAFETY
+- UK English. Research deeply, write simply, sound real.
+- Write for an intelligent ordinary reader, not for a literary prize, council report or broadsheet leader column. The copy should feel natural if explained over coffee, at work, on Facebook or in the pub.
+- Keep sentences and paragraphs easy to read. Use contractions where natural. Prefer concrete nouns, numbers, examples and actions over polished adjectives or abstract explanation.
+- Headline and subhead must be clickable, conversational and specific without becoming misleading or clickbait.
+- Apply three reader tests: PUB TEST (would a normal person say it this way?), FACEBOOK TEST (would someone who clicked keep reading?), SO WHAT TEST (does the reader quickly understand why it affects them?).
+- Avoid repeated AI-ish constructions and filler such as useful, practical, meaningful, straightforward, key question, important distinction, matters, whether, crucial, navigate, 'The question is…' and 'That matters because…'. Normal one-off use is fine; patterned repetition is not.
+- LOCALISATION GATE: the finished article must not be publishable in another location simply by swapping the place name. When the subject supports it, use several verified named towns, roads, venues, businesses, current prices, figures, official decisions or other local examples. Local proof should do real editorial work, not decorate generic copy.
+- Genuine local voices or partner-supplied comments may be used when supplied and attributed. NEVER invent reader comments, quotes, consensus or local opinion. If genuine local voices are unavailable, the article may ask readers for them for a follow-up.
+- Never invent recommendations, prices, dates, businesses or factual claims.
 - Use named local proof only where supported by the supplied research pack.
 - Distinguish fact, opinion and reader questions.
-- One primary CTA only.
+- One primary CTA only. The CTA should match the reader's next natural action; do not manufacture a weak button just because a field exists.
 - Raw clean destination URLs only.
 - Short paragraphs suitable for a narrow article page.
 - The article must stand alone outside the newsletter.
-- Aim for 650-950 words unless the approved brief genuinely needs less.
+- Length is earned by the story: normally 450-850 words. Go longer only when the reader genuinely needs the extra detail; cut repetition rather than padding to a target.
 ${useEvidence?`- Use ONLY material claims supported by the research pack below.
 - If an optional or non-essential detail in the brief could not be verified, OMIT that detail from the article rather than forcing it into the copy.
 - A missing optional detail does NOT by itself require QA Fix Required.
