@@ -1,0 +1,11 @@
+ICS Issue Canvas v3.4.41 — Context + Drag UX
+Built on v3.4.40 after live desktop testing.
+
+Focused fixes only:
+1. Create starter copy now uses nearby running-order context and AI; it must not return generic placeholder templates.
+2. Explicit expanded DROP HERE insertion zones between cards with high-contrast highlighting.
+3. Component Library is sticky during long-canvas scrolling.
+4. Partner checkbox is larger and higher contrast.
+5. Version label updated to v3.4.41.
+
+No Question Bank/Airtable mobile-pack import is included in this patch.
