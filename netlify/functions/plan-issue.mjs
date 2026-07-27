@@ -11,12 +11,12 @@ export default async(request)=>{
     const issuePromise=String(data.issuePromise||'').trim();
     const sendDate=String(data.sendDate||'').trim();
     const knownSignals=String(data.knownSignals||'').trim();
-    const signals=(Array.isArray(data.signals)?data.signals:[]).slice(0,16).map(x=>({signal:String(x.signal||''),question:String(x.question||''),why_now:String(x.why_now||''),why_local:String(x.why_local||''),source_title:String(x.source_title||''),source_url:String(x.source_url||'')}));
+    const signals=(Array.isArray(data.signals)?data.signals:[]).slice(0,24).map(x=>({scope:String(x.scope||''),signal:String(x.signal||''),question:String(x.question||''),why_now:String(x.why_now||''),why_local:String(x.why_local||''),source_title:String(x.source_title||''),source_url:String(x.source_url||''),published_at:String(x.published_at||'')}));
     const existing=(Array.isArray(data.existingArticles)?data.existingArticles:[]).slice(0,60).map(x=>({id:String(x.id||''),title:String(x.title||''),purpose:String(x.purpose||''),freshness:String(x.freshness||''),topic:String(x.topic||''),proof:String(x.proof||'').slice(0,280)})).filter(x=>x.id&&x.title);
     if(!publication||!issuePromise)return json(400,{ok:false,error:'publication and issuePromise are required'});
-    if(signals.length<6)return json(400,{ok:false,error:'At least 6 current signals are required before planning.'});
+    if(signals.length<5)return json(400,{ok:false,error:'At least 5 current discovery signals are required before planning.'});
 
-    const signalPack=signals.map((x,i)=>`${i+1}. ${x.signal}\nQUESTION=${x.question}\nWHY NOW=${x.why_now}\nWHY LOCAL=${x.why_local}\nSOURCE=${x.source_title} ${x.source_url}`).join('\n\n');
+    const signalPack=signals.map((x,i)=>`${i+1}. [${x.scope||'discovery'}] ${x.signal}\nDATE=${x.published_at||x.why_now}\nDISCOVERY SOURCE=${x.source_title} ${x.source_url}`).join('\n\n');
     const inventory=existing.map((x,i)=>`${i+1}. ID=${x.id} | ${x.title} | ${x.purpose} | freshness=${x.freshness} | topic=${x.topic} | proof=${x.proof}`).join('\n');
     const prompt=`You are the senior issue editor for Trail Blaze's ${publication}. Build the 15-MASTER-ARTICLE slate for one upcoming issue. DO NOT browse the web: current research has already been supplied below.
 
@@ -25,7 +25,7 @@ TARGET SEND DATE: ${sendDate||'Not supplied'}
 ISSUE PROMISE: ${issuePromise}
 EDITOR NOTES: ${knownSignals||'None'}
 
-CURRENT SIGNAL PACK:
+CURRENT DISCOVERY PACK (HEADLINE LEADS ONLY — NOT VERIFIED EVIDENCE):
 ${signalPack}
 
 EXISTING ARTICLE LIBRARY:
@@ -41,7 +41,8 @@ CREATE NEW = current signal, event, national-to-local consequence, seasonal need
 EDITORIAL RULES
 - Existing library is a resource bank, not a quota. REUSE should normally be a minority.
 - Build a varied weekly experience: current change/news, events/what's-on, money/value, home/property/renting/transport, food/leisure/local discovery, community/service/family/health where earned, and one fair challenge/Unfiltered angle where evidence supports it.
-- Current signals should materially influence the slate. Do not produce 15 evergreen archive articles while ignoring them.
+- Current discovery leads should materially influence the slate. Treat them as leads only, not proven facts. Every REFRESH/CREATE NEW brief must require fresh verification during article research. Do not reproduce a headline claim as fact merely because it appears here.
+- Do not produce 15 evergreen archive articles while ignoring the current discovery pack.
 - Human questions must sound natural. Avoid overusing mate, friend, sensible, useful, practical, key question, whether.
 - Do not invent partners. Partner path may be Open.
 - Same entity is fine with a materially different question; same story/claim/angle is duplication.
@@ -51,7 +52,7 @@ STRICT JSON ONLY:
 {"issue_summary":"","articles":[{"order":1,"mode":"REUSE|REFRESH|CREATE NEW","existing_article_id":"","title":"","question":"","problem":"","hook":"","reader":"","value":"","local_proof":"","evidence":"","lane":"Authority|Featured Partner|Community|Editorial|Open","partner_path":"","cta_type":"None|Reply|Comment|Save|Nominate|Button|Ask Expert|Booking|Directory","cta_text":"","stance":"PRACTICAL|NEUTRAL|CHALLENGE|CONTRARIAN|DEBATE|UNFILTERED","why_now":"","countercase":"","source_signal":""}]}`;
 
     const model=String(process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
-    const response=await createResponse({input:prompt,useWeb:false,model,timeoutMs:26000});
+    const response=await createResponse({input:prompt,useWeb:false,model,timeoutMs:24000});
     const result=parseJsonText(outputText(response));
     const validIds=new Set(existing.map(x=>x.id));
     const articles=(Array.isArray(result.articles)?result.articles:[]).slice(0,15).map((a,i)=>{

@@ -23,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.44<br><strong>Staged Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.45<br><strong>Fast Signal Collector + Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -988,7 +988,7 @@ function planModeClass(m){return m==='REUSE'?'ready':'needs'}
 function renderSmartPlan(){
   const plan=getSmartPlan(),panel=E('smart-plan-panel');
   if(!panel)return;
-  if(!plan){panel.style.display='block';const partial=getSmartSignals();E('smart-plan-status').textContent='No completed Smart Issue Plan yet. Smart Plan Issue runs three short current-signal scans, saves each one, then builds the 15-article slate.';E('smart-plan-summary').innerHTML='<strong>Next:</strong> staged research avoids one long request timing out.';E('smart-scan-progress').textContent=partial.length?`${partial.length} current signals are already saved for this issue.`:'';E('smart-plan-signals-list').innerHTML=partial.length?`<div class="check"><strong>Saved current signals</strong><br>${partial.map(x=>`${esc(x.signal)} — ${esc(x.question||'')}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';E('smart-plan-list').innerHTML='';return}
+  if(!plan){panel.style.display='block';const partial=getSmartSignals();E('smart-plan-status').textContent='No completed Smart Issue Plan yet. Smart Plan Issue first collects fast current discovery leads, then builds the 15-article slate.';E('smart-plan-summary').innerHTML='<strong>Next:</strong> fast headline discovery first; AI editorial judgement second; deep research only after the slate is approved.';E('smart-scan-progress').textContent=partial.length?`${partial.length} current signals are already saved for this issue.`:'';E('smart-plan-signals-list').innerHTML=partial.length?`<div class="check"><strong>Saved current signals</strong><br>${partial.map(x=>`${esc(x.signal)} — ${esc(x.question||'')}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';E('smart-plan-list').innerHTML='';return}
   panel.style.display='block';
   const counts=plan.counts||{};
   E('smart-plan-status').textContent=`Approved planning slate: ${plan.articles?.length||0} articles · ${counts.REUSE||0} reuse · ${counts.REFRESH||0} refresh · ${counts['CREATE NEW']||0} create new.`;
@@ -1007,27 +1007,22 @@ async function planSmartIssue(){
     localStorage.removeItem(smartPlanKey());
     let signals=[];saveSmartSignals(signals);renderSmartPlan();
     const base={publication:currentPublicationName(),issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||''};
-    const scopes=[['local','1/3 Local news + events'],['national','2/3 National → local'],['life','3/3 Everyday + seasonal']];
-    for(const [scope,label] of scopes){
-      btn.textContent=`Scanning ${label}…`;E('smart-scan-progress').textContent=`Scanning ${label}. Completed results are saved after every stage.`;
-      try{
-        const r=await api('scan-issue-signals',{method:'POST',body:JSON.stringify({...base,scope})});
-        signals=signals.concat(r.signals||[]);saveSmartSignals(signals);
-        E('smart-scan-progress').textContent=`${signals.length} signals saved. ${label} complete.`;
-        renderSmartPlan();
-      }catch(e){
-        saveSmartSignals(signals);renderSmartPlan();
-        throw new Error(`${label} failed after ${signals.length} signals had already been saved. ${e.message}`);
-      }
-    }
-    btn.textContent='Building 15-article slate…';E('smart-scan-progress').textContent=`${signals.length} signals saved. Building the editorial slate without another web search…`;
+    btn.textContent='Collecting current signals…';
+    E('smart-scan-progress').textContent='Collecting fast current headline/event discovery leads. These are leads only; article research will verify them later.';
+    const discovered=await api('collect-issue-signals',{method:'POST',body:JSON.stringify(base)});
+    signals=Array.isArray(discovered.signals)?discovered.signals:[];
+    saveSmartSignals(signals);renderSmartPlan();
+    E('smart-scan-progress').textContent=`${signals.length} discovery leads saved from ${discovered.provider||'current feeds'}. Building the editorial slate…`;
+    btn.textContent='Building 15-article slate…';
     const inventory=(S.articleLibrary||[]).slice(0,60).map(s=>{const x=inferArticleIntelligence(s);return {id:s.id,title:val(s.fields,'Section Title'),purpose:val(s.fields,'Reader Value')||val(s.fields,'Core Reader Question'),proof:val(s.fields,'Local Proof Needed'),freshness:x.freshness,topic:x.topic}});
     const data=await api('plan-issue',{method:'POST',body:JSON.stringify({...base,signals,existingArticles:inventory})});
     localStorage.setItem(smartPlanKey(),JSON.stringify(data.plan));
     renderSmartPlan();
     alert(`Smart plan ready: ${data.plan.counts?.REUSE||0} REUSE · ${data.plan.counts?.REFRESH||0} REFRESH · ${data.plan.counts?.['CREATE NEW']||0} CREATE NEW. Review the slate before creating article briefs.`);
-  }catch(e){alert('Smart planning stopped: '+e.message+'\n\nAny completed current-signal stages have been kept on screen and in this browser.')}
-  finally{btn.disabled=false;btn.textContent=old}
+  }catch(e){
+    renderSmartPlan();
+    alert('Smart planning stopped: '+e.message+'\n\nAny current discovery leads already collected have been kept on screen and in this browser.');
+  }finally{btn.disabled=false;btn.textContent=old}
 }
 async function applySmartPlanToBuild(){
   if(!S.issue){alert('Open an issue first.');return}
