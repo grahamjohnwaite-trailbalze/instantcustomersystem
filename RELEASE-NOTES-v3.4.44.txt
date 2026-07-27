@@ -1,0 +1,9 @@
+ICS Issue Canvas v3.4.44 — Staged Smart Planning
+Built directly from v3.4.43 after live 504 timeout test.
+
+Fixes:
+- Replaces one long web-research + planning request with three short current-signal scans.
+- Each signal scan is saved immediately to localStorage and rendered, so progress survives a later timeout.
+- Separate fast non-web planning call converts saved signals + article inventory into 15 REUSE / REFRESH / CREATE NEW decisions.
+- Existing v3.4.42 recovery, export backup, navigation, Canvas, article-production and partner logic retained.
+- Does not clear the existing Norfolk failing-test Canvas until Assemble Approved Plan is deliberately used.
