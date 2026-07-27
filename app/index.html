@@ -23,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.45<br><strong>Fast Signal Collector + Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.46<br><strong>Separate Signals + 3×5 Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -40,12 +40,12 @@
 <div id="production-progress" class="empty" style="margin-bottom:14px">Production service not run yet.</div>
 <div id="map-audit" class="empty" style="margin-bottom:14px">Audit not run yet.</div>
 <div class="form-grid"><div class="field full"><label>Issue status</label><select id="ih-status"><option>PLANNED</option><option>BUILDING</option><option>QA</option><option>READY FOR LETTERMAN</option><option>PUBLISHED</option></select></div><div class="field full"><label>Main theme</label><textarea id="ih-theme"></textarea></div><div class="field full"><label>Subject line</label><input id="ih-subject"></div><div class="field full"><label>Preheader</label><textarea id="ih-preheader"></textarea></div><div class="field full"><label>Send date</label><input id="ih-date" type="date"></div></div><h3>Minimum section gate</h3><div id="gate" class="checklist"></div><div class="warning" style="margin-top:14px"><strong>Phase 1B discipline</strong><br>One primary Hot Button. One useful action. Named local proof. No unresolved placeholders in final copy.</div></aside></div></section><section class="view active" id="view-assemble">
-<div class="section-head planner-head"><div><h2>Issue Canvas</h2><div class="muted">Plan the issue intelligently first, then assemble the approved running order.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-export">Export Canvas Backup</button><button class="btn secondary" id="assembly-clear">Clear canvas</button><button class="btn" id="assembly-auto">Smart Plan Issue</button><button class="btn secondary" id="assembly-smart-assemble">Assemble Approved Plan</button><button class="btn" id="assembly-produce">Produce Supporting Components</button><button class="btn" id="assembly-partners">Assign Active Partners</button><button class="btn" id="assembly-qa">Run Final QA</button><button class="btn secondary" id="assembly-fix">Apply Safe Fixes</button><button class="btn" id="assembly-generate">Generate Issue Build Pack</button></div></div>
+<div class="section-head planner-head"><div><h2>Issue Canvas</h2><div class="muted">Plan the issue intelligently first, then assemble the approved running order.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-export">Export Canvas Backup</button><button class="btn secondary" id="assembly-clear">Clear canvas</button><button class="btn" id="assembly-auto">Collect Signals</button><button class="btn" id="assembly-build-plan">Build 15-Article Plan</button><button class="btn secondary" id="assembly-smart-assemble">Assemble Approved Plan</button><button class="btn" id="assembly-produce">Produce Supporting Components</button><button class="btn" id="assembly-partners">Assign Active Partners</button><button class="btn" id="assembly-qa">Run Final QA</button><button class="btn secondary" id="assembly-fix">Apply Safe Fixes</button><button class="btn" id="assembly-generate">Generate Issue Build Pack</button></div></div>
 <div id="canvas-recovery-banner" class="warning" style="display:none;margin:0 0 12px 0"><strong>Recovery Mode</strong><br>This historical Canvas was restored from browser storage even though the issue is not in the active Issues list. Export a backup before making changes.</div>
 <div class="planner-score" id="planner-score"><div><strong id="score-headlines">0</strong><span>Articles in Canvas</span></div><div><strong id="score-interactive">0</strong><span>Components</span></div><div><strong id="score-authority">0</strong><span>Partner blocks</span></div><div><strong id="score-activation">0</strong><span>Ready</span></div><div><strong id="score-commitments">0</strong><span>Total blocks</span></div></div>
 <div class="issue-promise-bar"><div class="field"><label>Issue promise / organising question</label><textarea id="assembly-theme" placeholder="What should readers decide, discover, feel or do by the end of this issue?"></textarea></div><button class="btn secondary" id="save-canvas-theme">Save promise</button></div>
 <section class="panel" id="smart-plan-panel" style="display:block;margin-bottom:14px">
-  <div class="section-head" style="margin-bottom:8px"><div><h2 style="margin:0">Smart Issue Plan</h2><div class="muted" id="smart-plan-status">Research current signals, then decide what to REUSE, REFRESH or CREATE NEW.</div></div><div class="toolbar"><button class="btn" id="smart-plan-apply">Create Missing Article Briefs</button><button class="btn secondary" id="smart-plan-hide">Hide Plan</button></div></div>
+  <div class="section-head" style="margin-bottom:8px"><div><h2 style="margin:0">Smart Issue Plan</h2><div class="muted" id="smart-plan-status">Collect current signals once, then build the 15-article plan in three saved 5-article batches.</div></div><div class="toolbar"><button class="btn" id="smart-plan-apply">Create Missing Article Briefs</button><button class="btn secondary" id="smart-plan-hide">Hide Plan</button></div></div>
   <div class="field"><label>Known current signals / events / must-include notes (optional)</label><textarea id="smart-plan-signals" placeholder="Paste anything you already know should be considered: local events, breaking local story, national change with a Norfolk impact, partner commitment, seasonal trigger..."></textarea></div>
   <div id="smart-plan-summary" class="warning" style="margin:10px 0"></div>
   <div id="smart-scan-progress" class="muted" style="margin:8px 0"></div>
@@ -928,7 +928,7 @@ function renderAssembly(){
  const recovering=canvasRecoveryMode();
  const recoveryBanner=E('canvas-recovery-banner');
  if(recoveryBanner)recoveryBanner.style.display=recovering?'block':'none';
- ['assembly-clear','assembly-auto','assembly-smart-assemble','assembly-produce','assembly-partners','assembly-fix','assembly-generate'].forEach(id=>{const el=E(id);if(el)el.disabled=recovering});
+ ['assembly-clear','assembly-auto','assembly-build-plan','assembly-smart-assemble','assembly-produce','assembly-partners','assembly-fix','assembly-generate'].forEach(id=>{const el=E(id);if(el)el.disabled=recovering});
  order.innerHTML=items.length?items.map((b,i)=>`<div class="canvas-card ${b.status==='READY'?'is-ready':/FAIL/i.test(String(b.status||''))?'is-failed':/PRODUC/i.test(String(b.status||''))?'is-producing':'is-needs'} ${canvasSelectedUid===b.uid?'selected':''}" draggable="true" ondragstart="startCanvasDrag(event,'${b.uid}')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');dropOnCard(event,'${b.uid}')" onclick="selectCanvasBlock('${b.uid}')"><div class="drag-handle">⋮⋮</div><div><strong>${i+1}. ${esc(b.title||b.type)}</strong><small>${esc(b.type)}${b.partner?' · '+esc(b.partner):''}</small><div class="canvas-badges"><span class="mini-badge ${b.status==='READY'?'ready':'needs'}">${esc(b.status||'NEEDS DECISION')}</span>${b.kind==='partner'?'<span class="mini-badge">PARTNER</span>':''}</div></div><button class="btn secondary" onclick="event.stopPropagation();removeCanvasBlock('${b.uid}')">×</button></div>`).join(''):'<div class="drop-hint">Drag an article or component here to start assembling the issue.</div>';
  E('assembly-count').textContent=`${items.length} blocks`;
  const savedTheme=localStorage.getItem(themeKey());if(E('assembly-theme')&&!E('assembly-theme').value)E('assembly-theme').value=savedTheme||val(S.issue?.fields||{},'Main Theme')||'';
@@ -984,11 +984,14 @@ function smartSignalsKey(){return 'ics:smartSignals:'+assemblyIssueId()}
 function getSmartSignals(){try{return JSON.parse(localStorage.getItem(smartSignalsKey())||'[]')}catch{return []}}
 function saveSmartSignals(v){localStorage.setItem(smartSignalsKey(),JSON.stringify(v||[]))}
 function getSmartPlan(){try{return JSON.parse(localStorage.getItem(smartPlanKey())||'null')}catch{return null}}
+function smartPlanBatchesKey(){return 'ics:smartPlanBatches:'+assemblyIssueId()}
+function getSmartPlanBatches(){try{return JSON.parse(localStorage.getItem(smartPlanBatchesKey())||'[]')}catch{return []}}
+function saveSmartPlanBatches(v){localStorage.setItem(smartPlanBatchesKey(),JSON.stringify(v||[]))}
 function planModeClass(m){return m==='REUSE'?'ready':'needs'}
 function renderSmartPlan(){
   const plan=getSmartPlan(),panel=E('smart-plan-panel');
   if(!panel)return;
-  if(!plan){panel.style.display='block';const partial=getSmartSignals();E('smart-plan-status').textContent='No completed Smart Issue Plan yet. Smart Plan Issue first collects fast current discovery leads, then builds the 15-article slate.';E('smart-plan-summary').innerHTML='<strong>Next:</strong> fast headline discovery first; AI editorial judgement second; deep research only after the slate is approved.';E('smart-scan-progress').textContent=partial.length?`${partial.length} current signals are already saved for this issue.`:'';E('smart-plan-signals-list').innerHTML=partial.length?`<div class="check"><strong>Saved current signals</strong><br>${partial.map(x=>`${esc(x.signal)} — ${esc(x.question||'')}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';E('smart-plan-list').innerHTML='';return}
+  if(!plan){panel.style.display='block';const partial=getSmartSignals(),batches=getSmartPlanBatches();const savedCount=batches.reduce((n,b)=>n+(Array.isArray(b.articles)?b.articles.length:0),0);E('smart-plan-status').textContent='No completed Smart Issue Plan yet. Collect signals once, then Build 15-Article Plan in three saved batches.';E('smart-plan-summary').innerHTML=partial.length?'<strong>Next:</strong> click Build 15-Article Plan. Saved signals will be reused; no new discovery scan is required.':'<strong>Next:</strong> click Collect Signals first.';E('smart-scan-progress').textContent=(partial.length?`${partial.length} current signals saved. `:'')+(savedCount?`${savedCount}/15 article decisions already saved across ${batches.length} planning batch${batches.length===1?'':'es'}.`:'');E('smart-plan-signals-list').innerHTML=partial.length?`<div class="check"><strong>Saved current signals</strong><br>${partial.map(x=>`${esc(x.signal)}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';E('smart-plan-list').innerHTML=batches.length?batches.flatMap(b=>b.articles||[]).map(a=>`<div class="check"><span class="mini-badge ${planModeClass(a.mode)}">${esc(a.mode)}</span> <strong>${esc(a.title)}</strong><br><span class="muted">${esc(a.question)}</span></div>`).join(''):'';return}
   panel.style.display='block';
   const counts=plan.counts||{};
   E('smart-plan-status').textContent=`Approved planning slate: ${plan.articles?.length||0} articles · ${counts.REUSE||0} reuse · ${counts.REFRESH||0} refresh · ${counts['CREATE NEW']||0} create new.`;
@@ -997,32 +1000,56 @@ function renderSmartPlan(){
   E('smart-plan-signals-list').innerHTML=signals.length?`<div class="check"><strong>Current signals researched</strong><br>${signals.map(x=>`${esc(x.signal)}${x.why_local?' — '+esc(x.why_local):''}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';
   E('smart-plan-list').innerHTML=(plan.articles||[]).map(a=>`<div class="check"><span class="mini-badge ${planModeClass(a.mode)}">${esc(a.mode)}</span> <strong>${a.order}. ${esc(a.title)}</strong><br><span class="muted">${esc(a.question)}</span><br><small><strong>Why now:</strong> ${esc(a.why_now||'')} · <strong>Stance:</strong> ${esc(a.stance||'PRACTICAL')} · <strong>Lane:</strong> ${esc(a.lane||'Editorial')}</small></div>`).join('');
 }
-async function planSmartIssue(){
+async function collectSmartSignals(){
   if(!S.issue){alert('Open an issue first.');return}
   const promise=String(E('assembly-theme')?.value||val(S.issue.fields,'Main Theme')||'').trim();
   if(!promise){alert('Add an Issue Promise first.');return}
-  const btn=E('assembly-auto'),old=btn.textContent;btn.disabled=true;
+  const btn=E('assembly-auto'),old=btn.textContent;btn.disabled=true;btn.textContent='Collecting signals…';
+  try{
+    const base={publication:currentPublicationName(),issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||''};
+    E('smart-scan-progress').textContent='Collecting fast current headline/event discovery leads. These are discovery leads only; article research verifies claims later.';
+    const discovered=await api('collect-issue-signals',{method:'POST',body:JSON.stringify(base)});
+    const signals=Array.isArray(discovered.signals)?discovered.signals:[];
+    saveSmartSignals(signals);localStorage.removeItem(smartPlanKey());saveSmartPlanBatches([]);renderSmartPlan();
+    alert(`${signals.length} current discovery leads saved. Now click Build 15-Article Plan.`);
+  }catch(e){renderSmartPlan();alert('Signal collection stopped: '+e.message+'\n\nAny previously saved signals are still available.');}
+  finally{btn.disabled=false;btn.textContent=old}
+}
+async function buildSmartPlanFromSavedSignals(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const promise=String(E('assembly-theme')?.value||val(S.issue.fields,'Main Theme')||'').trim();
+  if(!promise){alert('Add an Issue Promise first.');return}
+  const signals=getSmartSignals();
+  if(signals.length<5){alert('Collect current signals first. At least 5 saved discovery leads are required.');return}
+  const btn=E('assembly-build-plan'),old=btn.textContent;btn.disabled=true;
   try{
     await loadArticleLibrary();
     localStorage.removeItem(smartPlanKey());
-    let signals=[];saveSmartSignals(signals);renderSmartPlan();
-    const base={publication:currentPublicationName(),issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||''};
-    btn.textContent='Collecting current signals…';
-    E('smart-scan-progress').textContent='Collecting fast current headline/event discovery leads. These are leads only; article research will verify them later.';
-    const discovered=await api('collect-issue-signals',{method:'POST',body:JSON.stringify(base)});
-    signals=Array.isArray(discovered.signals)?discovered.signals:[];
-    saveSmartSignals(signals);renderSmartPlan();
-    E('smart-scan-progress').textContent=`${signals.length} discovery leads saved from ${discovered.provider||'current feeds'}. Building the editorial slate…`;
-    btn.textContent='Building 15-article slate…';
-    const inventory=(S.articleLibrary||[]).slice(0,60).map(s=>{const x=inferArticleIntelligence(s);return {id:s.id,title:val(s.fields,'Section Title'),purpose:val(s.fields,'Reader Value')||val(s.fields,'Core Reader Question'),proof:val(s.fields,'Local Proof Needed'),freshness:x.freshness,topic:x.topic}});
-    const data=await api('plan-issue',{method:'POST',body:JSON.stringify({...base,signals,existingArticles:inventory})});
-    localStorage.setItem(smartPlanKey(),JSON.stringify(data.plan));
-    renderSmartPlan();
-    alert(`Smart plan ready: ${data.plan.counts?.REUSE||0} REUSE · ${data.plan.counts?.REFRESH||0} REFRESH · ${data.plan.counts?.['CREATE NEW']||0} CREATE NEW. Review the slate before creating article briefs.`);
-  }catch(e){
-    renderSmartPlan();
-    alert('Smart planning stopped: '+e.message+'\n\nAny current discovery leads already collected have been kept on screen and in this browser.');
-  }finally{btn.disabled=false;btn.textContent=old}
+    let batches=getSmartPlanBatches();
+    const base={publication:currentPublicationName(),issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||'',signals};
+    const inventory=(S.articleLibrary||[]).slice(0,55).map(s=>{const x=inferArticleIntelligence(s);return {id:s.id,title:val(s.fields,'Section Title'),purpose:val(s.fields,'Reader Value')||val(s.fields,'Core Reader Question'),proof:val(s.fields,'Local Proof Needed'),freshness:x.freshness,topic:x.topic}});
+    const specs=[
+      {batch:1,label:'CHANGE + NOW',brief:'Prioritise current Norfolk/local change, national-to-local consequences, major events and one earned accountability/Unfiltered angle. Produce 5 distinct article decisions.'},
+      {batch:2,label:'MONEY + HOME + SERVICES',brief:'Prioritise household money/value, property/renting, transport, health/family/service decisions and practical consequences. Produce 5 distinct article decisions.'},
+      {batch:3,label:'LIFE + DISCOVERY + WEEKEND',brief:'Prioritise food/leisure, local discovery, weekend/event usefulness, community, recommendations and one lighter but substantial reader question. Produce 5 distinct article decisions.'}
+    ];
+    for(const spec of specs){
+      if(batches.some(b=>b.batch===spec.batch&&Array.isArray(b.articles)&&b.articles.length===5))continue;
+      const prior=batches.flatMap(b=>b.articles||[]).map(a=>({title:a.title,question:a.question,mode:a.mode,existing_article_id:a.existing_article_id||''}));
+      btn.textContent=`Building plan ${spec.batch}/3…`;
+      E('smart-scan-progress').textContent=`Planning ${spec.batch}/3 ${spec.label}. Completed batches are saved immediately.`;
+      const data=await api('plan-issue-batch',{method:'POST',body:JSON.stringify({...base,existingArticles:inventory,batch:spec.batch,batchLabel:spec.label,batchBrief:spec.brief,priorArticles:prior})});
+      const saved={batch:spec.batch,label:spec.label,articles:data.articles||[],issue_summary:data.issue_summary||''};
+      batches=batches.filter(b=>b.batch!==spec.batch).concat(saved).sort((a,b)=>a.batch-b.batch);saveSmartPlanBatches(batches);renderSmartPlan();
+    }
+    const articles=batches.sort((a,b)=>a.batch-b.batch).flatMap(b=>b.articles||[]).slice(0,15).map((a,i)=>({...a,order:i+1}));
+    if(articles.length!==15)throw new Error(`Only ${articles.length}/15 article decisions are saved. Click Build 15-Article Plan again to resume.`);
+    const counts=articles.reduce((o,a)=>(o[a.mode]=(o[a.mode]||0)+1,o),{});
+    const plan={createdAt:new Date().toISOString(),publication:base.publication,sendDate:base.sendDate,issuePromise:promise,issue_summary:batches.map(b=>b.issue_summary).filter(Boolean).join(' '),signals,articles,counts};
+    localStorage.setItem(smartPlanKey(),JSON.stringify(plan));renderSmartPlan();
+    alert(`15-article plan ready: ${counts.REUSE||0} REUSE · ${counts.REFRESH||0} REFRESH · ${counts['CREATE NEW']||0} CREATE NEW. Review it before creating briefs.`);
+  }catch(e){renderSmartPlan();alert('Planning paused: '+e.message+'\n\nAny completed 5-article batches have been kept. Click Build 15-Article Plan again to resume from the next missing batch.');}
+  finally{btn.disabled=false;btn.textContent=old}
 }
 async function applySmartPlanToBuild(){
   if(!S.issue){alert('Open an issue first.');return}
@@ -1651,7 +1678,7 @@ E('assembly-order').ondragover=e=>{e.preventDefault();E('assembly-order').classL
 E('assembly-order').ondragleave=()=>E('assembly-order').classList.remove('drag-over');
 E('assembly-order').ondrop=e=>dropOnCanvas(e);
 E('assembly-clear').onclick=()=>{if(confirm('Clear the entire issue canvas?')){canvasSelectedUid=null;saveCanvas([])}};
-E('assembly-auto').onclick=planSmartIssue;E('assembly-smart-assemble').onclick=smartAssembleIssue;E('smart-plan-apply').onclick=applySmartPlanToBuild;E('smart-plan-hide').onclick=()=>E('smart-plan-panel').style.display='none';E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;
+E('assembly-auto').onclick=collectSmartSignals;E('assembly-build-plan').onclick=buildSmartPlanFromSavedSignals;E('assembly-smart-assemble').onclick=smartAssembleIssue;E('smart-plan-apply').onclick=applySmartPlanToBuild;E('smart-plan-hide').onclick=()=>E('smart-plan-panel').style.display='none';E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;
 E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
 E('save-inspector').onclick=saveInspector;E('inspect-has-partner').onchange=toggleInspectorPartner;
 E('remove-canvas-block').onclick=()=>{if(canvasSelectedUid)removeCanvasBlock(canvasSelectedUid)};

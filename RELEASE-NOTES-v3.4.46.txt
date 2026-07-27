@@ -1,0 +1,9 @@
+ICS Issue Canvas v3.4.46 — Separate Signals & 3x5 Plan
+Built from v3.4.45.
+
+- Collect Signals is a separate button and preserves saved discovery leads.
+- Build 15-Article Plan uses saved signals without recollecting them.
+- Planning is split into three independent 5-article AI calls.
+- Each completed 5-article batch is saved immediately in localStorage.
+- If a later batch times out, rerun Build 15-Article Plan and it resumes at the first missing batch.
+- Existing recovery, Canvas, export, navigation and production code otherwise retained.
