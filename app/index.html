@@ -12,16 +12,7 @@
 .issue-canvas{display:grid;gap:8px;min-height:420px;padding:8px;border:2px dashed #cbd5e1;border-radius:11px;background:#f8fafc}
 .issue-canvas.drag-over{border-color:var(--accent);background:#eef5ff}
 .canvas-card{display:grid;grid-template-columns:28px 1fr auto;gap:9px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff;cursor:grab}.canvas-card.is-ready{border-color:#9fd7c2;background:#f0faf6}.canvas-card.is-needs{border-color:#efc978;background:#fffaf0}.canvas-card.is-failed{border-color:#e0a4aa;background:#fff3f4}.canvas-card.is-producing{border-color:#9bb9e8;background:#f3f7fd}
-.canvas-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(35,102,209,.12)}
-.canvas-card{transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;user-select:none}
-.canvas-card.drop-target{border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.22),0 8px 22px rgba(35,102,209,.16);transform:translateY(2px)}
-.drop-slot{height:12px;margin:1px 4px;border-radius:8px;transition:height .12s ease,background .12s ease,box-shadow .12s ease;position:relative}
-.drop-slot.active{height:34px;background:#fff3cd;box-shadow:inset 0 0 0 2px #f59e0b}
-.drop-slot.active:after{content:'DROP HERE';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#8a4b00;letter-spacing:.04em}
-.assembly-library{position:sticky;top:12px;align-self:start;max-height:calc(100vh - 24px);overflow:auto}
-.partner-fields[hidden]{display:none!important}
-.partner-toggle{display:flex;align-items:center;gap:10px;padding:9px 0}
-.partner-toggle input{width:22px;height:22px;min-width:22px;accent-color:#2366d1;cursor:pointer}
+.canvas-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(35,102,209,.12)}.canvas-card{transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;user-select:none}.canvas-card.drop-target{border-color:var(--accent);box-shadow:0 6px 18px rgba(35,102,209,.16);transform:translateY(2px)}.partner-fields[hidden]{display:none!important}.partner-toggle{display:flex;align-items:center;gap:8px;padding:8px 0}.partner-toggle input{width:auto}
 .drag-handle{font-size:18px;color:#98a2b3;text-align:center}.canvas-card strong{display:block;font-size:13px}.canvas-card small{display:block;color:var(--muted);margin-top:3px}
 .canvas-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.mini-badge{font-size:9px;font-weight:800;border-radius:999px;padding:3px 6px;background:#edf2f8}.mini-badge.ready{background:#e5f5ee;color:var(--good)}.mini-badge.needs{background:#fff2dc;color:var(--warn)}
 .canvas-card button{padding:5px 7px}
@@ -32,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.41<br><strong>Context-aware components + drag UX</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.40<br><strong>Canvas-first partner-aware workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -923,7 +914,7 @@ function renderAssembly(){
  lib.innerHTML=rows.length?rows.map(s=>{const x=inferArticleIntelligence(s),title=String(val(s.fields,'Section Title')||'').trim().toLowerCase().replace(/\s+/g,' '),added=getCanvas().some(b=>b.kind==='article'&&(b.refId===s.id||String(b.title||'').trim().toLowerCase().replace(/\s+/g,' ')===title));return `<div class="palette-item" draggable="${added?'false':'true'}" ${added?'style="opacity:.55;cursor:default"':'ondragstart="startPaletteDrag(event,\'article\',\''+s.id+'\')"'} ondblclick="${added?'':'addArticleToCanvas(\''+s.id+'\')'}"><strong>${esc(val(s.fields,'Section Title')||'Untitled')}</strong><small>${added?'Already in Canvas':(masterArticleState(s)==='complete'?'MASTER ARTICLE COMPLETE ✓ · ':'MASTER ARTICLE — NEEDS REVIEW · ')+esc(x.topic)+' · '+esc(x.freshness)+' · drag or double-click'}</small></div>`}).join(''):`<div class="empty">${produced.length?'No produced articles match this search.':'No produced Master Articles are available for this publication yet.'}</div>`;if(E('assembly-library-diag'))E('assembly-library-diag').textContent=S.articleLibraryDiag||'';
  palette.innerHTML=COMPONENT_DEFS.map(d=>`<div class="component-chip" draggable="true" ondragstart="startPaletteDrag(event,'component','${esc(d.type)}')" ondblclick="addComponentToCanvas('${esc(d.type)}')">${esc(d.title)}</div>`).join('');
  const items=getCanvas();
- order.innerHTML=items.length?`<div class="drop-slot" ondragover="showDropSlot(event,this)" ondragleave="hideDropSlot(this)" ondrop="dropOnSlot(event,0,this)"></div>`+items.map((b,i)=>`<div class="canvas-card ${b.status==='READY'?'is-ready':/FAIL/i.test(String(b.status||''))?'is-failed':/PRODUC/i.test(String(b.status||''))?'is-producing':'is-needs'} ${canvasSelectedUid===b.uid?'selected':''}" draggable="true" ondragstart="startCanvasDrag(event,'${b.uid}')" onclick="selectCanvasBlock('${b.uid}')"><div class="drag-handle">⋮⋮</div><div><strong>${i+1}. ${esc(b.title||b.type)}</strong><small>${esc(b.type)}${b.partner?' · '+esc(b.partner):''}</small><div class="canvas-badges"><span class="mini-badge ${b.status==='READY'?'ready':'needs'}">${esc(b.status||'NEEDS DECISION')}</span>${b.kind==='partner'?'<span class="mini-badge">PARTNER</span>':''}</div></div><button class="btn secondary" onclick="event.stopPropagation();removeCanvasBlock('${b.uid}')">×</button></div><div class="drop-slot" ondragover="showDropSlot(event,this)" ondragleave="hideDropSlot(this)" ondrop="dropOnSlot(event,${i+1},this)"></div>`).join(''):'<div class="drop-hint">Drag an article or component here to start assembling the issue.</div>';
+ order.innerHTML=items.length?items.map((b,i)=>`<div class="canvas-card ${b.status==='READY'?'is-ready':/FAIL/i.test(String(b.status||''))?'is-failed':/PRODUC/i.test(String(b.status||''))?'is-producing':'is-needs'} ${canvasSelectedUid===b.uid?'selected':''}" draggable="true" ondragstart="startCanvasDrag(event,'${b.uid}')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');dropOnCard(event,'${b.uid}')" onclick="selectCanvasBlock('${b.uid}')"><div class="drag-handle">⋮⋮</div><div><strong>${i+1}. ${esc(b.title||b.type)}</strong><small>${esc(b.type)}${b.partner?' · '+esc(b.partner):''}</small><div class="canvas-badges"><span class="mini-badge ${b.status==='READY'?'ready':'needs'}">${esc(b.status||'NEEDS DECISION')}</span>${b.kind==='partner'?'<span class="mini-badge">PARTNER</span>':''}</div></div><button class="btn secondary" onclick="event.stopPropagation();removeCanvasBlock('${b.uid}')">×</button></div>`).join(''):'<div class="drop-hint">Drag an article or component here to start assembling the issue.</div>';
  E('assembly-count').textContent=`${items.length} blocks`;
  const savedTheme=localStorage.getItem(themeKey());if(E('assembly-theme')&&!E('assembly-theme').value)E('assembly-theme').value=savedTheme||val(S.issue?.fields||{},'Main Theme')||'';
  updatePlannerScore();renderInspector();
@@ -932,9 +923,6 @@ function updatePlannerScore(){if(!E('score-headlines'))return;const items=getCan
 function startPaletteDrag(ev,kind,value){dragPayload={source:'palette',kind,value};ev.dataTransfer.effectAllowed='copy';ev.dataTransfer.setData('text/plain',JSON.stringify(dragPayload))}
 function startCanvasDrag(ev,uidValue){dragPayload={source:'canvas',uid:uidValue};ev.dataTransfer.effectAllowed='move';ev.dataTransfer.setData('text/plain',JSON.stringify(dragPayload))}
 function readDrag(ev){try{return dragPayload||JSON.parse(ev.dataTransfer.getData('text/plain'))}catch{return null}}
-function showDropSlot(ev,el){ev.preventDefault();ev.stopPropagation();document.querySelectorAll('.drop-slot.active').forEach(x=>{if(x!==el)x.classList.remove('active')});el.classList.add('active')}
-function hideDropSlot(el){el?.classList.remove('active')}
-function dropOnSlot(ev,index,el){ev.preventDefault();ev.stopPropagation();hideDropSlot(el);dropOnCanvas(ev,index)}
 function dropOnCanvas(ev,index=null){ev.preventDefault();E('assembly-order')?.classList.remove('drag-over');const p=readDrag(ev);if(!p)return;if(p.source==='palette'){if(p.kind==='article')addArticleToCanvas(p.value,index);else if(p.kind==='component')addComponentToCanvas(p.value,index);else if(p.kind==='partner')addBlock(makePartnerBlock(),index)}else if(p.source==='canvas'){moveCanvasUid(p.uid,index===null?getCanvas().length:index)}dragPayload=null}
 function dropOnCard(ev,targetUid){ev.preventDefault();ev.stopPropagation();const items=getCanvas(),idx=items.findIndex(x=>x.uid===targetUid);dropOnCanvas(ev,idx)}
 function moveCanvasUid(moveUid,index){let items=getCanvas();const from=items.findIndex(x=>x.uid===moveUid);if(from<0)return;const [item]=items.splice(from,1);if(from<index)index--;items.splice(Math.max(0,Math.min(index,items.length)),0,item);saveCanvas(items)}
@@ -943,49 +931,93 @@ function selectCanvasBlock(uidValue){canvasSelectedUid=uidValue;renderAssembly()
 function renderInspector(){const empty=E('inspector-empty'),form=E('inspector-form');if(!empty||!form)return;const b=getCanvas().find(x=>x.uid===canvasSelectedUid);if(!b){empty.hidden=false;form.hidden=true;return}empty.hidden=true;form.hidden=false;E('inspect-type').value=b.type||'';E('inspect-title').value=b.title||'';E('inspect-purpose').value=b.purpose||'';const hasPartner=b.kind==='partner'||b.partnerAttached===true||!!String(b.partner||'').trim();E('inspect-has-partner').checked=hasPartner;E('inspect-has-partner').disabled=b.kind==='partner';E('partner-fields').hidden=!hasPartner;E('inspect-partner').value=b.partner||'';E('inspect-category').value=b.category||'';E('inspect-commitment').value=b.commitment||'';const suggestion=String(b.suggestedPartnerCategory||'').trim();E('inspect-partner-suggestion').textContent=hasPartner&&suggestion&&!b.category?`Suggested lane from article intelligence: ${suggestion} — confirm it before using.`:'';E('inspect-cta').value=b.cta||'';E('inspect-button').value=b.button||'';E('inspect-url').value=b.url||'';E('inspect-proof').value=b.proof||'';E('inspect-content').value=b.content||'';E('inspect-status').value=b.status||'NEEDS DECISION'}
 function toggleInspectorPartner(){const b=getCanvas().find(x=>x.uid===canvasSelectedUid);const on=b?.kind==='partner'||E('inspect-has-partner').checked;E('partner-fields').hidden=!on;if(!on){E('inspect-partner').value='';E('inspect-category').value='';E('inspect-commitment').value=''}else{const suggestion=String(b?.suggestedPartnerCategory||'').trim();E('inspect-partner-suggestion').textContent=suggestion&&!E('inspect-category').value?`Suggested lane from article intelligence: ${suggestion} — confirm it before using.`:''}}
 function saveInspector(){const items=getCanvas(),i=items.findIndex(x=>x.uid===canvasSelectedUid);if(i<0)return;const forced=items[i].kind==='partner';const attached=forced||E('inspect-has-partner').checked;items[i]={...items[i],title:E('inspect-title').value,purpose:E('inspect-purpose').value,partnerAttached:attached,partner:attached?E('inspect-partner').value:'',category:attached?E('inspect-category').value:'',commitment:attached?E('inspect-commitment').value:'',cta:E('inspect-cta').value,button:E('inspect-button').value,url:E('inspect-url').value,proof:E('inspect-proof').value,content:E('inspect-content').value,status:E('inspect-status').value};localStorage.setItem(assemblyKey(),JSON.stringify(items));renderAssembly()}
-async function createStarterCopy(){
-  const items=getCanvas(),b=items.find(x=>x.uid===canvasSelectedUid);
-  if(!b||b.kind==='article')return;
-  if(b.kind==='partner'&&!b.partner){alert('Attach a real partner before creating partner copy.');return}
-  const index=items.findIndex(x=>x.uid===b.uid);
-  const nearby=items.slice(Math.max(0,index-2),Math.min(items.length,index+3))
-    .filter(x=>x.uid!==b.uid)
-    .map(x=>`${x.type}: ${x.title}\n${String(x.content||x.purpose||'').slice(0,800)}`).join('\n\n');
-  const promise=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();
-  const btn=E('create-component-copy'),original=btn.textContent;
-  btn.disabled=true;btn.textContent='Creating contextual copy…';
-  try{
-    const prompt=`Create an editable first-draft supporting component for a Trail Blaze newsletter.
+function createStarterCopy(){const items=getCanvas(),b=items.find(x=>x.uid===canvasSelectedUid);if(!b||b.kind==='article')return;const theme=String(E('assembly-theme')?.value||'this issue').trim();let text='';if(b.type==='POLL')text=`QUESTION: What matters most to you about ${theme}?\n\nA. Value for money\nB. Convenience\nC. Quality\nD. Something else — tell us`;else if(b.type==='QUIZ')text=`QUESTION: How well do you know the local story behind ${theme}?\n\nANSWER / REVEAL: [ADD VERIFIED ANSWER AND SOURCE]`;else if(b.type==='Q&A')text=`QUESTION: [ADD THE READER QUESTION]\n\nANSWER: [ADD A USEFUL, EVIDENCE-BASED ANSWER${b.partner?' FROM '+b.partner.toUpperCase():''}]`;else if(b.type==='OPENING NOTE')text=`This week we're asking: ${theme}\n\n[ADD 2–4 SHORT LINES THAT SET UP THE ISSUE AND GIVE READERS A REASON TO KEEP GOING.]`;else if(b.type==='CLOSING QUESTION')text=`What is the one thing you would add to this week's conversation about ${theme}?`;else if(b.type==='READER RECOMMENDATION')text=`What local place, person or service would you recommend when it comes to ${theme}? Tell us the name and why.`;else if(b.type==='FACEBOOK DISCUSSION')text=`FACEBOOK QUESTION: ${theme}\n\nWhat do you think — and what local example proves your point?`;else if(b.type==='PARTNER PRESENCE')text=`PARTNER: ${b.partner||'[ADD PARTNER]'}\nFORMAT: [Q&A / TIP / MYTH V FACT / OFFER / ARTICLE / RECOMMENDATION]\nREADER QUESTION: [ADD QUESTION]\nUSEFUL ANSWER / VALUE: [ADD CONTENT]\nCTA: ${b.cta||'[ADD ONE PRIMARY ACTION]'}`;else text=`${b.type}\n\nPURPOSE: ${b.purpose}\n\n[CREATE FINISHED LETTERMAN-READY CONTENT HERE]\n\nSOURCE / LOCAL PROOF: ${b.proof||'[ADD IF REQUIRED]'}`;
+ E('inspect-content').value=text;E('inspect-status').value='NEEDS PRODUCTION'}
 
-PUBLICATION: ${S.publication?.name||S.publication?.fields?.Name||'Local Spotlight'}
-ISSUE PROMISE: ${promise||'Not supplied'}
-COMPONENT TYPE: ${b.type}
-PURPOSE: ${b.purpose||''}
-${b.partner?`ATTACHED PARTNER: ${b.partner}`:''}
+function autoAssembleIssue(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const produced=(S.articleLibrary||S.sections||[])
+    .filter(s=>masterArticleState(s)==='complete')
+    .sort((a,b)=>Number(val(a.fields,'Section Order')||999)-Number(val(b.fields,'Section Order')||999));
+  if(!produced.length){alert('No completed Master Articles are available for this issue.');return}
 
-NEARBY RUNNING-ORDER CONTEXT:
-${nearby||'No neighbouring content supplied.'}
+  if(getCanvas().length&&!confirm('Replace the current canvas with an automatically assembled first draft?'))return;
 
-Write ONLY the component copy.
-Rules:
-- The nearby running-order context is the primary subject cue. Make this component clearly belong beside that content.
-- Do not return a template, instructions, placeholders, square-bracket notes or labels such as "CREATE CONTENT HERE".
-- Give the component one distinct job rather than summarising the nearby article.
-- For MYTH V FACT, identify a specific belief raised by the nearby subject and give a fair answer only when the supplied context supports it. If the answer needs facts not supplied, turn it into a sharp reader-facing myth/question rather than inventing facts.
-- For polls, votes, questions and discussions, make the question specific to the nearby subject.
-- Concise, human UK English. Usually 25-100 words.
-- Never invent prices, businesses, events, quotes, experts, reader comments, medical/legal/financial claims or local facts.
-- One primary action maximum.`;
-    const data=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
-    const text=String(data.text||'').trim();
-    if(!text)throw new Error('No starter copy returned');
-    if(/\[CREATE|ADD IF REQUIRED|CREATE FINISHED|PURPOSE:/i.test(text))throw new Error('Generator returned a template instead of contextual copy');
-    b.content=text;b.status='NEEDS REVIEW';
-    localStorage.setItem(assemblyKey(),JSON.stringify(items));
-    renderAssembly();selectCanvasBlock(b.uid);
-  }catch(e){alert('Starter copy was not created: '+(e.message||e))}
-  finally{btn.disabled=false;btn.textContent=original}
+  const comp=(type,title='',purpose='')=>{
+    const def=COMPONENT_DEFS.find(x=>x.type===type);
+    const b=makeComponentBlock(def||{type,title:type,purpose:''});
+    if(title)b.title=title;
+    if(purpose)b.purpose=purpose;
+    return b;
+  };
+  const partner=(title,purpose)=>{
+    const b=makePartnerBlock();
+    b.title=title;
+    b.purpose=purpose;
+    b.status='NEEDS DECISION';
+    return b;
+  };
+
+  const articles=produced.slice(0,15).map(makeArticleBlock);
+  const items=[];
+  items.push(comp('OPENING NOTE',"Opening Note","Set up the Peterborough issue promise in 2–4 short lines and preview the strongest reasons to keep reading."));
+
+  const between=[
+    ()=>comp('READER POLL',"The Peterborough Quick Vote","One specific, easy-to-answer local question connected to the issue's strongest tension."),
+    ()=>comp('TIP / HACK',"One Useful Thing","Give readers one practical action they can use immediately."),
+    ()=>comp('JOKE',"Quick Breather","A short suitable joke or light local observation to break up heavier material."),
+    ()=>comp('Q&A',"Reader Question","Answer one useful question raised by the surrounding Master Articles."),
+    ()=>comp('INTERESTING FACT',"Worth Knowing","One verified, surprising Peterborough fact with a clear source requirement."),
+    ()=>comp('READER RECOMMENDATION',"Your Peterborough Recommendation","Ask for a named local recommendation that can feed a future guide or article."),
+    ()=>comp('MYTH V FACT',"Myth v Fact","Test one common belief raised by this issue and give the fair, sourced answer."),
+    ()=>comp('FACEBOOK DISCUSSION',"Take It To Facebook","Create one standalone stop-and-comment question connected to the issue."),
+    ()=>comp('TRIVIA',"Peterborough Quick Test","A short local knowledge question with a verified answer/reveal."),
+    ()=>comp('READER VOICE',"Over To You","Ask for one specific lived experience, example or opinion that can improve a future article."),
+    ()=>comp('MINI GUIDE',"Save This","A tiny 3-5 point checklist or decision aid that adds value without becoming another article."),
+    ()=>comp('LOCAL DISCOVERY',"One To Try","A named local discovery prompt or recommendation request tied to a lighter reader need; never invent the recommendation."),
+    ()=>comp('QUICK OPINION',"Unfiltered Take","A short fair challenge or contrary question where the issue has earned some edge; explain the tension, do not manufacture outrage."),
+    ()=>comp('SOCIAL PROMPT',"Your Turn","A specific reply/comment prompt that can seed a later article or guide without repeating an existing CTA.")
+  ];
+
+  const desiredBetween=Math.min(8,Math.max(0,articles.length-1));
+  const supportGapIndexes=new Set(Array.from({length:desiredBetween},(_,j)=>Math.round(j*Math.max(0,articles.length-2)/Math.max(1,desiredBetween-1))));
+  let betweenUsed=0;
+  articles.forEach((a,i)=>{
+    items.push(a);
+    if(i<articles.length-1 && supportGapIndexes.has(i) && between[betweenUsed])items.push(between[betweenUsed++]());
+  });
+
+  // Commercial presence is deliberately visible but not invented.
+  items.splice(Math.min(7,items.length),0,
+    partner("Resident Expert / Featured Partner 1","Assign an active Resident Expert or Featured Partner and choose the format that best serves this issue. Do not invent a sponsor.")
+  );
+  items.splice(Math.min(15,items.length),0,
+    partner("Resident Expert / Featured Partner 2","Assign another active Resident Expert or Featured Partner without repeating the first category. Do not invent a sponsor.")
+  );
+
+  items.push(comp('READER VOTE',"Worth It Or Overpriced?","A quick value judgement or either/or vote tied to a lighter issue theme."));
+  items.push(comp('COMMUNITY VOICE',"Community Voice","Surface one useful local voice, cause or contribution with named proof."));
+  items.push(comp('FEATURED PARTNER / OFFER',"Do Something This Week","One useful visit, booking, nomination, download, offer, event or reply action. This may expose a future Featured Partner opportunity but must still work editorially without one."));
+  items.push(comp('CLOSING QUESTION',"One Last Question","End with one specific question readers can reply to or answer on social."));
+
+  // Fill a balanced Spotlight draft to the agreed 28-32 range without inventing more articles.
+  const extraSupport=[
+    ()=>comp('READER QUESTION',"What Should We Answer Next?","Ask for one precise reader question that can enter the Question Bank."),
+    ()=>comp('QUICK WIN',"Two-Minute Win","One tiny action, check or decision readers can make now without turning this into another article."),
+    ()=>comp('NOMINATION',"Name The Local One","Ask readers to nominate a specific local business, place, person or service for a future evidence-led guide."),
+    ()=>comp('HUMOUR',"You Know The Feeling…","A short relatable local observation or joke that gives the issue breathing room."),
+    ()=>comp('MYTH / QUESTION',"Are We Sure About That?","Challenge one assumption from the issue and invite evidence or experience; do not state an unsupported counter-claim.")
+  ];
+  let fill=0;
+  while(items.length<30){items.splice(Math.max(1,items.length-1),0,extraSupport[fill%extraSupport.length]());fill++;}
+  const finalItems=items.slice(0,30);
+  localStorage.setItem(assemblyKey(),JSON.stringify(finalItems));
+  canvasSelectedUid=finalItems[0]?.uid||null;
+  renderAssembly();
+  const articleNote=articles.length<12?`\nNOTE: only ${articles.length} completed Master Articles were available. Spotlight normally targets 12-15; add more question-led articles before Final QA where possible.`:'';
+  alert(`Auto assembly created ${finalItems.length} blocks from ${articles.length} completed Master Articles. Target: 28-32 total blocks with 12-15 proper articles.${articleNote}\nReview the running order, assign real partners, then produce the supporting components.`);
 }
+
 async function produceSupportingComponents(){
   if(!S.issue){alert('Open an issue first.');return}
   const canvas=getCanvas();
