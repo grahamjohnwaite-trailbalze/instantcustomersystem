@@ -1,0 +1,25 @@
+ICS Issue Canvas v3.4.43 — Smart Issue Creation
+Built directly from the stable v3.4.42 Recovery Safe baseline.
+
+What changed
+- Auto Assemble is replaced in the main workflow by Smart Plan Issue.
+- Smart Plan uses current web research plus the publication, send date, Issue Promise, optional editor signals and the existing Produced Article library.
+- Exactly 15 proper Master Article opportunities are proposed before production.
+- Every proposed article is classified REUSE, REFRESH or CREATE NEW.
+- Existing articles are treated as a resource bank, not a quota to fill.
+- Planning explicitly considers local news/events, national-to-local consequences, money/home/transport, food/leisure, community/service and an earned Unfiltered/challenge angle.
+- The plan is shown for editorial review before Airtable records are created.
+- Create Missing Article Briefs writes only REFRESH and CREATE NEW briefs to the current issue. REUSE remains linked to the existing article library.
+- Existing Master Article production pipeline remains responsible for researching/writing the missing articles.
+- Assemble Approved Plan refuses to assemble until all 15 planned articles are actually complete.
+- Final assembly remains 30 blocks: 15 articles + 13 supporting components + 2 partner blocks.
+- Supporting component labels now use the current publication/locality rather than hard-coded Peterborough wording.
+- Recovery Mode / Export Canvas Backup from v3.4.42 remains intact.
+
+Deliberately unchanged
+- Navigation
+- Canvas persistence/recovery
+- Existing drag/drop implementation
+- Master Article research/writer pipeline
+- Partner assignment logic
+- Final QA

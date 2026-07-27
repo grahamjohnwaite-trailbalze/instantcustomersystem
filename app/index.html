@@ -23,7 +23,7 @@
 .canvas-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.canvas-toolbar .muted{font-size:11px}
 @media(max-width:1250px){.canvas-layout{grid-template-columns:270px 1fr}.canvas-inspector{grid-column:1/-1;min-height:auto}}
 @media(max-width:850px){.canvas-layout{grid-template-columns:1fr}.component-palette{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.42<br><strong>Recovery-safe Canvas workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.43<br><strong>Smart Issue Creation + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -40,10 +40,17 @@
 <div id="production-progress" class="empty" style="margin-bottom:14px">Production service not run yet.</div>
 <div id="map-audit" class="empty" style="margin-bottom:14px">Audit not run yet.</div>
 <div class="form-grid"><div class="field full"><label>Issue status</label><select id="ih-status"><option>PLANNED</option><option>BUILDING</option><option>QA</option><option>READY FOR LETTERMAN</option><option>PUBLISHED</option></select></div><div class="field full"><label>Main theme</label><textarea id="ih-theme"></textarea></div><div class="field full"><label>Subject line</label><input id="ih-subject"></div><div class="field full"><label>Preheader</label><textarea id="ih-preheader"></textarea></div><div class="field full"><label>Send date</label><input id="ih-date" type="date"></div></div><h3>Minimum section gate</h3><div id="gate" class="checklist"></div><div class="warning" style="margin-top:14px"><strong>Phase 1B discipline</strong><br>One primary Hot Button. One useful action. Named local proof. No unresolved placeholders in final copy.</div></aside></div></section><section class="view active" id="view-assemble">
-<div class="section-head planner-head"><div><h2>Issue Canvas</h2><div class="muted">Drag articles and components into one running order. Click any card to edit the information that block needs.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-export">Export Canvas Backup</button><button class="btn secondary" id="assembly-clear">Clear canvas</button><button class="btn" id="assembly-auto">Auto Assemble Issue</button><button class="btn" id="assembly-produce">Produce Supporting Components</button><button class="btn" id="assembly-partners">Assign Active Partners</button><button class="btn" id="assembly-qa">Run Final QA</button><button class="btn secondary" id="assembly-fix">Apply Safe Fixes</button><button class="btn" id="assembly-generate">Generate Issue Build Pack</button></div></div>
+<div class="section-head planner-head"><div><h2>Issue Canvas</h2><div class="muted">Plan the issue intelligently first, then assemble the approved running order.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-export">Export Canvas Backup</button><button class="btn secondary" id="assembly-clear">Clear canvas</button><button class="btn" id="assembly-auto">Smart Plan Issue</button><button class="btn secondary" id="assembly-smart-assemble">Assemble Approved Plan</button><button class="btn" id="assembly-produce">Produce Supporting Components</button><button class="btn" id="assembly-partners">Assign Active Partners</button><button class="btn" id="assembly-qa">Run Final QA</button><button class="btn secondary" id="assembly-fix">Apply Safe Fixes</button><button class="btn" id="assembly-generate">Generate Issue Build Pack</button></div></div>
 <div id="canvas-recovery-banner" class="warning" style="display:none;margin:0 0 12px 0"><strong>Recovery Mode</strong><br>This historical Canvas was restored from browser storage even though the issue is not in the active Issues list. Export a backup before making changes.</div>
 <div class="planner-score" id="planner-score"><div><strong id="score-headlines">0</strong><span>Articles in Canvas</span></div><div><strong id="score-interactive">0</strong><span>Components</span></div><div><strong id="score-authority">0</strong><span>Partner blocks</span></div><div><strong id="score-activation">0</strong><span>Ready</span></div><div><strong id="score-commitments">0</strong><span>Total blocks</span></div></div>
 <div class="issue-promise-bar"><div class="field"><label>Issue promise / organising question</label><textarea id="assembly-theme" placeholder="What should readers decide, discover, feel or do by the end of this issue?"></textarea></div><button class="btn secondary" id="save-canvas-theme">Save promise</button></div>
+<section class="panel" id="smart-plan-panel" style="display:block;margin-bottom:14px">
+  <div class="section-head" style="margin-bottom:8px"><div><h2 style="margin:0">Smart Issue Plan</h2><div class="muted" id="smart-plan-status">Research current signals, then decide what to REUSE, REFRESH or CREATE NEW.</div></div><div class="toolbar"><button class="btn" id="smart-plan-apply">Create Missing Article Briefs</button><button class="btn secondary" id="smart-plan-hide">Hide Plan</button></div></div>
+  <div class="field"><label>Known current signals / events / must-include notes (optional)</label><textarea id="smart-plan-signals" placeholder="Paste anything you already know should be considered: local events, breaking local story, national change with a Norfolk impact, partner commitment, seasonal trigger..."></textarea></div>
+  <div id="smart-plan-summary" class="warning" style="margin:10px 0"></div>
+  <div id="smart-plan-signals-list" class="checklist"></div>
+  <div id="smart-plan-list" class="checklist"></div>
+</section>
 <div class="canvas-layout">
 <section class="canvas-panel">
 <h2>Component Library</h2>
@@ -920,11 +927,11 @@ function renderAssembly(){
  const recovering=canvasRecoveryMode();
  const recoveryBanner=E('canvas-recovery-banner');
  if(recoveryBanner)recoveryBanner.style.display=recovering?'block':'none';
- ['assembly-clear','assembly-auto','assembly-produce','assembly-partners','assembly-fix','assembly-generate'].forEach(id=>{const el=E(id);if(el)el.disabled=recovering});
+ ['assembly-clear','assembly-auto','assembly-smart-assemble','assembly-produce','assembly-partners','assembly-fix','assembly-generate'].forEach(id=>{const el=E(id);if(el)el.disabled=recovering});
  order.innerHTML=items.length?items.map((b,i)=>`<div class="canvas-card ${b.status==='READY'?'is-ready':/FAIL/i.test(String(b.status||''))?'is-failed':/PRODUC/i.test(String(b.status||''))?'is-producing':'is-needs'} ${canvasSelectedUid===b.uid?'selected':''}" draggable="true" ondragstart="startCanvasDrag(event,'${b.uid}')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');dropOnCard(event,'${b.uid}')" onclick="selectCanvasBlock('${b.uid}')"><div class="drag-handle">⋮⋮</div><div><strong>${i+1}. ${esc(b.title||b.type)}</strong><small>${esc(b.type)}${b.partner?' · '+esc(b.partner):''}</small><div class="canvas-badges"><span class="mini-badge ${b.status==='READY'?'ready':'needs'}">${esc(b.status||'NEEDS DECISION')}</span>${b.kind==='partner'?'<span class="mini-badge">PARTNER</span>':''}</div></div><button class="btn secondary" onclick="event.stopPropagation();removeCanvasBlock('${b.uid}')">×</button></div>`).join(''):'<div class="drop-hint">Drag an article or component here to start assembling the issue.</div>';
  E('assembly-count').textContent=`${items.length} blocks`;
  const savedTheme=localStorage.getItem(themeKey());if(E('assembly-theme')&&!E('assembly-theme').value)E('assembly-theme').value=savedTheme||val(S.issue?.fields||{},'Main Theme')||'';
- updatePlannerScore();renderInspector();
+ updatePlannerScore();renderInspector();renderSmartPlan();
 }
 function updatePlannerScore(){if(!E('score-headlines'))return;const items=getCanvas();E('score-headlines').textContent=items.filter(x=>x.kind==='article').length;E('score-interactive').textContent=items.filter(x=>x.kind==='component').length;E('score-authority').textContent=items.filter(x=>x.kind==='partner'||x.partner).length;E('score-activation').textContent=items.filter(x=>x.status==='READY').length;E('score-commitments').textContent=items.length;}
 function startPaletteDrag(ev,kind,value){dragPayload={source:'palette',kind,value};ev.dataTransfer.effectAllowed='copy';ev.dataTransfer.setData('text/plain',JSON.stringify(dragPayload))}
@@ -947,7 +954,7 @@ function exportCanvasBackup(){
   if(!canvas.length){alert('There is no Canvas content to export.');return}
   const payload={
     format:'TBOS Issue Canvas Backup',
-    version:'3.4.42',
+    version:'3.4.43',
     exportedAt:new Date().toISOString(),
     issueId,
     issue:S.issue?{
@@ -971,6 +978,102 @@ function exportCanvasBackup(){
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+function smartPlanKey(){return 'ics:smartPlan:'+assemblyIssueId()}
+function getSmartPlan(){try{return JSON.parse(localStorage.getItem(smartPlanKey())||'null')}catch{return null}}
+function planModeClass(m){return m==='REUSE'?'ready':'needs'}
+function renderSmartPlan(){
+  const plan=getSmartPlan(),panel=E('smart-plan-panel');
+  if(!panel)return;
+  if(!plan){panel.style.display='block';E('smart-plan-status').textContent='No Smart Issue Plan yet. Add any known signals below, then click Smart Plan Issue.';E('smart-plan-summary').innerHTML='<strong>Next:</strong> ICS will research current signals and propose 15 article decisions before anything is produced.';E('smart-plan-signals-list').innerHTML='';E('smart-plan-list').innerHTML='';return}
+  panel.style.display='block';
+  const counts=plan.counts||{};
+  E('smart-plan-status').textContent=`Approved planning slate: ${plan.articles?.length||0} articles · ${counts.REUSE||0} reuse · ${counts.REFRESH||0} refresh · ${counts['CREATE NEW']||0} create new.`;
+  E('smart-plan-summary').innerHTML=`<strong>Editorial shape</strong><br>${esc(plan.issue_summary||'')}`;
+  const signals=Array.isArray(plan.signals)?plan.signals:[];
+  E('smart-plan-signals-list').innerHTML=signals.length?`<div class="check"><strong>Current signals researched</strong><br>${signals.map(x=>`${esc(x.signal)}${x.why_local?' — '+esc(x.why_local):''}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';
+  E('smart-plan-list').innerHTML=(plan.articles||[]).map(a=>`<div class="check"><span class="mini-badge ${planModeClass(a.mode)}">${esc(a.mode)}</span> <strong>${a.order}. ${esc(a.title)}</strong><br><span class="muted">${esc(a.question)}</span><br><small><strong>Why now:</strong> ${esc(a.why_now||'')} · <strong>Stance:</strong> ${esc(a.stance||'PRACTICAL')} · <strong>Lane:</strong> ${esc(a.lane||'Editorial')}</small></div>`).join('');
+}
+async function planSmartIssue(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const promise=String(E('assembly-theme')?.value||val(S.issue.fields,'Main Theme')||'').trim();
+  if(!promise){alert('Add an Issue Promise first.');return}
+  const btn=E('assembly-auto'),old=btn.textContent;btn.disabled=true;btn.textContent='Researching + planning…';
+  try{
+    await loadArticleLibrary();
+    const inventory=(S.articleLibrary||[]).slice(0,80).map(s=>{const x=inferArticleIntelligence(s);return {id:s.id,title:val(s.fields,'Section Title'),purpose:val(s.fields,'Reader Value')||val(s.fields,'Core Reader Question'),proof:val(s.fields,'Local Proof Needed'),content:val(s.fields,'Section Final Copy')||val(s.fields,'Final Copy')||'',freshness:x.freshness,topic:x.topic}});
+    const data=await api('plan-issue',{method:'POST',body:JSON.stringify({publication:currentPublicationName(),issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||'',existingArticles:inventory})});
+    localStorage.setItem(smartPlanKey(),JSON.stringify(data.plan));
+    renderSmartPlan();
+    alert(`Smart plan ready: ${data.plan.counts?.REUSE||0} REUSE · ${data.plan.counts?.REFRESH||0} REFRESH · ${data.plan.counts?.['CREATE NEW']||0} CREATE NEW. Review the slate before creating article briefs.`);
+  }catch(e){alert('Smart planning failed: '+e.message)}
+  finally{btn.disabled=false;btn.textContent=old}
+}
+async function applySmartPlanToBuild(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Create a Smart Issue Plan first.');return}
+  const work=plan.articles.filter(a=>a.mode!=='REUSE');
+  if(!work.length){alert('This plan contains no missing or refresh articles. You can assemble it now.');return}
+  if(!confirm(`Create/update ${work.length} REFRESH / CREATE NEW Master Article briefs in this issue? REUSE articles remain linked to the existing library.`))return;
+  const btn=E('smart-plan-apply'),old=btn.textContent;btn.disabled=true;btn.textContent='Creating briefs…';
+  try{
+    const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=r.records||[];
+    let created=0,updated=0;
+    for(const a of work){
+      const marker=`SMART PLAN ${a.mode} — Article ${String(a.order).padStart(2,'0')}.${a.existing_article_id?` Source article: ${a.existing_article_id}.`:''}`;
+      const fields={Issues:[S.issue.id],'Section Title':a.title,'Section Order':a.order,'Section Type':'Anchor','Section Status':'Planned','Reader Hook':a.hook,'Core Reader Question':a.question,'Universal Reader Problem':a.problem,'Reader Type':a.reader,'Emotional Outcome':'Curious','Reader Value':a.value,'Local Proof Needed':a.local_proof,'Evidence Required':a.evidence,'Evidence Status':'Needs Update','Commercial Lane':a.lane,'Commercial Pathway':a.partner_path,'Primary Next Action':a.cta_text||'','CTA Type':a.cta_type||'None','CTA Text':a.cta_text||'','Archive Similarity Status':'Review','Reuse / Localisation Potential':'Review after publication','Notes':`${marker}\nWhy now: ${a.why_now||''}\nEditorial stance: ${a.stance||'PRACTICAL'}${a.countercase?`\nCountercase: ${a.countercase}`:''}${a.source_signal?`\nCurrent signal: ${a.source_signal}`:''}`,'Section QA Result':'Not Checked'};
+      const existing=S.sections.find(s=>String(val(s.fields,'Section Title')||'').trim().toLowerCase()===a.title.trim().toLowerCase());
+      if(existing){const patch={...fields};delete patch.Issues;const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:existing.id,fields:patch})});existing.fields=d.record.fields;updated++;}
+      else{const d=await api('sections',{method:'POST',body:JSON.stringify({fields})});S.sections.push(d.record);created++;}
+    }
+    const idata=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Issue Status':'BUILDING','Main Theme':plan.issuePromise||E('assembly-theme').value}})});S.issue=idata.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);
+    sortSections();renderSections();renderForm();render();show('build');
+    alert(`Smart plan applied: ${created} briefs created · ${updated} updated · ${plan.counts?.REUSE||0} existing articles reserved for reuse. Produce the missing Master Articles, then return to Canvas and click Assemble Approved Plan.`);
+  }catch(e){alert('Could not apply Smart Plan: '+e.message)}
+  finally{btn.disabled=false;btn.textContent=old}
+}
+function buildSmartCanvas(articles){
+  const pub=currentPublicationName()||'Local Spotlight';const local=pub.replace(/\s+Spotlight.*$/i,'').trim()||pub;
+  const comp=(type,title='',purpose='')=>{const def=COMPONENT_DEFS.find(x=>x.type===type);const b=makeComponentBlock(def||{type,title:type,purpose:''});if(title)b.title=title;if(purpose)b.purpose=purpose;return b};
+  const partner=(title,purpose)=>{const b=makePartnerBlock();b.title=title;b.purpose=purpose;b.status='NEEDS DECISION';return b};
+  const items=[comp('OPENING NOTE','Opening Note',`Set up the ${local} issue promise in 2-4 short lines and preview the strongest reasons to keep reading.`)];
+  const between=[
+    ()=>comp('READER POLL',`${local} Quick Vote`,`One specific, easy-to-answer ${local} question connected to the nearby article.`),
+    ()=>comp('TIP / HACK','One Useful Thing','Give readers one small action connected to the nearby issue context.'),
+    ()=>comp('JOKE','Quick Breather',`A short suitable ${local} observation or joke to break up heavier material.`),
+    ()=>comp('Q&A','Reader Question','Answer or surface one useful question raised by the nearby Master Articles.'),
+    ()=>comp('INTERESTING FACT','Worth Knowing',`One verified surprising ${local} fact connected to nearby context, or a question if proof is missing.`),
+    ()=>comp('READER RECOMMENDATION',`Your ${local} Recommendation`,`Ask for a named ${local} recommendation that can feed a future guide or article.`),
+    ()=>comp('MYTH V FACT','Myth v Fact','Test one belief raised by the nearby article and give the fair sourced answer.'),
+    ()=>comp('FACEBOOK DISCUSSION','Take It To Facebook','Create one standalone stop-and-comment question connected to nearby context.')
+  ];
+  let used=0;articles.forEach((a,i)=>{items.push(a);if(i<articles.length-1&&used<between.length&&[0,2,4,6,8,10,12,13].includes(i))items.push(between[used++]())});
+  items.splice(Math.min(8,items.length),0,partner('Resident Expert / Featured Partner 1','Attach a real partner only where the reader problem and partner expertise genuinely match.'));
+  items.splice(Math.min(17,items.length),0,partner('Resident Expert / Featured Partner 2','Attach another real partner where it improves the resource; do not invent or force a category.'));
+  items.push(comp('READER VOTE','Worth It Or Overpriced?','A quick value judgement tied to a lighter issue theme.'));
+  items.push(comp('COMMUNITY VOICE','Community Voice','Surface one useful local voice, cause or contribution with named proof.'));
+  items.push(comp('FEATURED PARTNER / OFFER','Do Something This Week','One worthwhile visit, booking, nomination, download, event or reply action; editorially useful even without a partner.'));
+  items.push(comp('CLOSING QUESTION','One Last Question','End with one specific question readers can reply to or answer on social.'));
+  const extras=[()=>comp('READER QUESTION','What Should We Answer Next?','Ask for one precise reader question that can enter the Question Bank.'),()=>comp('QUICK WIN','Two-Minute Win','One tiny action or check readers can make now.'),()=>comp('NOMINATION','Name The Local One',`Ask readers to nominate a specific ${local} business, place, person or service for a future evidence-led guide.`),()=>comp('HUMOUR','You Know The Feeling…',`A short relatable ${local} observation that gives the issue breathing room.`)];
+  let n=0;while(items.length<30){items.splice(Math.max(1,items.length-1),0,extras[n%extras.length]());n++;}
+  return items.slice(0,30);
+}
+async function smartAssembleIssue(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Create a Smart Issue Plan first.');return}
+  try{await Promise.all([loadSections(),loadArticleLibrary()])}catch(e){alert('Could not refresh article library: '+e.message);return}
+  const chosen=[],missing=[];
+  for(const a of plan.articles){
+    let src=null;
+    if(a.mode==='REUSE')src=(S.articleLibrary||[]).find(x=>x.id===a.existing_article_id);
+    else src=(S.articleLibrary||[]).find(x=>String(val(x.fields,'Section Title')||'').trim().toLowerCase()===a.title.trim().toLowerCase()&&masterArticleState(x)==='complete');
+    if(!src||masterArticleState(src)!=='complete')missing.push(`${a.order}. ${a.title} [${a.mode}]`);else{const b=makeArticleBlock(src);b.planMode=a.mode;b.editorialStance=a.stance;b.relatedPlanQuestion=a.question;chosen.push(b)}
+  }
+  if(missing.length){alert(`The approved plan is not ready to assemble yet. Produce/finish these Master Articles first:\n\n${missing.join('\n')}\n\nREUSE articles must still be present in the library; REFRESH/CREATE NEW articles must be completed in this issue.`);return}
+  if(getCanvas().length&&!confirm('Replace the current Canvas with the approved Smart Issue Plan?'))return;
+  const items=buildSmartCanvas(chosen);localStorage.setItem(assemblyKey(),JSON.stringify(items));canvasSelectedUid=items[0]?.uid||null;renderAssembly();
+  alert(`Approved Smart Plan assembled: ${chosen.length} Master Articles · ${items.length-chosen.length-2} supporting components · 2 partner blocks · ${items.length} total blocks.`)
+}
+
 function autoAssembleIssue(){
   if(!S.issue){alert('Open an issue first.');return}
   const produced=(S.articleLibrary||S.sections||[])
@@ -1532,7 +1635,7 @@ E('assembly-order').ondragover=e=>{e.preventDefault();E('assembly-order').classL
 E('assembly-order').ondragleave=()=>E('assembly-order').classList.remove('drag-over');
 E('assembly-order').ondrop=e=>dropOnCanvas(e);
 E('assembly-clear').onclick=()=>{if(confirm('Clear the entire issue canvas?')){canvasSelectedUid=null;saveCanvas([])}};
-E('assembly-auto').onclick=autoAssembleIssue;E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;
+E('assembly-auto').onclick=planSmartIssue;E('assembly-smart-assemble').onclick=smartAssembleIssue;E('smart-plan-apply').onclick=applySmartPlanToBuild;E('smart-plan-hide').onclick=()=>E('smart-plan-panel').style.display='none';E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;
 E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
 E('save-inspector').onclick=saveInspector;E('inspect-has-partner').onchange=toggleInspectorPartner;
 E('remove-canvas-block').onclick=()=>{if(canvasSelectedUid)removeCanvasBlock(canvasSelectedUid)};
