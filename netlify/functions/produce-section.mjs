@@ -86,6 +86,45 @@ function sourceTypeFor(url='',title=''){
   if(/norfolk|edp24|eastern daily press|bbc\.co\.uk|itv\.com/.test(blob))return 'local';
   return 'other';
 }
+
+const STOPWORDS=new Set('the a an and or but if then than to of in on at for from with by as is are was were be been being this that these those what which who will would should could can do does did have has had your our their its more before after about into near beside new local says say reported reports report despite strong opposition actually change changes changing current latest plan plans planning article'.split(/\s+/));
+function tokens(s=''){
+  return [...new Set(String(s).toLowerCase().replace(/https?:\/\/\S+/g,' ').replace(/[^a-z0-9]+/g,' ').split(/\s+/).filter(w=>w.length>2&&!STOPWORDS.has(w)))];
+}
+function evidenceFingerprint(x){
+  const u=cleanUrl(x.url||'');
+  let canonical=u;
+  try{
+    const parsed=new URL(u);
+    canonical=(parsed.hostname.replace(/^www\./,'')+parsed.pathname).replace(/\/+$/,'').toLowerCase();
+  }catch{}
+  const title=tokens(x.title||'').slice(0,12).sort().join(' ');
+  return canonical+' | '+title;
+}
+function relevanceScore(x,fields){
+  const title=String(value(fields,'Section Title')||'');
+  const q=String(value(fields,'Core Reader Question')||'');
+  const proof=String(value(fields,'Local Proof Needed')||'');
+  const notes=String(value(fields,'Notes')||'');
+  const current=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
+  const need=tokens([title,q,proof,current].join(' '));
+  const hay=new Set(tokens([x.title,x.description,x.source,x.url].join(' ')));
+  let score=0;
+  for(const w of need)if(hay.has(w))score+=1;
+  const blob=[x.title,x.description,x.source,x.url].join(' ').toLowerCase();
+  // Strong anchors for local article identity.
+  if(/\ba149\b/i.test(title+' '+q)&&/\ba149\b/i.test(blob))score+=5;
+  if(/\bnorfolk\b/i.test(title+' '+q+' '+proof)&&/\bnorfolk\b/i.test(blob))score+=2;
+  const specific=tokens(title).filter(w=>!['norfolk'].includes(w));
+  if(specific.filter(w=>hay.has(w)).length>=2)score+=2;
+  return score;
+}
+function sameStory(a,b){
+  const A=new Set(tokens(a.title||'')),B=new Set(tokens(b.title||''));
+  if(!A.size||!B.size)return false;
+  const overlap=[...A].filter(x=>B.has(x)).length;
+  return overlap/Math.min(A.size,B.size)>=0.72;
+}
 function articleSearchTerms(fields){
   const title=String(value(fields,'Section Title')||'').trim();
   const q=String(value(fields,'Core Reader Question')||'').trim();
@@ -116,30 +155,37 @@ async function fastEvidencePack(fields,cls){
   for(const q of queries.slice(0,3))jobs.push(fetchTextFast(googleNewsUrl(q)).then(r=>parseRssEvidence(r.text,q,'Google News RSS')));
   const settled=await Promise.allSettled(jobs);
   let raw=settled.flatMap(x=>x.status==='fulfilled'?x.value:[]);
+  // Reject off-topic results before they ever reach Writer.
+  raw=raw.map(x=>({...x,relevance:relevanceScore(x,fields)})).filter(x=>x.relevance>=3);
+  raw.sort((a,b)=>b.relevance-a.relevance);
   const seen=new Set(),dedup=[];
   for(const x of raw){
-    const k=(x.url||x.title).toLowerCase().replace(/[#?].*$/,'');
-    if(!k||seen.has(k))continue;seen.add(k);dedup.push(x);
+    const k=evidenceFingerprint(x);
+    if(!k||seen.has(k))continue;
+    if(dedup.some(y=>sameStory(x,y)))continue;
+    seen.add(k);dedup.push(x);
   }
-  // Prefer official/local sources, then strongest snippet-bearing results.
+  // Prefer relevance first, then official/local authority.
   dedup.sort((a,b)=>{
     const rank=x=>sourceTypeFor(x.url,x.source)==='official'?0:sourceTypeFor(x.url,x.source)==='local'?1:2;
-    return rank(a)-rank(b)||(b.description?.length||0)-(a.description?.length||0);
+    return b.relevance-a.relevance||rank(a)-rank(b)||(b.description?.length||0)-(a.description?.length||0);
   });
-  const chosen=dedup.slice(0,8).map(x=>({
+  const chosen=dedup.slice(0,6).map(x=>({
     title:String(x.title||x.source||'').slice(0,220),
     url:cleanUrl(x.url),
     supports:String(x.description||`Discovery result for: ${x.query}`).slice(0,700),
-    source_type:sourceTypeFor(x.url,x.source)
+    source_type:sourceTypeFor(x.url,x.source),
+    relevance:x.relevance
   })).filter(x=>x.url);
   const official=chosen.filter(x=>x.source_type==='official').length;
   const local=chosen.filter(x=>x.source_type==='local').length;
-  const sufficient=chosen.length>=2&&(official+local>=1);
+  const specificStrong=chosen.filter(x=>Number(x.relevance)>=5).length;
+  const sufficient=chosen.length>=2&&(official+local>=1)&&specificStrong>=1;
   return {
     research_status:sufficient?'Sufficient':'Insufficient',
-    research_summary:`Fast evidence collector found ${chosen.length} source leads (${official} official, ${local} local). These source snippets are discovery evidence and the article must avoid claims that go beyond them.`,
+    research_summary:`Evidence relevance gate retained ${chosen.length} distinct article-specific source leads (${official} official, ${local} local; ${specificStrong} strongly matched). Duplicate stories and off-topic results were removed before writing.`,
     sources:chosen,
-    missing_evidence:sufficient?[]:['Fewer than two usable sources, or no official/local source was found. Human verification is required before publication.']
+    missing_evidence:sufficient?[]:['The evidence relevance gate could not find enough distinct, article-specific support including an official/local source and a strongly matched source. Human verification is required before publication.']
   };
 }
 function researchPromptFor(fields,cls){
@@ -204,6 +250,7 @@ STYLE, AUDIENCE AND SAFETY
 - For contested subjects, do not force false certainty. A credible practical, challenge, contrarian or debate angle is allowed when it is supported and clearly distinguished from fact.
 ${useEvidence?`- Use ONLY material claims supported by the research pack below.
 - Some sources are fast discovery snippets rather than full documents. Never infer a precise figure, condition, quote or legal conclusion that is not explicitly present in the supplied evidence. When evidence is thin, write cautiously and surface what still needs checking.
+- CRITICAL EVIDENCE LANGUAGE: absence of evidence in this research pack is not evidence that a proposal failed a test. Never write "the answer is no", "has not been proved", "has not been provided", or equivalent merely because the pack lacks documents. Say "the evidence currently available to Spotlight is not enough to establish that", "we have not yet verified that", or similarly precise wording.
 - If an optional or non-essential detail in the brief could not be verified, OMIT that detail from the article rather than forcing it into the copy.
 - A missing optional detail does NOT by itself require QA Fix Required.
 - Mark QA Fix Required only when evidence needed to answer the CORE QUESTION is missing, or when the drafted article still contains a material claim that is not adequately supported.
@@ -322,7 +369,7 @@ export default async(request)=>{
     const reusableResearch=savedResearch?.brief_key===key?savedResearch:null;
     const reusableWriter=savedWriter?.brief_key===key?savedWriter:null;
     const runningStage=reusableWriter?'Finalising from writer checkpoint':reusableResearch?'Resuming at writer':'Researching and writing';
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.12`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.13`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
@@ -472,7 +519,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.12`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.13`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -511,7 +558,7 @@ export default async(request)=>{
         const current=lookup.records?.[0];
         if(current){
           const notes=stripRuntimeBlocks(current.fields?.Notes||'');
-          const failed=[`MASTER ARTICLE FAILED v2.12`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          const failed=[`MASTER ARTICLE FAILED v2.13`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await withTimeout(
             airtableRequest(TABLES.sections,{
               method:'PATCH',

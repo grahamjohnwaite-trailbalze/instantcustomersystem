@@ -1,0 +1,12 @@
+ICS Issue Canvas v3.4.50 — Evidence Relevance Gate
+
+Built from v3.4.49.
+
+- Rejects off-topic discovery results before Writer sees them.
+- Deduplicates both canonical URLs and near-identical story headlines.
+- Scores each source against the approved article title, core question, local proof and current signal.
+- Requires article-specific relevance plus official/local support before the evidence gate can pass.
+- Caps Writer evidence to the strongest six distinct sources.
+- Prevents missing documents being described as proof that a proposal failed a test.
+- Writer must distinguish 'not verified by Spotlight yet' from 'not provided / not proved'.
+- Retains fast evidence collection and resumable Research/Writer checkpoints.
