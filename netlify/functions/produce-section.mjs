@@ -125,6 +125,45 @@ function sameStory(a,b){
   const overlap=[...A].filter(x=>B.has(x)).length;
   return overlap/Math.min(A.size,B.size)>=0.72;
 }
+
+const GENERIC_HOSTS=new Set(['wikipedia.org','simple.wikipedia.org','mayoclinic.org','britannica.com','dictionary.com','merriam-webster.com','wiktionary.org']);
+function genericDriftSource(x){
+  const h=hostOf(x.url||'').toLowerCase();
+  if([...GENERIC_HOSTS].some(g=>h===g||h.endsWith('.'+g)))return true;
+  const blob=[x.title,x.description].join(' ').toLowerCase();
+  return /definition of|simple english wikipedia|symptoms and causes|dictionary|encyclopedia/.test(blob);
+}
+function precisionAnchors(fields){
+  const title=String(value(fields,'Section Title')||'');
+  const q=String(value(fields,'Core Reader Question')||'');
+  const proof=String(value(fields,'Local Proof Needed')||'');
+  const notes=String(value(fields,'Notes')||'');
+  const current=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
+  const all=[title,q,proof,current].join(' ');
+  const entities=[...new Set((all.match(/\bA\d{1,3}\b|\bNorfolk\b|\bSuffolk\b|\bSEND\b|\bNHS\b|\bGigabit\b|\bKing'?s Lynn\b|\bGreat Yarmouth\b|\bNorwich\b|\bCromer\b|\bHunstanton\b/gi)||[]).map(x=>x.toLowerCase()))];
+  const topicGroups=[];
+  if(/housing|homes|estate|developer|planning/i.test(all))topicGroups.push(['housing','homes','estate','developer','planning','development']);
+  if(/road|traffic|junction|transport|a\d+/i.test(all))topicGroups.push(['road','traffic','junction','transport','a149','highway']);
+  if(/drain|flood|water|sewage/i.test(all))topicGroups.push(['drainage','flood','water','sewage','surface']);
+  if(/speed|police|enforcement/i.test(all))topicGroups.push(['speeding','speed','police','enforcement','motorist']);
+  if(/library/i.test(all))topicGroups.push(['library','libraries']);
+  if(/obesity|health|nhs/i.test(all))topicGroups.push(['obesity','health','nhs']);
+  if(/gigabit|broadband|internet/i.test(all))topicGroups.push(['gigabit','broadband','internet']);
+  return {entities,topicGroups};
+}
+function precisionPass(x,fields){
+  if(genericDriftSource(x))return false;
+  const blob=[x.title,x.description,x.source,x.url].join(' ').toLowerCase();
+  const {entities,topicGroups}=precisionAnchors(fields);
+  const entityHits=entities.filter(e=>blob.includes(e)).length;
+  const topicHits=topicGroups.filter(group=>group.some(w=>blob.includes(w))).length;
+  // Specific road/entity identifiers are strong enough with a matching topic.
+  if(entities.some(e=>/^a\d+$/i.test(e))&&entityHits>=1&&topicHits>=1)return true;
+  // Otherwise require locality/entity plus topic identity, or two independent topic groups.
+  if(entityHits>=1&&topicHits>=1)return true;
+  if(topicHits>=2)return true;
+  return false;
+}
 function articleSearchTerms(fields){
   const title=String(value(fields,'Section Title')||'').trim();
   const q=String(value(fields,'Core Reader Question')||'').trim();
@@ -156,7 +195,7 @@ async function fastEvidencePack(fields,cls){
   const settled=await Promise.allSettled(jobs);
   let raw=settled.flatMap(x=>x.status==='fulfilled'?x.value:[]);
   // Reject off-topic results before they ever reach Writer.
-  raw=raw.map(x=>({...x,relevance:relevanceScore(x,fields)})).filter(x=>x.relevance>=3);
+  raw=raw.map(x=>({...x,relevance:relevanceScore(x,fields)})).filter(x=>x.relevance>=3&&precisionPass(x,fields));
   raw.sort((a,b)=>b.relevance-a.relevance);
   const seen=new Set(),dedup=[];
   for(const x of raw){
@@ -180,12 +219,12 @@ async function fastEvidencePack(fields,cls){
   const official=chosen.filter(x=>x.source_type==='official').length;
   const local=chosen.filter(x=>x.source_type==='local').length;
   const specificStrong=chosen.filter(x=>Number(x.relevance)>=5).length;
-  const sufficient=chosen.length>=2&&(official+local>=1)&&specificStrong>=1;
+  const sufficient=chosen.length>=2&&(official+local>=1)&&specificStrong>=1&&chosen.every(x=>Number(x.relevance)>=3);
   return {
     research_status:sufficient?'Sufficient':'Insufficient',
-    research_summary:`Evidence relevance gate retained ${chosen.length} distinct article-specific source leads (${official} official, ${local} local; ${specificStrong} strongly matched). Duplicate stories and off-topic results were removed before writing.`,
+    research_summary:`Source precision gate retained ${chosen.length} distinct article-specific source leads (${official} official, ${local} local; ${specificStrong} strongly matched). Generic reference pages, duplicate stories and sources without the article's entity/topic anchors were removed before writing.`,
     sources:chosen,
-    missing_evidence:sufficient?[]:['The evidence relevance gate could not find enough distinct, article-specific support including an official/local source and a strongly matched source. Human verification is required before publication.']
+    missing_evidence:sufficient?[]:['The source precision gate found too little distinct article-specific evidence. It will not pad the pack with generic or tangential sources. Human verification is required before publication.']
   };
 }
 function researchPromptFor(fields,cls){
@@ -369,7 +408,7 @@ export default async(request)=>{
     const reusableResearch=savedResearch?.brief_key===key?savedResearch:null;
     const reusableWriter=savedWriter?.brief_key===key?savedWriter:null;
     const runningStage=reusableWriter?'Finalising from writer checkpoint':reusableResearch?'Resuming at writer':'Researching and writing';
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.13`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.14`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
@@ -519,7 +558,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.13`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.14`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -558,7 +597,7 @@ export default async(request)=>{
         const current=lookup.records?.[0];
         if(current){
           const notes=stripRuntimeBlocks(current.fields?.Notes||'');
-          const failed=[`MASTER ARTICLE FAILED v2.13`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          const failed=[`MASTER ARTICLE FAILED v2.14`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await withTimeout(
             airtableRequest(TABLES.sections,{
               method:'PATCH',
