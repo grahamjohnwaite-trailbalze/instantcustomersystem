@@ -18,6 +18,30 @@ function stripRuntimeBlocks(notes){
     .trim();
 }
 
+function briefKey(fields,cls){
+  return [cls,String(value(fields,'Section Title')||'').trim().toLowerCase(),String(value(fields,'Core Reader Question')||'').trim().toLowerCase()].join(' | ');
+}
+function latestCheckpoint(notes,label){
+  const re=label==='research'
+    ? /MASTER ARTICLE RESEARCH CHECKPOINT v1\n([\s\S]*?)\nEND MASTER ARTICLE RESEARCH CHECKPOINT/g
+    : /MASTER ARTICLE WRITER CHECKPOINT v1\n([\s\S]*?)\nEND MASTER ARTICLE WRITER CHECKPOINT/g;
+  const all=[...String(notes||'').matchAll(re)];
+  if(!all.length)return null;
+  try{return JSON.parse(all[all.length-1][1])}catch{return null}
+}
+function removeCheckpoints(notes){
+  return String(notes||'')
+    .replace(/\n?MASTER ARTICLE RESEARCH CHECKPOINT v1\n[\s\S]*?\nEND MASTER ARTICLE RESEARCH CHECKPOINT\s*/g,'')
+    .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v1\n[\s\S]*?\nEND MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
+    .trim();
+}
+function researchCheckpointBlock(key,research,model){
+  return `MASTER ARTICLE RESEARCH CHECKPOINT v1\n${JSON.stringify({brief_key:key,saved_at:new Date().toISOString(),model:model||'',research},null,2)}\nEND MASTER ARTICLE RESEARCH CHECKPOINT`;
+}
+function writerCheckpointBlock(key,raw,model){
+  return `MASTER ARTICLE WRITER CHECKPOINT v1\n${JSON.stringify({brief_key:key,saved_at:new Date().toISOString(),model:model||'',raw_output:String(raw||'')},null,2)}\nEND MASTER ARTICLE WRITER CHECKPOINT`;
+}
+
 function productionClass(fields){
   const type=String(value(fields,'Section Type')).toLowerCase();
   const status=String(value(fields,'Evidence Status'));
@@ -198,8 +222,15 @@ export default async(request)=>{
     log('airtable_lookup_completed',{recordId:record.id,title:String(record.fields?.['Section Title']||'')});
     const fields=record.fields||{};
     const cls=ALLOWED_CLASSES.has(data.productionClass)?data.productionClass:productionClass(fields);
-    const originalNotes=stripRuntimeBlocks(value(fields,'Notes'));
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.10`,`Run ID: ${runId}`,`Stage: Researching and writing`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const sourceNotes=String(value(fields,'Notes')||'');
+    const originalNotes=stripRuntimeBlocks(sourceNotes);
+    const key=briefKey(fields,cls);
+    const savedResearch=latestCheckpoint(sourceNotes,'research');
+    const savedWriter=latestCheckpoint(sourceNotes,'writer');
+    const reusableResearch=savedResearch?.brief_key===key?savedResearch:null;
+    const reusableWriter=savedWriter?.brief_key===key?savedWriter:null;
+    const runningStage=reusableWriter?'Finalising from writer checkpoint':reusableResearch?'Resuming at writer':'Researching and writing';
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.11`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
@@ -265,30 +296,77 @@ export default async(request)=>{
     await saveTrace();
     let research={research_status:'Sufficient',research_summary:'Question-only article; no research required.',sources:[],missing_evidence:[]};
     let researchResponse=null;
+    let researchModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
     if(cls!=='A — Question Only'){
-      const researchModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
-      traceLine('Research model','DONE',researchModel);
-      await saveTrace();
-      log('research_started',{productionClass:cls,model:researchModel});
-      researchResponse=await stage('Research request',()=>createResponse({input:researchPromptFor(fields,cls),useWeb:true,model:researchModel,timeoutMs:65000}),70000);
-      log('research_completed',{model:researchResponse._model_used||'',outputChars:outputText(researchResponse).length});
-      research=parseJsonText(outputText(researchResponse));
-      research.sources=(Array.isArray(research.sources)?research.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||''),source_type:String(s.source_type||'')})).filter(s=>s.url).slice(0,8);
-      const gate=evidenceGate(fields,cls,research);
-      if(!gate.pass){
-        research.research_status='Insufficient';
-        research.missing_evidence=[...(Array.isArray(research.missing_evidence)?research.missing_evidence:[]),...gate.reasons];
+      if(reusableResearch){
+        research=reusableResearch.research;
+        researchModel=reusableResearch.model||researchModel;
+        traceLine('Research checkpoint reused','DONE',researchModel||'saved');
+        await saveTrace();
+        log('research_checkpoint_reused',{sourceCount:Array.isArray(research.sources)?research.sources.length:0});
+      }else{
+        traceLine('Research model','DONE',researchModel);
+        await saveTrace();
+        log('research_started',{productionClass:cls,model:researchModel});
+        researchResponse=await stage('Research request',()=>createResponse({input:researchPromptFor(fields,cls),useWeb:true,model:researchModel,timeoutMs:65000}),70000);
+        log('research_completed',{model:researchResponse._model_used||'',outputChars:outputText(researchResponse).length});
+        research=parseJsonText(outputText(researchResponse));
+        research.sources=(Array.isArray(research.sources)?research.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||''),source_type:String(s.source_type||'')})).filter(s=>s.url).slice(0,8);
+        const gate=evidenceGate(fields,cls,research);
+        if(!gate.pass){
+          research.research_status='Insufficient';
+          research.missing_evidence=[...(Array.isArray(research.missing_evidence)?research.missing_evidence:[]),...gate.reasons];
+        }
+        log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0});
+        const checkpoint=researchCheckpointBlock(key,research,researchResponse?._model_used||researchModel);
+        const checkpointNotes=originalNotes?`${originalNotes}\n\n${checkpoint}\n\n${runningBlock}`:`${checkpoint}\n\n${runningBlock}`;
+        await withTimeout(
+          airtableRequest(TABLES.sections,{
+            method:'PATCH',
+            body:{records:[{id:record.id,fields:{'Notes':checkpointNotes,'Evidence Status':'Researching','Section Status':'Researching'}}],typecast:true},
+            timeoutMs:15000
+          }),
+          16000,
+          'Research checkpoint save'
+        );
+        traceLine('Research checkpoint saved','DONE');
+        await saveTrace();
       }
-      log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0});
     }
-    const writerModel=String(process.env.OPENAI_WRITER_MODEL||process.env.OPENAI_PRODUCTION_MODEL||researchResponse?._model_used||'gpt-5.6-luna').trim();
-    traceLine('Writer model','DONE',writerModel||'auto-select');
-    await saveTrace();
-    log('openai_started',{productionClass:cls,useWeb:false,model:writerModel||'auto-select'});
-    const response=await stage('Writer request',()=>createResponse({input:promptFor(fields,cls,research),useWeb:false,model:writerModel,timeoutMs:65000}),70000);
-    log('openai_completed',{model:response._model_used||'',outputChars:outputText(response).length});
+    const writerModel=String(process.env.OPENAI_WRITER_MODEL||process.env.OPENAI_PRODUCTION_MODEL||researchResponse?._model_used||reusableWriter?.model||'gpt-5.6-luna').trim();
+    let writerRaw='',response={_model_used:writerModel};
+    if(reusableWriter){
+      writerRaw=String(reusableWriter.raw_output||'');
+      response._model_used=reusableWriter.model||writerModel;
+      traceLine('Writer checkpoint reused','DONE',response._model_used||'saved');
+      await saveTrace();
+      log('writer_checkpoint_reused',{outputChars:writerRaw.length});
+    }else{
+      traceLine('Writer model','DONE',writerModel||'auto-select');
+      await saveTrace();
+      log('openai_started',{productionClass:cls,useWeb:false,model:writerModel||'auto-select'});
+      response=await stage('Writer request',()=>createResponse({input:promptFor(fields,cls,research),useWeb:false,model:writerModel,timeoutMs:60000}),65000);
+      writerRaw=outputText(response);
+      log('openai_completed',{model:response._model_used||'',outputChars:writerRaw.length});
+      const checkpoint=writerCheckpointBlock(key,writerRaw,response._model_used||writerModel);
+      const latestNow=await airtableRequest(TABLES.sections,{params:{filterByFormula:`RECORD_ID()='${record.id.replace(/'/g,"\\'")}'`,maxRecords:'1'}});
+      const currentNotes=String(latestNow.records?.[0]?.fields?.Notes||originalNotes);
+      const cleanRuntime=stripRuntimeBlocks(currentNotes);
+      const writerNotes=cleanRuntime?`${cleanRuntime}\n\n${checkpoint}\n\n${runningBlock}`:`${checkpoint}\n\n${runningBlock}`;
+      await withTimeout(
+        airtableRequest(TABLES.sections,{
+          method:'PATCH',
+          body:{records:[{id:record.id,fields:{'Notes':writerNotes}}],typecast:true},
+          timeoutMs:15000
+        }),
+        16000,
+        'Writer checkpoint save'
+      );
+      traceLine('Writer checkpoint saved','DONE');
+      await saveTrace();
+    }
     log('json_parse_started');
-    const result=parseJsonText(outputText(response));
+    const result=parseJsonText(writerRaw);
     log('json_parse_completed',{qaResult:result.qa_result||'',sourceCount:Array.isArray(result.sources)?result.sources.length:0});
     const writerSources=(Array.isArray(result.sources)?result.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||'')})).filter(s=>s.url);
     const researchSources=(research.sources||[]).map(s=>({title:s.title,url:s.url,supports:s.supports}));
@@ -301,9 +379,9 @@ export default async(request)=>{
       result.exception=[String(result.exception||'').trim(),...gate.reasons].filter(Boolean).join(' ');
       result.evidence_summary=[String(result.evidence_summary||'').trim(),String(research.research_summary||'').trim(),`Missing evidence: ${(research.missing_evidence||[]).join('; ')}`].filter(Boolean).join(' ');
     }
-    const priorNotes=originalNotes.replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
+    const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.10`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.11`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -342,7 +420,7 @@ export default async(request)=>{
         const current=lookup.records?.[0];
         if(current){
           const notes=stripRuntimeBlocks(current.fields?.Notes||'');
-          const failed=[`MASTER ARTICLE FAILED v2.10`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          const failed=[`MASTER ARTICLE FAILED v2.11`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await withTimeout(
             airtableRequest(TABLES.sections,{
               method:'PATCH',
