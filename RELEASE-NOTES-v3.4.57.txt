@@ -1,0 +1,24 @@
+ICS Issue Canvas v3.4.57 — Issue Balance & Commercial Audit
+
+Built directly from stable v3.4.56.
+
+Adds a pre-lock whole-issue audit:
+- Resident Expert opportunity count and natural lanes
+- Featured Partner / activation opportunity count and natural lanes
+- Reader engagement variety
+- Editorial mix: Practical / Edge / Light / Human
+- Clear READY / REVIEW / NEEDS ATTENTION result
+- Plain-language findings explaining what needs fixing
+- New Analyse Issue Balance button
+- Smart Plan text enlarged modestly for readability
+
+No changes to:
+- navigation
+- browser storage
+- Smart Plan persistence
+- source alignment
+- refresh gate
+- same-issue duplication gate
+- replacement logic
+- Master Article production
+- Airtable handoff
