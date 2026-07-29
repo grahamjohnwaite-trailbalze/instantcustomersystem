@@ -5,7 +5,7 @@ const ALLOWED_CLASSES=new Set(['A — Question Only','B — Light Proof','C — 
 const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=145000;
-const RECOVERY_BUDGET_MS=28000;
+const RECOVERY_BUDGET_MS=55000;
 function withTimeout(promise,timeoutMs,label){
   let timer;
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
@@ -527,7 +527,7 @@ export default async(request)=>{
     const reusableResearch=(savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedResearch:null;
     const reusableWriter=(savedWriter?.brief_key===key&&savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedWriter:null;
     const runningStage=reusableWriter?'Finalising from writer checkpoint':reusableResearch?'Resuming at writer':'Researching and writing';
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.17`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.18`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
@@ -626,12 +626,28 @@ export default async(request)=>{
               research.missing_evidence=[...(Array.isArray(research.missing_evidence)?research.missing_evidence:[]),...gate.reasons];
             }
             researchModel=research.recovery_model||recoveryModel;
-            log('research_recovery_completed',{status:research.research_status,sourceCount:research.sources?.length||0,missing:research.missing_evidence?.length||0});
+            const resolved=research.resolved_subject||{};
+            traceLine('Entity resolved','DONE',[
+              resolved.name?`subject=${resolved.name}`:'',
+              resolved.responsible_body?`body=${resolved.responsible_body}`:'',
+              resolved.reference?`ref=${resolved.reference}`:'',
+              resolved.confidence?`confidence=${resolved.confidence}`:''
+            ].filter(Boolean).join(' · ')||'no structured entity returned');
+            await saveTrace();
+            log('research_recovery_completed',{
+              status:research.research_status,
+              sourceCount:research.sources?.length||0,
+              missing:research.missing_evidence?.length||0,
+              resolvedSubject:resolved.name||'',
+              responsibleBody:resolved.responsible_body||'',
+              reference:resolved.reference||'',
+              confidence:resolved.confidence||''
+            });
           }catch(recoveryError){
             research.research_status='Insufficient';
             research.recovery_used=true;
-            research.research_summary=[research.research_summary,`Targeted recovery could not complete: ${String(recoveryError?.message||recoveryError).slice(0,220)}`].filter(Boolean).join(' ');
-            research.missing_evidence=[...(research.missing_evidence||[]),'Targeted second-pass research did not complete successfully.'];
+            research.research_summary=[research.research_summary,`Entity-first recovery could not complete within the ${Math.round(RECOVERY_BUDGET_MS/1000)}-second budget: ${String(recoveryError?.message||recoveryError).slice(0,220)}`].filter(Boolean).join(' ');
+            research.missing_evidence=[...(research.missing_evidence||[]),`Entity-first second-pass research did not complete within ${Math.round(RECOVERY_BUDGET_MS/1000)} seconds.`];
             log('research_recovery_failed',{message:String(recoveryError?.message||recoveryError)});
           }
         }
@@ -667,7 +683,7 @@ export default async(request)=>{
         .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'')
         .trim();
       const serviceNotes=[
-        `PRODUCTION SERVICE v2.17`,
+        `PRODUCTION SERVICE v2.18`,
         `Run ID: ${runId}`,
         `Class: ${cls}`,
         `Outcome: ${outcomeNow.code}`,
@@ -755,7 +771,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.17`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.18`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
