@@ -1,0 +1,7 @@
+ICS Issue Canvas v3.4.59 — Copyable Issue Audit
+Built directly from stable v3.4.58.
+- Analyse Issue Balance now uses a permanent on-page audit rather than an alert.
+- Adds Copy Audit.
+- Shows Resident Experts, Featured Partners, engagement and editorial mix.
+- Four natural Featured Partner lanes remains REVIEW but explicitly says not to force a fifth placement.
+- No changes to navigation, storage, planning, gates, replacement, production or Airtable.

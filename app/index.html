@@ -28,7 +28,10 @@
 #smart-plan-list small{font-size:.92rem;line-height:1.4}
 #smart-plan-list .mini-badge{font-size:.78rem}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.58<br><strong>Separate Signals + 3×5 Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+
+.smart-audit-panel{font-size:1.05rem;line-height:1.5}
+.smart-audit-panel .audit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 16px}
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.59<br><strong>Separate Signals + 3×5 Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -1228,16 +1231,30 @@ function issueBalanceAudit(plan){
   const status=findings.length===0?'READY':findings.length<=2?'REVIEW':'NEEDS ATTENTION';
   return {expert:[...expert],partner:[...partner],engagement:[...engage],tones,findings,status};
 }
-function commercialAuditHtml(plan){
+
+function issueBalanceAuditText(plan){
   const a=issueBalanceAudit(plan);
-  const line=(label,vals,target)=>`<div><strong>${label}:</strong> ${vals.length}${target?` / target ${target}`:''}${vals.length?` — ${esc(vals.join(' · '))}`:''}</div>`;
-  return `<div class="check" style="margin-bottom:10px">
-    <strong>Issue Balance & Commercial Audit — ${a.status}</strong><br>
-    ${line('Resident Expert lanes',a.expert,'5–8')}
-    ${line('Featured Partner lanes',a.partner,'5–8')}
-    ${line('Engagement modes',a.engagement)}
-    <div><strong>Editorial mix:</strong> Practical ${a.tones.PRACTICAL||0} · Edge ${a.tones.EDGE||0} · Light ${a.tones.LIGHT||0} · Human ${a.tones.HUMAN||0}</div>
-    ${a.findings.length?`<div style="margin-top:6px"><strong>Fix before final lock:</strong><br>${a.findings.map(x=>`• ${esc(x)}`).join('<br>')}</div>`:'<div style="margin-top:6px"><strong>Balanced enough to move forward.</strong></div>'}
+  const fmt=(label,vals,target)=>`${label}: ${vals.length}${target?` / target ${target}`:''}${vals.length?` — ${vals.join(' · ')}`:''}`;
+  return [`ISSUE BALANCE — ${a.status}`,fmt('Resident Expert lanes',a.expert,'5–8'),fmt('Featured Partner lanes',a.partner,'5–8'),fmt('Engagement modes',a.engagement),`Editorial mix: Practical ${a.tones.PRACTICAL||0} · Edge ${a.tones.EDGE||0} · Light ${a.tones.LIGHT||0} · Human ${a.tones.HUMAN||0}`,'',a.findings.length?'Needs attention:':'Balanced enough to move forward.',...a.findings.map(x=>`- ${x}`)].join('\n');
+}
+async function copyIssueBalanceAudit(){
+  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the 15-article plan first.');return}
+  const text=issueBalanceAuditText(plan);
+  try{await navigator.clipboard.writeText(text);const b=E('copy-smart-audit');if(b){const old=b.textContent;b.textContent='Copied ✓';setTimeout(()=>b.textContent=old,1200)}}
+  catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Audit copied.')}
+}
+function commercialAuditHtml(plan){
+  const a=issueBalanceAudit(plan),mark=n=>n>=5?'✓':'⚠';
+  return `<div class="check smart-audit-panel" style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><strong>ISSUE BALANCE — ${esc(a.status)}</strong><button class="btn secondary" id="copy-smart-audit" type="button">Copy Audit</button></div>
+    <div class="audit-grid" style="margin-top:8px">
+      <div><strong>Resident Experts:</strong> ${a.expert.length} / target 5–8 ${mark(a.expert.length)}</div>
+      <div><strong>Featured Partners:</strong> ${a.partner.length} / target 5–8 ${mark(a.partner.length)}</div>
+      <div><strong>Editorial mix:</strong> Practical ${a.tones.PRACTICAL||0} · Edge ${a.tones.EDGE||0} · Light ${a.tones.LIGHT||0} · Human ${a.tones.HUMAN||0}</div>
+      <div><strong>Engagement:</strong> ${a.engagement.length?esc(a.engagement.join(' · ')):'Needs attention'}</div>
+    </div>
+    ${a.findings.length?`<div style="margin-top:8px"><strong>Needs attention</strong><br>${a.findings.map(x=>`• ${esc(x)}`).join('<br>')}</div>`:`<div style="margin-top:8px"><strong>Balanced enough to move forward.</strong></div>`}
+    ${a.partner.length===4?`<div style="margin-top:8px" class="muted"><strong>Editorial safeguard:</strong> Four natural Featured Partner lanes is a review warning, not a reason to force an unsuitable commercial placement. Add a fifth only where it fits naturally.</div>`:''}
   </div>`;
 }
 function renderSmartPlan(){
@@ -1925,12 +1942,10 @@ E('assembly-order').ondragover=e=>{e.preventDefault();E('assembly-order').classL
 E('assembly-order').ondragleave=()=>E('assembly-order').classList.remove('drag-over');
 E('assembly-order').ondrop=e=>dropOnCanvas(e);
 E('assembly-clear').onclick=()=>{if(confirm('Clear the entire issue canvas?')){canvasSelectedUid=null;saveCanvas([])}};
-E('assembly-auto').onclick=collectSmartSignals;E('assembly-build-plan').onclick=buildSmartPlanFromSavedSignals;E('assembly-smart-assemble').onclick=smartAssembleIssue;E('smart-plan-audit')?.addEventListener('click',()=>{
-  const plan=getSmartPlan();
-  if(!plan?.articles?.length){alert('Build the 15-article plan first.');return}
-  const a=issueBalanceAudit(plan);
-  alert(`Issue Balance: ${a.status}\nResident Expert lanes: ${a.expert.length}\nFeatured Partner lanes: ${a.partner.length}\nEditorial mix: Practical ${a.tones.PRACTICAL||0}, Edge ${a.tones.EDGE||0}, Light ${a.tones.LIGHT||0}, Human ${a.tones.HUMAN||0}${a.findings.length?`\n\nNeeds attention:\n- ${a.findings.join('\n- ')}`:'\n\nBalanced enough to move forward.'}`);
-  renderSmartPlan();
+E('assembly-auto').onclick=collectSmartSignals;E('assembly-build-plan').onclick=buildSmartPlanFromSavedSignals;E('assembly-smart-assemble').onclick=smartAssembleIssue;document.addEventListener('click',e=>{if(e.target?.id==='copy-smart-audit')copyIssueBalanceAudit()});
+E('smart-plan-audit')?.addEventListener('click',()=>{
+  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the 15-article plan first.');return}
+  renderSmartPlan();document.querySelector('.smart-audit-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
 });
 E('smart-plan-lock').onclick=lockSmartPlan;E('smart-plan-apply').onclick=applySmartPlanToBuild;E('smart-edit-save').onclick=saveSmartArticleEdit;E('smart-edit-cancel').onclick=()=>E('smart-edit-panel').style.display='none';E('smart-plan-hide').onclick=()=>E('smart-plan-panel').style.display='none';E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;
 E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
