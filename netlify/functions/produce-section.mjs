@@ -252,12 +252,19 @@ function recoveryResearchPrompt(fields,cls,firstPass){
   const evidence=String(value(fields,'Evidence Required')||'').trim();
   const notes=String(value(fields,'Notes')||'');
   const current=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
-  return `You are the SECOND-PASS evidence researcher for a local-news Master Article. The fast discovery pass was not strong enough. Recover the missing evidence before drafting.
+  const provenance=(notes.match(/Plan provenance:\s*([^\n]+)/i)||[])[1]||'';
+  const smartRefresh=(notes.match(/SMART PLAN REFRESH[\s\S]*?(?=\n\nMASTER ARTICLE|\nMASTER ARTICLE|$)/i)||[])[0]||'';
+  return `You are the SECOND-PASS evidence researcher for a local-news Master Article. The fast discovery pass was not strong enough.
+
+Your job is ENTITY-FIRST RESEARCH. Do not begin with broad topic research.
 
 ARTICLE
 Title: ${title}
 Core reader question: ${question}
 Current discovery lead: ${current||'Not supplied'}
+Plan provenance: ${provenance||'Not supplied'}
+Locked-plan context:
+${smartRefresh||'Not supplied'}
 Local proof required: ${proof||'Not supplied'}
 Evidence required: ${evidence||'Not supplied'}
 Production class: ${cls}
@@ -265,23 +272,38 @@ Production class: ${cls}
 FIRST PASS
 ${JSON.stringify(firstPass||{},null,2)}
 
-RECOVERY RULES
-- Search the live web specifically for evidence needed to ANSWER THE CORE QUESTION.
-- Start with the named organisation, scheme, road, council decision, funding announcement, service, venue or policy in the article.
-- Prefer the original/primary source: council planning record or committee paper, GOV.UK, NHS/NICE, police, regulator, official organisation/charity/service page, provider announcement, official project page, or other accountable first-party source.
-- Then add a strong local/news source only where it contributes a distinct fact or context.
-- Do not pad the pack to reach a source count. One authoritative source can establish a narrow fact; several weak copies of the same report do not establish more.
-- Resolve the specific gaps from the first pass wherever possible.
-- For legal, health, finance, planning, public spending, transport or enforcement topics, do not mark Sufficient if the core answer still depends on an unverified material fact.
-- Return only sources actually used to support the core answer. No generic reference pages, invented URLs or tangential sources.
-- Clean supports text: plain text only, no HTML.
+ENTITY-FIRST RECOVERY PROCEDURE
+1. RESOLVE THE SUBJECT FIRST. From the discovery headline/provenance, identify the exact named organisation, project, development, road/site, council, committee, funding programme, service, venue, attraction, police operation or other real-world subject. Where possible resolve a distinctive project/application/service name, location, organisation name or reference number.
+2. If the discovery lead is too vague to identify the subject confidently, search specifically to resolve that identity before attempting the evidence question. Do not guess the identity.
+3. Once resolved, search the accountable body most likely to hold the primary evidence:
+   - planning/development -> relevant council planning portal, committee papers, decision notice, highways authority, statutory consultees;
+   - roads/transport/potholes -> county/highway authority, National Highways where relevant, scheme/project pages;
+   - health -> NHS organisation, ICB, NHS England, GOV.UK, NICE, commissioned provider;
+   - funding/charity/service -> funder announcement plus recipient organisation/service page;
+   - police/enforcement -> police force, PCC, council or GOV.UK as appropriate;
+   - tourism/business/venue -> official attraction/business/venue plus relevant council/highway/tourism authority where the core question needs it;
+   - elections/public office -> official council/election result and the relevant authority/parliamentary source.
+4. Search using the resolved proper nouns and distinctive anchors, not merely broad phrases such as "Norfolk housing" or "Norfolk potholes".
+5. Then add one strong independent/local source when it supplies distinct current context.
+6. Map every retained source to a material part of the CORE QUESTION. Do not pad source count.
+7. One authoritative source can establish a narrow fact. Several copies of the same story count as one evidence chain.
+8. For legal, health, finance, planning, public spending, transport or enforcement topics, do not mark Sufficient while a material fact needed for the core answer remains unresolved.
+9. If the exact subject cannot be resolved, return Insufficient and state precisely what identity/anchor is missing. Never substitute a different Norfolk project merely because it is easier to find.
+10. Clean supports text: plain text only, no HTML.
 
 Return ONLY valid JSON:
 {
  "research_status":"Sufficient or Insufficient",
- "research_summary":"what the recovery pass verified and what still prevents a confident core answer",
+ "resolved_subject":{
+   "name":"exact resolved subject/project/organisation/site/service, or empty if unresolved",
+   "location":"specific place if established",
+   "responsible_body":"accountable organisation if established",
+   "reference":"application/project/reference number if established",
+   "confidence":"high/medium/low"
+ },
+ "research_summary":"what was resolved, verified and what still prevents a confident core answer",
  "sources":[{"title":"","url":"clean raw URL","supports":"specific claim supported","source_type":"official/local/primary/other"}],
- "missing_evidence":["specific unresolved fact needed for the core answer"]
+ "missing_evidence":["specific unresolved fact or identity needed for the core answer"]
 }`;
 }
 async function recoverEvidencePack(fields,cls,firstPass,model){
@@ -305,6 +327,7 @@ async function recoverEvidencePack(fields,cls,firstPass,model){
     research_summary:String(recovered.research_summary||'').trim()||'Second-pass research completed.',
     sources:merged,
     missing_evidence:Array.isArray(recovered.missing_evidence)?recovered.missing_evidence.map(x=>String(x||'').trim()).filter(Boolean):[],
+    resolved_subject:(recovered.resolved_subject&&typeof recovered.resolved_subject==='object')?recovered.resolved_subject:{},
     recovery_used:true,
     recovery_model:response._model_used||model||''
   };
@@ -321,6 +344,9 @@ function researchPromptFor(fields,cls){
   const evidence=String(value(fields,'Evidence Required')||'').trim();
   const title=String(value(fields,'Section Title')||'').trim();
   const question=String(value(fields,'Core Reader Question')||'').trim();
+  const notes=String(value(fields,'Notes')||'');
+  const current=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
+  const provenance=(notes.match(/Plan provenance:\s*([^\n]+)/i)||[])[1]||'';
   return `You are the evidence researcher for a local-news MASTER ARTICLE. Research BEFORE drafting.
 
 ARTICLE
@@ -329,8 +355,12 @@ Core question: ${question}
 Local proof required: ${localProof}
 Evidence required: ${evidence}
 Production class: ${cls}
+Current discovery lead: ${current||'Not supplied'}
+Plan provenance: ${provenance||'Not supplied'}
 
 RESEARCH RULES
+- ENTITY FIRST: resolve the exact named subject/project/organisation/site/service from the discovery lead before broad research. Use distinctive proper nouns, places, scheme names and reference numbers as search anchors.
+- If the lead is vague, first search to identify the exact subject. Never substitute a different local project because it is easier to find.
 - Search the current web thoroughly.
 - Prefer primary/official sources: local councils, GOV.UK, regulators, NHS/NICE, water companies, transport/highway bodies, official venue/business pages, official menus and ticket pages.
 - The returned evidence MUST satisfy the LOCAL PROOF requirement, not merely provide generic national background.
@@ -497,7 +527,7 @@ export default async(request)=>{
     const reusableResearch=(savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedResearch:null;
     const reusableWriter=(savedWriter?.brief_key===key&&savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedWriter:null;
     const runningStage=reusableWriter?'Finalising from writer checkpoint':reusableResearch?'Resuming at writer':'Researching and writing';
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.16`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.17`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
@@ -637,7 +667,7 @@ export default async(request)=>{
         .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'')
         .trim();
       const serviceNotes=[
-        `PRODUCTION SERVICE v2.16`,
+        `PRODUCTION SERVICE v2.17`,
         `Run ID: ${runId}`,
         `Class: ${cls}`,
         `Outcome: ${outcomeNow.code}`,
@@ -725,7 +755,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.16`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.17`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),

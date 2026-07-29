@@ -1,0 +1,20 @@
+ICS Issue Canvas v3.4.66 — Entity-First Research
+
+Built directly from v3.4.65.
+
+Research changes:
+- First-pass research now receives the current discovery lead and plan provenance.
+- Recovery is explicitly ENTITY FIRST: resolve the exact project, organisation, site, service, scheme or accountable body before broad evidence searching.
+- Recovery uses distinctive proper nouns, places, scheme names and reference numbers as search anchors.
+- Research is routed by subject type to likely primary evidence: planning portals/committee papers, highways bodies, NHS/ICB, funder + recipient, police/PCC, official venue/business, election authority, etc.
+- The recovery result records resolved subject, location, responsible body, reference and confidence.
+- It must not substitute an easier but different Norfolk project when the discovery lead is ambiguous.
+- Existing bounded recovery timing and evidence standards remain intact.
+
+Operator/reporting changes:
+- Batch summary now separates Complete, Source check, Research incomplete, Editorial review and Failed.
+- Non-pass outcomes are no longer collapsed into a misleading Human review total.
+
+Acceptance test:
+- Test the five previous RESEARCH INCOMPLETE Norfolk articles individually or as the pending batch.
+- We are looking for a material rise in Complete results without weakening evidence QA.
