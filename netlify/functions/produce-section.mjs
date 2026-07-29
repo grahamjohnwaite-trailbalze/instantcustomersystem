@@ -352,12 +352,63 @@ async function recoverEvidencePack(fields,cls,firstPass,model){
     recovery_model:response._model_used||model||''
   };
 }
+function classifyEvidenceTiming(research){
+  const raw=[
+    ...(research?.required_now_missing||[]),
+    ...(research?.missing_evidence||[])
+  ].map(x=>String(x||'').trim()).filter(Boolean);
+
+  const futurePattern=/\b(before[- ]and[- ]after|follow[- ]?up|result|results|outcome|outcomes|durability|repeat[- ]repair|failure data|damage data|vehicle damage|cycle damage|savings?|save money|longer[- ]term|long[- ]term|performance after|monitoring result|evaluation result|once (?:the )?(?:trial|scheme|rollout)|future)\b/i;
+  const optionalPattern=/\b(contractor|contractors|exact roads?|road names?|exact sites?|site references?|exact locations?|start date|duration|timetable|equipment|reporting process specific to|claims process specific to)\b/i;
+  const hardPattern=/\b(identity|exact subject|responsible body|accountable body|whether (?:the )?(?:trial|scheme|service|funding|project) exists|existence of|current decision|eligibility required to|amount of funding|legal status|official confirmation of the premise)\b/i;
+
+  const required=[],future=[],optional=[];
+  for(const item of raw){
+    if(futurePattern.test(item)) future.push(item);
+    else if(optionalPattern.test(item) && !hardPattern.test(item)) optional.push(item);
+    else required.push(item);
+  }
+
+  const uniq=a=>[...new Set(a)];
+  return {required:uniq(required),future:uniq(future),optional:uniq(optional)};
+}
+
+function publicationPremiseEstablished(research){
+  const sources=research?.sources||[];
+  const resolved=research?.resolved_subject||{};
+  const subject=Boolean(String(resolved.name||'').trim());
+  const body=Boolean(String(resolved.responsible_body||'').trim());
+  const strong=sources.filter(x=>
+    /official|primary/i.test(String(x.source_type||'')) ||
+    /\.gov\.uk|gov\.uk|nhs\.uk|police\.uk|norfolk\.gov\.uk/i.test(String(x.url||''))
+  ).length;
+  // A current story can proceed when its real subject is resolved and there is
+  // article-specific evidence for the premise. Unknown future outcomes remain questions.
+  return subject && sources.length>=2 && (body || strong>=1);
+}
+
 function evidenceOutcome(cls,research,gate){
-  const missing=[...(research?.missing_evidence||[]),...(gate?.reasons||[])].filter(Boolean);
-  if(gate?.pass&&research?.research_status==='Sufficient')return {code:'COMPLETE',label:'Complete',missing:[]};
+  const timing=classifyEvidenceTiming(research);
+  const premiseOk=publicationPremiseEstablished(research);
+  const gateReasons=(gate?.reasons||[]).filter(x=>{
+    const t=String(x||'');
+    if(/^Research stage reported insufficient evidence\./i.test(t) && premiseOk && timing.required.length===0)return false;
+    if(/^Required-now evidence missing:/i.test(t)){
+      const detail=t.replace(/^Required-now evidence missing:\s*/i,'');
+      return timing.required.includes(detail);
+    }
+    return true;
+  });
+  const blocking=[...timing.required,...gateReasons].filter(Boolean);
+  if(premiseOk && blocking.length===0){
+    return {code:'COMPLETE',label:'Complete',missing:[],future_tests:timing.future,optional_missing:timing.optional};
+  }
+  if(gate?.pass&&research?.research_status==='Sufficient'){
+    return {code:'COMPLETE',label:'Complete',missing:[],future_tests:timing.future,optional_missing:timing.optional};
+  }
   const n=(research?.sources||[]).length;
-  if(n===0)return {code:'RESEARCH_INCOMPLETE',label:'Research incomplete',missing};
-  return {code:'SOURCE_CHECK_REQUIRED',label:'Source check required',missing};
+  if(n===0)return {code:'RESEARCH_INCOMPLETE',label:'Research incomplete',missing:blocking.length?blocking:timing.required};
+  return {code:'SOURCE_CHECK_REQUIRED',label:'Source check required',missing:blocking.length?blocking:timing.required};
 }
 function researchPromptFor(fields,cls){
   const localProof=String(value(fields,'Local Proof Needed')||'').trim();
@@ -561,7 +612,7 @@ export default async(request)=>{
     const reusableResearch=(savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedResearch:null;
     const reusableWriter=(savedWriter?.brief_key===key&&savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedWriter:null;
     const runningStage=reusableWriter?'Finalising from writer checkpoint':reusableResearch?'Resuming at writer':'Researching and writing';
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.19`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.20`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
@@ -704,20 +755,21 @@ export default async(request)=>{
 
     // Bounded recovery: do not spend a full writer call on an article whose
     // core evidence is still insufficient after the targeted second pass.
-    if(cls!=='A — Question Only' && research?.research_status!=='Sufficient'){
+    if(cls!=='A — Question Only'){
       const gateNow=evidenceGate(fields,cls,research);
       const outcomeNow=evidenceOutcome(cls,research,gateNow);
+      if(outcomeNow.code!=='COMPLETE'){
       const retained=(research.sources||[]).map(x=>({
         title:String(x.title||'').trim(),
         url:cleanUrl(x.url),
         supports:stripTags(String(x.supports||'')).trim()
       })).filter(x=>x.url).slice(0,5);
-      const missing=[...(research.missing_evidence||[]),...(gateNow.reasons||[])].filter(Boolean);
+      const missing=[...new Set(outcomeNow.missing||[])].filter(Boolean);
       const priorNotes=removeCheckpoints(originalNotes)
         .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'')
         .trim();
       const serviceNotes=[
-        `PRODUCTION SERVICE v2.19`,
+        `PRODUCTION SERVICE v2.20`,
         `Run ID: ${runId}`,
         `Class: ${cls}`,
         `Outcome: ${outcomeNow.code}`,
@@ -755,6 +807,8 @@ export default async(request)=>{
         exception:missing.join('; ')||'Further primary/local evidence is required before publication.'
       });
     }
+    }
+
 
     const writerModel=String(process.env.OPENAI_WRITER_MODEL||process.env.OPENAI_PRODUCTION_MODEL||reusableWriter?.model||'gpt-5.6-luna').trim();
     let writerRaw='',response={_model_used:writerModel};
@@ -805,7 +859,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.19`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.20`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),

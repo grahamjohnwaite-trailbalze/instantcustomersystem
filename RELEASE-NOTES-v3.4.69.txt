@@ -1,0 +1,21 @@
+ICS Issue Canvas v3.4.69 — Evidence Gate Classification
+
+Built directly from v3.4.68.
+
+Fixes the blocker demonstrated by Norfolk Article 7.
+
+- Adds deterministic post-research evidence timing classification.
+- Future results such as durability, repeat-repair rates, damage outcomes and savings are FUTURE TESTS, not publication blockers.
+- Non-essential operational detail such as exact roads, contractors, equipment and timetable is OPTIONAL when the verified premise can be written without claiming those details.
+- Genuine premise/identity/accountability gaps remain REQUIRED NOW.
+- A story can proceed to Writer when:
+  * the exact subject is resolved,
+  * there are at least two article-specific sources,
+  * the accountable body or strong primary evidence is identified,
+  * no genuine required-now blocker remains.
+- The stop-before-Writer gate now uses this publication decision instead of blindly trusting a research model's 'Insufficient' label.
+- Duplicate exception reasons are de-duplicated.
+- Source hierarchy, entity-first research, 55-second recovery, stable article identity and editorial question framing remain unchanged.
+
+Acceptance test:
+Re-run Norfolk Article 7 once. With the trial, techniques and Norfolk County Council already resolved, future durability/damage results should no longer block Writer. The article should ask those as future questions rather than claim answers.
