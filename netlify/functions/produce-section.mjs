@@ -4,7 +4,8 @@ import {cleanUrl,createResponse,outputText,parseJsonText} from './_openai.mjs';
 const ALLOWED_CLASSES=new Set(['A — Question Only','B — Light Proof','C — Evidence Heavy']);
 const value=(f,k)=>f?.[k]??'';
 
-const TOTAL_BUDGET_MS=175000;
+const TOTAL_BUDGET_MS=145000;
+const RECOVERY_BUDGET_MS=28000;
 function withTimeout(promise,timeoutMs,label){
   let timer;
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
@@ -288,7 +289,7 @@ async function recoverEvidencePack(fields,cls,firstPass,model){
     input:recoveryResearchPrompt(fields,cls,firstPass),
     useWeb:true,
     model:String(model||process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim(),
-    timeoutMs:55000
+    timeoutMs:RECOVERY_BUDGET_MS
   });
   const recovered=parseJsonText(outputText(response));
   const recoveredSources=(Array.isArray(recovered.sources)?recovered.sources:[]).map(x=>({
@@ -496,7 +497,7 @@ export default async(request)=>{
     const reusableResearch=(savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedResearch:null;
     const reusableWriter=(savedWriter?.brief_key===key&&savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedWriter:null;
     const runningStage=reusableWriter?'Finalising from writer checkpoint':reusableResearch?'Resuming at writer':'Researching and writing';
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.15`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.16`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
@@ -588,7 +589,7 @@ export default async(request)=>{
           log('research_recovery_started',{sourceCount:research.sources?.length||0,missing:research.missing_evidence?.length||0});
           try{
             const recoveryModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
-            research=await stage('Targeted web research recovery',()=>recoverEvidencePack(fields,cls,research,recoveryModel),58000);
+            research=await stage('Targeted web research recovery',()=>recoverEvidencePack(fields,cls,research,recoveryModel),RECOVERY_BUDGET_MS+3000);
             gate=evidenceGate(fields,cls,research);
             if(!gate.pass){
               research.research_status='Insufficient';
@@ -620,6 +621,61 @@ export default async(request)=>{
         await saveTrace();
       }
     }
+
+    // Bounded recovery: do not spend a full writer call on an article whose
+    // core evidence is still insufficient after the targeted second pass.
+    if(cls!=='A — Question Only' && research?.research_status!=='Sufficient'){
+      const gateNow=evidenceGate(fields,cls,research);
+      const outcomeNow=evidenceOutcome(cls,research,gateNow);
+      const retained=(research.sources||[]).map(x=>({
+        title:String(x.title||'').trim(),
+        url:cleanUrl(x.url),
+        supports:stripTags(String(x.supports||'')).trim()
+      })).filter(x=>x.url).slice(0,5);
+      const missing=[...(research.missing_evidence||[]),...(gateNow.reasons||[])].filter(Boolean);
+      const priorNotes=removeCheckpoints(originalNotes)
+        .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'')
+        .trim();
+      const serviceNotes=[
+        `PRODUCTION SERVICE v2.16`,
+        `Run ID: ${runId}`,
+        `Class: ${cls}`,
+        `Outcome: ${outcomeNow.code}`,
+        `Evidence: ${String(research.research_summary||'Insufficient evidence after bounded recovery.').trim()}`,
+        `Sources retained: ${retained.length}`,
+        `Exception: ${missing.join('; ')||'Further primary/local evidence is required before publication.'}`
+      ].join('\n');
+      const notes=priorNotes?`${priorNotes}\n\n${serviceNotes}`:serviceNotes;
+      await assertRunOwnership('Research incomplete save ownership check');
+      const saved=await withTimeout(
+        airtableRequest(TABLES.sections,{
+          method:'PATCH',
+          body:{records:[{id:record.id,fields:{
+            'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
+            'Evidence Status':'Researching',
+            'Evidence Checked Date':new Date().toISOString().slice(0,10),
+            'Section QA Result':'Fix Required',
+            'Section Status':'Researching',
+            'Notes':notes
+          }}],typecast:true},
+          timeoutMs:18000
+        }),
+        20000,
+        'Research incomplete save'
+      );
+      log('request_completed',{qaResult:outcomeNow.code,sourceCount:retained.length,writerSkipped:true});
+      return json(200,{
+        ok:true,
+        record:cleanRecord(saved.records[0]),
+        productionClass:cls,
+        qaResult:'Fix Required',
+        outcome:outcomeNow.code,
+        sources:retained,
+        writerSkipped:true,
+        exception:missing.join('; ')||'Further primary/local evidence is required before publication.'
+      });
+    }
+
     const writerModel=String(process.env.OPENAI_WRITER_MODEL||process.env.OPENAI_PRODUCTION_MODEL||reusableWriter?.model||'gpt-5.6-luna').trim();
     let writerRaw='',response={_model_used:writerModel};
     if(reusableWriter){
@@ -669,7 +725,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.15`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.16`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -708,7 +764,7 @@ export default async(request)=>{
         const current=lookup.records?.[0];
         if(current){
           const notes=stripRuntimeBlocks(current.fields?.Notes||'');
-          const failed=[`MASTER ARTICLE FAILED v2.15`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          const failed=[`MASTER ARTICLE FAILED v2.16`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await withTimeout(
             airtableRequest(TABLES.sections,{
               method:'PATCH',

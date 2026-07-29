@@ -1,0 +1,12 @@
+ICS Issue Canvas v3.4.64 — Bounded Research Recovery
+
+Built directly from v3.4.63.
+
+- Targeted web recovery has a hard ~28-second budget.
+- If evidence is still insufficient after recovery, production stops BEFORE Writer.
+- The article is classified using the existing v3.4.63 evidence outcomes:
+  SOURCE_CHECK_REQUIRED or RESEARCH_INCOMPLETE.
+- Evidence found so far and exact missing-evidence reasons are retained.
+- Produce Selected can be used later to retry research; insufficient checkpoints are not treated as reusable success.
+- Evidence standards are unchanged.
+- Difficult searches can no longer burn ~55 seconds on recovery and then another full Writer call for an article that still cannot pass.
