@@ -1,0 +1,7 @@
+ICS Issue Canvas v3.4.58 — Audit Button Fix
+
+Built directly from stable v3.4.57.
+
+- Adds Analyse Issue Balance beside Lock Approved Plan using the actual Smart Plan toolbar IDs.
+- Wires it to the Issue Balance & Commercial Audit already present in v3.4.57.
+- No changes to navigation, storage, planning logic, replacement logic, production, Airtable or QA.
