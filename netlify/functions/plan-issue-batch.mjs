@@ -12,13 +12,16 @@ export default async(request)=>{
     const existing=(Array.isArray(d.existingArticles)?d.existingArticles:[]).slice(0,45).map(x=>({id:String(x.id||''),title:String(x.title||''),purpose:String(x.purpose||'').slice(0,180),freshness:String(x.freshness||''),topic:String(x.topic||''),proof:String(x.proof||'').slice(0,160)})).filter(x=>x.id&&x.title);
     const inventory=existing.map((x,i)=>`${i+1}. ${x.id} | ${x.title} | ${x.purpose} | ${x.freshness} | ${x.topic}`).join('\n');
     const prior=(Array.isArray(d.priorArticles)?d.priorArticles:[]).slice(0,10).map((x,i)=>`${i+1}. ${x.title} — ${x.question}`).join('\n');
-    const prompt=`You are senior editor for Trail Blaze ${publication}. Plan ONLY ${requestedCount} Master Article decision${requestedCount===1?'':'s'} for planning batch ${batch}/3: ${label}. Do not browse the web.\n\nISSUE PROMISE: ${issuePromise}\nTARGET SEND: ${String(d.sendDate||'')}\nEDITOR NOTES: ${String(d.knownSignals||'None').slice(0,1000)}\nBATCH JOB: ${brief}\n\nCURRENT DISCOVERY LEADS (leads only; not verified facts):\n${signals}\n\nEXISTING ARTICLE LIBRARY:\n${inventory||'None'}\n\nALREADY CHOSEN IN EARLIER BATCHES — DO NOT DUPLICATE:\n${prior||'None'}\n\nReturn exactly ${requestedCount} distinct article decision${requestedCount===1?'':'s'}. One question per article.
+    const prompt=`You are senior editor for Trail Blaze ${publication}. Plan ONLY ${requestedCount} Master Article decision${requestedCount===1?'':'s'} for planning batch ${batch}/3: ${label}. Do not browse the web.\n\nISSUE PROMISE: ${issuePromise}\nTARGET SEND: ${String(d.sendDate||'')}\nEDITOR NOTES: ${String(d.knownSignals||'None').slice(0,1000)}\nBATCH JOB: ${brief}\n\nCURRENT DISCOVERY LEADS (leads only; not verified facts):\n${signals}\n\nEXISTING ARTICLE LIBRARY:\n${inventory||'None'}\n\nALREADY CHOSEN IN THIS ISSUE — DO NOT DUPLICATE OR REUSE THEIR SOURCE LEADS:\n${prior||'None'}\n\nReturn exactly ${requestedCount} distinct article decision${requestedCount===1?'':'s'}. One question per article.
 SOURCE-TO-IDEA DISCIPLINE:
 - Every CREATE NEW or current-event REFRESH decision must be grounded in one specific CURRENT DISCOVERY LEAD above.
 - source_signal MUST start with the exact lead number, for example "Lead 4: ...", and accurately describe what that lead is actually about.
 - Do not broaden a phone-use enforcement story into speeding, a Pride/library-display dispute into branch/service changes, or otherwise change the event/topic merely because it creates a nicer article.
 - The proposed question may go one step beyond the headline only when the linked signal genuinely supports that direction.
 - If no discovery lead supports a proposed current article, choose a different supported idea instead.
+- A discovery lead already used by any priorArticles entry is normally unavailable for another article in the same issue.
+- Do not create a second article from the same underlying event merely by changing the wording, audience or CTA.
+
  Existing library is a resource bank, not a quota; REUSE should be earned. Use REFRESH when an old article/question needs current verification or a materially updated angle.
  REFRESH DISCIPLINE:
 - REFRESH is not allowed merely because an existing article is evergreen, still relevant, seasonal again, or easy to update.
