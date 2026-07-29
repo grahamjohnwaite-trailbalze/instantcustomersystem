@@ -1,0 +1,12 @@
+ICS Issue Canvas v3.4.55 — Duplicate-Safe Automatic Replacement
+
+Built directly from v3.4.54.
+
+- Replace now sends the planner an explicit list of source leads already used by the other 14 articles.
+- Replace also sends the titles/current-plan inventory as exclusions.
+- Each candidate is checked locally against the same-issue duplication gate before it can be saved.
+- If a candidate collides, ICS automatically retries internally with the rejection reason.
+- Up to 3 candidates are attempted from one operator click.
+- Failed candidates never overwrite the current article.
+- The operator sees only a safe replacement, or one clear message after all retries fail.
+- v3.4.54 whole-plan duplicate audit and Plan Lock protection remain intact.
