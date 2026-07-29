@@ -227,6 +227,94 @@ async function fastEvidencePack(fields,cls){
     missing_evidence:sufficient?[]:['The source precision gate found too little distinct article-specific evidence. It will not pad the pack with generic or tangential sources. Human verification is required before publication.']
   };
 }
+
+function mergeEvidenceSources(primary=[],secondary=[]){
+  const out=[],seen=new Set();
+  for(const src of [...primary,...secondary]){
+    const url=cleanUrl(src?.url||'');
+    if(!url||seen.has(url))continue;
+    seen.add(url);
+    out.push({
+      title:String(src?.title||'').trim().slice(0,220),
+      url,
+      supports:stripTags(String(src?.supports||'')).trim().slice(0,900),
+      source_type:String(src?.source_type||sourceTypeFor(url,src?.title||'')).trim()||'other',
+      relevance:Number(src?.relevance||0)
+    });
+  }
+  return out.slice(0,8);
+}
+function recoveryResearchPrompt(fields,cls,firstPass){
+  const title=String(value(fields,'Section Title')||'').trim();
+  const question=String(value(fields,'Core Reader Question')||'').trim();
+  const proof=String(value(fields,'Local Proof Needed')||'').trim();
+  const evidence=String(value(fields,'Evidence Required')||'').trim();
+  const notes=String(value(fields,'Notes')||'');
+  const current=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
+  return `You are the SECOND-PASS evidence researcher for a local-news Master Article. The fast discovery pass was not strong enough. Recover the missing evidence before drafting.
+
+ARTICLE
+Title: ${title}
+Core reader question: ${question}
+Current discovery lead: ${current||'Not supplied'}
+Local proof required: ${proof||'Not supplied'}
+Evidence required: ${evidence||'Not supplied'}
+Production class: ${cls}
+
+FIRST PASS
+${JSON.stringify(firstPass||{},null,2)}
+
+RECOVERY RULES
+- Search the live web specifically for evidence needed to ANSWER THE CORE QUESTION.
+- Start with the named organisation, scheme, road, council decision, funding announcement, service, venue or policy in the article.
+- Prefer the original/primary source: council planning record or committee paper, GOV.UK, NHS/NICE, police, regulator, official organisation/charity/service page, provider announcement, official project page, or other accountable first-party source.
+- Then add a strong local/news source only where it contributes a distinct fact or context.
+- Do not pad the pack to reach a source count. One authoritative source can establish a narrow fact; several weak copies of the same report do not establish more.
+- Resolve the specific gaps from the first pass wherever possible.
+- For legal, health, finance, planning, public spending, transport or enforcement topics, do not mark Sufficient if the core answer still depends on an unverified material fact.
+- Return only sources actually used to support the core answer. No generic reference pages, invented URLs or tangential sources.
+- Clean supports text: plain text only, no HTML.
+
+Return ONLY valid JSON:
+{
+ "research_status":"Sufficient or Insufficient",
+ "research_summary":"what the recovery pass verified and what still prevents a confident core answer",
+ "sources":[{"title":"","url":"clean raw URL","supports":"specific claim supported","source_type":"official/local/primary/other"}],
+ "missing_evidence":["specific unresolved fact needed for the core answer"]
+}`;
+}
+async function recoverEvidencePack(fields,cls,firstPass,model){
+  const response=await createResponse({
+    input:recoveryResearchPrompt(fields,cls,firstPass),
+    useWeb:true,
+    model:String(model||process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim(),
+    timeoutMs:55000
+  });
+  const recovered=parseJsonText(outputText(response));
+  const recoveredSources=(Array.isArray(recovered.sources)?recovered.sources:[]).map(x=>({
+    title:String(x.title||'').trim(),
+    url:cleanUrl(x.url),
+    supports:stripTags(String(x.supports||'')).trim(),
+    source_type:String(x.source_type||sourceTypeFor(x.url,x.title)).trim()||'other',
+    relevance:Math.max(5,Number(x.relevance||0))
+  })).filter(x=>x.url);
+  const merged=mergeEvidenceSources(recoveredSources,firstPass?.sources||[]);
+  return {
+    research_status:String(recovered.research_status||'Insufficient')==='Sufficient'?'Sufficient':'Insufficient',
+    research_summary:String(recovered.research_summary||'').trim()||'Second-pass research completed.',
+    sources:merged,
+    missing_evidence:Array.isArray(recovered.missing_evidence)?recovered.missing_evidence.map(x=>String(x||'').trim()).filter(Boolean):[],
+    recovery_used:true,
+    recovery_model:response._model_used||model||''
+  };
+}
+function evidenceOutcome(cls,research,gate){
+  const missing=[...(research?.missing_evidence||[]),...(gate?.reasons||[])].filter(Boolean);
+  if(gate?.pass&&research?.research_status==='Sufficient')return {code:'COMPLETE',label:'Complete',missing:[]};
+  const n=(research?.sources||[]).length;
+  if(n===0)return {code:'RESEARCH_INCOMPLETE',label:'Research incomplete',missing};
+  return {code:'SOURCE_CHECK_REQUIRED',label:'Source check required',missing};
+}
 function researchPromptFor(fields,cls){
   const localProof=String(value(fields,'Local Proof Needed')||'').trim();
   const evidence=String(value(fields,'Evidence Required')||'').trim();
@@ -405,10 +493,10 @@ export default async(request)=>{
     const key=briefKey(fields,cls);
     const savedResearch=latestCheckpoint(sourceNotes,'research');
     const savedWriter=latestCheckpoint(sourceNotes,'writer');
-    const reusableResearch=savedResearch?.brief_key===key?savedResearch:null;
-    const reusableWriter=savedWriter?.brief_key===key?savedWriter:null;
+    const reusableResearch=(savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedResearch:null;
+    const reusableWriter=(savedWriter?.brief_key===key&&savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedWriter:null;
     const runningStage=reusableWriter?'Finalising from writer checkpoint':reusableResearch?'Resuming at writer':'Researching and writing';
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.14`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.15`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
@@ -489,12 +577,34 @@ export default async(request)=>{
         log('research_started',{productionClass:cls,model:researchModel});
         research=await stage('Fast evidence collection',()=>fastEvidencePack(fields,cls),18000);
         log('research_completed',{model:researchModel,sourceCount:Array.isArray(research.sources)?research.sources.length:0});
-        const gate=evidenceGate(fields,cls,research);
+        let gate=evidenceGate(fields,cls,research);
         if(!gate.pass){
           research.research_status='Insufficient';
           research.missing_evidence=[...(Array.isArray(research.missing_evidence)?research.missing_evidence:[]),...gate.reasons];
         }
-        log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0});
+        if(research.research_status!=='Sufficient'||!gate.pass){
+          traceLine('Targeted research recovery','START','fast pass insufficient');
+          await saveTrace();
+          log('research_recovery_started',{sourceCount:research.sources?.length||0,missing:research.missing_evidence?.length||0});
+          try{
+            const recoveryModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
+            research=await stage('Targeted web research recovery',()=>recoverEvidencePack(fields,cls,research,recoveryModel),58000);
+            gate=evidenceGate(fields,cls,research);
+            if(!gate.pass){
+              research.research_status='Insufficient';
+              research.missing_evidence=[...(Array.isArray(research.missing_evidence)?research.missing_evidence:[]),...gate.reasons];
+            }
+            researchModel=research.recovery_model||recoveryModel;
+            log('research_recovery_completed',{status:research.research_status,sourceCount:research.sources?.length||0,missing:research.missing_evidence?.length||0});
+          }catch(recoveryError){
+            research.research_status='Insufficient';
+            research.recovery_used=true;
+            research.research_summary=[research.research_summary,`Targeted recovery could not complete: ${String(recoveryError?.message||recoveryError).slice(0,220)}`].filter(Boolean).join(' ');
+            research.missing_evidence=[...(research.missing_evidence||[]),'Targeted second-pass research did not complete successfully.'];
+            log('research_recovery_failed',{message:String(recoveryError?.message||recoveryError)});
+          }
+        }
+        log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0,recoveryUsed:!!research.recovery_used});
         const checkpoint=researchCheckpointBlock(key,research,researchModel);
         const checkpointNotes=originalNotes?`${originalNotes}\n\n${checkpoint}\n\n${runningBlock}`:`${checkpoint}\n\n${runningBlock}`;
         await withTimeout(
@@ -552,13 +662,14 @@ export default async(request)=>{
     const sources=merged.slice(0,5);
     const gate=evidenceGate(fields,cls,research);
     const qa=(result.qa_result==='Pass'&&gate.pass)?'Pass':'Fix Required';
+    const outcome=qa==='Pass'?{code:'COMPLETE',label:'Complete',missing:[]}:evidenceOutcome(cls,research,gate);
     if(!gate.pass){
       result.exception=[String(result.exception||'').trim(),...gate.reasons].filter(Boolean).join(' ');
       result.evidence_summary=[String(result.evidence_summary||'').trim(),String(research.research_summary||'').trim(),`Missing evidence: ${(research.missing_evidence||[]).join('; ')}`].filter(Boolean).join(' ');
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.14`,`Run ID: ${runId}`,`Class: ${cls}`,`Evidence: ${String(result.evidence_summary||'').trim()||'No summary returned.'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||'Human review required.')}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.15`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -585,7 +696,7 @@ export default async(request)=>{
     traceLine('Final Airtable save','DONE');
     log('airtable_save_completed',{savedRecordId:saved.records?.[0]?.id||''});
     log('request_completed',{qaResult:qa});
-    return json(200,{ok:true,record:cleanRecord(saved.records[0]),productionClass:cls,qaResult:qa,sources,articlePackage:parseJsonText(block.split('\n').slice(1,-1).join('\n')),exception:qa==='Pass'?'':String(result.exception||'Human review required.')});
+    return json(200,{ok:true,record:cleanRecord(saved.records[0]),productionClass:cls,qaResult:qa,outcome:outcome.code,researchRecovery:!!research?.recovery_used,sources,articlePackage:parseJsonText(block.split('\n').slice(1,-1).join('\n')),exception:qa==='Pass'?'':String(result.exception||outcome.label)});
   }catch(error){
     console.error('master-article-failed',{runId,elapsedMs:Date.now()-started,message:error?.message,status:error?.status,details:error?.details,stack:error?.stack});
     if(error?.code==='RUN_SUPERSEDED'){
@@ -597,7 +708,7 @@ export default async(request)=>{
         const current=lookup.records?.[0];
         if(current){
           const notes=stripRuntimeBlocks(current.fields?.Notes||'');
-          const failed=[`MASTER ARTICLE FAILED v2.14`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          const failed=[`MASTER ARTICLE FAILED v2.15`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await withTimeout(
             airtableRequest(TABLES.sections,{
               method:'PATCH',

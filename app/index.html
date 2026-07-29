@@ -35,7 +35,7 @@
 #smart-plan-list{font-size:1.04rem;line-height:1.45}
 #assembly-order{font-size:1.04rem;line-height:1.42}
 .canvas-panel .muted{line-height:1.4}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.62<br><strong>Separate Signals + 3×5 Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.63<br><strong>Separate Signals + 3×5 Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -392,7 +392,9 @@ async function produceOne(item){
    const hasCurrentService=!!serviceBlockForRun;
    if(hasCurrentService){
      const elapsedSec=Math.round((Date.now()-startedAt)/1000);
-     E('production-progress').innerHTML=`<strong>${qa==='Pass'?'Master Article complete ✓':'Master Article saved for review'}</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">Finished in ${elapsedSec} seconds · ${qa==='Pass'?'Ready for Letterman':'Human review required'}</div>`;
+     const outcome=String((serviceBlockForRun.match(/Outcome:\s*([A-Z_]+)/)||[])[1]||'');
+     const reviewText=outcome==='SOURCE_CHECK_REQUIRED'?'Source verification required':outcome==='RESEARCH_INCOMPLETE'?'Research incomplete':outcome==='EDITORIAL_REVIEW'?'Editorial review required':'Human review required';
+     E('production-progress').innerHTML=`<strong>${qa==='Pass'?'Master Article complete ✓':reviewText}</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">Finished in ${elapsedSec} seconds · ${qa==='Pass'?'Ready for Letterman':reviewText}</div>`;
      return {ok:true,record:current,productionClass:cls,qaResult:qa,sources:[],background:true,runId,elapsedSec};
    }
    const traceMatches=[...notes.matchAll(/(?:✓|✖|▶) [^\n]+/g)];
@@ -757,6 +759,20 @@ function latestProductionMarker(s){
   }
   return latest;
 }
+
+function masterArticleOutcome(s){
+  const notes=String(val(s?.fields||{},'Notes')||'');
+  const blocks=[...notes.matchAll(/PRODUCTION SERVICE v2\.\d+[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|PRODUCTION SERVICE)|$)/g)].map(m=>m[0]);
+  const block=blocks[blocks.length-1]||'';
+  return String((block.match(/Outcome:\s*([A-Z_]+)/)||[])[1]||'').trim();
+}
+function masterArticleReviewLabel(s){
+  const outcome=masterArticleOutcome(s);
+  if(outcome==='SOURCE_CHECK_REQUIRED')return 'SOURCE CHECK REQUIRED';
+  if(outcome==='RESEARCH_INCOMPLETE')return 'RESEARCH INCOMPLETE';
+  if(outcome==='EDITORIAL_REVIEW')return 'EDITORIAL REVIEW';
+  return 'MASTER ARTICLE — NEEDS REVIEW';
+}
 function masterArticleState(s){
   const transient=S.productionUi?.[s.id];
   if(transient?.state==='running')return 'running';
@@ -785,7 +801,7 @@ function renderSections(){
   const ad=activeOrderDiagnostic();const diagnostic=activeRows.length?`<div class="muted" style="padding:4px 2px 10px">${activeRows.length} active records${ad.duplicates.length?` · duplicate order: ${ad.duplicates.join(', ')}`:''}${ad.missing.length?` · missing order: ${ad.missing.join(', ')}`:' · numbering clean ✓'}</div>`:'';
   E('section-list').innerHTML=diagnostic+(rows.length?rows.map((s,n)=>{
     const flags=qaFlags(s),state=masterArticleState(s),isComplete=state==='complete',isReview=state==='review',isRunning=state==='running',isFailed=state==='failed';
-    const stateText=isComplete?'MASTER ARTICLE COMPLETE ✓':isReview?'MASTER ARTICLE — NEEDS REVIEW':isRunning?'PRODUCING…':isFailed?'MASTER ARTICLE FAILED':'IN PRODUCTION QUEUE';
+    const stateText=isComplete?'MASTER ARTICLE COMPLETE ✓':isReview?masterArticleReviewLabel(s):isRunning?'PRODUCING…':isFailed?'MASTER ARTICLE FAILED':'IN PRODUCTION QUEUE';
     const hot=String(val(s.fields,'Primary Hot Button')||'').trim();
     const transient=S.productionUi?.[s.id],latestMarker=latestProductionMarker(s);
     const persistedError=isFailed&&latestMarker?.type==='failed'?(latestMarker.stale?`Stale run — safe to retry${Number.isFinite(latestMarker.ageMs)?` (${Math.floor(latestMarker.ageMs/60000)}m old)`:''}`:latestMarker.error):'';
@@ -1016,7 +1032,7 @@ function renderAssembly(){
  const lib=E('assembly-library'),order=E('assembly-order'),palette=E('component-palette');if(!lib||!order||!palette)return;
  const q=String(E('assembly-search')?.value||'').toLowerCase();const produced=(S.articleLibrary?.length?S.articleLibrary:S.sections.filter(isProducedArticle));
  const rows=produced.filter(s=>!q||[val(s.fields,'Section Title'),inferArticleIntelligence(s).topic].join(' ').toLowerCase().includes(q));if(E('assembly-available-count'))E('assembly-available-count').textContent=`${produced.length} available`;
- lib.innerHTML=rows.length?rows.map(s=>{const x=inferArticleIntelligence(s),title=String(val(s.fields,'Section Title')||'').trim().toLowerCase().replace(/\s+/g,' '),added=getCanvas().some(b=>b.kind==='article'&&(b.refId===s.id||String(b.title||'').trim().toLowerCase().replace(/\s+/g,' ')===title));return `<div class="palette-item" draggable="${added?'false':'true'}" ${added?'style="opacity:.55;cursor:default"':'ondragstart="startPaletteDrag(event,\'article\',\''+s.id+'\')"'} ondblclick="${added?'':'addArticleToCanvas(\''+s.id+'\')'}"><strong>${esc(val(s.fields,'Section Title')||'Untitled')}</strong><small>${added?'Already in Canvas':(masterArticleState(s)==='complete'?'MASTER ARTICLE COMPLETE ✓ · ':'MASTER ARTICLE — NEEDS REVIEW · ')+esc(x.topic)+' · '+esc(x.freshness)+' · drag or double-click'}</small></div>`}).join(''):`<div class="empty">${produced.length?'No produced articles match this search.':'No produced Master Articles are available for this publication yet.'}</div>`;if(E('assembly-library-diag'))E('assembly-library-diag').textContent=S.articleLibraryDiag||'';
+ lib.innerHTML=rows.length?rows.map(s=>{const x=inferArticleIntelligence(s),title=String(val(s.fields,'Section Title')||'').trim().toLowerCase().replace(/\s+/g,' '),added=getCanvas().some(b=>b.kind==='article'&&(b.refId===s.id||String(b.title||'').trim().toLowerCase().replace(/\s+/g,' ')===title));return `<div class="palette-item" draggable="${added?'false':'true'}" ${added?'style="opacity:.55;cursor:default"':'ondragstart="startPaletteDrag(event,\'article\',\''+s.id+'\')"'} ondblclick="${added?'':'addArticleToCanvas(\''+s.id+'\')'}"><strong>${esc(val(s.fields,'Section Title')||'Untitled')}</strong><small>${added?'Already in Canvas':(masterArticleState(s)==='complete'?'MASTER ARTICLE COMPLETE ✓ · ':masterArticleReviewLabel(s)+' · ')+esc(x.topic)+' · '+esc(x.freshness)+' · drag or double-click'}</small></div>`}).join(''):`<div class="empty">${produced.length?'No produced articles match this search.':'No produced Master Articles are available for this publication yet.'}</div>`;if(E('assembly-library-diag'))E('assembly-library-diag').textContent=S.articleLibraryDiag||'';
  palette.innerHTML=COMPONENT_DEFS.map(d=>`<div class="component-chip" draggable="true" ondragstart="startPaletteDrag(event,'component','${esc(d.type)}')" ondblclick="addComponentToCanvas('${esc(d.type)}')">${esc(d.title)}</div>`).join('');
  const items=getCanvas();
  const recovering=canvasRecoveryMode();
