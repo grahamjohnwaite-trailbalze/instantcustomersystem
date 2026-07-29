@@ -1,0 +1,28 @@
+ICS Issue Canvas v3.4.68 — Editorial Evidence Timing
+
+Built directly from v3.4.67.
+
+Core editorial model:
+- VERIFIED NOW: facts supported now may be stated.
+- FUTURE TEST: outcomes that genuinely cannot yet be known may be explored as questions and follow-up tests; they do not block publication.
+- OPTIONAL: useful missing detail may be omitted.
+- REQUIRED NOW: only missing factual premises needed to publish responsibly should trigger Source Check / Research Incomplete.
+
+Authority/source rule:
+- News outlets are primarily discovery/corroboration sources and should not normally be foregrounded in reader-facing Spotlight copy.
+- Prefer official reports, council papers, government/NHS/regulator material, official organisation/service pages, datasets and direct published statements.
+- Spotlight owns the editorial treatment rather than looking like a curated-news feed.
+- Genuine sourced hearsay may be attributed accurately; invented "we heard / people are saying / social media says" language is prohibited.
+
+Question framing:
+- Legitimate future questions such as "Could this reduce repeat repairs?" are allowed once the underlying premise is verified.
+- A question mark cannot disguise an unsupported factual premise.
+
+Evidence gate:
+- Future-test and optional evidence no longer block production.
+- Evidence-heavy stories are not forced to pad arbitrary source counts when strong primary evidence supports the current premise.
+- Existing entity-first research, 55-second recovery budget, stop-before-writer protection and stable article identity remain intact.
+
+Acceptance test:
+- Re-run Article 7 once.
+- Expected: if the trial/current premise is sufficiently verified, Writer should now produce a properly caveated article instead of blocking on future durability/damage results that cannot yet exist.

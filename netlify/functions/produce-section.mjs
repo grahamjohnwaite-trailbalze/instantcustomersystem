@@ -284,12 +284,17 @@ ENTITY-FIRST RECOVERY PROCEDURE
    - tourism/business/venue -> official attraction/business/venue plus relevant council/highway/tourism authority where the core question needs it;
    - elections/public office -> official council/election result and the relevant authority/parliamentary source.
 4. Search using the resolved proper nouns and distinctive anchors, not merely broad phrases such as "Norfolk housing" or "Norfolk potholes".
-5. Then add one strong independent/local source when it supplies distinct current context.
-6. Map every retained source to a material part of the CORE QUESTION. Do not pad source count.
-7. One authoritative source can establish a narrow fact. Several copies of the same story count as one evidence chain.
-8. For legal, health, finance, planning, public spending, transport or enforcement topics, do not mark Sufficient while a material fact needed for the core answer remains unresolved.
-9. If the exact subject cannot be resolved, return Insufficient and state precisely what identity/anchor is missing. Never substitute a different Norfolk project merely because it is easier to find.
-10. Clean supports text: plain text only, no HTML.
+5. SOURCE HIERARCHY: local/news-media sources such as EDP24, BBC local, newspapers and news sites are DISCOVERY/CORROBORATION sources. They may help you resolve the story internally, but prefer official/primary evidence for the facts the published article will stand on. Do not require the finished article to name or quote a discovery outlet.
+6. Prefer reader-facing authority from official reports, council papers, planning documents, government/NHS/regulator data, official organisation/service pages, direct published statements and other primary material.
+7. Classify unresolved evidence by TIMING:
+   - REQUIRED_NOW: a factual premise needed to publish responsibly today. Missing REQUIRED_NOW evidence blocks publication.
+   - FUTURE_TEST: an outcome that genuinely cannot yet be known because a trial, scheme, consultation, build, funding rollout or decision has not produced results. This does NOT block publication if the article frames it honestly as a question, possibility or test to watch.
+   - OPTIONAL: useful colour/detail that can simply be omitted.
+8. A question mark is not permission to smuggle in a false premise. The underlying premise must be verified. But legitimate formulations such as "Could this reduce repeat repairs?", "Will it last longer?" or "What should happen next?" are allowed when clearly presented as unanswered questions.
+9. Map every retained source to a material part of the CORE QUESTION. Do not pad source count. One authoritative source can establish a narrow fact. Several copies of the same story count as one evidence chain.
+10. For legal, health, finance, planning, public spending, transport or enforcement topics, require primary/official support for material current facts where reasonably available, but do not demand future outcome data that cannot yet exist.
+11. If the exact subject cannot be resolved, return Insufficient and state precisely what identity/anchor is missing. Never substitute a different Norfolk project merely because it is easier to find.
+12. Clean supports text: plain text only, no HTML.
 
 Return ONLY valid JSON:
 {
@@ -301,9 +306,12 @@ Return ONLY valid JSON:
    "reference":"application/project/reference number if established",
    "confidence":"high/medium/low"
  },
- "research_summary":"what was resolved, verified and what still prevents a confident core answer",
- "sources":[{"title":"","url":"clean raw URL","supports":"specific claim supported","source_type":"official/local/primary/other"}],
- "missing_evidence":["specific unresolved fact or identity needed for the core answer"]
+ "research_summary":"what was resolved and verified",
+ "sources":[{"title":"","url":"clean raw URL","supports":"specific claim supported","source_type":"official/primary/local/discovery/other","reader_facing":true}],
+ "required_now_missing":["only factual premises still missing that genuinely block responsible publication today"],
+ "future_tests":["outcomes not yet knowable that should be framed as questions or follow-up tests, not blockers"],
+ "optional_missing":["non-essential details that may be omitted"],
+ "missing_evidence":["backward-compatible combined notes; do not put FUTURE_TEST or OPTIONAL items here unless they also block publication"]
 }`;
 }
 async function recoverEvidencePack(fields,cls,firstPass,model){
@@ -322,12 +330,24 @@ async function recoverEvidencePack(fields,cls,firstPass,model){
     relevance:Math.max(5,Number(x.relevance||0))
   })).filter(x=>x.url);
   const merged=mergeEvidenceSources(recoveredSources,firstPass?.sources||[]);
+  const requiredNow=Array.isArray(recovered.required_now_missing)?recovered.required_now_missing.map(x=>String(x||'').trim()).filter(Boolean):[];
+  const futureTests=Array.isArray(recovered.future_tests)?recovered.future_tests.map(x=>String(x||'').trim()).filter(Boolean):[];
+  const optionalMissing=Array.isArray(recovered.optional_missing)?recovered.optional_missing.map(x=>String(x||'').trim()).filter(Boolean):[];
+  const legacyMissing=Array.isArray(recovered.missing_evidence)?recovered.missing_evidence.map(x=>String(x||'').trim()).filter(Boolean):[];
+  const resolved=(recovered.resolved_subject&&typeof recovered.resolved_subject==='object')?recovered.resolved_subject:{};
+  const hasResolvedSubject=Boolean(String(resolved.name||'').trim());
+  const hasEvidence=merged.length>0;
+  // Editorial timing rule: future outcomes and optional detail do not make today's research insufficient.
+  const timedStatus=(requiredNow.length===0 && hasResolvedSubject && hasEvidence)?'Sufficient':(String(recovered.research_status||'Insufficient')==='Sufficient'?'Sufficient':'Insufficient');
   return {
-    research_status:String(recovered.research_status||'Insufficient')==='Sufficient'?'Sufficient':'Insufficient',
+    research_status:timedStatus,
     research_summary:String(recovered.research_summary||'').trim()||'Second-pass research completed.',
     sources:merged,
-    missing_evidence:Array.isArray(recovered.missing_evidence)?recovered.missing_evidence.map(x=>String(x||'').trim()).filter(Boolean):[],
-    resolved_subject:(recovered.resolved_subject&&typeof recovered.resolved_subject==='object')?recovered.resolved_subject:{},
+    required_now_missing:requiredNow,
+    future_tests:futureTests,
+    optional_missing:optionalMissing,
+    missing_evidence:requiredNow.length?requiredNow:legacyMissing.filter(x=>!futureTests.includes(x)&&!optionalMissing.includes(x)),
+    resolved_subject:resolved,
     recovery_used:true,
     recovery_model:response._model_used||model||''
   };
@@ -363,6 +383,8 @@ RESEARCH RULES
 - If the lead is vague, first search to identify the exact subject. Never substitute a different local project because it is easier to find.
 - Search the current web thoroughly.
 - Prefer primary/official sources: local councils, GOV.UK, regulators, NHS/NICE, water companies, transport/highway bodies, official venue/business pages, official menus and ticket pages.
+- Treat newspapers/news sites primarily as discovery or corroboration. Do not make the article dependent on naming them when the underlying official/primary evidence can be found.
+- Distinguish evidence needed NOW from outcomes that cannot yet exist. A future result of a trial, rollout, consultation or proposed scheme should become a FUTURE TEST/question, not automatically make research insufficient.
 - The returned evidence MUST satisfy the LOCAL PROOF requirement, not merely provide generic national background.
 - When the brief requires local proof, include genuinely place-specific or directly relevant regional primary sources for the named publication area. Generic national background is not enough.
 - If the brief names a body such as Anglian Water, NHS, NICE, FCA, MoneyHelper, a promoter, ticket agent or local council, actively search that body.
@@ -397,6 +419,13 @@ STYLE, AUDIENCE AND SAFETY
 - Never invent recommendations, prices, dates, businesses or factual claims.
 - Use named local proof only where supported by the supplied research pack.
 - Distinguish fact, opinion and reader questions.
+- EDITORIAL SOURCE RULE: Spotlight is the publisher, not a news-curation feed. Do not normally write "EDP24 reports", "the BBC says", "according to [newspaper]" or otherwise foreground discovery/news-media sources in reader-facing copy. Use those sources internally to discover/corroborate the story. Prefer attribution to the underlying official body, document, dataset, organisation or direct published statement when attribution is useful.
+- It is fine to say "Norfolk County Council says...", "council papers show...", "NHS guidance says..." or equivalent primary-source attribution where that adds authority.
+- EVIDENCE TIMING RULE: facts verified now may be stated as facts. Outcomes that genuinely do not exist yet may be explored as clearly unanswered questions: "Could this...?", "Will it...?", "What happens if...?", "What should we watch?". Do not turn a future unknown into a publication blocker merely because results do not yet exist.
+- A question mark must never disguise an unsupported factual premise. Verify the premise first, then ask the legitimate unanswered question.
+- Do not manufacture hearsay. Phrases such as "we heard", "a source suggested", "people are saying" or "it's being said on social media" may be used only when genuine traceable source material exists in the research pack and the wording accurately reflects it.
+- When research.future_tests is present, use those items as future tests/questions or follow-up hooks, not as reasons to declare the article unverifiable.
+- When research.optional_missing is present, omit those details unless independently supported.
 - One primary CTA only. The CTA should match the reader's next natural action. It may be engagement, list-building, a lead magnet, a Resident Expert, a Featured Partner, a booking, an offer, a directory/resource, a community action or another genuinely useful next step; do not manufacture a weak button just because a field exists.
 - Raw clean destination URLs only.
 - Short paragraphs suitable for a narrow article page.
@@ -408,7 +437,7 @@ STYLE, AUDIENCE AND SAFETY
 - For contested subjects, do not force false certainty. A credible practical, challenge, contrarian or debate angle is allowed when it is supported and clearly distinguished from fact.
 ${useEvidence?`- Use ONLY material claims supported by the research pack below.
 - Some sources are fast discovery snippets rather than full documents. Never infer a precise figure, condition, quote or legal conclusion that is not explicitly present in the supplied evidence. When evidence is thin, write cautiously and surface what still needs checking.
-- CRITICAL EVIDENCE LANGUAGE: absence of evidence in this research pack is not evidence that a proposal failed a test. Never write "the answer is no", "has not been proved", "has not been provided", or equivalent merely because the pack lacks documents. Say "the evidence currently available to Spotlight is not enough to establish that", "we have not yet verified that", or similarly precise wording.
+- CRITICAL EVIDENCE LANGUAGE: absence of evidence is not evidence that a proposal failed a test. Never write "the answer is no" merely because a document is absent. First distinguish REQUIRED_NOW evidence from a FUTURE_TEST. If an outcome cannot yet exist, frame it as the question the article will follow rather than repeatedly telling readers that Spotlight lacks evidence.
 - If an optional or non-essential detail in the brief could not be verified, OMIT that detail from the article rather than forcing it into the copy.
 - A missing optional detail does NOT by itself require QA Fix Required.
 - Mark QA Fix Required only when evidence needed to answer the CORE QUESTION is missing, or when the drafted article still contains a material claim that is not adequately supported.
@@ -471,8 +500,13 @@ function evidenceGate(fields,cls,research){
   if(cls==='A — Question Only')return {pass:true,reasons:[]};
   const sources=Array.isArray(research?.sources)?research.sources:[];
   const reasons=[];
+  const requiredNow=Array.isArray(research?.required_now_missing)?research.required_now_missing.filter(Boolean):[];
   if(research?.research_status!=='Sufficient')reasons.push('Research stage reported insufficient evidence.');
-  if(cls==='C — Evidence Heavy'&&sources.length<2)reasons.push('Evidence-heavy article requires at least two relevant sources.');
+  if(requiredNow.length)reasons.push(...requiredNow.map(x=>`Required-now evidence missing: ${x}`));
+  // Evidence-heavy does not mean arbitrary source-count padding. One strong primary source plus
+  // corroborating evidence may be enough when the remaining unknowns are future tests.
+  const primaryCount=sources.filter(x=>/official|primary/i.test(String(x.source_type||''))||/\.gov\.uk|gov\.uk|nhs\.uk|police\.uk/i.test(String(x.url||''))).length;
+  if(cls==='C — Evidence Heavy'&&sources.length<2&&primaryCount<1)reasons.push('Evidence-heavy article requires stronger article-specific evidence.');
   const blob=[value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Local Proof Needed'),value(fields,'Evidence Required')].join(' ').toLowerCase();
   const srcBlob=sources.map(s=>[s.title,s.url,s.supports,s.source_type].join(' ')).join(' ').toLowerCase();
   if(blob.includes('peterborough')&&!/(peterborough|peterborough\.gov\.uk|cambridgeshire|anglianwater)/.test(srcBlob))reasons.push('No Peterborough-specific or directly relevant regional source was returned.');
@@ -527,7 +561,7 @@ export default async(request)=>{
     const reusableResearch=(savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedResearch:null;
     const reusableWriter=(savedWriter?.brief_key===key&&savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedWriter:null;
     const runningStage=reusableWriter?'Finalising from writer checkpoint':reusableResearch?'Resuming at writer':'Researching and writing';
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.18`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const runningBlock=[`MASTER ARTICLE RUNNING v2.19`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
@@ -683,7 +717,7 @@ export default async(request)=>{
         .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'')
         .trim();
       const serviceNotes=[
-        `PRODUCTION SERVICE v2.18`,
+        `PRODUCTION SERVICE v2.19`,
         `Run ID: ${runId}`,
         `Class: ${cls}`,
         `Outcome: ${outcomeNow.code}`,
@@ -771,7 +805,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.18`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.19`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
