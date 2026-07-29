@@ -35,7 +35,7 @@
 #smart-plan-list{font-size:1.04rem;line-height:1.45}
 #assembly-order{font-size:1.04rem;line-height:1.42}
 .canvas-panel .muted{line-height:1.4}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.61<br><strong>Separate Signals + 3×5 Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.62<br><strong>Separate Signals + 3×5 Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -44,7 +44,7 @@
 <button class="btn secondary" id="copy-issue-map" style="width:100%;margin-bottom:8px">Open production map</button>
 <button class="btn secondary" id="apply-editorial-plan" style="width:100%;margin-bottom:8px">Apply current editorial plan</button>
 <button class="btn" id="build-issue" style="width:100%;margin-bottom:8px">Build issue</button>
-<button class="btn secondary" id="repair-build-briefs" style="width:100%;margin-bottom:8px">Repair issue briefs</button>
+<button class="btn secondary" id="repair-build-briefs" style="width:100%;margin-bottom:8px">Repair issue briefs</button> <button class="btn secondary" id="reconcile-smart-queue" style="width:100%;margin-bottom:8px">Reconcile Approved Queue</button>
 <button class="btn secondary" id="test-openai" style="width:100%;margin-bottom:8px">Test OpenAI connection</button>
 <button class="btn" id="run-production" style="width:100%;margin-bottom:8px">Produce all ready Master Articles</button>
 <button class="btn secondary" id="run-next-production" style="width:100%;margin-bottom:8px">Produce selected Master Article</button>
@@ -285,10 +285,72 @@ async function repairBuildBriefs(){
  }catch(err){alert('Norfolk brief repair error: '+err.message);E('save-state').textContent='Brief repair failed.'}
 }
 function productionClassForFields(f){return buildProfile(f).cls}
+
+function isSupersededSmartBrief(sec){
+  return /SUPERSEDED BY LOCKED SMART PLAN/.test(String(val(sec?.fields||{},'Notes')||''));
+}
+function activeIssueSections(){
+  return (S.sections||[]).filter(s=>!isSupersededSmartBrief(s));
+}
+function activeOrderDiagnostic(){
+  const rows=activeIssueSections();
+  const orders=rows.map(sectionOrderValue).filter(n=>n<999999);
+  const duplicates=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
+  const expected=[...Array(15)].map((_,i)=>i+1);
+  const missing=expected.filter(n=>!orders.includes(n));
+  return {rows,orders,duplicates,missing};
+}
+async function reconcileApprovedSmartQueue({quiet=false}={}){
+  if(!S.issue)throw new Error('Open an issue first.');
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length||!smartPlanLocked(plan))throw new Error('Lock the approved Smart Issue Plan first.');
+  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=r.records||[];
+  const approved=new Map((plan.articles||[]).map(a=>[Number(a.order),String(a.title||'').trim().toLowerCase()]));
+  let active=0,superseded=0,changed=0;
+  for(const sec of S.sections){
+    const f=sec.fields||{},order=Number(val(f,'Section Order')),title=String(val(f,'Section Title')||'').trim().toLowerCase();
+    if(!approved.has(order))continue;
+    const notes=String(val(f,'Notes')||'');
+    const isApproved=approved.get(order)===title;
+    if(isApproved){
+      active++;
+      const cleaned=notes.replace(/^SUPERSEDED BY LOCKED SMART PLAN[^\n]*\n?/gm,'').replace(/PUBLISH NOW — Final Running Order \d{2}\.\s*/g,'').trim();
+      const marker=`PUBLISH NOW — Final Running Order ${String(order).padStart(2,'0')}.`;
+      const next=`${marker}\n${cleaned}`.trim();
+      if(next!==notes){
+        const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next,'Section Order':order}})});
+        sec.fields=d.record.fields;changed++;
+      }
+    }else{
+      superseded++;
+      const cleaned=notes.replace(/PUBLISH NOW — Final Running Order \d{2}\.\s*/g,'').replace(/^SUPERSEDED BY LOCKED SMART PLAN[^\n]*\n?/gm,'').trim();
+      const next=`SUPERSEDED BY LOCKED SMART PLAN — former Article ${String(order).padStart(2,'0')}. Preserved in library/history; excluded from active issue production.\n${cleaned}`.trim();
+      if(next!==notes){
+        const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next}})});
+        sec.fields=d.record.fields;changed++;
+      }
+    }
+  }
+  sortSections();renderSections();renderForm();
+  const d=activeOrderDiagnostic();
+  const clean=d.duplicates.length===0&&d.missing.length===0&&active===15;
+  if(!quiet)alert(`Approved queue reconciled.\n${active} active approved briefs · ${superseded} superseded briefs preserved · ${changed} records updated.\n${clean?'Numbering clean ✓':`STOP — duplicates: ${d.duplicates.join(', ')||'none'} · missing: ${d.missing.join(', ')||'none'}`}`);
+  return {active,superseded,changed,clean,duplicates:d.duplicates,missing:d.missing};
+}
 async function productionSections(){
  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
  S.sections=r.records||[];
- return S.sections.filter(s=>/PUBLISH NOW — Final Running Order \d{2}\./.test(String(val(s.fields,'Notes')||''))).map(s=>{const m=String(val(s.fields,'Notes')||'').match(/Final Running Order (\d{2})/);return{s,run:m?Number(m[1]):999}}).sort((a,b)=>a.run-b.run)
+ const plan=getSmartPlan();
+ if(plan?.articles?.length&&smartPlanLocked(plan)){
+   const approved=new Map(plan.articles.map(a=>[Number(a.order),String(a.title||'').trim().toLowerCase()]));
+   const active=S.sections.filter(s=>!isSupersededSmartBrief(s)&&approved.get(Number(val(s.fields,'Section Order')))===String(val(s.fields,'Section Title')||'').trim().toLowerCase());
+   const orders=active.map(s=>Number(val(s.fields,'Section Order')));
+   const dup=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
+   const missing=[...Array(15)].map((_,i)=>i+1).filter(n=>!orders.includes(n));
+   if(active.length!==15||dup.length||missing.length)throw new Error(`PRODUCTION STOP GATE — approved queue is not clean. Active ${active.length}/15 · duplicate order ${dup.join(', ')||'none'} · missing ${missing.join(', ')||'none'}. Click Reconcile Approved Queue first.`);
+   return active.map(s=>({s,run:Number(val(s.fields,'Section Order'))})).sort((a,b)=>a.run-b.run);
+ }
+ return S.sections.filter(s=>!isSupersededSmartBrief(s)&&/PUBLISH NOW — Final Running Order \d{2}\./.test(String(val(s.fields,'Notes')||''))).map(s=>{const m=String(val(s.fields,'Notes')||'').match(/Final Running Order (\d{2})/);return{s,run:m?Number(m[1]):999}}).sort((a,b)=>a.run-b.run)
 }
 function productionDone(s){return val(s.fields,'Section Status')==='Ready'&&val(s.fields,'Section Final Copy')&&['Pass'].includes(val(s.fields,'Section QA Result'))}
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
@@ -717,10 +779,10 @@ function filteredSections(){const mode=E('library-filter')?.value||'all';if(mode
 function previewArticleFromCard(id,event){event?.stopPropagation?.();selectSection(id);E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()}
 function renderSections(){
   sortSections();
-  const produced=S.sections.filter(isProducedArticle).length,queue=S.sections.length-produced,warnings=S.sections.filter(s=>qaFlags(s).length).length;
+  const activeRows=activeIssueSections(),produced=activeRows.filter(isProducedArticle).length,queue=activeRows.length-produced,warnings=activeRows.filter(s=>qaFlags(s).length).length;
   E('library-summary').innerHTML=`<div><strong>${produced}</strong><span>Produced</span></div><div><strong>${queue}</strong><span>Queue</span></div><div><strong>${warnings}</strong><span>Warnings</span></div>`;
-  const rows=filteredSections();
-  const diagnostic=S.sections.length?`<div class="muted" style="padding:4px 2px 10px">${esc(sectionOrderDiagnostic())}</div>`:'';
+  const rows=filteredSections().filter(s=>!isSupersededSmartBrief(s));
+  const ad=activeOrderDiagnostic();const diagnostic=activeRows.length?`<div class="muted" style="padding:4px 2px 10px">${activeRows.length} active records${ad.duplicates.length?` · duplicate order: ${ad.duplicates.join(', ')}`:''}${ad.missing.length?` · missing order: ${ad.missing.join(', ')}`:' · numbering clean ✓'}</div>`:'';
   E('section-list').innerHTML=diagnostic+(rows.length?rows.map((s,n)=>{
     const flags=qaFlags(s),state=masterArticleState(s),isComplete=state==='complete',isReview=state==='review',isRunning=state==='running',isFailed=state==='failed';
     const stateText=isComplete?'MASTER ARTICLE COMPLETE ✓':isReview?'MASTER ARTICLE — NEEDS REVIEW':isRunning?'PRODUCING…':isFailed?'MASTER ARTICLE FAILED':'IN PRODUCTION QUEUE';
@@ -1412,8 +1474,9 @@ async function applySmartPlanToBuild(){
       else{const d=await api('sections',{method:'POST',body:JSON.stringify({fields})});S.sections.push(d.record);created++;}
     }
     const idata=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Issue Status':'BUILDING','Main Theme':plan.issuePromise||E('assembly-theme').value}})});S.issue=idata.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);
+    const rec=await reconcileApprovedSmartQueue({quiet:true});
     sortSections();renderSections();renderForm();render();show('build');
-    alert(`Smart plan applied: ${created} briefs created · ${updated} updated · ${plan.counts?.REUSE||0} existing articles reserved for reuse. Produce the missing Master Articles, then return to Canvas and click Assemble Approved Plan.`);
+    alert(`Smart plan applied: ${created} briefs created · ${updated} updated · ${plan.counts?.REUSE||0} existing articles reserved for reuse. Queue reconciled: ${rec.active} active · ${rec.superseded} superseded preserved · ${rec.clean?'numbering clean ✓':'STOP GATE — queue needs review'}. Produce the missing Master Articles only when numbering is clean.`);
   }catch(e){alert('Could not apply Smart Plan: '+e.message)}
   finally{btn.disabled=false;btn.textContent=old}
 }
@@ -2023,6 +2086,7 @@ E('assembly-order').ondrop=e=>dropOnCanvas(e);
 E('assembly-clear').onclick=()=>{if(confirm('Clear the entire issue canvas?')){canvasSelectedUid=null;saveCanvas([])}};
 E('assembly-auto').onclick=collectSmartSignals;E('assembly-build-plan').onclick=buildSmartPlanFromSavedSignals;E('assembly-smart-assemble').onclick=smartAssembleIssue;document.addEventListener('click',e=>{if(e.target?.id==='copy-smart-audit')copyIssueBalanceAudit()});
 document.addEventListener('click',e=>{if(e.target?.id==='copy-commercial-completion')copyCommercialCompletion()});
+E('reconcile-smart-queue')?.addEventListener('click',()=>reconcileApprovedSmartQueue().catch(e=>alert('Could not reconcile queue: '+e.message)));
 E('smart-commercial-completion')?.addEventListener('click',()=>{
   const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the 15-article plan first.');return}
   renderCommercialCompletionPanel(plan);
