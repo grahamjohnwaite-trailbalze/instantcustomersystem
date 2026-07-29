@@ -1,0 +1,16 @@
+ICS Issue Canvas v3.4.61 — Real Canvas Audit + Operator UX
+
+Built directly from v3.4.60.
+
+Fix:
+- 30-Block Balance now reads the REAL saved Issue Canvas via getCanvas(), rather than an unused state property.
+- Reports actual Master Articles, supporting components, dedicated partner blocks and total blocks.
+- Uses 28–32 as the normal total-block operating range, with 30 as the ideal centre.
+
+Operator usability:
+- 30-Block Balance now renders on-page instead of an uncopyable alert.
+- Adds Copy 30-Block Audit.
+- Modestly increases Smart Plan and Canvas readability.
+- Keeps internal commercial labels out of reader-facing article copy.
+
+No changes to source alignment, refresh gate, duplication protection, safe replacement, article production or Airtable handoff.
