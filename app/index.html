@@ -35,7 +35,7 @@
 #smart-plan-list{font-size:1.04rem;line-height:1.45}
 #assembly-order{font-size:1.04rem;line-height:1.42}
 .canvas-panel .muted{line-height:1.4}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.64<br><strong>Separate Signals + 3×5 Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.65<br><strong>Separate Signals + 3×5 Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -290,7 +290,20 @@ function isSupersededSmartBrief(sec){
   return /SUPERSEDED BY LOCKED SMART PLAN/.test(String(val(sec?.fields||{},'Notes')||''));
 }
 function activeIssueSections(){
-  return (S.sections||[]).filter(s=>!isSupersededSmartBrief(s));
+  const rows=(S.sections||[]).filter(s=>!isSupersededSmartBrief(s));
+  const plan=getSmartPlan();
+  if(plan?.articles?.length&&smartPlanLocked(plan)){
+    const identified=rows.filter(approvedPlanIdentity);
+    if(identified.length)return identified;
+  }
+  return rows;
+}
+
+function approvedPlanIdentity(s){
+  const f=s?.fields||{},order=Number(val(f,'Section Order')),notes=String(val(f,'Notes')||'');
+  const m=notes.match(/PUBLISH NOW — Final Running Order (\d{2})\./);
+  const marker=m?Number(m[1]):NaN;
+  return Number.isInteger(order)&&order>=1&&order<=15&&marker===order&&!isSupersededSmartBrief(s);
 }
 function activeOrderDiagnostic(){
   const rows=activeIssueSections();
@@ -307,50 +320,58 @@ async function reconcileApprovedSmartQueue({quiet=false}={}){
   const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=r.records||[];
   const approved=new Map((plan.articles||[]).map(a=>[Number(a.order),String(a.title||'').trim().toLowerCase()]));
   let active=0,superseded=0,changed=0;
-  for(const sec of S.sections){
-    const f=sec.fields||{},order=Number(val(f,'Section Order')),title=String(val(f,'Section Title')||'').trim().toLowerCase();
-    if(!approved.has(order))continue;
-    const notes=String(val(f,'Notes')||'');
-    const isApproved=approved.get(order)===title;
-    if(isApproved){
-      active++;
-      const cleaned=notes.replace(/^SUPERSEDED BY LOCKED SMART PLAN[^\n]*\n?/gm,'').replace(/PUBLISH NOW — Final Running Order \d{2}\.\s*/g,'').trim();
-      const marker=`PUBLISH NOW — Final Running Order ${String(order).padStart(2,'0')}.`;
-      const next=`${marker}\n${cleaned}`.trim();
-      if(next!==notes){
-        const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next,'Section Order':order}})});
-        sec.fields=d.record.fields;changed++;
-      }
-    }else{
-      superseded++;
-      const cleaned=notes.replace(/PUBLISH NOW — Final Running Order \d{2}\.\s*/g,'').replace(/^SUPERSEDED BY LOCKED SMART PLAN[^\n]*\n?/gm,'').trim();
-      const next=`SUPERSEDED BY LOCKED SMART PLAN — former Article ${String(order).padStart(2,'0')}. Preserved in library/history; excluded from active issue production.\n${cleaned}`.trim();
-      if(next!==notes){
-        const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next}})});
-        sec.fields=d.record.fields;changed++;
+  for(const order of [...approved.keys()].sort((a,b)=>a-b)){
+    const candidates=S.sections.filter(sec=>Number(val(sec.fields||{},'Section Order'))===order);
+    if(!candidates.length)continue;
+    // Stable identity wins. If none exists yet, use the original locked-plan title.
+    let keeper=candidates.find(approvedPlanIdentity);
+    if(!keeper)keeper=candidates.find(sec=>String(val(sec.fields||{},'Section Title')||'').trim().toLowerCase()===approved.get(order));
+    if(!keeper)continue;
+    for(const sec of candidates){
+      const f=sec.fields||{},notes=String(val(f,'Notes')||'');
+      if(sec.id===keeper.id){
+        active++;
+        const cleaned=notes.replace(/^SUPERSEDED BY LOCKED SMART PLAN[^\n]*\n?/gm,'').replace(/PUBLISH NOW — Final Running Order \d{2}\.\s*/g,'').trim();
+        const marker=`PUBLISH NOW — Final Running Order ${String(order).padStart(2,'0')}.`;
+        const next=`${marker}\n${cleaned}`.trim();
+        if(next!==notes){
+          const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next,'Section Order':order}})});
+          sec.fields=d.record.fields;changed++;
+        }
+      }else{
+        superseded++;
+        const cleaned=notes.replace(/PUBLISH NOW — Final Running Order \d{2}\.\s*/g,'').replace(/^SUPERSEDED BY LOCKED SMART PLAN[^\n]*\n?/gm,'').trim();
+        const next=`SUPERSEDED BY LOCKED SMART PLAN — former Article ${String(order).padStart(2,'0')}. Preserved in library/history; excluded from active issue production.\n${cleaned}`.trim();
+        if(next!==notes){
+          const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next}})});
+          sec.fields=d.record.fields;changed++;
+        }
       }
     }
   }
   sortSections();renderSections();renderForm();
-  const d=activeOrderDiagnostic();
-  const clean=d.duplicates.length===0&&d.missing.length===0&&active===15;
-  if(!quiet)alert(`Approved queue reconciled.\n${active} active approved briefs · ${superseded} superseded briefs preserved · ${changed} records updated.\n${clean?'Numbering clean ✓':`STOP — duplicates: ${d.duplicates.join(', ')||'none'} · missing: ${d.missing.join(', ')||'none'}`}`);
-  return {active,superseded,changed,clean,duplicates:d.duplicates,missing:d.missing};
+  const activeRows=S.sections.filter(approvedPlanIdentity);
+  const orders=activeRows.map(s=>Number(val(s.fields,'Section Order')));
+  const duplicates=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
+  const missing=[...Array(plan.articles.length)].map((_,i)=>i+1).filter(n=>!orders.includes(n));
+  const clean=activeRows.length===plan.articles.length&&!duplicates.length&&!missing.length;
+  if(!quiet)alert(`Approved queue reconciled.\n${activeRows.length} active approved briefs · ${superseded} superseded briefs preserved · ${changed} records updated.\n${clean?'Stable identity clean ✓':`STOP — duplicates: ${duplicates.join(', ')||'none'} · missing: ${missing.join(', ')||'none'}`}`);
+  return {active:activeRows.length,superseded,changed,clean,duplicates,missing};
 }
 async function productionSections(){
  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
  S.sections=r.records||[];
  const plan=getSmartPlan();
  if(plan?.articles?.length&&smartPlanLocked(plan)){
-   const approved=new Map(plan.articles.map(a=>[Number(a.order),String(a.title||'').trim().toLowerCase()]));
-   const active=S.sections.filter(s=>!isSupersededSmartBrief(s)&&approved.get(Number(val(s.fields,'Section Order')))===String(val(s.fields,'Section Title')||'').trim().toLowerCase());
+   const active=S.sections.filter(approvedPlanIdentity);
    const orders=active.map(s=>Number(val(s.fields,'Section Order')));
    const dup=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
-   const missing=[...Array(15)].map((_,i)=>i+1).filter(n=>!orders.includes(n));
-   if(active.length!==15||dup.length||missing.length)throw new Error(`PRODUCTION STOP GATE — approved queue is not clean. Active ${active.length}/15 · duplicate order ${dup.join(', ')||'none'} · missing ${missing.join(', ')||'none'}. Click Reconcile Approved Queue first.`);
+   const expected=[...Array(plan.articles.length)].map((_,i)=>i+1);
+   const missing=expected.filter(n=>!orders.includes(n));
+   if(active.length!==plan.articles.length||dup.length||missing.length)throw new Error(`PRODUCTION STOP GATE — approved queue identity is not clean. Active ${active.length}/${plan.articles.length} · duplicate order ${dup.join(', ')||'none'} · missing ${missing.join(', ')||'none'}. Reconcile Approved Queue only if the running-order markers themselves are missing.`);
    return active.map(s=>({s,run:Number(val(s.fields,'Section Order'))})).sort((a,b)=>a.run-b.run);
  }
- return S.sections.filter(s=>!isSupersededSmartBrief(s)&&/PUBLISH NOW — Final Running Order \d{2}\./.test(String(val(s.fields,'Notes')||''))).map(s=>{const m=String(val(s.fields,'Notes')||'').match(/Final Running Order (\d{2})/);return{s,run:m?Number(m[1]):999}}).sort((a,b)=>a.run-b.run)
+ return S.sections.filter(s=>approvedPlanIdentity(s)).map(s=>({s,run:Number(val(s.fields,'Section Order'))})).sort((a,b)=>a.run-b.run)
 }
 function productionDone(s){return val(s.fields,'Section Status')==='Ready'&&val(s.fields,'Section Final Copy')&&['Pass'].includes(val(s.fields,'Section QA Result'))}
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
