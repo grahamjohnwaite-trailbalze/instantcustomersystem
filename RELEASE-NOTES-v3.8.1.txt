@@ -1,0 +1,27 @@
+ISSUE CANVAS v3.8.1 — COMPONENT FOUNDATION
+
+Purpose
+- Make Component the working object throughout the Issue Canvas without disrupting v3.7.1 research, evidence, planning or production.
+
+Changes
+- Renamed visible Block terminology to Component in the Canvas inspector and controls.
+- Component Type is now editable from the inspector.
+- Changing Component Type automatically applies the appropriate Production Template and default Production Points.
+- Master Article remains available as a component type and keeps its full production requirements.
+- Existing saved Canvas records are normalised on load for backwards compatibility.
+- Planner summary now distinguishes Master Articles from Other Components.
+- Existing partner attachment, Life Lane, content status and production status fields remain intact.
+
+Controlled test
+1. Open an existing Norfolk issue and confirm all saved work remains.
+2. Select an existing Master Article and confirm its type is MASTER ARTICLE.
+3. Add a Reader Poll, Quick Quiz and Partner Tip.
+4. Change one component type and confirm its production template and points update.
+5. Save, reload and confirm ordering, statuses and partner information persist.
+6. Confirm an approved component with missing production assets is not counted as Letterman-ready.
+
+Not included yet
+- Archive import.
+- Publication-aware partner eligibility.
+- Automated Letterman publishing.
+- Performance analytics.
