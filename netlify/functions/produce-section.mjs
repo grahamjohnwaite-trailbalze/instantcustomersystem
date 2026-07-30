@@ -6,7 +6,7 @@ const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=45000;
-const RELEASE_VERSION='3.6.4';
+const RELEASE_VERSION='3.7.0';
 function withTimeout(promise,timeoutMs,label){
   let timer;
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
@@ -535,6 +535,21 @@ STYLE, AUDIENCE AND SAFETY
 - Length is earned by the question: normally 250-600 words, with roughly 350-500 as the sweet spot. Go beyond 600 only when the reader genuinely needs the extra detail; a 1,000+ word cornerstone piece should be exceptional, not the default. Cut repetition rather than padding to a target.
 - SPOTLIGHT VOICE: keep personality, humour and an Unfiltered edge where the subject earns it. Do not manufacture outrage or clickbait, but do challenge lazy assumptions and bland official framing when evidence supports a sharper question.
 - For contested subjects, do not force false certainty. A credible practical, challenge, contrarian or debate angle is allowed when it is supported and clearly distinguished from fact.
+
+EDITORIAL BRAIN — PLAN THE HUMAN STORY BEFORE WRITING
+- Facts are the foundation, not the finished article. Use the verified facts to create truthful curiosity, relevance, opinion and discussion.
+- The reader should feel invited into the story, not lectured, processed or handed a pile of facts.
+- Before drafting, silently decide: WHO CARES, WHY NOW, HUMAN EMOTION, MAIN TENSION, LOCAL RELEVANCE, PRACTICAL PAYOFF, SHARE REASON and CONVERSATION STARTER.
+- Start from the human moment, frustration, hope, surprise, decision or everyday consequence — not from the category, institution or press-release wording.
+- Make the opening create an honest "I want to know more" response within the first 2-3 short paragraphs.
+- Apply the FRIEND TEST: is there a clear reason a reader would send this to a friend, partner, neighbour or colleague? Make that reason visible in the copy without saying "share this".
+- Apply the LET-THEM-IN TEST: include the unresolved part, fair editorial observation or recognisable local experience that gives readers room to agree, disagree or add knowledge.
+- Spotlight may form and express fair editorial opinions from supported facts. Clearly signal opinion with natural wording such as "That sounds promising, but...", "The fair test is...", "Drivers would be entitled to ask..." or equivalent. Do not present opinion as verified fact.
+- Do not manufacture controversy. Select the fitting emotional treatment: curiosity, warmth, humour, pride, reassurance, frustration, scepticism, surprise or urgency.
+- Do not repeatedly tell readers that evidence is missing. Explain the verified position once, then use the uncertainty to sharpen the real question, the practical test or what should happen next.
+- Use a specific, answerable discussion prompt. Avoid generic endings such as "What do you think?".
+- The final paragraph should open the door: invite a location, experience, recommendation, example, disagreement or useful local tip that can improve a follow-up story.
+- Every paragraph must earn its place by doing at least one job: hook, explain, localise, interpret, help, surprise or invite.
 ${useEvidence?`- Use ONLY material claims supported by the research pack below.
 - Some sources are fast discovery snippets rather than full documents. Never infer a precise figure, condition, quote or legal conclusion that is not explicitly present in the supplied evidence. When evidence is thin, write cautiously and surface what still needs checking.
 - CRITICAL EVIDENCE LANGUAGE: absence of evidence is not evidence that a proposal failed a test. Never write "the answer is no" merely because a document is absent. First distinguish REQUIRED_NOW evidence from a FUTURE_TEST. If an outcome cannot yet exist, frame it as the question the article will follow rather than repeatedly telling readers that Spotlight lacks evidence.
@@ -567,6 +582,26 @@ Return ONLY valid JSON in this exact shape:
  "article_subhead":"",
  "article_body":"full article body without duplicated title or markdown citations",
  "editorial_stance":"PRACTICAL|NEUTRAL|CHALLENGE|CONTRARIAN|DEBATE|UNFILTERED",
+ "editorial_strategy":{
+   "who_cares":"specific reader group",
+   "reader_emotion":"dominant human emotion",
+   "main_tension":"truthful tension or unresolved question",
+   "why_read":"clear reason to keep reading",
+   "share_reason":"why a reader may send it to someone",
+   "local_relevance":"how it feels rooted in this publication area",
+   "practical_payoff":"what the reader gains",
+   "conversation_starter":"specific answerable prompt",
+   "avoid":"main editorial trap to avoid"
+ },
+ "quality_scores":{
+   "stop_scroll":0,
+   "human_readability":0,
+   "friend_test":0,
+   "local_identity":0,
+   "conversation":0,
+   "practical_value":0,
+   "evidence_discipline":0
+ },
  "related_questions":["distinct follow-up question to bank, not answered in this article"],
  "summary_title":"short title for Letterman article summary",
  "summary_subhead":"one sentence",
@@ -588,6 +623,11 @@ Return ONLY valid JSON in this exact shape:
  "qa_result":"Pass or Fix Required",
  "exception":"blank when Pass"
 }
+QUALITY SCORING
+- Score each quality field from 1-10 after drafting. Be demanding, not flattering.
+- If human_readability, friend_test, conversation or evidence_discipline is below 7, revise the article before returning the JSON.
+- Scores are editorial diagnostics, not claims to the reader.
+
 QA DECISION
 - Pass: the core reader question is answered with adequate support, and unsupported peripheral details have been omitted.
 - Fix Required: a material claim used in the article is unsupported, or evidence essential to the core answer is missing.
@@ -620,7 +660,10 @@ function packageBlock(result,sources,model){
   const payload={
     version:'MASTER_ARTICLE_V1',model_used:model||'',
     article_subhead:String(result.article_subhead||'').trim(),
-    editorial_stance:String(result.editorial_stance||'').trim(),related_questions:Array.isArray(result.related_questions)?result.related_questions.map(x=>String(x||'').trim()).filter(Boolean).slice(0,12):[],
+    editorial_stance:String(result.editorial_stance||'').trim(),
+    editorial_strategy:(result.editorial_strategy&&typeof result.editorial_strategy==='object')?result.editorial_strategy:{},
+    quality_scores:(result.quality_scores&&typeof result.quality_scores==='object')?result.quality_scores:{},
+    related_questions:Array.isArray(result.related_questions)?result.related_questions.map(x=>String(x||'').trim()).filter(Boolean).slice(0,12):[],
     summary_title:String(result.summary_title||'').trim(),summary_subhead:String(result.summary_subhead||'').trim(),summary_content:String(result.summary_content||'').trim(),
     seo_title:String(result.seo_title||'').trim(),seo_description:String(result.seo_description||'').trim(),url_path:String(result.url_path||'').trim().replace(/^\/+/,''),keywords:String(result.keywords||'').trim(),
     featured_image_brief:String(result.featured_image_brief||'').trim(),featured_image_alt:String(result.featured_image_alt||'').trim(),
@@ -818,7 +861,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.6.4`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.7.0`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -964,7 +1007,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.6.4`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.0`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -1003,7 +1046,7 @@ export default async(request)=>{
         const current=lookup.records?.[0];
         if(current){
           const notes=stripRuntimeBlocks(current.fields?.Notes||'');
-          const failed=[`MASTER ARTICLE FAILED v3.6.4`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          const failed=[`MASTER ARTICLE FAILED v3.7.0`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await withTimeout(
             airtableRequest(TABLES.sections,{
               method:'PATCH',

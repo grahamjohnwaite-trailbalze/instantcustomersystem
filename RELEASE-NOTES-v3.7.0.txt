@@ -1,0 +1,24 @@
+ISSUE CANVAS v3.7.0 — EDITORIAL BRAIN v1
+
+PURPOSE
+Turn locked research into human, engaging Spotlight articles without weakening factual discipline.
+
+ADDED
+- Editorial Brain planning inside the writer prompt.
+- Human-story decisions before drafting: reader, emotion, tension, local relevance, practical payoff, share reason and conversation starter.
+- Friend Test and Let-Them-In Test.
+- Clear permission for fair editorial opinion when distinguished from fact.
+- Stronger opening and specific discussion-ending rules.
+- Editorial Strategy Card stored in the Master Article Package.
+- Seven quality scores: stop-scroll, human readability, friend test, local identity, conversation, practical value and evidence discipline.
+- Mandatory rewrite when key scores fall below 7.
+
+UNCHANGED
+- Two-stage Research then Generate workflow.
+- Locked Research Pack.
+- Evidence classifier and attribution rules.
+- Completion detection.
+- Airtable workflow and fields.
+
+TEST
+Use the existing Norfolk pothole Research Pack. Do not rerun research. Generate the Master Article and compare the opening, human tone, editorial observation, shareability and final reader invitation with v3.6.4.
