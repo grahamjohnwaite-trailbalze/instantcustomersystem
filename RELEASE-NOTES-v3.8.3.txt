@@ -1,0 +1,28 @@
+ICS Issue Canvas v3.8.3 — Guided Article Workflow
+
+Purpose
+Make the existing Research → Verification → Master Article → Letterman process obvious without changing the production engine or Airtable schema.
+
+Changes
+- Added a Current Article Workflow panel in Build Issue.
+- Shows four clear stages: Research, Verify evidence, Write article, Preview package.
+- Shows the exact next required action for the selected article.
+- Added View research, Open source and Mark evidence verified controls.
+- Mark evidence verified fills Evidence Status and Evidence Checked Date, then requires Save section.
+- Renamed production buttons for clarity:
+  • Research current article
+  • Write current Master Article
+  • Preview Letterman package
+  • Write all approved articles
+- Updated visible version to v3.8.3.
+
+Safety
+- No Airtable schema changes.
+- No Netlify function changes.
+- No changes to research, article generation or Letterman package logic.
+- Existing Issue Canvas v3.8.2 component, partner and drag/drop changes are retained.
+
+Deploy to main
+Upload only:
+- app/index.html
+- RELEASE-NOTES-v3.8.3.txt
