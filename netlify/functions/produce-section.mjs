@@ -368,6 +368,58 @@ async function recoverEvidencePack(fields,cls,firstPass,model){
     recovery_model:response._model_used||model||''
   };
 }
+function diagnosticResearchId(research){
+  const sources=(research?.sources||[]).map(x=>[
+    String(x?.title||'').trim(),
+    String(x?.url||'').trim(),
+    String(x?.supports||'').trim(),
+    String(x?.source_type||'').trim()
+  ]).sort((a,b)=>a[1].localeCompare(b[1]));
+  const payload=JSON.stringify({
+    research_status:String(research?.research_status||''),
+    research_summary:String(research?.research_summary||''),
+    resolved_subject:research?.resolved_subject||{},
+    required_now_missing:research?.required_now_missing||[],
+    future_tests:research?.future_tests||[],
+    optional_missing:research?.optional_missing||[],
+    missing_evidence:research?.missing_evidence||[],
+    sources
+  });
+  let hash=2166136261;
+  for(let i=0;i<payload.length;i++){
+    hash^=payload.charCodeAt(i);
+    hash=Math.imul(hash,16777619);
+  }
+  return ('00000000'+(hash>>>0).toString(16)).slice(-8).toUpperCase();
+}
+function diagnosticRow(stage,research,extra={}){
+  const sources=Array.isArray(research?.sources)?research.sources:[];
+  const resolved=research?.resolved_subject||{};
+  const primary=sources.filter(x=>/official|primary/i.test(String(x?.source_type||''))||/\.gov\.uk|gov\.uk|nhs\.uk|police\.uk|norfolk\.gov\.uk/i.test(String(x?.url||''))).length;
+  return {
+    stage,
+    pack_id:diagnosticResearchId(research),
+    source_count:sources.length,
+    primary_count:primary,
+    research_status:String(research?.research_status||''),
+    resolved_subject:String(resolved?.name||''),
+    responsible_body:String(resolved?.responsible_body||''),
+    required_count:Array.isArray(research?.required_now_missing)?research.required_now_missing.length:0,
+    future_count:Array.isArray(research?.future_tests)?research.future_tests.length:0,
+    optional_count:Array.isArray(research?.optional_missing)?research.optional_missing.length:0,
+    checkpoint:String(extra.checkpoint||'n/a'),
+    elapsed_ms:Number(extra.elapsed_ms||0)
+  };
+}
+function diagnosticText(runId,rows){
+  return [
+    'MASTER ARTICLE DIAGNOSTIC v1',
+    `Run ID: ${runId}`,
+    ...rows.map(r=>`${r.stage} | Pack ${r.pack_id} | Sources ${r.source_count} | Primary ${r.primary_count} | Status ${r.research_status} | Subject ${r.resolved_subject||'-'} | Body ${r.responsible_body||'-'} | Required ${r.required_count} | Future ${r.future_count} | Optional ${r.optional_count} | Checkpoint ${r.checkpoint} | Elapsed ${r.elapsed_ms}ms`),
+    'END MASTER ARTICLE DIAGNOSTIC'
+  ].join('\n');
+}
+
 function classifyEvidenceTiming(research){
   const raw=[
     ...(research?.required_now_missing||[]),
@@ -628,11 +680,12 @@ export default async(request)=>{
     const reusableResearch=(savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedResearch:null;
     const writerCandidate=(savedWriter?.brief_key===key)?savedWriter:null;
     const runningStage=reusableResearch?'Resuming with saved research':'Researching and writing';
-    const runningBlock=[`MASTER ARTICLE RUNNING v2.21`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const runningBlock=[`MASTER ARTICLE RUNNING v3.0`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
     const trace=[];
+    const diagnostics=[];
     const remaining=()=>Math.max(1000,TOTAL_BUDGET_MS-(Date.now()-started));
 
     const assertRunOwnership=async(label='Run ownership check')=>{
@@ -664,7 +717,8 @@ export default async(request)=>{
     const saveTrace=async()=>{
       await assertRunOwnership('Trace ownership check');
       const block=[`MASTER ARTICLE TRACE v1`,`Run ID: ${runId}`,...trace.slice(-12),`END MASTER ARTICLE TRACE`].join('\n');
-      const notes=originalNotes?`${originalNotes}\n\n${runningBlock}\n\n${block}`:`${runningBlock}\n\n${block}`;
+      const diag=diagnosticText(runId,diagnostics.slice(-16));
+      const notes=originalNotes?`${originalNotes}\n\n${runningBlock}\n\n${block}\n\n${diag}`:`${runningBlock}\n\n${block}\n\n${diag}`;
       await withTimeout(
         airtableRequest(TABLES.sections,{
           method:'PATCH',
@@ -691,6 +745,10 @@ export default async(request)=>{
       }
     };
     traceLine('Request accepted','DONE');
+    diagnostics.push(diagnosticRow('CHECKPOINT DECISION',savedResearch?.research||{sources:[]},{
+      checkpoint:writerCandidate?'writer candidate present':reusableResearch?'research reused':'none reused',
+      elapsed_ms:Date.now()-started
+    }));
     await saveTrace();
     let research={research_status:'Sufficient',research_summary:'Question-only article; no research required.',sources:[],missing_evidence:[]};
     let researchResponse=null;
@@ -699,6 +757,7 @@ export default async(request)=>{
       if(reusableResearch){
         research=reusableResearch.research;
         researchModel=reusableResearch.model||researchModel;
+        diagnostics.push(diagnosticRow('RESEARCH CHECKPOINT REUSED',research,{checkpoint:'reused',elapsed_ms:Date.now()-started}));
         traceLine('Research checkpoint reused','DONE',researchModel||'saved');
         await saveTrace();
         log('research_checkpoint_reused',{sourceCount:Array.isArray(research.sources)?research.sources.length:0});
@@ -708,6 +767,8 @@ export default async(request)=>{
         await saveTrace();
         log('research_started',{productionClass:cls,model:researchModel});
         research=await stage('Fast evidence collection',()=>fastEvidencePack(fields,cls),18000);
+        diagnostics.push(diagnosticRow('FAST RESEARCH COMPLETE',research,{checkpoint:'fresh',elapsed_ms:Date.now()-started}));
+        await saveTrace();
         log('research_completed',{model:researchModel,sourceCount:Array.isArray(research.sources)?research.sources.length:0});
         let gate=evidenceGate(fields,cls,research);
         if(!gate.pass){
@@ -721,6 +782,8 @@ export default async(request)=>{
           try{
             const recoveryModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
             research=await stage('Targeted web research recovery',()=>recoverEvidencePack(fields,cls,research,recoveryModel),RECOVERY_BUDGET_MS+3000);
+            diagnostics.push(diagnosticRow('RECOVERY COMPLETE',research,{checkpoint:'fresh',elapsed_ms:Date.now()-started}));
+            await saveTrace();
             gate=evidenceGate(fields,cls,research);
             if(!gate.pass){
               research.research_status='Insufficient';
@@ -745,6 +808,7 @@ export default async(request)=>{
               confidence:resolved.confidence||''
             });
           }catch(recoveryError){
+            diagnostics.push(diagnosticRow('RECOVERY FAILED — FALLBACK PACK',research,{checkpoint:String(recoveryError?.message||'failed').slice(0,90),elapsed_ms:Date.now()-started}));
             research.research_status='Insufficient';
             research.recovery_used=true;
             research.research_summary=[research.research_summary,`Entity-first recovery could not complete within the ${Math.round(RECOVERY_BUDGET_MS/1000)}-second budget: ${String(recoveryError?.message||recoveryError).slice(0,220)}`].filter(Boolean).join(' ');
@@ -785,7 +849,7 @@ export default async(request)=>{
         .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'')
         .trim();
       const serviceNotes=[
-        `PRODUCTION SERVICE v2.21`,
+        `PRODUCTION SERVICE v3.0`,
         `Run ID: ${runId}`,
         `Class: ${cls}`,
         `Outcome: ${outcomeNow.code}`,
@@ -828,6 +892,11 @@ export default async(request)=>{
 
     const activeResearchKey=researchKey(research);
     const reusableWriter=(writerCandidate?.research_key&&writerCandidate.research_key===activeResearchKey)?writerCandidate:null;
+    diagnostics.push(diagnosticRow('WRITER CHECKPOINT DECISION',research,{
+      checkpoint:reusableWriter?'reused':writerCandidate?'invalidated':'none',
+      elapsed_ms:Date.now()-started
+    }));
+    await saveTrace();
     if(writerCandidate&&!reusableWriter){
       traceLine('Writer checkpoint invalidated','DONE','research pack changed');
       await saveTrace();
@@ -836,6 +905,8 @@ export default async(request)=>{
     const writerModel=String(process.env.OPENAI_WRITER_MODEL||process.env.OPENAI_PRODUCTION_MODEL||reusableWriter?.model||'gpt-5.6-luna').trim();
     let writerRaw='',response={_model_used:writerModel};
     if(reusableWriter){
+      diagnostics.push(diagnosticRow('WRITER INPUT',research,{checkpoint:'writer reused',elapsed_ms:Date.now()-started}));
+      await saveTrace();
       writerRaw=String(reusableWriter.raw_output||'');
       response._model_used=reusableWriter.model||writerModel;
       traceLine('Writer checkpoint reused','DONE',response._model_used||'saved');
@@ -845,6 +916,8 @@ export default async(request)=>{
       traceLine('Writer model','DONE',writerModel||'auto-select');
       await saveTrace();
       log('openai_started',{productionClass:cls,useWeb:false,model:writerModel||'auto-select'});
+      diagnostics.push(diagnosticRow('WRITER INPUT',research,{checkpoint:'fresh writer',elapsed_ms:Date.now()-started}));
+      await saveTrace();
       response=await stage('Writer request',()=>createResponse({input:promptFor(fields,cls,research),useWeb:false,model:writerModel,timeoutMs:60000}),65000);
       writerRaw=outputText(response);
       log('openai_completed',{model:response._model_used||'',outputChars:writerRaw.length});
@@ -873,6 +946,8 @@ export default async(request)=>{
     const merged=[];
     for(const src of [...writerSources,...researchSources])if(src.url&&!merged.some(x=>x.url===src.url))merged.push(src);
     const sources=merged.slice(0,5);
+    diagnostics.push(diagnosticRow('FINAL QA INPUT',research,{checkpoint:'final',elapsed_ms:Date.now()-started}));
+    await saveTrace();
     const gate=evidenceGate(fields,cls,research);
     const editorialOutcome=evidenceOutcome(cls,research,gate);
     const qa=(result.qa_result==='Pass'&&editorialOutcome.code==='COMPLETE')?'Pass':'Fix Required';
@@ -883,7 +958,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.21`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.0`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
