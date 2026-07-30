@@ -1,0 +1,20 @@
+ICS Issue Canvas v3.4.70 — Research/Writer Wiring
+
+Exact fix for the stale Norfolk pothole article package.
+
+Root cause:
+- Recovery research found four current sources.
+- The production gate used that recovered research.
+- Writer reused an older saved checkpoint created from a zero-source pack because checkpoint reuse was matched only to article title/question.
+
+Fix:
+- Writer checkpoints are now bound to a deterministic fingerprint of the exact research pack.
+- Any legacy Writer checkpoint or checkpoint from different sources, resolved entity, timing buckets or evidence summary is invalidated.
+- Writer is then called again with the active recovered research object.
+- Final QA uses the same editorial evidence outcome as the pre-Writer gate rather than reverting to the raw gate.pass flag.
+- Only genuine required-now blockers are appended to the final exception/evidence summary.
+
+Acceptance test:
+- Re-run Norfolk Article 7 once.
+- Trace should show Writer checkpoint invalidated, then Writer request.
+- The new package must mention the resolved Norfolk County Council trial evidence and must not claim that zero sources were retained.
