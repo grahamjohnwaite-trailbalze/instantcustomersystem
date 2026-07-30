@@ -6,7 +6,7 @@ const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=45000;
-const RELEASE_VERSION='3.6.3';
+const RELEASE_VERSION='3.6.4';
 function withTimeout(promise,timeoutMs,label){
   let timer;
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
@@ -818,7 +818,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.6.3`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.6.4`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -964,7 +964,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.6.3`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.6.4`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -1003,7 +1003,7 @@ export default async(request)=>{
         const current=lookup.records?.[0];
         if(current){
           const notes=stripRuntimeBlocks(current.fields?.Notes||'');
-          const failed=[`MASTER ARTICLE FAILED v3.6.3`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          const failed=[`MASTER ARTICLE FAILED v3.6.4`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await withTimeout(
             airtableRequest(TABLES.sections,{
               method:'PATCH',
