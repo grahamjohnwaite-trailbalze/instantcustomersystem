@@ -1,0 +1,31 @@
+ICS / TBOS Issue Canvas v3.8.2
+
+OBJECTIVE
+Make the live Issue Canvas safer and faster to operate without changing the proven research and article-production pipeline.
+
+CHANGES
+1. Issue Canvas remains the default working screen.
+2. Drag-and-drop now inserts before or after a card according to pointer position.
+3. Added reliable Move Up / Move Down controls to every Canvas component.
+4. Added an Issue Context panel to the Component Inspector showing:
+   - issue promise
+   - neighbouring components
+   - existing life lanes
+   - partner categories already used
+   - unused component formats
+5. Replaced generic starter copy with context-aware starter briefs using issue promise, life lane and neighbouring components.
+6. Partner fields remain conditional and only store values when a partner is attached.
+7. Changing a component type without a partner clears inherited partner category data.
+8. Master Articles no longer treat the general Commercial Lane as a suggested partner category. Only a specific Potential Sponsor Category is carried as a suggestion.
+9. Life lane can be inferred from the component title, purpose and copy when left blank.
+10. Commercial roles flag that a partner may be relevant without inventing or forcing one.
+
+SAFETY
+- Existing Canvas localStorage records are normalised on load.
+- No Airtable schema changes.
+- No Netlify function changes.
+- No changes to research, evidence or Master Article generation endpoints.
+
+TESTS
+- Extracted application JavaScript passes node --check.
+- Existing production paths and function references retained.
