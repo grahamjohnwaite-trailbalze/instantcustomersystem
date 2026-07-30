@@ -1,0 +1,23 @@
+ISSUE CANVAS v3.4.71 — BOUNDED PRODUCTION FLOW
+
+Baseline: v3.4.70.
+
+Fixes
+- Removed repeated Airtable trace persistence during every production stage.
+- Stage trace remains in memory and is written once with the final or evidence-incomplete result.
+- Reduced total production budget to 110 seconds and recovery budget to 40 seconds so the handler returns before the 120-second browser ceiling.
+- Reduced writer request ceiling to 50 seconds.
+- Active research sources now take priority over writer-returned sources when building the Master Article Package.
+- Preserved research fingerprints, writer checkpoint invalidation, resumable checkpoints, evidence timing and publication gates.
+
+Labels
+- Issue Canvas v3.4.71
+- Production Service v2.22
+
+Acceptance test
+1. Deploy this build.
+2. Run only Norfolk Article 7 once.
+3. Do not hard refresh before the UI reports a result.
+4. Confirm the run returns in under 120 seconds.
+5. In Notes, confirm MASTER ARTICLE PACKAGE v1 and PRODUCTION SERVICE v2.22 use the same retained source set.
+6. Confirm Norfolk County Council trial evidence appears where supported and the package does not report zero sources when Production Service retained sources.

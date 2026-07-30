@@ -1,0 +1,16 @@
+ICS Issue Canvas v3.4.49 — Fast Evidence Staging
+
+Built directly from v3.4.48.
+
+Master Article production change:
+- Removes the long web-enabled OpenAI research call that repeatedly stalled.
+- Uses fast article-specific Bing Web RSS + Google News RSS discovery queries.
+- Queries include the approved title/question, current signal where available, and targeted official-domain searches.
+- Official/local sources are ranked ahead of generic results.
+- The resulting compact evidence pack is checkpointed to Airtable before Writer starts.
+- Evidence-heavy articles still require at least two relevant source leads and at least one official/local source to pass the existing evidence gate.
+- Writer is explicitly forbidden from expanding beyond the supplied source snippets.
+- Weak evidence becomes Fix Required / human verification rather than invented certainty.
+- Existing Writer checkpoint/retry logic, Smart Plan, Editorial Control and Recovery Mode are retained.
+
+This is deliberately a reliability-first research layer. Final publication still requires the existing QA/evidence checks, especially for legal, medical, financial or contested claims.

@@ -1,0 +1,11 @@
+ICS Issue Canvas v3.4.65 — Stable Article Identity
+
+Built directly from v3.4.64.
+
+Critical fix:
+- Production gate no longer requires the current Section Title to exactly equal the locked Smart Plan title.
+- Approved article identity is now the durable combination of Section Order + PUBLISH NOW Final Running Order marker + non-superseded status.
+- Writer/editor headline polishing therefore cannot make an approved article disappear from the 15-record queue.
+- Reconcile Approved Queue preserves an already-established active record even when its publication headline has changed.
+- Original locked-plan title matching is used only to choose the keeper when a position has no established active identity yet.
+- Existing research recovery and evidence standards are unchanged.

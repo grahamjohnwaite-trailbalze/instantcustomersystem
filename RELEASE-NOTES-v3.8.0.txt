@@ -1,0 +1,27 @@
+ICS / TBOS ISSUE CANVAS v3.8.0
+
+FOUNDATION PASS: COMPONENT REGISTRY + PRODUCTION READINESS
+
+What changed
+- Existing articles now enter the Canvas as MASTER ARTICLE components.
+- Added a controlled Component Registry covering short editorial, engagement, interactive, partner, commercial, promotion, community and distribution blocks.
+- Added production templates and default production points to component definitions.
+- Separated Content Status from Production Status.
+- Added Life Lane and Commercial Role fields to the Block Inspector.
+- Added Production Template and Production Points to each Canvas block.
+- Added automatic migration defaults for existing v3.7 Canvas blocks stored in the browser.
+- Canvas cards now show content status, production status, production template, points and visible missing-copy / missing-URL warnings.
+- Top score strip now reports Master Articles, short/interactive components, partner-attached blocks, Letterman-ready blocks and points remaining.
+- Canvas backup format version updated to 3.8.0.
+
+Controlled scope
+- This pass does not yet add publication-aware partner filtering, full Life Lane coverage panels, image asset records or direct Letterman publishing.
+- Existing research, Evidence Contract, article production, QA and smart planning functions remain in place.
+
+Proof target
+- Open Norfolk issue.
+- Add produced articles plus at least three short components.
+- Reorder them.
+- Attach a partner where appropriate.
+- Set Content Status and Production Status separately.
+- Confirm missing copy / URL warnings and points remaining update correctly.

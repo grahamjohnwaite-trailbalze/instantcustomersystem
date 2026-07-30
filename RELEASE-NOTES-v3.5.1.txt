@@ -1,0 +1,19 @@
+ICS Issue Canvas v3.5.1 — Safe Diagnostic Pipeline
+
+This replaces v3.5.0.
+
+Changes
+- Removed diagnostic Airtable writes from the middle of research, recovery, Writer and QA.
+- Diagnostic rows stay in memory while the run is active.
+- The diagnostic block is written once at successful completion, or once on failure where possible.
+- Existing production-stage timing and research behaviour are otherwise unchanged.
+- Service labels updated to Production Service v3.1.
+
+Test
+1. Upload v3.5.1 and hard refresh.
+2. Confirm the screen shows v3.5.1.
+3. Run Norfolk Article 7 once.
+4. Allow up to the normal production window, but stop if it exceeds 125 seconds.
+5. Paste MASTER ARTICLE DIAGNOSTIC v1 and PRODUCTION SERVICE v3.1.
+
+Do not use v3.5.0 again.

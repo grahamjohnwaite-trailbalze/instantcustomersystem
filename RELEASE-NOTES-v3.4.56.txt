@@ -1,0 +1,12 @@
+ICS Issue Canvas v3.4.56 — Safe Duplicate Retry
+
+Built directly from the stable v3.4.54 package.
+
+Only Replace behaviour changed:
+- Other 14 article source leads are explicitly excluded from the replacement request.
+- Current plan titles/questions/source signals are passed to the planner as prior articles.
+- Existing same-issue duplicate gate still validates the returned candidate.
+- If the first candidate duplicates another current article, ICS retries once automatically.
+- Retry includes the exact rejection reason and asks for a different source lead and subject.
+- Failed candidates are never saved.
+- Navigation, app start-up, localStorage keys, plan rendering, Canvas, production and Airtable logic are unchanged.

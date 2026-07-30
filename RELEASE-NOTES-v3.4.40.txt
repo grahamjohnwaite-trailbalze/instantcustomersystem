@@ -1,0 +1,28 @@
+ICS Issue Canvas v3.4.40 — Canvas-first partner-aware workflow
+
+Baseline: v3.4.39 Question-first issue architecture
+
+Focused fixes only:
+1. Issue Canvas opens as the main/default working screen.
+2. Partner fields are conditional: hidden until a Resident Expert / Featured Partner is attached.
+3. Partner metadata lives on the canvas block/card and therefore moves with drag/drop.
+4. Articles no longer inherit Potential Sponsor Category into the live canvas category field.
+   The old value is retained only as a suggested partner lane requiring confirmation.
+5. Drag/drop cards show a visible drop target and smoother movement feedback.
+6. Supporting component generation now receives nearby running-order context as well as whole-issue Master Article context.
+7. Issue promise context bug fixed: supporting component production now reads assembly-theme.
+8. Customer-facing planner label updated to Issue Canvas; standalone partner block reframed as a genuine activation-only option.
+
+Already retained from v3.4.39:
+- Question-first Master Articles
+- Split Test / related questions to bank
+- 250–600 word default; 350–500 sweet spot
+- 28–32 total blocks / roughly 12–15 Master Articles QA
+- local-proof gate
+- human-voice guard
+- Unfiltered / challenge / debate stance support
+- Resident Expert / Featured Partner language in auto assembly
+- active sponsor lookup and final whole-issue QA
+
+Do not load the mobile Question Bank/Airtable expansion into this release yet.
+Proof order after deploy: Norfolk issue → PBS issue → one niche issue.

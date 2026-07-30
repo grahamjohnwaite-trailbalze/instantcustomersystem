@@ -1,0 +1,25 @@
+Issue Canvas v3.6.2 — Evidence Classifier Fix
+
+Based on: v3.6.1 Staged Research Lock
+Rollback: v3.4.73 Stable
+
+Objective
+Correct the evidence decision logic without changing the staged research/generate architecture.
+
+Changed
+- VERIFIED_NOW now requires an official or primary source that directly verifies the article premise.
+- Context-only official sources no longer trigger VERIFIED_NOW.
+- Credible local reporting with incomplete official confirmation becomes ATTRIBUTED_REPORT.
+- Added RESEARCH_INCOMPLETE for relevant but inadequate evidence.
+- ATTRIBUTED_REPORT writer mode must explicitly attribute the unconfirmed central claim.
+- Airtable evidence status remains Reported — Attribution Required after generation.
+- Production Service markers updated to v3.6.2.
+
+Regression test 1
+Norfolk pothole trial: expected ATTRIBUTED_REPORT, Human review required, RESEARCH_COMPLETE.
+
+Regression test 2
+PBS article directly supported by a matching official source: expected VERIFIED_NOW.
+
+Regression test 3
+Weak niche story with only contextual evidence and no credible report: expected RESEARCH_INCOMPLETE or BLOCKED.

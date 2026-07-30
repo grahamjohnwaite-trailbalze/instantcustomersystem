@@ -1,0 +1,11 @@
+ICS Issue Canvas v3.4.52 — Plan Provenance & Evidence Alignment
+
+Built directly from v3.4.51.
+
+- Smart Plan now displays discovery signal → source → proposed article provenance for every decision.
+- Alignment states: ALIGNED / WEAK ALIGNMENT / SOURCE MISSING / SOURCE MISMATCH.
+- Detects known dangerous direction changes including phone-use enforcement → speeding and Pride/library-display dispute → branch/service shake-up.
+- Plan cannot be locked while a SOURCE MISMATCH remains.
+- Airtable brief Notes retain the provenance/alignment audit trail.
+- Future planning requires every CREATE NEW/current REFRESH decision to bind to one exact discovery lead without changing the underlying event.
+- v3.4.51 source precision, ~30-second production, checkpoints, editorial controls and Canvas recovery are unchanged.

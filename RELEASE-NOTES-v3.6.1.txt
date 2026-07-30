@@ -1,0 +1,25 @@
+Issue Canvas v3.6.1 — Staged Research Lock
+
+Base
+- Built from the proven v3.4.73 UK Source Precision release.
+
+Objective
+- Separate research from article generation so one background function no longer performs both jobs.
+
+Changed
+- Added a dedicated “Research selected article” action.
+- Added a dedicated “Generate selected Master Article” action.
+- Research saves a locked RESEARCH PACK v1 and stops before the writer.
+- Generation requires a saved Research Pack and performs no web research.
+- Added explicit evidence classes: VERIFIED_NOW, ATTRIBUTED_REPORT and BLOCKED.
+- Added RESEARCH_COMPLETE state and Production Service v3.6.1 markers.
+- Preserved v3.4.73 locality and source-precision safeguards.
+
+Test order
+1. Norfolk pothole trial: click Research selected article. Expected ATTRIBUTED_REPORT and RESEARCH_COMPLETE.
+2. Click Generate selected Master Article. Expected article generated from locked research only.
+3. PBS official-source article: expected VERIFIED_NOW.
+4. Weak niche article: expected BLOCKED.
+
+Rollback
+- Redeploy v3.4.73 UK Source Precision.

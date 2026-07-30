@@ -1,0 +1,10 @@
+ICS Issue Canvas v3.4.51 — Source Precision Gate
+
+Built from v3.4.50.
+
+- Rejects generic reference drift such as Wikipedia, dictionaries, encyclopedias and unrelated medical reference pages.
+- Requires source identity to match specific article entities/locality AND topic anchors.
+- Specific identifiers such as A149 must occur with a relevant topic before a result is admitted.
+- Does not pad an evidence pack merely to reach a source count.
+- One genuinely relevant source now produces an explicit insufficient-evidence / Human Review result rather than adding tangential sources.
+- Keeps near-duplicate story removal, cautious evidence language, fast production and resumable checkpoints.

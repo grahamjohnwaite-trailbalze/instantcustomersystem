@@ -1,0 +1,9 @@
+ICS Issue Canvas v3.4.54 — Same-Issue Duplication Gate
+
+- Whole-plan duplicate audit checks same source lead and semantic topic/question overlap.
+- Plan summary shows duplicate and close-overlap pairs.
+- Each affected article identifies the colliding article.
+- Same-issue duplicate pairs block Plan Lock.
+- Replacement suggestions are checked against the other 14 decisions before being saved.
+- Replacement planner is instructed not to reuse a source lead already consumed elsewhere in the issue.
+- Existing provenance, refresh gate, source precision, fast production and recovery remain unchanged.

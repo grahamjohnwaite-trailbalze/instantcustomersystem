@@ -1,0 +1,10 @@
+ICS Issue Canvas v3.4.53 — Refresh & Duplication Gate
+
+Built directly from v3.4.52.
+
+- Every REFRESH is now tested for a material change since the prior article.
+- 'Still relevant', 'it's August', 'evergreen', or generic ongoing reader need are not sufficient reasons to refresh.
+- REFRESH TOO WEAK items are visibly flagged and block plan locking.
+- Planner prompt requires a concrete new rule, decision, figure, price, policy, local development, evidence set or result that materially changes the answer.
+- Recently covered subjects have a strong presumption against refresh unless the answer has materially changed.
+- Existing v3.4.52 provenance/source alignment, v3.4.51 source precision, fast production, checkpoints and recovery remain unchanged.

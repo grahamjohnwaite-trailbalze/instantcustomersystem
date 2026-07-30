@@ -1,0 +1,16 @@
+ICS Issue Canvas v3.4.62 — Approved Plan Queue Reconciliation
+
+Built directly from stable v3.4.61.
+
+Critical fix:
+- Adds Reconcile Approved Queue.
+- Locked Smart Plan becomes the authority for active Issue Build positions 1–15.
+- Superseded briefs are preserved in Airtable/history but marked SUPERSEDED and excluded from active Issue Build and production.
+- Approved briefs receive one clean PUBLISH NOW running-order marker.
+- Produce All has a hard stop gate unless the locked Smart Plan resolves to exactly 15 active approved briefs with unique positions 1–15.
+- Create Missing Article Briefs now automatically reconciles the queue after create/update.
+
+Safety:
+- Does not delete old Master Articles.
+- Does not overwrite old article packages merely to clean the current issue queue.
+- Existing library/history is preserved.

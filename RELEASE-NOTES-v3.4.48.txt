@@ -1,0 +1,16 @@
+ICS Issue Canvas v3.4.48 — Resumable Master Articles
+
+Built directly from v3.4.47.
+
+Production safety changes:
+- Saves the complete research pack to Airtable immediately after research.
+- Saves the complete raw writer output to Airtable immediately after writing.
+- Retry of the same unchanged brief reuses the matching research checkpoint.
+- Retry also reuses the writer checkpoint if writing completed but final packaging/save did not.
+- Successful final save removes temporary checkpoint blocks from Notes.
+- UI timeout message tells the editor whether Research or Writer is safely checkpointed and exactly what the next retry will resume.
+- Checkpoints are tied to production class + title + core question, so editing the brief invalidates stale checkpoints.
+- Existing Smart Plan, Editorial Control, Recovery Mode and Canvas behaviour are unchanged.
+
+Note for the A149 test article:
+The earlier v3.4.47 run recorded that research completed but did not persist the research pack itself. The first v3.4.48 retry must therefore research once more. From that point forward completed stages are resumable.

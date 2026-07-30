@@ -1,0 +1,10 @@
+ICS Issue Canvas v3.4.45 — Fast Signal Collector
+Built from v3.4.44 / stable recovery-safe branch.
+
+Change in architecture:
+1. Current-signal discovery no longer uses OpenAI web search.
+2. A fast server-side RSS discovery collector fetches current local/news/event/national/seasonal headline leads in parallel.
+3. Discovery leads are explicitly NOT treated as verified evidence.
+4. The non-web editorial planner uses those compact leads + the existing article library to decide REUSE / REFRESH / CREATE NEW.
+5. Deep source verification remains in the later Master Article research/production stage.
+6. Existing Canvas, navigation, recovery mode and one-click Canvas export are unchanged.

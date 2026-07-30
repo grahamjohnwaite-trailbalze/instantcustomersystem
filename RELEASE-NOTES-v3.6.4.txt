@@ -1,0 +1,20 @@
+ISSUE CANVAS v3.6.4 — COMPLETION DETECTION FIX
+
+Objective
+Fix the frontend polling bug that caused a completed v3.6.3 research run to continue displaying “Background production is running”.
+
+Root cause
+The browser only recognised PRODUCTION SERVICE v3.6.1 blocks. v3.6.3 correctly saved its Research Pack and PRODUCTION SERVICE block, but the browser ignored the newer version and continued polling for up to three minutes.
+
+Changes
+- Recognise all current 3.x semantic production-service versions.
+- Recognise 3.x failure blocks.
+- Display precise research outcomes for VERIFIED_NOW, ATTRIBUTED_REPORT and BLOCKED.
+- No research, classifier, model, timeout, workflow or Airtable schema changes.
+
+Expected Norfolk test
+After the Research Pack is saved, the browser should stop polling on the next refresh and show either:
+- Research complete — attribution required, or
+- Research complete — verified.
+
+Built directly from v3.6.3.

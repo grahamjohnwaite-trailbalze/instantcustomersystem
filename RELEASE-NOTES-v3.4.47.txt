@@ -1,0 +1,11 @@
+ICS Issue Canvas v3.4.47 — Editorial Control
+Built directly from v3.4.46.
+
+- Complete Smart Issue Plan is preserved; Build/Resume will not overwrite it.
+- Partial plans now visibly show x/15 saved decisions and their titles.
+- Every completed article decision has Keep / Edit / Replace controls.
+- Edit changes only that article and recalculates plan counts.
+- Replace asks the planner for ONE alternative only; the other 14 stay untouched.
+- Lock Approved Plan is required before Create Missing Article Briefs.
+- Nothing is written to Airtable during Keep/Edit/Replace review.
+- Recovery/export/Canvas behaviour from the stable baseline is retained.

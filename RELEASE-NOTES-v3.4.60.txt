@@ -1,0 +1,15 @@
+ICS Issue Canvas v3.4.60 — Commercial Completion & 30-Block Balance
+
+Built directly from stable v3.4.59.
+
+Adds whole-issue commercial completion:
+- Checks natural commercial lanes across the complete Issue Canvas, not just the 15 Master Articles.
+- Keeps Resident Expert / Featured Partner terminology as INTERNAL PLANNING LABELS ONLY.
+- Reader-facing article copy must never say "Featured Partner" or expose system/commercial labels.
+- Adds Check 30-Block Balance button.
+- Copy Audit now includes the 30-block commercial-completion result.
+- Counts supporting/interactive and partner/activation blocks.
+- Warns how many additional natural partner/activation lanes are needed.
+- Explicitly prevents altering article copy merely to satisfy commercial counters.
+
+No changes to navigation, storage, article planning, source/refresh/duplication gates, replacement logic, Master Article production or Airtable handoff.

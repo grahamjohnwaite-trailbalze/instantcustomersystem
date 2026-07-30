@@ -1,0 +1,27 @@
+ICS Issue Canvas v3.5.0 — Diagnostic Pipeline
+
+This build adds observability only. It does not intentionally change research, editorial or evidence behaviour.
+
+A new MASTER ARTICLE DIAGNOSTIC v1 block is written into Notes. It records:
+- checkpoint decision
+- fast research completion
+- recovery completion or fallback after recovery failure
+- Writer checkpoint decision
+- Writer input
+- Master Article Package input
+- final QA input
+
+Each line includes:
+- research Pack ID/fingerprint
+- source count
+- primary/official source count
+- status
+- resolved subject
+- responsible body
+- required/future/optional counts
+- checkpoint status
+- elapsed time
+
+The same Pack ID should normally continue from Recovery through Writer, Package and Final QA. The first point where it changes or disappears identifies the faulty hand-off.
+
+Test only Norfolk Article 7 once. Then copy the newest MASTER ARTICLE DIAGNOSTIC v1 and PRODUCTION SERVICE v3.0 blocks.

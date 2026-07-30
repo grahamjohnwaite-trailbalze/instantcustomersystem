@@ -1,0 +1,9 @@
+ICS Issue Canvas v3.4.42 — Recovery Safe
+Built directly from proven v3.4.40.
+
+Changes:
+- Restore saved Canvas using ics:lastIssue even when historical issue is absent from active Issues API.
+- Recovery Mode warning instead of blank Canvas.
+- Destructive/production controls disabled while in Recovery Mode.
+- One-click Export Canvas Backup creates proper JSON with Canvas, issue metadata, issue promise and final QA.
+- Navigation, drag/drop and AI production code remain unchanged from v3.4.40.

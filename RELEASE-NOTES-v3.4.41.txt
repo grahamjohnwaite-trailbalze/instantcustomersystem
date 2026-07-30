@@ -1,0 +1,8 @@
+v3.4.41 SAFE PATCH
+Built directly from proven live v3.4.40.
+No navigation/init/canvas-rendering changes.
+Changes only:
+- contextual starter copy uses existing produce-component API contract
+- stronger existing drag target highlight
+- sticky Component Library
+- larger partner checkbox

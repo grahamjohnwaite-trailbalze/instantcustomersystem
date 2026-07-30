@@ -1,0 +1,25 @@
+ICS Issue Canvas v3.4.63 — Research Recovery & Evidence Classification
+
+Built directly from stable v3.4.62.
+
+Research recovery:
+- Fast evidence collection remains the first pass.
+- If evidence is insufficient, production automatically performs a targeted second live-web research pass before writing.
+- Recovery explicitly seeks the named organisation/scheme/decision and primary or accountable sources.
+- It resolves missing evidence rather than padding to a source-count target.
+- Insufficient old research/writer checkpoints are NOT reused, so existing review articles can be rerun and genuinely re-researched.
+- HTML is stripped from recovered source-support text.
+
+Operator outcomes:
+- COMPLETE
+- SOURCE CHECK REQUIRED
+- RESEARCH INCOMPLETE
+- EDITORIAL REVIEW (reserved)
+- FAILED
+
+Build Issue now shows specific evidence outcomes instead of generic NEEDS REVIEW where v3.4.63 production has classified the reason.
+
+Safety:
+- Evidence gate is not weakened.
+- High-stakes/current articles remain blocked when core evidence is unresolved.
+- No existing Master Article/library record is deleted.
