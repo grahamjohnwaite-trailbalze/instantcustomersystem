@@ -6,7 +6,7 @@ const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=45000;
-const RELEASE_VERSION='3.6.1';
+const RELEASE_VERSION='3.6.2';
 function withTimeout(promise,timeoutMs,label){
   let timer;
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
@@ -430,10 +430,30 @@ function evidenceOutcome(cls,research,gate){
 }
 function researchLockDecision(research){
   const sources=Array.isArray(research?.sources)?research.sources:[];
+  const timing=classifyEvidenceTiming(research);
+  const missing=[...(research?.required_now_missing||[]),...(timing.required||[]),...(research?.missing_evidence||[])].map(x=>String(x||'').trim()).filter(Boolean);
+  const summary=String(research?.research_summary||'');
+  const resolved=research?.resolved_subject||{};
+  const verificationMissing=/official confirmation|cannot be verified|not officially confirmed|does not verify|does not establish|specific (?:trial|scheme|project)|exact (?:trial|scheme|project)/i.test([summary,...missing,String(resolved.responsible_body||'')].join(' '));
+  const contextualOnly=/context only|general (?:identity|context)|does not (?:verify|provide)|not the specific|earlier .* not|accountable .* but/i;
   const official=sources.filter(x=>/official|primary/i.test(String(x.source_type||''))||/\.gov\.uk|gov\.uk|nhs\.uk|police\.uk|norfolk\.gov\.uk/i.test(String(x.url||'')));
-  const credible=sources.filter(x=>cleanUrl(x.url)&&!/news\.google\.com\/rss/i.test(String(x.url||'')));
-  if(official.length>=1)return {code:'VERIFIED_NOW',humanReview:false,reason:'Official or primary evidence is retained in the locked Research Pack.'};
-  if(credible.length>=1)return {code:'ATTRIBUTED_REPORT',humanReview:true,reason:'Credible reporting is retained, but matching official confirmation is incomplete. Claims must remain explicitly attributed.'};
+  const verifyingOfficial=official.filter(x=>{
+    const support=[x.title,x.supports].join(' ');
+    return !contextualOnly.test(support)&&!/discovery-only/i.test(support);
+  });
+  const reported=sources.filter(x=>{
+    const support=[x.title,x.supports,x.source_type].join(' ');
+    return cleanUrl(x.url)&&(/discovery|report|reported|news/i.test(support))&&/trial|scheme|project|service|decision|event|opening|closure|change|launch|plan/i.test(support);
+  });
+  if(verifyingOfficial.length>=1&&!verificationMissing){
+    return {code:'VERIFIED_NOW',humanReview:false,reason:'An official or primary source directly verifies the article premise.'};
+  }
+  if(reported.length>=1){
+    return {code:'ATTRIBUTED_REPORT',humanReview:true,reason:'Credible local reporting supports the article premise, but matching official confirmation is incomplete. The article must attribute the reported claim and clearly separate verified context from unconfirmed detail.'};
+  }
+  if(sources.length>=1){
+    return {code:'RESEARCH_INCOMPLETE',humanReview:true,reason:'Some relevant evidence was retained, but it does not yet establish the article premise strongly enough to generate a publishable article.'};
+  }
   return {code:'BLOCKED',humanReview:true,reason:'No sufficiently credible article-specific source is retained for publication.'};
 }
 
@@ -482,6 +502,7 @@ Return 2-8 strongest sources. Do not pad with irrelevant generic sources.`;
 
 function promptFor(fields,cls,research){
   const useEvidence=cls!=='A — Question Only';
+  const evidenceDecision=researchLockDecision(research);
   const sourcePack=JSON.stringify(research||{},null,2);
   return `You are the production editor for Spotlight. Build one complete MASTER ARTICLE PACKAGE ready for manual upload to Letterman.
 
@@ -497,7 +518,7 @@ STYLE, AUDIENCE AND SAFETY
 - Never invent recommendations, prices, dates, businesses or factual claims.
 - Use named local proof only where supported by the supplied research pack.
 - Distinguish fact, opinion and reader questions.
-- EDITORIAL SOURCE RULE: Spotlight is the publisher, not a news-curation feed. Do not normally write "EDP24 reports", "the BBC says", "according to [newspaper]" or otherwise foreground discovery/news-media sources in reader-facing copy. Use those sources internally to discover/corroborate the story. Prefer attribution to the underlying official body, document, dataset, organisation or direct published statement when attribution is useful.
+- EDITORIAL SOURCE RULE: Spotlight is the publisher, not a news-curation feed. For VERIFIED_NOW articles, prefer attribution to the underlying official body, document, dataset, organisation or direct published statement. For ATTRIBUTED_REPORT articles, explicitly attribute the unconfirmed central claim to the named reporting source at the first relevant mention and state that matching official confirmation was not located; do not present the reported detail as independently verified.
 - It is fine to say "Norfolk County Council says...", "council papers show...", "NHS guidance says..." or equivalent primary-source attribution where that adds authority.
 - EVIDENCE TIMING RULE: facts verified now may be stated as facts. Outcomes that genuinely do not exist yet may be explored as clearly unanswered questions: "Could this...?", "Will it...?", "What happens if...?", "What should we watch?". Do not turn a future unknown into a publication blocker merely because results do not yet exist.
 - A question mark must never disguise an unsupported factual premise. Verify the premise first, then ask the legitimate unanswered question.
@@ -513,7 +534,8 @@ STYLE, AUDIENCE AND SAFETY
 - Length is earned by the question: normally 250-600 words, with roughly 350-500 as the sweet spot. Go beyond 600 only when the reader genuinely needs the extra detail; a 1,000+ word cornerstone piece should be exceptional, not the default. Cut repetition rather than padding to a target.
 - SPOTLIGHT VOICE: keep personality, humour and an Unfiltered edge where the subject earns it. Do not manufacture outrage or clickbait, but do challenge lazy assumptions and bland official framing when evidence supports a sharper question.
 - For contested subjects, do not force false certainty. A credible practical, challenge, contrarian or debate angle is allowed when it is supported and clearly distinguished from fact.
-${useEvidence?`- Use ONLY material claims supported by the research pack below.
+${useEvidence?`- Evidence classification: ${evidenceDecision.code}. ${evidenceDecision.reason}
+- Use ONLY material claims supported by the research pack below.
 - Some sources are fast discovery snippets rather than full documents. Never infer a precise figure, condition, quote or legal conclusion that is not explicitly present in the supplied evidence. When evidence is thin, write cautiously and surface what still needs checking.
 - CRITICAL EVIDENCE LANGUAGE: absence of evidence is not evidence that a proposal failed a test. Never write "the answer is no" merely because a document is absent. First distinguish REQUIRED_NOW evidence from a FUTURE_TEST. If an outcome cannot yet exist, frame it as the question the article will follow rather than repeatedly telling readers that Spotlight lacks evidence.
 - If an optional or non-essential detail in the brief could not be verified, OMIT that detail from the article rather than forcing it into the copy.
@@ -796,14 +818,14 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.6.1`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.6.2`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
         'Evidence Status':decision.code==='VERIFIED_NOW'?'Verified':decision.code==='ATTRIBUTED_REPORT'?'Reported — Attribution Required':'Researching',
         'Evidence Checked Date':new Date().toISOString().slice(0,10),
-        'Section QA Result':decision.code==='BLOCKED'?'Fix Required':'Not Checked',
-        'Section Status':decision.code==='BLOCKED'?'Researching':'Planned',
+        'Section QA Result':['BLOCKED','RESEARCH_INCOMPLETE'].includes(decision.code)?'Fix Required':'Not Checked',
+        'Section Status':['BLOCKED','RESEARCH_INCOMPLETE'].includes(decision.code)?'Researching':'Planned',
         'Notes':notes
       }}],typecast:true}});
       return json(200,{ok:true,record:cleanRecord(saved.records[0]),stage:'RESEARCH_COMPLETE',outcome:decision.code,researchId:`rp_${runId}`,sources:retained,humanReview:decision.humanReview});
@@ -814,7 +836,7 @@ export default async(request)=>{
     if(cls!=='A — Question Only'){
       const gateNow=evidenceGate(fields,cls,research);
       const outcomeNow=evidenceOutcome(cls,research,gateNow);
-      if(researchLockDecision(research).code==='BLOCKED'){
+      if(['BLOCKED','RESEARCH_INCOMPLETE'].includes(researchLockDecision(research).code)){
       const retained=(research.sources||[]).map(x=>({
         title:String(x.title||'').trim(),
         url:cleanUrl(x.url),
@@ -934,21 +956,21 @@ export default async(request)=>{
     const gate=evidenceGate(fields,cls,research);
     const lockDecision=researchLockDecision(research);
     const editorialOutcome=evidenceOutcome(cls,research,gate);
-    const qa=(result.qa_result==='Pass'&&lockDecision.code!=='BLOCKED')?'Pass':'Fix Required';
+    const qa=(result.qa_result==='Pass'&&['VERIFIED_NOW','ATTRIBUTED_REPORT'].includes(lockDecision.code))?'Pass':'Fix Required';
     const outcome=qa==='Pass'?{code:lockDecision.code,label:lockDecision.code==='VERIFIED_NOW'?'Verified now':'Attributed report',missing:[],future_tests:editorialOutcome.future_tests||[],optional_missing:editorialOutcome.optional_missing||[]}:editorialOutcome;
-    if(outcome.code!=='COMPLETE'){
+    if(!['VERIFIED_NOW','ATTRIBUTED_REPORT','COMPLETE'].includes(outcome.code)){
       result.exception=[String(result.exception||'').trim(),...(outcome.missing||[])].filter(Boolean).join(' ');
       result.evidence_summary=[String(result.evidence_summary||'').trim(),String(research.research_summary||'').trim(),outcome.missing?.length?`Missing required-now evidence: ${outcome.missing.join('; ')}`:''].filter(Boolean).join(' ');
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.6.1`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.6.2`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
       'CTA Text':String(result.cta_text||value(fields,'CTA Text')||'').trim(),
       'Source / Reference Link 1':sources[0]?.url||value(fields,'Source / Reference Link 1')||'',
-      'Evidence Status':qa==='Pass'?(cls==='A — Question Only'?'Question Only':'Verified'):'Researching',
+      'Evidence Status':qa==='Pass'?(cls==='A — Question Only'?'Question Only':lockDecision.code==='ATTRIBUTED_REPORT'?'Reported — Attribution Required':'Verified'):'Researching',
       'Evidence Checked Date':new Date().toISOString().slice(0,10),
       'Section QA Result':qa,
       'Section Status':qa==='Pass'?'Ready':'Researching',
@@ -981,7 +1003,7 @@ export default async(request)=>{
         const current=lookup.records?.[0];
         if(current){
           const notes=stripRuntimeBlocks(current.fields?.Notes||'');
-          const failed=[`MASTER ARTICLE FAILED v3.6.1`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          const failed=[`MASTER ARTICLE FAILED v3.6.2`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await withTimeout(
             airtableRequest(TABLES.sections,{
               method:'PATCH',
