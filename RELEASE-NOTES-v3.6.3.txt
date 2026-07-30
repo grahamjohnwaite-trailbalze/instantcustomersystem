@@ -1,0 +1,25 @@
+ISSUE CANVAS v3.6.3 — CLASSIFIER-ONLY CANDIDATE
+
+BASE
+- Built directly from the known-working v3.6.1 staged release.
+
+ONLY OBJECTIVE
+- Prevent contextual official sources from being mistaken for direct verification of the article premise.
+
+EXPECTED NORFOLK POTHOLE RESULT
+- Evidence Class: ATTRIBUTED_REPORT
+- Human review: Required
+- State: RESEARCH_COMPLETE
+
+UNCHANGED
+- Research prompt and model calls
+- Research recovery path and time budgets
+- Staged Research then Generate workflow
+- UI controls and Airtable structure
+
+TEST
+1. Deploy v3.6.3.
+2. Confirm footer version.
+3. Run Research selected article for Norfolk Article 07.
+4. Stop and report if it exceeds 90 seconds.
+5. Do not run Generate until the Research Pack result is reviewed.
