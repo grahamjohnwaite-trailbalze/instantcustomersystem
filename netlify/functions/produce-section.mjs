@@ -6,7 +6,7 @@ const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=45000;
-const RELEASE_VERSION='3.7.0';
+const RELEASE_VERSION='3.7.1';
 function withTimeout(promise,timeoutMs,label){
   let timer;
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
@@ -14,8 +14,8 @@ function withTimeout(promise,timeoutMs,label){
 }
 function stripRuntimeBlocks(notes){
   return String(notes||'')
-    .replace(/\n?MASTER ARTICLE RUNNING v2\.\d+[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'')
-    .replace(/\n?MASTER ARTICLE FAILED v2\.\d+[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'')
+    .replace(/\n?MASTER ARTICLE RUNNING v[\d.]+[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'')
+    .replace(/\n?MASTER ARTICLE FAILED v[\d.]+[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'')
     .replace(/\n?MASTER ARTICLE TRACE v1[\s\S]*?END MASTER ARTICLE TRACE\s*/g,'')
     .trim();
 }
@@ -36,6 +36,58 @@ function removeCheckpoints(notes){
     .replace(/\n?MASTER ARTICLE RESEARCH CHECKPOINT v1\n[\s\S]*?\nEND MASTER ARTICLE RESEARCH CHECKPOINT\s*/g,'')
     .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v(?:1|2)\n[\s\S]*?\nEND MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
     .trim();
+}
+
+function removeWriterCheckpoints(notes){
+  return String(notes||'')
+    .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v(?:1|2)\n[\s\S]*?\nEND MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
+    .trim();
+}
+function parsePipeSourceLine(line){
+  const raw=String(line||'').replace(/^Source\s+\d+:\s*/i,'').trim();
+  const parts=raw.split(' | ');
+  if(parts.length<2)return null;
+  const title=String(parts.shift()||'').trim();
+  const url=cleanUrl(String(parts.shift()||'').trim());
+  let source_type='';
+  if(parts.length>1 && /^(official|primary|local|reported|discovery|other)$/i.test(String(parts[0]||'').trim()))source_type=String(parts.shift()||'').trim();
+  const supports=parts.join(' | ').trim();
+  return url?{title,url,supports,source_type}:null;
+}
+function lockedResearchFromNotes(notes){
+  const text=String(notes||'');
+  const packs=[...text.matchAll(/RESEARCH PACK v1\n([\s\S]*?)\nEND RESEARCH PACK/g)];
+  if(packs.length){
+    const body=packs[packs.length-1][1];
+    const evidenceClass=(body.match(/^Evidence Class:\s*(.+)$/mi)||[])[1]?.trim()||'';
+    const decision=(body.match(/^Decision:\s*(.+)$/mi)||[])[1]?.trim()||'';
+    const missingText=(body.match(/^Missing:\s*(.*)$/mi)||[])[1]?.trim()||'';
+    const sources=body.split('\n').filter(x=>/^Source\s+\d+:/i.test(x)).map(parsePipeSourceLine).filter(Boolean);
+    return {
+      brief_key:'',model:'LOCKED-RESEARCH-PACK-v1',source:'research_pack',
+      research:{
+        research_status:['VERIFIED_NOW','ATTRIBUTED_REPORT'].includes(evidenceClass)?'Sufficient':'Insufficient',
+        research_summary:decision||`Locked research pack retained with evidence class ${evidenceClass||'unknown'}.`,
+        sources,
+        missing_evidence:missingText&&missingText!=='None recorded'?missingText.split(';').map(x=>x.trim()).filter(Boolean):[],
+        locked_evidence_class:evidenceClass
+      }
+    };
+  }
+  const blocked=[...text.matchAll(/MASTER ARTICLE BLOCKED v1\n([\s\S]*?)\nEND MASTER ARTICLE BLOCKED/g)];
+  if(blocked.length){
+    const body=blocked[blocked.length-1][1];
+    const reason=(body.match(/^Reason:\s*(.+)$/mi)||[])[1]?.trim()||'';
+    const missingText=(body.match(/^Missing:\s*(.*)$/mi)||[])[1]?.trim()||'';
+    const sources=body.split('\n').filter(x=>/^Source\s+\d+:/i.test(x)).map(parsePipeSourceLine).filter(Boolean);
+    if(sources.length){
+      return {
+        brief_key:'',model:'LOCKED-BLOCKED-EVIDENCE-v1',source:'blocked_evidence',
+        research:{research_status:'Insufficient',research_summary:reason||'Locked source-check evidence retained from an earlier research run.',sources,missing_evidence:missingText?missingText.split(';').map(x=>x.trim()).filter(Boolean):[]}
+      };
+    }
+  }
+  return null;
 }
 function researchCheckpointBlock(key,research,model){
   return `MASTER ARTICLE RESEARCH CHECKPOINT v1\n${JSON.stringify({brief_key:key,saved_at:new Date().toISOString(),model:model||'',research},null,2)}\nEND MASTER ARTICLE RESEARCH CHECKPOINT`;
@@ -701,8 +753,9 @@ export default async(request)=>{
     const originalNotes=stripRuntimeBlocks(sourceNotes);
     const key=briefKey(fields,cls);
     const savedResearch=latestCheckpoint(sourceNotes,'research');
+    const lockedResearch=lockedResearchFromNotes(sourceNotes);
     const savedWriter=latestCheckpoint(sourceNotes,'writer');
-    const reusableResearch=(savedResearch?.brief_key===key)?savedResearch:null;
+    const reusableResearch=(savedResearch?.brief_key===key)?savedResearch:(lockedResearch?{...lockedResearch,brief_key:key}:null);
     const writerCandidate=(savedWriter?.brief_key===key)?savedWriter:null;
     const runningStage=mode==='research'?'Researching only':'Generating from locked research';
     const runningBlock=[`MASTER ARTICLE RUNNING v2.22`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
@@ -861,7 +914,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.7.0`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.7.1`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -889,7 +942,7 @@ export default async(request)=>{
       // A blocked research run must invalidate any older writer/package output.
       // Previously the early return left the prior MASTER ARTICLE PACKAGE in Notes,
       // making a current one-source run appear to contain a fresh zero-source package.
-      const priorNotes=removeCheckpoints(originalNotes)
+      const priorNotes=removeWriterCheckpoints(originalNotes)
         .replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'')
         .replace(/\n?MASTER ARTICLE BLOCKED v1[\s\S]*?END MASTER ARTICLE BLOCKED\s*/g,'')
         .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'')
@@ -1005,9 +1058,9 @@ export default async(request)=>{
       result.exception=[String(result.exception||'').trim(),...(outcome.missing||[])].filter(Boolean).join(' ');
       result.evidence_summary=[String(result.evidence_summary||'').trim(),String(research.research_summary||'').trim(),outcome.missing?.length?`Missing required-now evidence: ${outcome.missing.join('; ')}`:''].filter(Boolean).join(' ');
     }
-    const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
+    const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.0`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.1`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -1046,7 +1099,7 @@ export default async(request)=>{
         const current=lookup.records?.[0];
         if(current){
           const notes=stripRuntimeBlocks(current.fields?.Notes||'');
-          const failed=[`MASTER ARTICLE FAILED v3.7.0`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          const failed=[`MASTER ARTICLE FAILED v3.7.1`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await withTimeout(
             airtableRequest(TABLES.sections,{
               method:'PATCH',

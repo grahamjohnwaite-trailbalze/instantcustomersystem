@@ -1,0 +1,23 @@
+ISSUE CANVAS v3.7.1 — LOCKED RESEARCH COMPATIBILITY FIX
+
+Purpose
+- Restore Generate compatibility when a valid locked research result already exists.
+- Preserve the Editorial Brain introduced in v3.7.0.
+
+Fixed
+1. Generate no longer depends only on the hidden research checkpoint.
+2. A saved RESEARCH PACK v1 can restore the locked evidence state.
+3. Earlier SOURCE_CHECK_REQUIRED / blocked evidence notes with retained sources can be reused for cautious attributed writing.
+4. Research checkpoints are retained after article generation instead of being removed with writer checkpoints.
+5. Runtime cleanup now recognises v3.x running and failed markers, not only legacy v2.x markers.
+
+Unchanged
+- Writer research remains disabled.
+- The Writer may use only the locked evidence already attached to the selected article.
+- VERIFIED_NOW, ATTRIBUTED_REPORT and source-check workflows remain distinct.
+- Editorial Brain strategy and quality scoring remain enabled.
+
+Expected test
+1. Select the Norfolk pothole article that already contains retained research/source-check evidence.
+2. Click Generate Master Article without rerunning Research.
+3. The run should reuse the locked evidence and proceed to cautious writing rather than returning "Research is not complete".
