@@ -1,0 +1,19 @@
+ICS Issue Canvas v3.8.4
+Issue and article production progress
+30 July 2026
+
+CHANGED
+- Added an issue-level readiness percentage to the Content Library summary.
+- Added live pipeline counts for researched, verified, written and QA-ready articles.
+- Added a four-stage progress strip to every article card:
+  Research -> Verify -> Write -> QA ready.
+- Added compact R / V / W / QA status marks so the next missing stage is visible without opening the article.
+- Kept the guided Current Article Workflow introduced in v3.8.3.
+
+NOT CHANGED
+- No Airtable schema changes.
+- No changes to research, Master Article generation, source verification or Letterman package logic.
+- No changes to Issue Canvas data, partners, Netlify functions or existing issue content.
+
+DEPLOY
+Upload app/index.html and this release note to main.
