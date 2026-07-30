@@ -35,7 +35,7 @@
 #smart-plan-list{font-size:1.04rem;line-height:1.45}
 #assembly-order{font-size:1.04rem;line-height:1.42}
 .canvas-panel .muted{line-height:1.4}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.4.73<br><strong>Separate Signals + 3×5 Smart Planning + recovery-safe workflow</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.6.1<br><strong>Staged Research Lock — research first, generate second</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Assemble the complete running order from articles, components and attached partners.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -47,7 +47,8 @@
 <button class="btn secondary" id="repair-build-briefs" style="width:100%;margin-bottom:8px">Repair issue briefs</button> <button class="btn secondary" id="reconcile-smart-queue" style="width:100%;margin-bottom:8px">Reconcile Approved Queue</button>
 <button class="btn secondary" id="test-openai" style="width:100%;margin-bottom:8px">Test OpenAI connection</button>
 <button class="btn" id="run-production" style="width:100%;margin-bottom:8px">Produce all ready Master Articles</button>
-<button class="btn secondary" id="run-next-production" style="width:100%;margin-bottom:8px">Produce selected Master Article</button>
+<button class="btn secondary" id="run-next-production" style="width:100%;margin-bottom:8px">Research selected article</button>
+<button class="btn secondary" id="generate-selected-production" style="width:100%;margin-bottom:8px">Generate selected Master Article</button>
 <button class="btn secondary" id="preview-article-package" style="width:100%;margin-bottom:12px">Preview selected article package</button>
 <div id="production-progress" class="empty" style="margin-bottom:14px">Production service not run yet.</div>
 <div id="map-audit" class="empty" style="margin-bottom:14px">Audit not run yet.</div>
@@ -380,13 +381,13 @@ async function refreshProducedRecord(sectionId){
  S.sections=r.records||[];
  return S.sections.find(x=>x.id===sectionId)||null;
 }
-async function produceOne(item){
+async function produceOne(item,mode="generate"){
  const cls=productionClassForFields(item.s.fields);
  const startedAt=Date.now();
  const runId='ma_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
  const response=await fetch('/.netlify/functions/produce-section',{
    method:'POST',headers:{'content-type':'application/json',accept:'application/json'},
-   body:JSON.stringify({sectionId:item.s.id,productionClass:cls,runId})
+   body:JSON.stringify({sectionId:item.s.id,productionClass:cls,runId,mode})
  });
  if(response.status!==202){
    const raw=await response.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={error:`Invalid server response (${response.status}). ${raw.slice(0,300)||'No response body.'}`}}
@@ -408,7 +409,7 @@ async function produceOne(item){
    }
    const qa=String(val(current.fields,'Section QA Result')||'Fix Required');
    const status=String(val(current.fields,'Section Status')||'');
-   const serviceBlocks=[...notes.matchAll(/PRODUCTION SERVICE v2\.\d+[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|PRODUCTION SERVICE)|$)/g)].map(m=>m[0]);
+   const serviceBlocks=[...notes.matchAll(/PRODUCTION SERVICE v(?:2\.\d+|3\.6\.1)[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|RESEARCH PACK|PRODUCTION SERVICE)|$)/g)].map(m=>m[0]);
    const serviceBlockForRun=serviceBlocks.find(block=>block.split('\n').some(line=>line.trim()===`Run ID: ${runId}`))||'';
    const hasCurrentService=!!serviceBlockForRun;
    if(hasCurrentService){
@@ -432,7 +433,7 @@ async function produceOne(item){
  }
  throw new Error('Background production did not finish within 3 minutes. No resumable checkpoint was found yet; check the Airtable Notes trace for the last completed stage.');
 }
-async function runProduction({one=false}={}){
+async function runProduction({one=false,mode="generate"}={}){
  if(!S.issue){alert('Open an issue first.');return}
  let work;
  if(one){
@@ -452,15 +453,15 @@ async function runProduction({one=false}={}){
  }
  let pass=0,sourceCheck=0,researchIncomplete=0,editorialReview=0,failed=0;
  const failureDetails=[];
- E('run-production').disabled=true;E('run-next-production').disabled=true;
+ E('run-production').disabled=true;E('run-next-production').disabled=true;E('generate-selected-production').disabled=true;
  for(let i=0;i<work.length;i++){
    const item=work[i];
    S.productionUi[item.s.id]={state:'running',error:''};
    renderSections();
    E('production-progress').className='philosophy-box';
-   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Researching, writing, checking and saving in the background. This may take several minutes.</div><div class="muted">Complete ${pass} · Source check ${sourceCheck} · Research incomplete ${researchIncomplete} · Editorial review ${editorialReview} · Failed ${failed}</div>`;
+   E('production-progress').innerHTML=`<strong>${mode==='research'?'Researching selected article':'Generating selected Master Article'}</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">${mode==='research'?'Building and locking the Research Pack. The writer will not run.':'Using the locked Research Pack only. No web research will run.'}</div><div class="muted">Complete ${pass} · Source check ${sourceCheck} · Research incomplete ${researchIncomplete} · Editorial review ${editorialReview} · Failed ${failed}</div>`;
    try{
-     const d=await produceOne(item);
+     const d=await produceOne(item,mode);
      delete S.productionUi[item.s.id];
      if(d.qaResult==='Pass')pass++;
      else if(d.outcome==='SOURCE_CHECK_REQUIRED')sourceCheck++;
@@ -477,7 +478,7 @@ async function runProduction({one=false}={}){
    renderSections();
    if(!one&&i<work.length-1)await sleep(2500);
  }
- E('run-production').disabled=false;E('run-next-production').disabled=false;
+ E('run-production').disabled=false;E('run-next-production').disabled=false;E('generate-selected-production').disabled=false;
  if(one&&work[0]?.s){S.section=S.sections.find(x=>x.id===work[0].s.id)||work[0].s;}
  renderSections();
  renderForm();
@@ -2141,5 +2142,5 @@ E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
 E('save-inspector').onclick=saveInspector;E('inspect-has-partner').onchange=toggleInspectorPartner;
 E('remove-canvas-block').onclick=()=>{if(canvasSelectedUid)removeCanvasBlock(canvasSelectedUid)};
 E('create-component-copy').onclick=createStarterCopy;
-E('assembly-export').onclick=exportCanvasBackup;E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble')renderAssembly()});E('new-issue').onclick=()=>E('issue-dialog').showModal();E('create-issue').onclick=createIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>runProduction({one:true});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly()});
+E('assembly-export').onclick=exportCanvasBackup;E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble')renderAssembly()});E('new-issue').onclick=()=>E('issue-dialog').showModal();E('create-issue').onclick=createIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>runProduction({one:true,mode:'research'});E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly()});
 </script></body></html>

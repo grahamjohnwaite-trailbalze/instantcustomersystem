@@ -6,6 +6,7 @@ const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=45000;
+const RELEASE_VERSION='3.6.1';
 function withTimeout(promise,timeoutMs,label){
   let timer;
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
@@ -427,6 +428,15 @@ function evidenceOutcome(cls,research,gate){
   if(n===0)return {code:'RESEARCH_INCOMPLETE',label:'Research incomplete',missing:blocking.length?blocking:timing.required};
   return {code:'SOURCE_CHECK_REQUIRED',label:'Source check required',missing:blocking.length?blocking:timing.required};
 }
+function researchLockDecision(research){
+  const sources=Array.isArray(research?.sources)?research.sources:[];
+  const official=sources.filter(x=>/official|primary/i.test(String(x.source_type||''))||/\.gov\.uk|gov\.uk|nhs\.uk|police\.uk|norfolk\.gov\.uk/i.test(String(x.url||'')));
+  const credible=sources.filter(x=>cleanUrl(x.url)&&!/news\.google\.com\/rss/i.test(String(x.url||'')));
+  if(official.length>=1)return {code:'VERIFIED_NOW',humanReview:false,reason:'Official or primary evidence is retained in the locked Research Pack.'};
+  if(credible.length>=1)return {code:'ATTRIBUTED_REPORT',humanReview:true,reason:'Credible reporting is retained, but matching official confirmation is incomplete. Claims must remain explicitly attributed.'};
+  return {code:'BLOCKED',humanReview:true,reason:'No sufficiently credible article-specific source is retained for publication.'};
+}
+
 function researchPromptFor(fields,cls){
   const localProof=String(value(fields,'Local Proof Needed')||'').trim();
   const evidence=String(value(fields,'Evidence Required')||'').trim();
@@ -609,6 +619,7 @@ export default async(request)=>{
     log('request_received',{method:request.method});
     if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
     const data=await readJson(request);
+    const mode=String(data.mode||'generate').toLowerCase()==='research'?'research':'generate';
     runId=String(data.runId||runId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80)||runId;
     log('request_parsed',{sectionId:data.sectionId||'',requestedClass:data.productionClass||''});
     if(!data.sectionId)return json(400,{ok:false,error:'sectionId is required.'});
@@ -626,9 +637,9 @@ export default async(request)=>{
     const key=briefKey(fields,cls);
     const savedResearch=latestCheckpoint(sourceNotes,'research');
     const savedWriter=latestCheckpoint(sourceNotes,'writer');
-    const reusableResearch=(savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedResearch:null;
+    const reusableResearch=(savedResearch?.brief_key===key)?savedResearch:null;
     const writerCandidate=(savedWriter?.brief_key===key)?savedWriter:null;
-    const runningStage=reusableResearch?'Resuming with saved research':'Researching and writing';
+    const runningStage=mode==='research'?'Researching only':'Generating from locked research';
     const runningBlock=[`MASTER ARTICLE RUNNING v2.22`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
@@ -684,11 +695,16 @@ export default async(request)=>{
     };
     traceLine('Request accepted','DONE');
     await saveTrace();
+    if(mode==='generate' && cls!=='A — Question Only' && !reusableResearch){
+      const e=new Error('Research is not complete. Run Research selected article first.');
+      e.status=409;
+      throw e;
+    }
     let research={research_status:'Sufficient',research_summary:'Question-only article; no research required.',sources:[],missing_evidence:[]};
     let researchResponse=null;
     let researchModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
     if(cls!=='A — Question Only'){
-      if(reusableResearch){
+      if(reusableResearch&&mode==='generate'){
         research=reusableResearch.research;
         researchModel=reusableResearch.model||researchModel;
         traceLine('Research checkpoint reused','DONE',researchModel||'saved');
@@ -761,12 +777,44 @@ export default async(request)=>{
       }
     }
 
+    if(mode==='research'){
+      const decision=researchLockDecision(research);
+      const retained=(research.sources||[]).map(x=>({title:String(x.title||'').trim(),url:cleanUrl(x.url),supports:stripTags(String(x.supports||'')).trim(),source_type:String(x.source_type||'')})).filter(x=>x.url).slice(0,8);
+      const pack=[
+        `RESEARCH PACK v1`,
+        `Research ID: rp_${runId}`,
+        `Run ID: ${runId}`,
+        `State: RESEARCH_COMPLETE`,
+        `Evidence Class: ${decision.code}`,
+        `Human review: ${decision.humanReview?'Required':'Not required'}`,
+        `Decision: ${decision.reason}`,
+        `Sources retained: ${retained.length}`,
+        ...retained.map((src,i)=>`Source ${i+1}: ${src.title||'Untitled source'} | ${src.url} | ${src.source_type||'reported'} | ${src.supports||'Support not summarised'}`),
+        `Missing: ${(research.missing_evidence||[]).join('; ')||'None recorded'}`,
+        `Locked: ${new Date().toISOString()}`,
+        `END RESEARCH PACK`
+      ].join('\n');
+      const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
+      const checkpoint=researchCheckpointBlock(key,research,researchModel);
+      const service=[`PRODUCTION SERVICE v3.6.1`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
+      const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
+        'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
+        'Evidence Status':decision.code==='VERIFIED_NOW'?'Verified':decision.code==='ATTRIBUTED_REPORT'?'Reported — Attribution Required':'Researching',
+        'Evidence Checked Date':new Date().toISOString().slice(0,10),
+        'Section QA Result':decision.code==='BLOCKED'?'Fix Required':'Not Checked',
+        'Section Status':decision.code==='BLOCKED'?'Researching':'Planned',
+        'Notes':notes
+      }}],typecast:true}});
+      return json(200,{ok:true,record:cleanRecord(saved.records[0]),stage:'RESEARCH_COMPLETE',outcome:decision.code,researchId:`rp_${runId}`,sources:retained,humanReview:decision.humanReview});
+    }
+
     // Bounded recovery: do not spend a full writer call on an article whose
     // core evidence is still insufficient after the targeted second pass.
     if(cls!=='A — Question Only'){
       const gateNow=evidenceGate(fields,cls,research);
       const outcomeNow=evidenceOutcome(cls,research,gateNow);
-      if(outcomeNow.code!=='COMPLETE'){
+      if(researchLockDecision(research).code==='BLOCKED'){
       const retained=(research.sources||[]).map(x=>({
         title:String(x.title||'').trim(),
         url:cleanUrl(x.url),
@@ -884,16 +932,17 @@ export default async(request)=>{
     for(const src of [...researchSources,...writerSources])if(src.url&&!merged.some(x=>x.url===src.url))merged.push(src);
     const sources=merged.slice(0,5);
     const gate=evidenceGate(fields,cls,research);
+    const lockDecision=researchLockDecision(research);
     const editorialOutcome=evidenceOutcome(cls,research,gate);
-    const qa=(result.qa_result==='Pass'&&editorialOutcome.code==='COMPLETE')?'Pass':'Fix Required';
-    const outcome=qa==='Pass'?{code:'COMPLETE',label:'Complete',missing:[],future_tests:editorialOutcome.future_tests||[],optional_missing:editorialOutcome.optional_missing||[]}:editorialOutcome;
+    const qa=(result.qa_result==='Pass'&&lockDecision.code!=='BLOCKED')?'Pass':'Fix Required';
+    const outcome=qa==='Pass'?{code:lockDecision.code,label:lockDecision.code==='VERIFIED_NOW'?'Verified now':'Attributed report',missing:[],future_tests:editorialOutcome.future_tests||[],optional_missing:editorialOutcome.optional_missing||[]}:editorialOutcome;
     if(outcome.code!=='COMPLETE'){
       result.exception=[String(result.exception||'').trim(),...(outcome.missing||[])].filter(Boolean).join(' ');
       result.evidence_summary=[String(result.evidence_summary||'').trim(),String(research.research_summary||'').trim(),outcome.missing?.length?`Missing required-now evidence: ${outcome.missing.join('; ')}`:''].filter(Boolean).join(' ');
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.24`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.6.1`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -932,7 +981,7 @@ export default async(request)=>{
         const current=lookup.records?.[0];
         if(current){
           const notes=stripRuntimeBlocks(current.fields?.Notes||'');
-          const failed=[`MASTER ARTICLE FAILED v2.16`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
+          const failed=[`MASTER ARTICLE FAILED v3.6.1`,`Run ID: ${runId}`,`Error: ${String(error?.message||'Production failed').slice(0,1000)}`,`Failed: ${new Date().toISOString()}`,`END MASTER ARTICLE FAILED`].join('\n');
           await withTimeout(
             airtableRequest(TABLES.sections,{
               method:'PATCH',
