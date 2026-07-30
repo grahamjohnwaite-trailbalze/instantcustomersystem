@@ -5,6 +5,7 @@ const ALLOWED_CLASSES=new Set(['A — Question Only','B — Light Proof','C — 
 const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=145000;
+const HARD_RUN_CEILING_MS=Math.max(TOTAL_BUDGET_MS+15000,125000);
 const RECOVERY_BUDGET_MS=55000;
 function withTimeout(promise,timeoutMs,label){
   let timer;
@@ -680,7 +681,7 @@ export default async(request)=>{
     const reusableResearch=(savedResearch?.brief_key===key&&savedResearch?.research?.research_status==='Sufficient')?savedResearch:null;
     const writerCandidate=(savedWriter?.brief_key===key)?savedWriter:null;
     const runningStage=reusableResearch?'Resuming with saved research':'Researching and writing';
-    const runningBlock=[`MASTER ARTICLE RUNNING v3.0`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
+    const runningBlock=[`MASTER ARTICLE RUNNING v3.1`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
     await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
@@ -729,6 +730,12 @@ export default async(request)=>{
         'Diagnostic trace save'
       );
     };
+    let diagnosticsFlushed=false;
+    const flushDiagnostics=async()=>{
+      if(diagnosticsFlushed)return;
+      diagnosticsFlushed=true;
+      await saveTrace();
+    };
     const stage=async(name,fn,limitMs)=>{
       traceLine(name,'START');
       await saveTrace();
@@ -749,7 +756,7 @@ export default async(request)=>{
       checkpoint:writerCandidate?'writer candidate present':reusableResearch?'research reused':'none reused',
       elapsed_ms:Date.now()-started
     }));
-    await saveTrace();
+
     let research={research_status:'Sufficient',research_summary:'Question-only article; no research required.',sources:[],missing_evidence:[]};
     let researchResponse=null;
     let researchModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
@@ -768,7 +775,7 @@ export default async(request)=>{
         log('research_started',{productionClass:cls,model:researchModel});
         research=await stage('Fast evidence collection',()=>fastEvidencePack(fields,cls),18000);
         diagnostics.push(diagnosticRow('FAST RESEARCH COMPLETE',research,{checkpoint:'fresh',elapsed_ms:Date.now()-started}));
-        await saveTrace();
+
         log('research_completed',{model:researchModel,sourceCount:Array.isArray(research.sources)?research.sources.length:0});
         let gate=evidenceGate(fields,cls,research);
         if(!gate.pass){
@@ -783,7 +790,7 @@ export default async(request)=>{
             const recoveryModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
             research=await stage('Targeted web research recovery',()=>recoverEvidencePack(fields,cls,research,recoveryModel),RECOVERY_BUDGET_MS+3000);
             diagnostics.push(diagnosticRow('RECOVERY COMPLETE',research,{checkpoint:'fresh',elapsed_ms:Date.now()-started}));
-            await saveTrace();
+
             gate=evidenceGate(fields,cls,research);
             if(!gate.pass){
               research.research_status='Insufficient';
@@ -849,7 +856,7 @@ export default async(request)=>{
         .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'')
         .trim();
       const serviceNotes=[
-        `PRODUCTION SERVICE v3.0`,
+        `PRODUCTION SERVICE v3.1`,
         `Run ID: ${runId}`,
         `Class: ${cls}`,
         `Outcome: ${outcomeNow.code}`,
@@ -896,7 +903,7 @@ export default async(request)=>{
       checkpoint:reusableWriter?'reused':writerCandidate?'invalidated':'none',
       elapsed_ms:Date.now()-started
     }));
-    await saveTrace();
+
     if(writerCandidate&&!reusableWriter){
       traceLine('Writer checkpoint invalidated','DONE','research pack changed');
       await saveTrace();
@@ -906,7 +913,7 @@ export default async(request)=>{
     let writerRaw='',response={_model_used:writerModel};
     if(reusableWriter){
       diagnostics.push(diagnosticRow('WRITER INPUT',research,{checkpoint:'writer reused',elapsed_ms:Date.now()-started}));
-      await saveTrace();
+
       writerRaw=String(reusableWriter.raw_output||'');
       response._model_used=reusableWriter.model||writerModel;
       traceLine('Writer checkpoint reused','DONE',response._model_used||'saved');
@@ -947,7 +954,7 @@ export default async(request)=>{
     for(const src of [...writerSources,...researchSources])if(src.url&&!merged.some(x=>x.url===src.url))merged.push(src);
     const sources=merged.slice(0,5);
     diagnostics.push(diagnosticRow('FINAL QA INPUT',research,{checkpoint:'final',elapsed_ms:Date.now()-started}));
-    await saveTrace();
+
     const gate=evidenceGate(fields,cls,research);
     const editorialOutcome=evidenceOutcome(cls,research,gate);
     const qa=(result.qa_result==='Pass'&&editorialOutcome.code==='COMPLETE')?'Pass':'Fix Required';
@@ -958,7 +965,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.0`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.1`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -987,6 +994,7 @@ export default async(request)=>{
     log('request_completed',{qaResult:qa});
     return json(200,{ok:true,record:cleanRecord(saved.records[0]),productionClass:cls,qaResult:qa,outcome:outcome.code,researchRecovery:!!research?.recovery_used,sources,articlePackage:parseJsonText(block.split('\n').slice(1,-1).join('\n')),exception:qa==='Pass'?'':String(result.exception||outcome.label)});
   }catch(error){
+    try{if(typeof flushDiagnostics==='function')await flushDiagnostics();}catch(_diagError){}
     console.error('master-article-failed',{runId,elapsedMs:Date.now()-started,message:error?.message,status:error?.status,details:error?.details,stack:error?.stack});
     if(error?.code==='RUN_SUPERSEDED'){
       return json(409,{ok:false,error:String(error.message||'This run was superseded by a newer production run.'),runId,superseded:true});
