@@ -5,7 +5,7 @@ const ALLOWED_CLASSES=new Set(['A — Question Only','B — Light Proof','C — 
 const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
-const RECOVERY_BUDGET_MS=40000;
+const RECOVERY_BUDGET_MS=45000;
 function withTimeout(promise,timeoutMs,label){
   let timer;
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
@@ -150,6 +150,31 @@ function genericDriftSource(x){
   const blob=[x.title,x.description].join(' ').toLowerCase();
   return /definition of|simple english wikipedia|symptoms and causes|dictionary|encyclopedia/.test(blob);
 }
+function wrongGeographySource(x,fields){
+  const article=[value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Local Proof Needed'),value(fields,'Notes')].join(' ').toLowerCase();
+  const blob=[x.title,x.description,x.source,x.url].join(' ').toLowerCase();
+  // Prevent same-name US places from passing a UK locality match (for example Norfolk, Virginia).
+  if(/\bnorfolk\b/.test(article)&&/virginia|hampton roads|virginia beach|chesapeake|wtkr\.com|13newsnow|wavy\.com/.test(blob))return true;
+  if(/\bsuffolk\b/.test(article)&&/suffolk county,? new york|long island|virginia/.test(blob))return true;
+  return false;
+}
+function currentDiscoverySource(fields){
+  const notes=String(value(fields,'Notes')||'');
+  const line=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
+  const provenance=(notes.match(/Plan provenance:\s*([^\n]+)/i)||[])[1]||'';
+  const url=(provenance.match(/https?:\/\/\S+/i)||line.match(/https?:\/\/\S+/i)||[])[0]||'';
+  if(!line||!url)return null;
+  const parts=line.split('|').map(x=>x.trim());
+  const headline=String(parts[0]||'').replace(/^Lead\s+\d+:\s*/i,'').trim();
+  const publisher=String(parts[1]||'').trim();
+  return {
+    title:[headline,publisher].filter(Boolean).join(' — '),
+    url:cleanUrl(url),
+    description:`Current discovery lead supplied by the locked Smart Plan. Publisher: ${publisher||'not stated'}. This is discovery/corroboration, not primary authority.`,
+    source:publisher||'Current discovery lead',
+    query:'locked smart plan',provider:'SMART-PLAN',relevance:8,seeded_discovery:true
+  };
+}
 function precisionAnchors(fields){
   const title=String(value(fields,'Section Title')||'');
   const q=String(value(fields,'Core Reader Question')||'');
@@ -169,7 +194,7 @@ function precisionAnchors(fields){
   return {entities,topicGroups};
 }
 function precisionPass(x,fields){
-  if(genericDriftSource(x))return false;
+  if(genericDriftSource(x)||wrongGeographySource(x,fields))return false;
   const blob=[x.title,x.description,x.source,x.url].join(' ').toLowerCase();
   const {entities,topicGroups}=precisionAnchors(fields);
   const entityHits=entities.filter(e=>blob.includes(e)).length;
@@ -201,7 +226,12 @@ function articleSearchTerms(fields){
   if(/nhs|obesity|health|send/i.test(title+' '+q+' '+evidence))queries.push(compact(`site:nhs.uk Norfolk ${title}`).slice(0,180));
   if(/police|speed/i.test(title+' '+q))queries.push(compact(`site:norfolk.police.uk ${title}`).slice(0,180));
   if(/planning|housing|a149|self-build/i.test(title+' '+q+' '+proof))queries.push(compact(`Norfolk planning ${title}`).slice(0,180));
-  return [...new Set(queries)].slice(0,7);
+  if(/pothole|road repair|highway repair/i.test(title+' '+q+' '+proof+' '+current)){
+    queries.unshift(compact(`"${current.replace(/\|.*$/,'').replace(/^Lead\s+\d+:\s*/i,'').trim()}"`).slice(0,180));
+    queries.push('site:norfolk.gov.uk Norfolk County Council pothole repair trial techniques');
+    queries.push('site:gov.uk pothole repair reporting repeat repairs council 2026');
+  }
+  return [...new Set(queries)].slice(0,9);
 }
 async function fastEvidencePack(fields,cls){
   if(cls==='A — Question Only')return {research_status:'Sufficient',research_summary:'Question-only article; no research required.',sources:[],missing_evidence:[]};
@@ -211,8 +241,10 @@ async function fastEvidencePack(fields,cls){
   for(const q of queries.slice(0,3))jobs.push(fetchTextFast(googleNewsUrl(q)).then(r=>parseRssEvidence(r.text,q,'Google News RSS')));
   const settled=await Promise.allSettled(jobs);
   let raw=settled.flatMap(x=>x.status==='fulfilled'?x.value:[]);
-  // Reject off-topic results before they ever reach Writer.
-  raw=raw.map(x=>({...x,relevance:relevanceScore(x,fields)})).filter(x=>x.relevance>=3&&precisionPass(x,fields));
+  const discovery=currentDiscoverySource(fields);
+  if(discovery)raw.unshift(discovery);
+  // Reject off-topic and wrong-country results before they ever reach Writer.
+  raw=raw.map(x=>({...x,relevance:Number(x.relevance||relevanceScore(x,fields))})).filter(x=>x.relevance>=3&&precisionPass(x,fields));
   raw.sort((a,b)=>b.relevance-a.relevance);
   const seen=new Set(),dedup=[];
   for(const x of raw){
@@ -230,7 +262,7 @@ async function fastEvidencePack(fields,cls){
     title:String(x.title||x.source||'').slice(0,220),
     url:cleanUrl(x.url),
     supports:String(x.description||`Discovery result for: ${x.query}`).slice(0,700),
-    source_type:sourceTypeFor(x.url,x.source),
+    source_type:x.seeded_discovery?'discovery':sourceTypeFor(x.url,x.source),
     relevance:x.relevance
   })).filter(x=>x.url);
   const official=chosen.filter(x=>x.source_type==='official').length;
@@ -269,66 +301,35 @@ function recoveryResearchPrompt(fields,cls,firstPass){
   const notes=String(value(fields,'Notes')||'');
   const current=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
   const provenance=(notes.match(/Plan provenance:\s*([^\n]+)/i)||[])[1]||'';
-  const smartRefresh=(notes.match(/SMART PLAN REFRESH[\s\S]*?(?=\n\nMASTER ARTICLE|\nMASTER ARTICLE|$)/i)||[])[0]||'';
-  return `You are the SECOND-PASS evidence researcher for a local-news Master Article. The fast discovery pass was not strong enough.
-
-Your job is ENTITY-FIRST RESEARCH. Do not begin with broad topic research.
+  return `You are the bounded second-pass evidence researcher for one UK local-news article.
 
 ARTICLE
 Title: ${title}
-Core reader question: ${question}
+Question: ${question}
 Current discovery lead: ${current||'Not supplied'}
 Plan provenance: ${provenance||'Not supplied'}
-Locked-plan context:
-${smartRefresh||'Not supplied'}
-Local proof required: ${proof||'Not supplied'}
-Evidence required: ${evidence||'Not supplied'}
-Production class: ${cls}
+Local proof needed: ${proof||'Not supplied'}
+Evidence needed: ${evidence||'Not supplied'}
+Class: ${cls}
 
-FIRST PASS
+FAST PASS
 ${JSON.stringify(firstPass||{},null,2)}
 
-ENTITY-FIRST RECOVERY PROCEDURE
-1. RESOLVE THE SUBJECT FIRST. From the discovery headline/provenance, identify the exact named organisation, project, development, road/site, council, committee, funding programme, service, venue, attraction, police operation or other real-world subject. Where possible resolve a distinctive project/application/service name, location, organisation name or reference number.
-2. If the discovery lead is too vague to identify the subject confidently, search specifically to resolve that identity before attempting the evidence question. Do not guess the identity.
-3. Once resolved, search the accountable body most likely to hold the primary evidence:
-   - planning/development -> relevant council planning portal, committee papers, decision notice, highways authority, statutory consultees;
-   - roads/transport/potholes -> county/highway authority, National Highways where relevant, scheme/project pages;
-   - health -> NHS organisation, ICB, NHS England, GOV.UK, NICE, commissioned provider;
-   - funding/charity/service -> funder announcement plus recipient organisation/service page;
-   - police/enforcement -> police force, PCC, council or GOV.UK as appropriate;
-   - tourism/business/venue -> official attraction/business/venue plus relevant council/highway/tourism authority where the core question needs it;
-   - elections/public office -> official council/election result and the relevant authority/parliamentary source.
-4. Search using the resolved proper nouns and distinctive anchors, not merely broad phrases such as "Norfolk housing" or "Norfolk potholes".
-5. SOURCE HIERARCHY: local/news-media sources such as EDP24, BBC local, newspapers and news sites are DISCOVERY/CORROBORATION sources. They may help you resolve the story internally, but prefer official/primary evidence for the facts the published article will stand on. Do not require the finished article to name or quote a discovery outlet.
-6. Prefer reader-facing authority from official reports, council papers, planning documents, government/NHS/regulator data, official organisation/service pages, direct published statements and other primary material.
-7. Classify unresolved evidence by TIMING:
-   - REQUIRED_NOW: a factual premise needed to publish responsibly today. Missing REQUIRED_NOW evidence blocks publication.
-   - FUTURE_TEST: an outcome that genuinely cannot yet be known because a trial, scheme, consultation, build, funding rollout or decision has not produced results. This does NOT block publication if the article frames it honestly as a question, possibility or test to watch.
-   - OPTIONAL: useful colour/detail that can simply be omitted.
-8. A question mark is not permission to smuggle in a false premise. The underlying premise must be verified. But legitimate formulations such as "Could this reduce repeat repairs?", "Will it last longer?" or "What should happen next?" are allowed when clearly presented as unanswered questions.
-9. Map every retained source to a material part of the CORE QUESTION. Do not pad source count. One authoritative source can establish a narrow fact. Several copies of the same story count as one evidence chain.
-10. For legal, health, finance, planning, public spending, transport or enforcement topics, require primary/official support for material current facts where reasonably available, but do not demand future outcome data that cannot yet exist.
-11. If the exact subject cannot be resolved, return Insufficient and state precisely what identity/anchor is missing. Never substitute a different Norfolk project merely because it is easier to find.
-12. Clean supports text: plain text only, no HTML.
+TASK
+1. Resolve the exact real-world subject first. Do not substitute a different project.
+2. This publication means Norfolk, England. Reject Norfolk, Virginia and other same-name places.
+3. For roads/potholes, identify the accountable highway authority and find the most direct official council, committee, contract, scheme or GOV.UK source.
+4. The supplied newspaper/RSS lead is discovery only. It may establish what to search for, but primary/official evidence should support material reader-facing facts where available.
+5. Return no more than 4 distinct sources. Map each source to a specific claim. Do not pad.
+6. Separate missing evidence by timing:
+   - REQUIRED_NOW blocks publication today.
+   - FUTURE_TEST is an outcome not yet knowable and must be framed as a question, not a blocker.
+   - OPTIONAL may be omitted.
+7. A trial can be written about before results exist only when its existence, responsible body and present purpose are verified.
+8. If the exact subject cannot be verified, return Insufficient and say what identity or official confirmation is missing.
 
 Return ONLY valid JSON:
-{
- "research_status":"Sufficient or Insufficient",
- "resolved_subject":{
-   "name":"exact resolved subject/project/organisation/site/service, or empty if unresolved",
-   "location":"specific place if established",
-   "responsible_body":"accountable organisation if established",
-   "reference":"application/project/reference number if established",
-   "confidence":"high/medium/low"
- },
- "research_summary":"what was resolved and verified",
- "sources":[{"title":"","url":"clean raw URL","supports":"specific claim supported","source_type":"official/primary/local/discovery/other","reader_facing":true}],
- "required_now_missing":["only factual premises still missing that genuinely block responsible publication today"],
- "future_tests":["outcomes not yet knowable that should be framed as questions or follow-up tests, not blockers"],
- "optional_missing":["non-essential details that may be omitted"],
- "missing_evidence":["backward-compatible combined notes; do not put FUTURE_TEST or OPTIONAL items here unless they also block publication"]
-}`;
+{"research_status":"Sufficient or Insufficient","resolved_subject":{"name":"","location":"","responsible_body":"","reference":"","confidence":"high/medium/low"},"research_summary":"","sources":[{"title":"","url":"","supports":"","source_type":"official/primary/local/discovery/other","reader_facing":true}],"required_now_missing":[],"future_tests":[],"optional_missing":[],"missing_evidence":[]}`;
 }
 async function recoverEvidencePack(fields,cls,firstPass,model){
   const response=await createResponse({
@@ -790,7 +791,7 @@ export default async(request)=>{
         `END MASTER ARTICLE BLOCKED`
       ].join('\n');
       const serviceNotes=[
-        `PRODUCTION SERVICE v2.23`,
+        `PRODUCTION SERVICE v2.24`,
         `Run ID: ${runId}`,
         `Class: ${cls}`,
         `Outcome: ${outcomeNow.code}`,
@@ -892,7 +893,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.23`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.24`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),

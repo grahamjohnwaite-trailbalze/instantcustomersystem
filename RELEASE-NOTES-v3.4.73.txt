@@ -1,0 +1,8 @@
+ICS Issue Canvas v3.4.73 — UK Source Precision + Compact Recovery
+
+- Rejects same-name US geography results such as Norfolk, Virginia.
+- Seeds the locked Smart Plan discovery lead into the research pack as discovery/corroboration only.
+- Adds exact-headline and official pothole/highways searches.
+- Replaces the long recovery prompt with a compact entity-first prompt.
+- Recovery budget is 45 seconds.
+- Production Service label updated to v2.24.
