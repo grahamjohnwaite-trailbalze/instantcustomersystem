@@ -1,0 +1,24 @@
+ICS v3.9.0 — Component Command Centre
+30 July 2026
+
+PURPOSE
+Move Issue Canvas from a running-order board towards a component-centred publishing operating system without changing the Airtable schema or the working research/article production engine.
+
+ADDED
+- Issue Component Command Centre with full lifecycle progress.
+- Structured component count, evidence/proof count, approved-content count and Letterman/published count.
+- Clear next incomplete component and one-click jump to it.
+- Stable Component ID added to every existing and new Canvas object.
+- Lifecycle stages on every Canvas card: PLAN → EVIDENCE → PRODUCE → DISTRIBUTE.
+- Component Registry summary showing the formats currently used in the issue.
+- Component ID and current lifecycle stage shown in the Inspector.
+- Direct button from Canvas to article production.
+
+COMPATIBILITY
+- Existing Canvas records are upgraded safely in browser storage when loaded.
+- No Airtable field or table changes.
+- No Netlify function changes.
+- Research, Master Article, QA, Letterman package, partners and drag/drop remain in place.
+
+DEPLOY
+Upload app/index.html and RELEASE-NOTES-v3.9.0.txt to main.
