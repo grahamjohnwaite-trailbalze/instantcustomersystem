@@ -1,0 +1,56 @@
+ISSUE CANVAS v3.6.0 — RESEARCH LOCK
+
+BASE
+- Built directly from proven v3.4.73 UK Source Precision.
+- Rollback build: v3.4.73.
+
+OBJECTIVE
+Separate evidence decisions from article writing. Research is locked before the writer runs, and the writer cannot browse or change the evidence class.
+
+ADDED
+1. Locked Research Pack v2
+   - persistent research_id
+   - research_lock flag
+   - locked_at timestamp
+   - retained source and missing-evidence record
+
+2. Evidence Engine v2
+   - VERIFIED_NOW
+   - ATTRIBUTED_REPORT
+   - BLOCKED
+
+3. Attributed writer mode
+   - central reported claims must be attributed
+   - absence of matching official confirmation must be stated
+   - reported claims must not be upgraded into established facts
+
+4. Editorial decision record
+   - evidence outcome
+   - Research Pack ID and lock state
+   - human-review requirement
+   - explicit confirmation that writer research is disabled
+
+CHANGED
+- Master Article Package upgraded to v2.
+- Production Service upgraded to v3.0.
+- Writer uses the locked Research Pack with useWeb:false.
+- A credible local report may proceed as ATTRIBUTED_REPORT rather than being automatically blocked.
+- Weak or unsafe evidence remains BLOCKED.
+
+NOT CHANGED
+- Issue planning
+- drag/drop
+- partner assignment
+- components
+- Master Content Ideas
+- Archive Recovery
+
+REGRESSION TESTS
+[ ] Norfolk pothole trial -> ATTRIBUTED_REPORT
+[ ] PBS article with official evidence -> VERIFIED_NOW
+[ ] weak niche article -> BLOCKED
+
+DEPLOYMENT CHECK
+Footer must show:
+Issue Canvas v3.6.0
+Research Lock + Evidence Engine v2 + attributed publishing
