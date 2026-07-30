@@ -772,19 +772,35 @@ export default async(request)=>{
         supports:stripTags(String(x.supports||'')).trim()
       })).filter(x=>x.url).slice(0,5);
       const missing=[...new Set(outcomeNow.missing||[])].filter(Boolean);
+      // A blocked research run must invalidate any older writer/package output.
+      // Previously the early return left the prior MASTER ARTICLE PACKAGE in Notes,
+      // making a current one-source run appear to contain a fresh zero-source package.
       const priorNotes=removeCheckpoints(originalNotes)
+        .replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'')
+        .replace(/\n?MASTER ARTICLE BLOCKED v1[\s\S]*?END MASTER ARTICLE BLOCKED\s*/g,'')
         .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'')
         .trim();
+      const blockedBlock=[
+        `MASTER ARTICLE BLOCKED v1`,
+        `Run ID: ${runId}`,
+        `Reason: Source verification required before writing.`,
+        `Sources retained: ${retained.length}`,
+        ...retained.map((src,i)=>`Source ${i+1}: ${src.title||'Untitled source'} | ${src.url} | ${src.supports||'Support not summarised'}`),
+        `Missing: ${missing.join('; ')||'Further primary/local evidence is required before publication.'}`,
+        `END MASTER ARTICLE BLOCKED`
+      ].join('\n');
       const serviceNotes=[
-        `PRODUCTION SERVICE v2.22`,
+        `PRODUCTION SERVICE v2.23`,
         `Run ID: ${runId}`,
         `Class: ${cls}`,
         `Outcome: ${outcomeNow.code}`,
+        `Writer: Skipped — evidence gate did not pass`,
         `Evidence: ${String(research.research_summary||'Insufficient evidence after bounded recovery.').trim()}`,
         `Sources retained: ${retained.length}`,
         `Exception: ${missing.join('; ')||'Further primary/local evidence is required before publication.'}`
       ].join('\n');
-      const notesBase=priorNotes?`${priorNotes}\n\n${serviceNotes}`:serviceNotes;
+      const currentRun=`${blockedBlock}\n\n${serviceNotes}`;
+      const notesBase=priorNotes?`${priorNotes}\n\n${currentRun}`:currentRun;
       const notes=`${notesBase}\n\n${traceBlock()}`;
       await assertRunOwnership('Research incomplete save ownership check');
       const saved=await withTimeout(
@@ -796,6 +812,7 @@ export default async(request)=>{
             'Evidence Checked Date':new Date().toISOString().slice(0,10),
             'Section QA Result':'Fix Required',
             'Section Status':'Researching',
+            'Section Final Copy':'',
             'Notes':notes
           }}],typecast:true},
           timeoutMs:18000
@@ -875,7 +892,7 @@ export default async(request)=>{
     }
     const priorNotes=removeCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.22`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v2.23`,`Run ID: ${runId}`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
