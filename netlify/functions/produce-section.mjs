@@ -487,6 +487,53 @@ async function recoverEvidencePack(fields,cls,firstPass,model){
     recovery_model:response._model_used||model||''
   };
 }
+
+function isGuideAdviceBrief(fields){
+  const title=String(value(fields,'Section Title')||'');
+  const question=String(value(fields,'Core Reader Question')||'');
+  const blob=(title+' '+question).toLowerCase();
+  // General reader-service questions can normally be answered from authoritative
+  // evidence without recreating every real-world condition hands-on.
+  return /\b(how|what can|what should|which|guide|tips?|checklist|ways?|features?|options?|worth|save|choose|find|do beyond|before you)\b/i.test(blob)
+    && !/\b(liquidat|administrat|arrest|charged|court|death|killed|crash|fire|closure|closed|bankrupt|insolvenc|fraud|investigation|planning decision|council decision)\b/i.test(blob);
+}
+
+function relaxNonCoreEvidenceDemands(fields,research){
+  if(!research||!isGuideAdviceBrief(fields)) return research;
+  const sources=Array.isArray(research.sources)?research.sources:[];
+  const strong=sources.filter(x=>/official|primary/i.test(String(x.source_type||''))||/\.gov\.uk|gov\.uk|nhs\.uk|support\.google\.com|moneyhelper\.org\.uk|fca\.org\.uk/i.test(String(x.url||'')));
+  if(strong.length<2) return research;
+
+  const title=String(value(fields,'Section Title')||'');
+  const question=String(value(fields,'Core Reader Question')||'');
+  const localProof=String(value(fields,'Local Proof Needed')||'');
+  const articleBlob=(title+' '+question+' '+localProof).toLowerCase();
+  const demandsLocalNamedClaim=/\b(named|specific)\s+(?:norfolk|local)\s+(?:retailer|business|venue|operator|route|scheme)|\bwhich norfolk (?:retailer|business|venue|operator|route)\b/i.test(articleBlob);
+
+  const canBeOptional=(item)=>{
+    const t=String(item||'');
+    if(/hands[- ]on|representative (?:android )?devices?|google pixel|samsung galaxy|representative participating uk issuers?|tested? on current|real[- ]world device testing/i.test(t)) return true;
+    if(!demandsLocalNamedClaim && /norfolk[- ]relevant retailers?|local pass|particular norfolk business|specific norfolk retailer|transport operators? before naming/i.test(t)) return true;
+    if(/supplied .* article could not be independently reviewed|exact feature list and expert attribution remain unverified|original discovery (?:article|lead).*unavailable/i.test(t)) return true;
+    return false;
+  };
+
+  const required=Array.isArray(research.required_now_missing)?research.required_now_missing:[];
+  const legacy=Array.isArray(research.missing_evidence)?research.missing_evidence:[];
+  const moved=[...required,...legacy].filter(canBeOptional);
+  if(!moved.length) return research;
+  const movedSet=new Set(moved);
+  research.required_now_missing=required.filter(x=>!movedSet.has(x));
+  research.missing_evidence=legacy.filter(x=>!movedSet.has(x) && !/^Research stage reported insufficient evidence\./i.test(String(x||'')));
+  research.optional_missing=[...new Set([...(research.optional_missing||[]),...moved])];
+  if(research.required_now_missing.length===0 && strong.length>=2){
+    research.research_status='Sufficient';
+    research.core_evidence_relaxed=true;
+    research.research_summary=[String(research.research_summary||'').trim(),'Core-answer gate: authoritative sources are sufficient for the approved reader-service question; hands-on, discovery-source and unnecessary local-enrichment checks are non-blocking.'].filter(Boolean).join(' ');
+  }
+  return research;
+}
+
 function classifyEvidenceTiming(research){
   const raw=[
     ...(research?.required_now_missing||[]),
@@ -554,7 +601,7 @@ function researchLockDecision(research){
     ...(research?.missing_evidence||[]),
     String(research?.resolved_subject?.responsible_body||'')
   ].join(' ');
-  const directVerificationMissing=/insufficient|cannot be verified|not officially confirmed|official confirmation.*missing|does not verify|does not establish|specific (?:trial|scheme|project).*not|exact (?:trial|scheme|project).*not/i.test(combined);
+  const directVerificationMissing=!research?.core_evidence_relaxed && /insufficient|cannot be verified|not officially confirmed|official confirmation.*missing|does not verify|does not establish|specific (?:trial|scheme|project).*not|exact (?:trial|scheme|project).*not/i.test(combined);
   const official=sources.filter(x=>/official|primary/i.test(String(x.source_type||''))||/\.gov\.uk|gov\.uk|nhs\.uk|police\.uk|norfolk\.gov\.uk/i.test(String(x.url||'')));
   const directlyVerifyingOfficial=official.filter(x=>{
     const support=[x.title,x.supports].join(' ');
@@ -960,7 +1007,8 @@ export default async(request)=>{
             }
           }
         }
-        log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0,recoveryUsed:!!research.recovery_used});
+        research=relaxNonCoreEvidenceDemands(fields,research);
+        log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0,recoveryUsed:!!research.recovery_used,coreEvidenceRelaxed:!!research.core_evidence_relaxed});
         const checkpoint=researchCheckpointBlock(key,research,researchModel);
         const checkpointNotes=originalNotes?`${originalNotes}\n\n${checkpoint}\n\n${runningBlock}`:`${checkpoint}\n\n${runningBlock}`;
         await withTimeout(
@@ -976,6 +1024,8 @@ export default async(request)=>{
         await saveTrace();
       }
     }
+
+    research=relaxNonCoreEvidenceDemands(fields,research);
 
     if(mode==='research'){
       const decision=researchLockDecision(research);
@@ -996,7 +1046,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.7.2`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.7.3`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1142,7 +1192,7 @@ export default async(request)=>{
     }
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.2`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.3`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
