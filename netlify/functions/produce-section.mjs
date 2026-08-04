@@ -211,24 +211,46 @@ function wrongGeographySource(x,fields){
   if(/\bsuffolk\b/.test(article)&&/suffolk county,? new york|long island|virginia/.test(blob))return true;
   return false;
 }
+function editorAuthoritativeEvidence(fields){
+  const notes=String(value(fields,'Notes')||'');
+  const matches=[...notes.matchAll(/AUTHORITATIVE EVIDENCE UPDATE v2\n([\s\S]*?)\nEND AUTHORITATIVE EVIDENCE UPDATE/g)];
+  const block=matches.length?String(matches[matches.length-1][1]||''):'';
+  const url=cleanUrl((block.match(/^URL:\s*(https?:\/\/\S+)/mi)||[])[1]||'');
+  const title=String((block.match(/^TITLE:\s*(.*)$/mi)||[])[1]||'').trim();
+  const text=String((block.match(/EVIDENCE TEXT:\s*\n---\s*\n([\s\S]*?)\n---\s*\nSTATUS:/i)||[])[1]||'').trim();
+  return {url,title,text};
+}
 function editorAuthoritativeSourceUrl(fields){
   const direct=cleanUrl(String(value(fields,'Source / Reference Link 1')||'').trim());
   const notes=String(value(fields,'Notes')||'');
+  const v2=editorAuthoritativeEvidence(fields).url;
   const marked=(notes.match(/AUTHORITATIVE SOURCE UPDATE v1[\s\S]*?URL:\s*(https?:\/\/\S+)/i)||[])[1]||'';
-  return direct||cleanUrl(marked);
+  return v2||direct||cleanUrl(marked);
 }
 async function editorAuthoritativeSource(fields){
-  const url=editorAuthoritativeSourceUrl(fields);
+  const supplied=editorAuthoritativeEvidence(fields);
+  const url=supplied.url||editorAuthoritativeSourceUrl(fields);
   if(!url)return null;
+  let fetched='',fetchWarning='';
   try{
     const response=await fetchTextFast(url);
-    const raw=String(response.text||'');
-    const title=stripTags((raw.match(/<title[^>]*>([\s\S]*?)<\/title>/i)||[])[1]||hostOf(url)||'Editor-supplied authoritative source').replace(/\s+/g,' ').trim();
-    const body=stripTags(raw).replace(/\s+/g,' ').trim().slice(0,9000);
-    return {title:title||hostOf(url),url,description:body||`Editor supplied this URL as an authoritative source for the article.`,source:hostOf(url),query:'editor authoritative source',provider:'EDITOR',relevance:12,seeded_editor:true};
+    fetched=stripTags(String(response.text||'')).replace(/\s+/g,' ').trim().slice(0,9000);
   }catch(error){
-    return {title:hostOf(url)||'Editor-supplied source',url,description:`Editor supplied this URL as an authoritative source. Direct extraction failed: ${String(error?.message||error).slice(0,240)}`,source:hostOf(url),query:'editor authoritative source',provider:'EDITOR',relevance:10,seeded_editor:true,fetch_warning:true};
+    fetchWarning=String(error?.message||error).slice(0,240);
   }
+  const editorText=String(supplied.text||'').replace(/\s+/g,' ').trim().slice(0,12000);
+  const description=[
+    editorText?`EDITOR-CONFIRMED SOURCE TEXT: ${editorText}`:'',
+    fetched?`DIRECT PAGE EXTRACTION: ${fetched}`:'',
+    fetchWarning?`DIRECT EXTRACTION WARNING: ${fetchWarning}. Editor-supplied evidence text retained and must be assessed against the source URL.`:''
+  ].filter(Boolean).join(' ');
+  return {
+    title:supplied.title||hostOf(url)||'Editor-supplied authoritative source',
+    url,
+    description:description||`Editor supplied this URL as an authoritative source for the article.`,
+    source:hostOf(url),query:'editor authoritative evidence',provider:'EDITOR',
+    relevance:editorText?15:12,seeded_editor:true,editor_confirmed_text:Boolean(editorText),fetch_warning:Boolean(fetchWarning)
+  };
 }
 function currentDiscoverySource(fields){
   const notes=String(value(fields,'Notes')||'');
@@ -667,7 +689,7 @@ Plan provenance: ${provenance||'Not supplied'}
 Editor-supplied authoritative source URL: ${editorAuthoritativeSourceUrl(fields)||'Not supplied'}
 
 RESEARCH RULES
-- EDITOR SOURCE PRIORITY: when an editor-supplied authoritative source URL is present, open and assess that exact page first. Extract what it confirms, what it does not confirm, dates, named bodies and customer/action instructions. Do not ignore it merely because an older checkpoint disagrees.
+- EDITOR SOURCE PRIORITY: when editor-supplied authoritative evidence is present, assess the exact URL and the EDITOR-CONFIRMED SOURCE TEXT first. Treat the pasted wording as source evidence tied to that URL when direct extraction is blocked (for example HTTP 403), while still checking internal consistency and publisher authority. Extract what it confirms, what it does not confirm, dates, named bodies and customer/action instructions. Do not ignore it merely because an older checkpoint disagrees.
 - ENTITY FIRST: resolve the exact named subject/project/organisation/site/service from the discovery lead before broad research. Use distinctive proper nouns, places, scheme names and reference numbers as search anchors.
 - If the lead is vague, first search to identify the exact subject. Never substitute a different local project because it is easier to find.
 - Search the current web thoroughly.
