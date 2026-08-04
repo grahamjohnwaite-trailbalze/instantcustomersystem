@@ -152,7 +152,7 @@ function bingWebUrl(q){return `https://www.bing.com/search?format=rss&setlang=en
 function googleNewsUrl(q){return `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-GB&gl=GB&ceid=GB:en`}
 function sourceTypeFor(url='',title=''){
   const h=hostOf(url),blob=(h+' '+title).toLowerCase();
-  if(/\.gov\.uk$|gov\.uk|nhs\.uk|nice\.org\.uk|police\.uk|parliament\.uk/.test(blob))return 'official';
+  if(/\.gov\.uk$|gov\.uk|nhs\.uk|nice\.org\.uk|police\.uk|parliament\.uk|abta\.com|fca\.org\.uk|caa\.co\.uk|ofcom\.org\.uk|ofgem\.gov\.uk|ombudsman|official/.test(blob))return 'official';
   if(/norfolk|edp24|eastern daily press|bbc\.co\.uk|itv\.com/.test(blob))return 'local';
   return 'other';
 }
@@ -210,6 +210,25 @@ function wrongGeographySource(x,fields){
   if(/\bnorfolk\b/.test(article)&&/virginia|hampton roads|virginia beach|chesapeake|wtkr\.com|13newsnow|wavy\.com/.test(blob))return true;
   if(/\bsuffolk\b/.test(article)&&/suffolk county,? new york|long island|virginia/.test(blob))return true;
   return false;
+}
+function editorAuthoritativeSourceUrl(fields){
+  const direct=cleanUrl(String(value(fields,'Source / Reference Link 1')||'').trim());
+  const notes=String(value(fields,'Notes')||'');
+  const marked=(notes.match(/AUTHORITATIVE SOURCE UPDATE v1[\s\S]*?URL:\s*(https?:\/\/\S+)/i)||[])[1]||'';
+  return direct||cleanUrl(marked);
+}
+async function editorAuthoritativeSource(fields){
+  const url=editorAuthoritativeSourceUrl(fields);
+  if(!url)return null;
+  try{
+    const response=await fetchTextFast(url);
+    const raw=String(response.text||'');
+    const title=stripTags((raw.match(/<title[^>]*>([\s\S]*?)<\/title>/i)||[])[1]||hostOf(url)||'Editor-supplied authoritative source').replace(/\s+/g,' ').trim();
+    const body=stripTags(raw).replace(/\s+/g,' ').trim().slice(0,9000);
+    return {title:title||hostOf(url),url,description:body||`Editor supplied this URL as an authoritative source for the article.`,source:hostOf(url),query:'editor authoritative source',provider:'EDITOR',relevance:12,seeded_editor:true};
+  }catch(error){
+    return {title:hostOf(url)||'Editor-supplied source',url,description:`Editor supplied this URL as an authoritative source. Direct extraction failed: ${String(error?.message||error).slice(0,240)}`,source:hostOf(url),query:'editor authoritative source',provider:'EDITOR',relevance:10,seeded_editor:true,fetch_warning:true};
+  }
 }
 function currentDiscoverySource(fields){
   const notes=String(value(fields,'Notes')||'');
@@ -269,6 +288,7 @@ function articleSearchTerms(fields){
   const compact=s=>String(s||'').replace(/[—–:?!(),"']/g,' ').replace(/\s+/g,' ').trim();
   const key=[title,q].join(' ').match(/\b[A-Z]\d{1,3}\b|\bNorfolk\b|\bSEND\b|\bGigabit\b|\bpothole\w*\b|\bhousing\b|\btravel hub\b|\bobesity\b|\blibrar\w*\b|\bspeeding\b|\bsurvey\b/gi)||[];
   const base=[...new Set(key.map(x=>x.toLowerCase()))].join(' ');
+  const editorUrl=editorAuthoritativeSourceUrl(fields);
   const queries=[
     compact(title),
     compact(`${base} ${q}`).slice(0,180),
@@ -276,6 +296,7 @@ function articleSearchTerms(fields){
     compact(`site:norfolk.gov.uk ${base} ${title}`).slice(0,180),
     compact(`site:gov.uk ${base} ${title}`).slice(0,180)
   ].filter(Boolean);
+  if(editorUrl){try{const h=new URL(editorUrl).hostname.replace(/^www\./,'');queries.unshift(compact(`site:${h} ${title}`));}catch{}}
   if(/nhs|obesity|health|send/i.test(title+' '+q+' '+evidence))queries.push(compact(`site:nhs.uk Norfolk ${title}`).slice(0,180));
   if(/police|speed/i.test(title+' '+q))queries.push(compact(`site:norfolk.police.uk ${title}`).slice(0,180));
   if(/planning|housing|a149|self-build/i.test(title+' '+q+' '+proof))queries.push(compact(`Norfolk planning ${title}`).slice(0,180));
@@ -296,8 +317,10 @@ async function fastEvidencePack(fields,cls){
   let raw=settled.flatMap(x=>x.status==='fulfilled'?x.value:[]);
   const discovery=currentDiscoverySource(fields);
   if(discovery)raw.unshift(discovery);
-  // Reject off-topic and wrong-country results before they ever reach Writer.
-  raw=raw.map(x=>({...x,relevance:Number(x.relevance||relevanceScore(x,fields))})).filter(x=>x.relevance>=3&&precisionPass(x,fields));
+  const editorSource=await editorAuthoritativeSource(fields);
+  if(editorSource)raw.unshift(editorSource);
+  // Reject off-topic and wrong-country results before they ever reach Writer. An editor-supplied URL is deliberately retained for qualification.
+  raw=raw.map(x=>({...x,relevance:Number(x.relevance||relevanceScore(x,fields))})).filter(x=>x.seeded_editor||(x.relevance>=3&&precisionPass(x,fields)));
   raw.sort((a,b)=>b.relevance-a.relevance);
   const seen=new Set(),dedup=[];
   for(const x of raw){
@@ -315,7 +338,7 @@ async function fastEvidencePack(fields,cls){
     title:String(x.title||x.source||'').slice(0,220),
     url:cleanUrl(x.url),
     supports:String(x.description||`Discovery result for: ${x.query}`).slice(0,700),
-    source_type:x.seeded_discovery?'discovery':sourceTypeFor(x.url,x.source),
+    source_type:x.seeded_discovery?'discovery':x.seeded_editor?(sourceTypeFor(x.url,x.source)==='other'?'primary':sourceTypeFor(x.url,x.source)):sourceTypeFor(x.url,x.source),
     relevance:x.relevance
   })).filter(x=>x.url);
   const official=chosen.filter(x=>x.source_type==='official').length;
@@ -641,8 +664,10 @@ Evidence required: ${evidence}
 Production class: ${cls}
 Current discovery lead: ${current||'Not supplied'}
 Plan provenance: ${provenance||'Not supplied'}
+Editor-supplied authoritative source URL: ${editorAuthoritativeSourceUrl(fields)||'Not supplied'}
 
 RESEARCH RULES
+- EDITOR SOURCE PRIORITY: when an editor-supplied authoritative source URL is present, open and assess that exact page first. Extract what it confirms, what it does not confirm, dates, named bodies and customer/action instructions. Do not ignore it merely because an older checkpoint disagrees.
 - ENTITY FIRST: resolve the exact named subject/project/organisation/site/service from the discovery lead before broad research. Use distinctive proper nouns, places, scheme names and reference numbers as search anchors.
 - If the lead is vague, first search to identify the exact subject. Never substitute a different local project because it is easier to find.
 - Search the current web thoroughly.
