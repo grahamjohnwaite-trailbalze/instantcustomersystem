@@ -18,7 +18,7 @@ export default async(request)=>{
 
     const signalPack=signals.map((x,i)=>`${i+1}. [${x.scope||'discovery'}] ${x.signal}\nDATE=${x.published_at||x.why_now}\nDISCOVERY SOURCE=${x.source_title} ${x.source_url}`).join('\n\n');
     const inventory=existing.map((x,i)=>`${i+1}. ID=${x.id} | ${x.title} | ${x.purpose} | freshness=${x.freshness} | topic=${x.topic} | proof=${x.proof}`).join('\n');
-    const prompt=`You are the senior issue editor for Trail Blaze's ${publication}. Build the 15-MASTER-ARTICLE slate for one upcoming issue. DO NOT browse the web: current research has already been supplied below.
+    const prompt=`You are the senior issue editor for Trail Blaze's ${publication}. Build a default 9-MASTER-ARTICLE slate for one upcoming issue. DO NOT browse the web: current research has already been supplied below.
 
 TODAY: ${new Date().toISOString().slice(0,10)}
 TARGET SEND DATE: ${sendDate||'Not supplied'}
@@ -31,7 +31,7 @@ ${signalPack}
 EXISTING ARTICLE LIBRARY:
 ${inventory||'No existing articles supplied.'}
 
-Return exactly 15 distinct article decisions. One article = one real reader question, normally 250-600 words.
+Return exactly 9 distinct article decisions. The operator may add or remove articles later; quality and issue balance beat quotas. One article = one real reader question, normally 250-600 words.
 
 MODES
 REUSE = existing article remains current and genuinely deserves another issue appearance. Exact ID required.
@@ -55,12 +55,12 @@ STRICT JSON ONLY:
     const response=await createResponse({input:prompt,useWeb:false,model,timeoutMs:24000});
     const result=parseJsonText(outputText(response));
     const validIds=new Set(existing.map(x=>x.id));
-    const articles=(Array.isArray(result.articles)?result.articles:[]).slice(0,15).map((a,i)=>{
+    const articles=(Array.isArray(result.articles)?result.articles:[]).slice(0,9).map((a,i)=>{
       let mode=normalizeMode(a.mode),id=String(a.existing_article_id||'').trim();
       if((mode==='REUSE'||mode==='REFRESH')&&!validIds.has(id)){mode='CREATE NEW';id='';}
       return {order:i+1,mode,existing_article_id:id,title:String(a.title||'').trim(),question:String(a.question||'').trim(),problem:String(a.problem||'').trim(),hook:String(a.hook||'').trim(),reader:String(a.reader||'').trim(),value:String(a.value||'').trim(),local_proof:String(a.local_proof||'').trim(),evidence:String(a.evidence||'').trim(),lane:String(a.lane||'Editorial').trim(),partner_path:String(a.partner_path||'Open').trim(),cta_type:String(a.cta_type||'None').trim(),cta_text:String(a.cta_text||'').trim(),stance:String(a.stance||'PRACTICAL').trim(),why_now:String(a.why_now||'').trim(),countercase:String(a.countercase||'').trim(),source_signal:String(a.source_signal||'').trim()};
     }).filter(a=>a.title&&a.question);
-    if(articles.length!==15)return json(502,{ok:false,error:`Planner returned ${articles.length} usable articles; expected 15.`});
+    if(articles.length!==9)return json(502,{ok:false,error:`Planner returned ${articles.length} usable articles; expected 9.`});
     const counts=articles.reduce((o,a)=>(o[a.mode]=(o[a.mode]||0)+1,o),{});
     return json(200,{ok:true,plan:{createdAt:new Date().toISOString(),publication,sendDate,issuePromise,issue_summary:String(result.issue_summary||'').trim(),signals,articles,counts},modelUsed:response._model_used||model});
   }catch(error){

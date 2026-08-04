@@ -63,7 +63,7 @@
 <div id="production-progress" class="empty" style="margin-bottom:14px">Production service not run yet.</div>
 <div id="map-audit" class="empty" style="margin-bottom:14px">Audit not run yet.</div>
 <div class="form-grid"><div class="field full"><label>Issue status</label><select id="ih-status"><option>PLANNED</option><option>BUILDING</option><option>QA</option><option>READY FOR LETTERMAN</option><option>PUBLISHED</option></select></div><div class="field full"><label>Main theme</label><textarea id="ih-theme"></textarea></div><div class="field full"><label>Subject line</label><input id="ih-subject"></div><div class="field full"><label>Preheader</label><textarea id="ih-preheader"></textarea></div><div class="field full"><label>Send date</label><input id="ih-date" type="date"></div></div><h3>Minimum section gate</h3><div id="gate" class="checklist"></div><div class="warning" style="margin-top:14px"><strong>Phase 1B discipline</strong><br>One primary Hot Button. One useful action. Named local proof. No unresolved placeholders in final copy.</div></aside></div></section><section class="view active" id="view-assemble">
-<div class="section-head planner-head"><div><h2>Issue Canvas</h2><div class="muted">Plan the issue intelligently first, then assemble the approved running order.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-export">Export Canvas Backup</button><button class="btn secondary" id="assembly-clear">Clear canvas</button><button class="btn" id="assembly-auto">Collect Signals</button><button class="btn" id="assembly-build-plan">Build / Resume 15-Article Plan</button><button class="btn secondary" id="assembly-smart-assemble">Assemble Approved Plan</button><button class="btn" id="assembly-produce">Produce Supporting Components</button><button class="btn" id="assembly-partners">Assign Active Partners</button><button class="btn" id="assembly-qa">Run Final QA</button><button class="btn secondary" id="assembly-fix">Apply Safe Fixes</button><button class="btn" id="assembly-generate">Generate Issue Build Pack</button></div></div>
+<div class="section-head planner-head"><div><h2>Issue Canvas</h2><div class="muted">Plan the issue intelligently first, then assemble the approved running order.</div></div><div class="toolbar"><button class="btn secondary" id="assembly-export">Export Canvas Backup</button><button class="btn secondary" id="assembly-clear">Clear canvas</button><button class="btn" id="assembly-auto">Collect Signals</button><button class="btn" id="assembly-build-plan">Build / Resume Issue Plan</button><button class="btn secondary" id="assembly-smart-assemble">Assemble Approved Plan</button><button class="btn" id="assembly-produce">Produce Supporting Components</button><button class="btn" id="assembly-partners">Assign Active Partners</button><button class="btn" id="assembly-qa">Run Final QA</button><button class="btn secondary" id="assembly-fix">Apply Safe Fixes</button><button class="btn" id="assembly-generate">Generate Issue Build Pack</button></div></div>
 <div id="canvas-recovery-banner" class="warning" style="display:none;margin:0 0 12px 0"><strong>Recovery Mode</strong><br>This historical Canvas was restored from browser storage even though the issue is not in the active Issues list. Export a backup before making changes.</div>
 <div class="command-centre" id="component-command-centre">
   <div class="command-main"><h2>Issue Component Command Centre</h2><div class="muted" id="command-summary">Add components to see the full planning-to-publishing pipeline.</div><div class="command-progress"><span id="command-progress-bar" style="width:0%"></span></div><div class="next-action-banner" id="command-next">Next: build or assemble the issue plan.</div><div class="command-actions"><button class="btn" id="jump-next-component" type="button">Open next incomplete component</button><button class="btn secondary" id="command-open-build" type="button">Open article production</button></div><div class="registry-strip" id="component-registry-strip"></div></div>
@@ -75,7 +75,7 @@
 <div class="planner-score" id="planner-score"><div><strong id="score-headlines">0</strong><span>Master Articles</span></div><div><strong id="score-interactive">0</strong><span>Other Components</span></div><div><strong id="score-authority">0</strong><span>Partner Components</span></div><div><strong id="score-activation">0</strong><span>Letterman-ready</span></div><div><strong id="score-commitments">0</strong><span>Points Remaining</span></div></div>
 <div class="issue-promise-bar"><div class="field"><label>Issue promise / organising question</label><textarea id="assembly-theme" placeholder="What should readers decide, discover, feel or do by the end of this issue?"></textarea></div><button class="btn secondary" id="save-canvas-theme">Save promise</button></div>
 <section class="panel" id="smart-plan-panel" style="display:block;margin-bottom:14px">
-  <div class="section-head" style="margin-bottom:8px"><div><h2 style="margin:0">Smart Issue Plan</h2><div class="muted" id="smart-plan-status">Build the plan, then keep/edit/replace individual choices before locking it.</div></div><div class="toolbar"><button class="btn secondary" id="smart-plan-audit">Analyse Issue Balance</button><button class="btn secondary" id="smart-commercial-completion">Check 30-Block Balance</button><button class="btn secondary" id="smart-plan-lock">Lock Approved Plan</button><button class="btn" id="smart-plan-apply" disabled>Create Missing Article Briefs</button><button class="btn secondary" id="smart-plan-hide">Hide Plan</button></div></div>
+  <div class="section-head" style="margin-bottom:8px"><div><h2 style="margin:0">Smart Issue Plan</h2><div class="muted" id="smart-plan-status">Build the plan, then keep/edit/replace individual choices before locking it.</div></div><div class="toolbar"><button class="btn secondary" id="smart-plan-audit">Analyse Issue Balance</button><button class="btn secondary" id="smart-commercial-completion">Check Issue Balance</button><button class="btn secondary" id="smart-plan-lock">Lock Approved Plan</button><button class="btn" id="smart-plan-apply" disabled>Create Missing Article Briefs</button><button class="btn secondary" id="smart-plan-hide">Hide Plan</button></div></div>
   <div class="field"><label>Known current signals / events / must-include notes (optional)</label><textarea id="smart-plan-signals" placeholder="Paste anything you already know should be considered: local events, breaking local story, national change with a Norfolk impact, partner commitment, seasonal trigger..."></textarea></div>
   <div id="smart-plan-summary" class="warning" style="margin:10px 0"></div>
   <div id="smart-scan-progress" class="muted" style="margin:8px 0"></div>
@@ -136,9 +136,9 @@
 <div class="muted" id="inspect-partner-suggestion" style="margin:-2px 0 8px"></div>
 <div class="field"><label>Commitment / exclusivity</label><input id="inspect-commitment" placeholder="e.g. Weekly presence · non-exclusive"></div>
 </div>
-<div class="field"><label>Primary CTA</label><input id="inspect-cta" placeholder="One useful action"></div>
-<div class="field"><label>Button text</label><input id="inspect-button" placeholder="Only when a button is needed"></div>
-<div class="field"><label>Destination URL</label><input id="inspect-url" placeholder="https://..."></div>
+<div id="inspect-cta-group"><div class="field"><label>Primary CTA <span class="muted">(only when worthwhile)</span></label><input id="inspect-cta" placeholder="Leave blank when no action is needed"></div>
+<div class="field"><label>Button text</label><input id="inspect-button" placeholder="Only when a button is genuinely needed"></div>
+<div class="field"><label>Destination URL</label><input id="inspect-url" placeholder="https://..."></div></div>
 <div class="field"><label>Local proof / source requirement</label><textarea id="inspect-proof" placeholder="Named place, source, price, date, expert evidence..."></textarea></div>
 <div class="field"><label>Finished content / production brief</label><textarea id="inspect-content" class="content" placeholder="Finished Letterman-ready copy, or the brief ICS should use to create it."></textarea></div>
 <div class="field"><label>Life lane</label><input id="inspect-life-lane" placeholder="e.g. Home & Moving, Pets & Home Life"></div>
@@ -1160,8 +1160,8 @@ function componentContext(block){
  return {theme,before,after,lanes,partnerCats,underused,index:idx,total:items.length};
 }
 function renderInspectorContext(block){const box=E('inspect-context');if(!box||!block)return;const c=componentContext(block);const escTitle=x=>x?esc(x.title||x.type):'None';box.innerHTML=`<strong>Issue context · position ${c.index+1} of ${c.total}</strong><div><b>Promise:</b> ${esc(c.theme||'Not set')}</div><div><b>Before:</b> ${escTitle(c.before)} · <b>After:</b> ${escTitle(c.after)}</div><div class="context-tags">${c.lanes.slice(0,5).map(x=>`<span class="context-tag">${esc(x)}</span>`).join('')||'<span class="muted">No life lanes assigned yet</span>'}</div>${c.partnerCats.length?`<div class="muted" style="margin-top:6px">Partner categories already used: ${esc(c.partnerCats.join(', '))}</div>`:''}${c.underused.length?`<div class="muted">Unused component formats: ${esc(c.underused.join(', '))}</div>`:''}`}
-function inferLifeLaneFromText(text){text=String(text||'').toLowerCase();if(/mortgage|rent|house|home|property|letting|buyer|seller/.test(text))return 'Home & Moving';if(/dog|cat|pet|vet|animal/.test(text))return 'Pets & Home Life';if(/food|pub|restaurant|cafe|meal|drink/.test(text))return 'Food & Drink';if(/car|road|traffic|parking|vehicle|bus|train/.test(text))return 'Getting Around';if(/school|child|family|parent/.test(text))return 'Family Life';if(/health|dental|physio|wellbeing|care/.test(text))return 'Health & Wellbeing';if(/event|theatre|festival|music|attraction/.test(text))return 'What’s On';if(/business|job|employer|shop|high street/.test(text))return 'Local Economy';return ''}
-function renderInspector(){const empty=E('inspector-empty'),form=E('inspector-form');if(!empty||!form)return;const b=getCanvas().find(x=>x.uid===canvasSelectedUid);if(!b){empty.hidden=false;form.hidden=true;return}empty.hidden=true;form.hidden=false;E('inspect-component-id').value=b.componentId||componentObjectId(b);E('inspect-lifecycle').value=componentLifecycle(b);E('inspect-type').innerHTML=componentTypeOptions(b.type||'');E('inspect-type').value=b.type||'';E('inspect-title').value=b.title||'';E('inspect-purpose').value=b.purpose||'';const hasPartner=b.kind==='partner'||b.partnerAttached===true||!!String(b.partner||'').trim();E('inspect-has-partner').checked=hasPartner;E('inspect-has-partner').disabled=b.kind==='partner';E('partner-fields').hidden=!hasPartner;E('inspect-partner').value=b.partner||'';E('inspect-category').value=b.category||'';E('inspect-commitment').value=b.commitment||'';const suggestion=String(b.suggestedPartnerCategory||'').trim();E('inspect-partner-suggestion').textContent=hasPartner&&suggestion&&!b.category?`Suggested lane from article intelligence: ${suggestion} — confirm it before using.`:'';E('inspect-cta').value=b.cta||'';E('inspect-button').value=b.button||'';E('inspect-url').value=b.url||'';E('inspect-proof').value=b.proof||'';E('inspect-content').value=b.content||'';E('inspect-life-lane').value=b.lifeLane||'';E('inspect-commercial-role').value=b.commercialRole||'EDITORIAL';E('inspect-content-status').value=b.contentStatus||'PLANNED';E('inspect-production-status').value=b.productionStatus||'NOT STARTED';E('inspect-template').value=b.productionTemplate||'';E('inspect-points').value=b.productionPoints||2;E('inspect-status').value=b.status||'NEEDS DECISION';renderInspectorContext(b)}
+function inferLifeLaneFromText(text){text=String(text||'').toLowerCase();if(/mortgage|rent|house|property|letting|buyer|seller|conveyanc|surveyor|estate agent/.test(text))return 'Home & Property';if(/repair|builder|plumber|electric|garden|solar|kitchen|bathroom|decorat|roof/.test(text))return 'Home Improvement & Garden';if(/bill|saving|pension|tax|insurance|ifa|household cost|finance/.test(text))return 'Money & Household Costs';if(/school|child|family|parent|childcare/.test(text))return 'Family & Children';if(/health|dental|physio|wellbeing|clinic|fitness|care/.test(text))return 'Health & Wellbeing';if(/food|pub|restaurant|cafe|meal|drink|farm shop/.test(text))return 'Food & Dining';if(/dog|cat|pet|vet|animal|groom/.test(text))return 'Pets & Animals';if(/car|road|traffic|parking|vehicle|bus|train|commut/.test(text))return 'Motoring & Transport';if(/travel|hotel|day out|attraction|weekend|experience/.test(text))return 'Travel, Days Out & Experiences';if(/theatre|festival|music|cinema|sport|leisure|culture/.test(text))return 'Leisure, Culture & Entertainment';if(/council|community|charity|development|neighbourhood|planning/.test(text))return 'Community & Local Change';if(/business|job|employer|entrepreneur|networking|skills|high street/.test(text))return 'Work, Business & Opportunity';return ''}
+function renderInspector(){const empty=E('inspector-empty'),form=E('inspector-form');if(!empty||!form)return;const b=getCanvas().find(x=>x.uid===canvasSelectedUid);if(!b){empty.hidden=false;form.hidden=true;return}empty.hidden=true;form.hidden=false;E('inspect-component-id').value=b.componentId||componentObjectId(b);E('inspect-lifecycle').value=componentLifecycle(b);E('inspect-type').innerHTML=componentTypeOptions(b.type||'');E('inspect-type').value=b.type||'';E('inspect-title').value=b.title||'';E('inspect-purpose').value=b.purpose||'';const hasPartner=b.kind==='partner'||b.partnerAttached===true||!!String(b.partner||'').trim();E('inspect-has-partner').checked=hasPartner;E('inspect-has-partner').disabled=b.kind==='partner';E('partner-fields').hidden=!hasPartner;E('inspect-partner').value=b.partner||'';E('inspect-category').value=b.category||'';E('inspect-commitment').value=b.commitment||'';const suggestion=String(b.suggestedPartnerCategory||'').trim();E('inspect-partner-suggestion').textContent=hasPartner&&suggestion&&!b.category?`Suggested lane from article intelligence: ${suggestion} — confirm it before using.`:'';E('inspect-cta').value=b.cta||'';E('inspect-button').value=b.button||'';E('inspect-url').value=b.url||'';const ctaGroup=E('inspect-cta-group');if(ctaGroup){const actionType=/POLL|VOTE|COMPETITION|GIVEAWAY|CHALLENGE|RECOMMENDATION|NOMINATION|PARTNER|FACEBOOK|SOCIAL|CLOSING QUESTION|READER QUESTION/i.test(String(b.type||''));ctaGroup.hidden=!(b.kind==='article'||b.kind==='partner'||actionType||b.cta||b.button||b.url)};E('inspect-proof').value=b.proof||'';E('inspect-content').value=b.content||'';E('inspect-life-lane').value=b.lifeLane||'';E('inspect-commercial-role').value=b.commercialRole||'EDITORIAL';E('inspect-content-status').value=b.contentStatus||'PLANNED';E('inspect-production-status').value=b.productionStatus||'NOT STARTED';E('inspect-template').value=b.productionTemplate||'';E('inspect-points').value=b.productionPoints||2;E('inspect-status').value=b.status||'NEEDS DECISION';renderInspectorContext(b)}
 function toggleInspectorPartner(){const b=getCanvas().find(x=>x.uid===canvasSelectedUid);const on=b?.kind==='partner'||E('inspect-has-partner').checked;E('partner-fields').hidden=!on;if(!on){E('inspect-partner').value='';E('inspect-category').value='';E('inspect-commitment').value=''}else{const suggestion=String(b?.suggestedPartnerCategory||'').trim();E('inspect-partner-suggestion').textContent=suggestion&&!E('inspect-category').value?`Suggested lane from article intelligence: ${suggestion} — confirm it before using.`:''}}
 function saveInspector(){const items=getCanvas(),i=items.findIndex(x=>x.uid===canvasSelectedUid);if(i<0)return;const previous=items[i],previousType=previous.type||'';const selectedType=E('inspect-type').value||previousType;const def=COMPONENT_DEFS.find(x=>x.type===selectedType);const isMaster=selectedType==='MASTER ARTICLE';const isPartnerPresence=selectedType==='PARTNER PRESENCE';const forced=isPartnerPresence||previous.kind==='partner';const attached=forced||E('inspect-has-partner').checked;const typeChanged=selectedType!==previousType;const title=E('inspect-title').value,purpose=E('inspect-purpose').value;let category=attached?E('inspect-category').value.trim():'';let suggestion=attached?String(previous.suggestedPartnerCategory||'').trim():'';if(typeChanged&&!attached){category='';suggestion=''}
  const role=E('inspect-commercial-role').value;const lifeLane=E('inspect-life-lane').value.trim()||inferLifeLaneFromText([title,purpose,E('inspect-content').value].join(' '));
@@ -1461,47 +1461,28 @@ function commercialCompletionText(plan){
   const blocks=(typeof getCanvas==='function'?getCanvas():[]);
   const articles=blocks.filter(b=>b.kind==='article').length;
   const components=blocks.filter(b=>b.kind==='component').length;
-  const partners=blocks.filter(b=>b.kind==='partner').length;
+  const dedicated=blocks.filter(b=>b.kind==='partner').length;
+  const attached=blocks.filter(b=>b.partnerAttached&&b.kind!=='partner').length;
   return [
-    `COMMERCIAL COMPLETION — ${c.missing===0&&c.totalBlocks>=28?'READY':'REVIEW'}`,
-    `Total canvas blocks: ${c.totalBlocks} / target 28–32`,
-    `Master Articles: ${articles}`,
+    `ISSUE COMMERCIAL BALANCE — ${blocks.length>=24&&blocks.length<=30?'NORMAL RANGE':'REVIEW MIX'}`,
+    `Total canvas sections: ${blocks.length} / normal 24–30`,
+    `Master Articles: ${articles} / normal around 8–10`,
     `Supporting components: ${components}`,
-    `Dedicated partner blocks: ${partners}`,
-    `Resident Expert lanes: ${c.expert.length} / target 5–8`,
-    `Featured Partner / activation lanes: ${c.partner.length} / target 5–8`,
-    `Interactive/supporting blocks detected: ${c.interactive}`,
-    `Partner/activation blocks detected: ${c.activation}`,
-    c.missing?`Needs ${c.missing} more natural Featured Partner / activation lane${c.missing===1?'':'s'} across the complete issue. Do not alter article copy or label an editorial article "Featured Partner" merely to hit the target.`:'Commercial lane target is met across the complete issue.',
-    `Editorial rule: "Featured Partner", "Resident Expert" and commercial-lane names are internal planning labels only. Reader-facing article copy uses the actual subject/business/CTA and never exposes those system labels.`
+    `Partners attached to useful content: ${attached}`,
+    `Dedicated partner/activation blocks: ${dedicated}`,
+    `Detected future commercial opportunity lanes: ${c.partner.length}${c.partner.length?' — '+c.partner.join(' · '):''}`,
+    `Rule: actual partner commitments increase priority only when the content still passes reader-value, specificity and factual-confidence checks.`,
+    `Rule: attach partners to relevant articles/components where possible; use a standalone partner block only for a genuine activation/offer/content job.`
   ].join('\n');
 }
-
 function renderCommercialCompletionPanel(plan){
   let box=E('commercial-completion-panel');
-  if(!box){
-    box=document.createElement('div');box.id='commercial-completion-panel';box.className='check smart-audit-panel';
-    const audit=document.querySelector('.smart-audit-panel');
-    (audit?.parentNode||E('smart-plan-list')).insertBefore(box,audit?.nextSibling||null);
-  }
-  const c=canvasCommercialCompletion(plan);
-  const articles=(typeof getCanvas==='function'?getCanvas():[]).filter(b=>b.kind==='article').length;
-  const components=(typeof getCanvas==='function'?getCanvas():[]).filter(b=>b.kind==='component').length;
-  const partners=(typeof getCanvas==='function'?getCanvas():[]).filter(b=>b.kind==='partner').length;
-  box.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
-    <strong>30-BLOCK BALANCE — ${c.missing===0&&c.totalBlocks>=28?'READY':'REVIEW'}</strong>
-    <button class="btn secondary" id="copy-commercial-completion" type="button">Copy 30-Block Audit</button>
-  </div>
-  <div class="audit-grid" style="margin-top:8px">
-    <div><strong>Total blocks:</strong> ${c.totalBlocks} / target 28–32</div>
-    <div><strong>Master Articles:</strong> ${articles}</div>
-    <div><strong>Supporting components:</strong> ${components}</div>
-    <div><strong>Dedicated partner blocks:</strong> ${partners}</div>
-    <div><strong>Resident Expert lanes:</strong> ${c.expert.length} / target 5–8</div>
-    <div><strong>Partner / activation lanes:</strong> ${c.partner.length} / target 5–8</div>
-  </div>
-  <div style="margin-top:8px">${c.missing?`<strong>Needs attention:</strong> ${c.missing} more natural partner/activation lane${c.missing===1?'':'s'} across the complete issue.`:'<strong>Commercial lane target met.</strong>'}</div>
-  <div class="muted" style="margin-top:6px"><strong>Reader-facing rule:</strong> internal labels such as Featured Partner and Resident Expert never appear in normal article copy.</div>`;
+  if(!box){box=document.createElement('div');box.id='commercial-completion-panel';box.className='check smart-audit-panel';const audit=document.querySelector('.smart-audit-panel');(audit?.parentNode||E('smart-plan-list')).insertBefore(box,audit?.nextSibling||null)}
+  const blocks=(typeof getCanvas==='function'?getCanvas():[]),c=canvasCommercialCompletion(plan);
+  const articles=blocks.filter(b=>b.kind==='article').length,components=blocks.filter(b=>b.kind==='component').length,dedicated=blocks.filter(b=>b.kind==='partner').length,attached=blocks.filter(b=>b.partnerAttached&&b.kind!=='partner').length;
+  box.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><strong>ISSUE COMMERCIAL BALANCE</strong><button class="btn secondary" id="copy-commercial-completion" type="button">Copy Issue Audit</button></div>
+  <div class="audit-grid" style="margin-top:8px"><div><strong>Total sections:</strong> ${blocks.length} / normal 24–30</div><div><strong>Master Articles:</strong> ${articles} / around 8–10</div><div><strong>Supporting components:</strong> ${components}</div><div><strong>Partners attached:</strong> ${attached}</div><div><strong>Dedicated activations:</strong> ${dedicated}</div><div><strong>Future opportunity lanes:</strong> ${c.partner.length}</div></div>
+  <div class="muted" style="margin-top:8px"><strong>Commercial rule:</strong> fulfil real commitments naturally, but never lower the editorial floor. One strong article may support several commercial pathways without requiring a separate article for each business.</div>`;
 }
 async function copyCommercialCompletion(){
   const plan=getSmartPlan();if(!plan?.articles?.length)return;
@@ -1512,10 +1493,10 @@ async function copyCommercialCompletion(){
 function issueBalanceAuditText(plan){
   const a=issueBalanceAudit(plan);
   const fmt=(label,vals,target)=>`${label}: ${vals.length}${target?` / target ${target}`:''}${vals.length?` — ${vals.join(' · ')}`:''}`;
-  return [`ISSUE BALANCE — ${a.status}`,fmt('Resident Expert lanes',a.expert,'5–8'),fmt('Featured Partner lanes',a.partner,'5–8'),fmt('Engagement modes',a.engagement),`Editorial mix: Practical ${a.tones.PRACTICAL||0} · Edge ${a.tones.EDGE||0} · Light ${a.tones.LIGHT||0} · Human ${a.tones.HUMAN||0}`,'',a.findings.length?'Needs attention:':'Balanced enough to move forward.',...a.findings.map(x=>`- ${x}`)].join('\n');
+  return [`ISSUE BALANCE — ${a.status}`,fmt('Authority / expert opportunities',a.expert),fmt('Feature / activation opportunities',a.partner),fmt('Engagement modes',a.engagement),`Editorial mix: Practical ${a.tones.PRACTICAL||0} · Edge ${a.tones.EDGE||0} · Light ${a.tones.LIGHT||0} · Human ${a.tones.HUMAN||0}`,'',a.findings.length?'Needs attention:':'Balanced enough to move forward.',...a.findings.map(x=>`- ${x}`)].join('\n');
 }
 async function copyIssueBalanceAudit(){
-  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the 15-article plan first.');return}
+  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the Issue Plan first.');return}
   const text=issueBalanceAuditText(plan)+'\n\n'+commercialCompletionText(plan);
   try{await navigator.clipboard.writeText(text);const b=E('copy-smart-audit');if(b){const old=b.textContent;b.textContent='Copied ✓';setTimeout(()=>b.textContent=old,1200)}}
   catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Audit copied.')}
@@ -1525,8 +1506,8 @@ function commercialAuditHtml(plan){
   return `<div class="check smart-audit-panel" style="margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><strong>ISSUE BALANCE — ${esc(a.status)}</strong><button class="btn secondary" id="copy-smart-audit" type="button">Copy Audit</button></div>
     <div class="audit-grid" style="margin-top:8px">
-      <div><strong>Resident Experts:</strong> ${a.expert.length} / target 5–8 ${mark(a.expert.length)}</div>
-      <div><strong>Featured Partners:</strong> ${a.partner.length} / target 5–8 ${mark(a.partner.length)}</div>
+      <div><strong>Authority / expert opportunities:</strong> ${a.expert.length}</div>
+      <div><strong>Feature / activation opportunities:</strong> ${a.partner.length}</div>
       <div><strong>Editorial mix:</strong> Practical ${a.tones.PRACTICAL||0} · Edge ${a.tones.EDGE||0} · Light ${a.tones.LIGHT||0} · Human ${a.tones.HUMAN||0}</div>
       <div><strong>Engagement:</strong> ${a.engagement.length?esc(a.engagement.join(' · ')):'Needs attention'}</div>
     </div>
@@ -1537,7 +1518,7 @@ function commercialAuditHtml(plan){
 }
 function renderSmartPlan(){
  const plan=getSmartPlan(),panel=E('smart-plan-panel');if(!panel)return;panel.style.display='block';const apply=E('smart-plan-apply'),lock=E('smart-plan-lock');
- if(!plan){const sig=getSmartSignals(),batches=getSmartPlanBatches(),arts=batches.flatMap(b=>b.articles||[]);E('smart-plan-status').textContent='No completed Smart Issue Plan yet. Partial decisions survive timeouts and are shown below.';E('smart-plan-summary').innerHTML=sig.length?'<strong>Next:</strong> Build / Resume 15-Article Plan.':'<strong>Next:</strong> Collect Signals first.';E('smart-scan-progress').textContent=(sig.length?`${sig.length} current signals saved. `:'')+(arts.length?`${arts.length}/15 article decisions saved.`:'');E('smart-plan-signals-list').innerHTML=sig.length?`<div class="check"><strong>Saved current signals</strong><br>${sig.map(x=>`${esc(x.signal)}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';E('smart-plan-list').innerHTML=arts.length?`<div class="check"><strong>Partial plan — ${arts.length}/15 saved</strong></div>`+arts.map((a,i)=>`<div class="check"><span class="mini-badge ${planModeClass(a.mode)}">${esc(a.mode)}</span> <strong>${i+1}. ${esc(a.title)}</strong><br><span class="muted">${esc(a.question)}</span></div>`).join(''):'';apply.disabled=true;lock.disabled=true;return}
+ if(!plan){const sig=getSmartSignals(),batches=getSmartPlanBatches(),arts=batches.flatMap(b=>b.articles||[]);E('smart-plan-status').textContent='No completed Smart Issue Plan yet. Partial decisions survive timeouts and are shown below.';E('smart-plan-summary').innerHTML=sig.length?'<strong>Next:</strong> Build / Resume Issue Plan.':'<strong>Next:</strong> Collect Signals first.';E('smart-scan-progress').textContent=(sig.length?`${sig.length} current signals saved. `:'')+(arts.length?`${arts.length}/9 article decisions saved.`:'');E('smart-plan-signals-list').innerHTML=sig.length?`<div class="check"><strong>Saved current signals</strong><br>${sig.map(x=>`${esc(x.signal)}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';E('smart-plan-list').innerHTML=arts.length?`<div class="check"><strong>Partial plan — ${arts.length}/15 saved</strong></div>`+arts.map((a,i)=>`<div class="check"><span class="mini-badge ${planModeClass(a.mode)}">${esc(a.mode)}</span> <strong>${i+1}. ${esc(a.title)}</strong><br><span class="muted">${esc(a.question)}</span></div>`).join(''):'';apply.disabled=true;lock.disabled=true;return}
  const c=plan.counts||{},locked=smartPlanLocked(plan);E('smart-plan-status').textContent=locked?`LOCKED ✓ ${plan.articles.length} articles · ${c.REUSE||0} reuse · ${c.REFRESH||0} refresh · ${c['CREATE NEW']||0} create new.`:`EDITOR REVIEW — ${plan.articles.length} articles · Keep, Edit or Replace individual choices, then lock the plan.`;E('smart-plan-summary').innerHTML=`<strong>Editorial shape</strong><br>${esc(plan.issue_summary||'')}<br><small>${locked?`Locked ${new Date(plan.lockedAt).toLocaleString()}`:'Nothing is written to Airtable until you lock the plan and create briefs.'}</small>`;E('smart-scan-progress').textContent=`${(plan.signals||[]).length} current signals saved and used in this plan.`;const sig=Array.isArray(plan.signals)?plan.signals:[];E('smart-plan-signals-list').innerHTML=sig.length?`<div class="check"><strong>Current signals researched</strong><br>${sig.map(x=>`${esc(x.signal)}${x.why_local?' — '+esc(x.why_local):''}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';const alignment=smartPlanAlignmentSummary(plan),refreshGate=refreshGateSummary(plan),dupGate=sameIssueDuplicationSummary(plan);
   E('smart-plan-list').innerHTML=commercialAuditHtml(plan)+`<div class="check"><strong>Source alignment:</strong> ${alignment.ok} aligned · ${alignment.warn} review · ${alignment.bad} mismatch${alignment.bad?'<br><strong>Do not lock while SOURCE MISMATCH items remain.</strong>':''}<br><strong>Refresh gate:</strong> ${refreshGate.ok} justified · ${refreshGate.replace} should be replaced${refreshGate.replace?'<br><strong>Do not lock while REFRESH TOO WEAK items remain.</strong>':''}<br><strong>Same-issue duplication:</strong> ${dupGate.duplicate} duplicate pair${dupGate.duplicate===1?'':'s'} · ${dupGate.review} close pair${dupGate.review===1?'':'s'}${dupGate.duplicate?'<br><strong>Do not lock while same-issue duplicates remain.</strong>':''}</div>`+(plan.articles||[]).map(a=>{const pa=provenanceAlignment(a,plan),sig=pa.signal,rg=refreshDuplicationCheck(a),dw=duplicateWarningsForArticle(a,plan);return `<div class="check"><div style="display:flex;gap:8px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:260px"><span class="mini-badge ${planModeClass(a.mode)}">${esc(a.mode)}</span> <strong>${a.order}. ${esc(a.title)}</strong>${a.editorDecision?` <span class="mini-badge">${esc(a.editorDecision)}</span>`:''}<br><span class="muted">${esc(a.question)}</span><br><small><strong>Why now:</strong> ${esc(a.why_now||'')} · <strong>Stance:</strong> ${esc(a.stance||'PRACTICAL')} · <strong>Lane:</strong> ${esc(a.lane||'Editorial')}</small><div style="margin-top:7px;padding:8px;border:1px solid var(--line);border-radius:8px"><strong>${esc(pa.label)}</strong> — ${esc(pa.reason)}<br>${sig?`<small><strong>${esc(sig.ref||'Source signal')}:</strong> ${esc(sig.signal||'')}${sig.source_title?` · ${esc(sig.source_title)}`:''}${sig.source_url?` · <a href="${esc(sig.source_url)}" target="_blank" rel="noopener">source</a>`:''}</small>`:`<small>No explicit source signal stored.</small>`}<br><small><strong>Planner provenance:</strong> ${esc(a.source_signal||'Not stored')} · <strong>Decision:</strong> ${esc(a.mode||'')}</small>${String(a.mode||'').toUpperCase()==='REFRESH'?`<div style="margin-top:6px"><strong>${esc(rg.label)}</strong> — ${esc(rg.reason)}</div>`:''}${dw.length?`<div style="margin-top:6px">${dw.map(x=>{const other=x.a.order===a.order?x.b:x.a;return `<strong>${x.level==='DUPLICATE'?'DUPLICATE IN THIS ISSUE':'CHECK OVERLAP'}</strong> — Article ${other.order}: ${esc(other.title)}. ${esc(x.reason)}`}).join('<br>')}</div>`:''}</div></div><div class="toolbar"><button class="btn secondary" data-smart-keep="${a.order}">Keep</button><button class="btn secondary" data-smart-edit="${a.order}">Edit</button><button class="btn secondary" data-smart-replace="${a.order}">Replace</button></div></div></div>`}).join('');document.querySelectorAll('[data-smart-keep]').forEach(b=>b.onclick=()=>keepSmartArticle(+b.dataset.smartKeep));document.querySelectorAll('[data-smart-edit]').forEach(b=>b.onclick=()=>openSmartArticleEdit(+b.dataset.smartEdit));document.querySelectorAll('[data-smart-replace]').forEach(b=>b.onclick=()=>replaceSmartArticle(+b.dataset.smartReplace));apply.disabled=!locked;lock.disabled=locked;lock.textContent=locked?'Plan Locked ✓':'Lock Approved Plan'
 }
@@ -1552,7 +1533,7 @@ async function collectSmartSignals(){
     const discovered=await api('collect-issue-signals',{method:'POST',body:JSON.stringify(base)});
     const signals=Array.isArray(discovered.signals)?discovered.signals:[];
     saveSmartSignals(signals);localStorage.removeItem(smartPlanKey());saveSmartPlanBatches([]);renderSmartPlan();
-    alert(`${signals.length} current discovery leads saved. Now click Build 15-Article Plan.`);
+    alert(`${signals.length} current discovery leads saved. Now click Build / Resume Issue Plan.`);
   }catch(e){renderSmartPlan();alert('Signal collection stopped: '+e.message+'\n\nAny previously saved signals are still available.');}
   finally{btn.disabled=false;btn.textContent=old}
 }
@@ -1565,31 +1546,31 @@ async function buildSmartPlanFromSavedSignals(){
   const btn=E('assembly-build-plan'),old=btn.textContent;btn.disabled=true;
   try{
     await loadArticleLibrary();
-    const existingPlan=getSmartPlan();if(existingPlan?.articles?.length===15){alert('A complete 15-article plan already exists. Keep, edit or replace individual choices, then lock it.');return}
+    const existingPlan=getSmartPlan();if(existingPlan?.articles?.length===9){alert('A complete 9-article default plan already exists. Keep, edit, add, remove or replace choices, then lock it.');return}
     let batches=getSmartPlanBatches();
     const base={publication:currentPublicationName(),issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||'',signals};
     const inventory=(S.articleLibrary||[]).slice(0,55).map(s=>{const x=inferArticleIntelligence(s);return {id:s.id,title:val(s.fields,'Section Title'),purpose:val(s.fields,'Reader Value')||val(s.fields,'Core Reader Question'),proof:val(s.fields,'Local Proof Needed'),freshness:x.freshness,topic:x.topic}});
     const specs=[
-      {batch:1,label:'CHANGE + NOW',brief:'Prioritise current Norfolk/local change, national-to-local consequences, major events and one earned accountability/Unfiltered angle. Produce 5 distinct article decisions.'},
-      {batch:2,label:'MONEY + HOME + SERVICES',brief:'Prioritise household money/value, property/renting, transport, health/family/service decisions and practical consequences. Produce 5 distinct article decisions.'},
-      {batch:3,label:'LIFE + DISCOVERY + WEEKEND',brief:'Prioritise food/leisure, local discovery, weekend/event usefulness, community, recommendations and one lighter but substantial reader question. Produce 5 distinct article decisions.'}
+      {batch:1,label:'CHANGE + NOW',count:3,brief:'Prioritise current local change, national-to-local consequences, major events and one earned accountability/Unfiltered angle. Produce 3 distinct article decisions.'},
+      {batch:2,label:'MONEY + HOME + SERVICES',count:3,brief:'Prioritise household money/value, property/renting, transport, health/family/service decisions and practical consequences. Produce 3 distinct article decisions.'},
+      {batch:3,label:'LIFE + DISCOVERY + WEEKEND',count:3,brief:'Prioritise food/leisure, local discovery, weekend/event usefulness, community, recommendations and one lighter but substantial reader question. Produce 3 distinct article decisions.'}
     ];
     for(const spec of specs){
-      if(batches.some(b=>b.batch===spec.batch&&Array.isArray(b.articles)&&b.articles.length===5))continue;
+      if(batches.some(b=>b.batch===spec.batch&&Array.isArray(b.articles)&&b.articles.length===spec.count))continue;
       const prior=batches.flatMap(b=>b.articles||[]).map(a=>({title:a.title,question:a.question,mode:a.mode,existing_article_id:a.existing_article_id||''}));
       btn.textContent=`Building plan ${spec.batch}/3…`;
       E('smart-scan-progress').textContent=`Planning ${spec.batch}/3 ${spec.label}. Completed batches are saved immediately.`;
-      const data=await api('plan-issue-batch',{method:'POST',body:JSON.stringify({...base,existingArticles:inventory,batch:spec.batch,batchLabel:spec.label,batchBrief:spec.brief,priorArticles:prior})});
+      const data=await api('plan-issue-batch',{method:'POST',body:JSON.stringify({...base,existingArticles:inventory,batch:spec.batch,batchLabel:spec.label,batchBrief:spec.brief,targetCount:spec.count,priorArticles:prior})});
       const saved={batch:spec.batch,label:spec.label,articles:data.articles||[],issue_summary:data.issue_summary||''};
       batches=batches.filter(b=>b.batch!==spec.batch).concat(saved).sort((a,b)=>a.batch-b.batch);saveSmartPlanBatches(batches);renderSmartPlan();
     }
-    const articles=batches.sort((a,b)=>a.batch-b.batch).flatMap(b=>b.articles||[]).slice(0,15).map((a,i)=>({...a,order:i+1}));
-    if(articles.length!==15)throw new Error(`Only ${articles.length}/15 article decisions are saved. Click Build 15-Article Plan again to resume.`);
+    const articles=batches.sort((a,b)=>a.batch-b.batch).flatMap(b=>b.articles||[]).slice(0,9).map((a,i)=>({...a,order:i+1}));
+    if(articles.length!==9)throw new Error(`Only ${articles.length}/9 article decisions are saved. Click Build / Resume Issue Plan again to resume.`);
     const counts=articles.reduce((o,a)=>(o[a.mode]=(o[a.mode]||0)+1,o),{});
     const plan={createdAt:new Date().toISOString(),publication:base.publication,sendDate:base.sendDate,issuePromise:promise,issue_summary:batches.map(b=>b.issue_summary).filter(Boolean).join(' '),signals,articles,counts};
     localStorage.setItem(smartPlanKey(),JSON.stringify(plan));renderSmartPlan();
-    alert(`15-article plan ready: ${counts.REUSE||0} REUSE · ${counts.REFRESH||0} REFRESH · ${counts['CREATE NEW']||0} CREATE NEW. Review it before creating briefs.`);
-  }catch(e){renderSmartPlan();alert('Planning paused: '+e.message+'\n\nAny completed 5-article batches have been kept. Click Build 15-Article Plan again to resume from the next missing batch.');}
+    alert(`Default 9-article plan ready: ${counts.REUSE||0} REUSE · ${counts.REFRESH||0} REFRESH · ${counts['CREATE NEW']||0} CREATE NEW. Review it before creating briefs.`);
+  }catch(e){renderSmartPlan();alert('Planning paused: '+e.message+'\n\nAny completed 5-article batches have been kept. Click Build / Resume Issue Plan again to resume from the next missing batch.');}
   finally{btn.disabled=false;btn.textContent=old}
 }
 async function applySmartPlanToBuild(){
@@ -1640,8 +1621,8 @@ function buildSmartCanvas(articles){
   items.push(comp('FEATURED PARTNER / OFFER','Do Something This Week','One worthwhile visit, booking, nomination, download, event or reply action; editorially useful even without a partner.'));
   items.push(comp('CLOSING QUESTION','One Last Question','End with one specific question readers can reply to or answer on social.'));
   const extras=[()=>comp('READER QUESTION','What Should We Answer Next?','Ask for one precise reader question that can enter the Question Bank.'),()=>comp('QUICK WIN','Two-Minute Win','One tiny action or check readers can make now.'),()=>comp('NOMINATION','Name The Local One',`Ask readers to nominate a specific ${local} business, place, person or service for a future evidence-led guide.`),()=>comp('HUMOUR','You Know The Feeling…',`A short relatable ${local} observation that gives the issue breathing room.`)];
-  let n=0;while(items.length<30){items.splice(Math.max(1,items.length-1),0,extras[n%extras.length]());n++;}
-  return items.slice(0,30);
+  let n=0;while(items.length<26){items.splice(Math.max(1,items.length-1),0,extras[n%extras.length]());n++;}
+  return items.slice(0,26);
 }
 async function smartAssembleIssue(){
   if(!S.issue){alert('Open an issue first.');return}
@@ -1684,7 +1665,7 @@ function autoAssembleIssue(){
     return b;
   };
 
-  const articles=produced.slice(0,15).map(makeArticleBlock);
+  const articles=produced.slice(0,9).map(makeArticleBlock);
   const items=[];
   items.push(comp('OPENING NOTE',"Opening Note","Set up the Peterborough issue promise in 2–4 short lines and preview the strongest reasons to keep reading."));
 
@@ -1735,13 +1716,13 @@ function autoAssembleIssue(){
     ()=>comp('MYTH / QUESTION',"Are We Sure About That?","Challenge one assumption from the issue and invite evidence or experience; do not state an unsupported counter-claim.")
   ];
   let fill=0;
-  while(items.length<30){items.splice(Math.max(1,items.length-1),0,extraSupport[fill%extraSupport.length]());fill++;}
-  const finalItems=items.slice(0,30);
+  while(items.length<26){items.splice(Math.max(1,items.length-1),0,extraSupport[fill%extraSupport.length]());fill++;}
+  const finalItems=items.slice(0,26);
   localStorage.setItem(assemblyKey(),JSON.stringify(finalItems));
   canvasSelectedUid=finalItems[0]?.uid||null;
   renderAssembly();
-  const articleNote=articles.length<12?`\nNOTE: only ${articles.length} completed Master Articles were available. Spotlight normally targets 12-15; add more question-led articles before Final QA where possible.`:'';
-  alert(`Auto assembly created ${finalItems.length} blocks from ${articles.length} completed Master Articles. Target: 28-32 total blocks with 12-15 proper articles.${articleNote}\nReview the running order, assign real partners, then produce the supporting components.`);
+  const articleNote=articles.length<8?`\nNOTE: only ${articles.length} completed Master Articles were available. Spotlight normally targets around 8-10; add another strong article only if it improves the issue.`:'';
+  alert(`Auto assembly created ${finalItems.length} blocks from ${articles.length} completed Master Articles. Target: normally 24-30 total sections with around 8-10 concise, information-rich Master Articles.${articleNote}\nReview the running order, assign real partners, then produce the supporting components.`);
 }
 
 async function produceSupportingComponents(){
@@ -1976,10 +1957,10 @@ function deterministicQA(items){
   else add('PASS','ALL_READY',`All ${items.length} blocks are Ready.`);
 
   const articleCount=items.filter(b=>b.kind==='article').length;
-  if(items.length<28||items.length>32)add('WARNING','ISSUE_SIZE',`Spotlight target is 28-32 total blocks; this canvas has ${items.length}.`);
-  else add('PASS','ISSUE_SIZE',`Issue size is within the 28-32 block Spotlight target.`);
-  if(articleCount<12||articleCount>15)add('WARNING','ARTICLE_COUNT',`Spotlight target is 12-15 proper question-led articles; this canvas has ${articleCount}.`);
-  else add('PASS','ARTICLE_COUNT',`${articleCount} Master Articles is within the 12-15 target.`);
+  if(items.length<24||items.length>30)add('WARNING','ISSUE_SIZE',`Spotlight normally runs at about 24-30 sections; this canvas has ${items.length}. Treat this as a balance warning, not a quota.`);
+  else add('PASS','ISSUE_SIZE',`Issue size is within the normal 24-30 section Spotlight range.`);
+  if(articleCount<8||articleCount>10)add('WARNING','ARTICLE_COUNT',`Spotlight normally uses around 8-10 concise, information-rich Master Articles; this canvas has ${articleCount}. Judge the finished issue by value and rhythm rather than count alone.`);
+  else add('PASS','ARTICLE_COUNT',`${articleCount} Master Articles is within the normal 8-10 Spotlight range.`);
   const longArticles=items.filter(b=>b.kind==='article'&&String(b.content||'').trim().split(/\s+/).filter(Boolean).length>650);
   if(longArticles.length)add('WARNING','MEGA_ARTICLE',`${longArticles.length} Master Article${longArticles.length===1?' is':'s are'} over about 650 words. Run the Split Test: does each contain two or more questions that deserve separate 250-600 word answers?`,longArticles.map(b=>b.uid));
   else add('PASS','ARTICLE_LENGTH',`No obvious mega-articles over about 650 words.`);
@@ -2228,12 +2209,12 @@ E('assembly-auto').onclick=collectSmartSignals;E('assembly-build-plan').onclick=
 document.addEventListener('click',e=>{if(e.target?.id==='copy-commercial-completion')copyCommercialCompletion()});
 E('reconcile-smart-queue')?.addEventListener('click',()=>reconcileApprovedSmartQueue().catch(e=>alert('Could not reconcile queue: '+e.message)));
 E('smart-commercial-completion')?.addEventListener('click',()=>{
-  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the 15-article plan first.');return}
+  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the Issue Plan first.');return}
   renderCommercialCompletionPanel(plan);
   document.querySelector('#commercial-completion-panel')?.scrollIntoView({behavior:'smooth',block:'center'});
 });
 E('smart-plan-audit')?.addEventListener('click',()=>{
-  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the 15-article plan first.');return}
+  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the Issue Plan first.');return}
   renderSmartPlan();document.querySelector('.smart-audit-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
 });
 E('smart-plan-lock').onclick=lockSmartPlan;E('smart-plan-apply').onclick=applySmartPlanToBuild;E('smart-edit-save').onclick=saveSmartArticleEdit;E('smart-edit-cancel').onclick=()=>E('smart-edit-panel').style.display='none';E('smart-plan-hide').onclick=()=>E('smart-plan-panel').style.display='none';E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;

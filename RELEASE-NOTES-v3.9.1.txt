@@ -1,0 +1,28 @@
+ICS v3.9.1 — Spotlight Production Model Alignment
+4 August 2026
+
+PURPOSE
+Align the working v3.9.0 Issue Canvas with the manually proved Spotlight publishing model without redesigning the system.
+
+CHANGED
+- Default Smart Issue Plan now proposes 9 Master Articles (normal editorial range 8–10), in three resumable batches of 3.
+- Normal Spotlight issue range changed from 28–32 / 12–15 articles to about 24–30 sections / 8–10 concise Master Articles.
+- Auto assembly now defaults to 26 sections and up to 9 ready Master Articles.
+- 30-Block terminology replaced by Issue Mix / Issue Balance language.
+- Commercial balance no longer demands arbitrary 5–8 partner lanes. It reports real attachments, activations and future opportunities.
+- CTA controls are hidden for passive components unless the component/action actually warrants one.
+- Life Lane inference aligned to the 12 shared Spotlight Life Lanes.
+- Final QA updated to the new issue architecture.
+- Server-side batch planner honours requested batch size and no longer hardcodes an expected 5.
+
+UNCHANGED / PROTECTED
+- Existing Canvas records and Component IDs.
+- Drag/drop and move controls.
+- Component Command Centre lifecycle.
+- Research / Master Article production engine.
+- Partner attachment model and conditional partner fields.
+- Letterman packaging workflow.
+- Airtable schema.
+
+NEXT PROOF
+Run one complete Norfolk Spotlight issue through Canvas, then PBS, then one niche title. Fix only production blockers before expanding Archive Intelligence.
