@@ -1,0 +1,20 @@
+ICS v3.9.5 — HARD RECENT HISTORY GUARD
+
+Purpose
+Stop the Smart Planner from seeing or recreating known recent same-publication topics while full Archive Recovery remains incomplete.
+
+Changes
+- Known same-publication recent items are removed from the existing-article inventory BEFORE planning.
+- The target publication's recent Letterman history is sent separately as a HARD BLOCK list.
+- The planner is explicitly forbidden from REUSE, LOCALISE, REFRESH or CREATE NEW on the same underlying question/angle merely under a rewritten title.
+- Server-side deterministic semantic/title guard checks title + reader question + problem against the hard-block history after generation.
+- If a generated batch still contains a recent duplicate, the planner retries once with the rejected topics named explicitly.
+- If the retry still duplicates recent history, the batch is rejected with a clear 409 message; already-completed clean batches remain saved.
+- Cross-publication history remains available as LOCALISE candidates.
+- UNKNOWN HISTORY remains reviewable rather than being treated as proof of non-publication.
+
+Acceptance test
+Re-collect Norfolk Issue 11 signals to clear the current plan, then Build / Resume Issue Plan. The recent Norfolk cooling, £20,000 deposit, charity-shop, farm-shop, dentist, dog-grooming, back-pain and other known recent topics must not return as normal planner choices.
+
+Scope
+This is the minimum deterministic trust layer. It is not full PBS/CBS/NS Archive Recovery.
