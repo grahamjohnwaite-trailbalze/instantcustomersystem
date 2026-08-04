@@ -31,6 +31,7 @@ Review the complete running order below. Detect ONLY meaningful issue-level prob
 - internal commercial/editorial notes leaking into reader-facing copy;
 - weak issue rhythm or several heavy sections together;
 - issue architecture outside the Spotlight target: normally around 24-30 total sections with roughly 8-10 concise, information-rich Master Articles and the rest lighter pace/support components; treat these as normal ranges, not quotas;
+- commercial opportunity should be visible across strong articles/components where natural: authority/expert routes, feature/activation routes, sponsored resources, niche-brand/list-building pathways or other sellable reader-value opportunities. Do NOT require an arbitrary sponsor count and do NOT penalise a strong editorial item merely because it has no obvious commercial route;
 - too many oversized/catch-all Master Articles where several distinct reader questions appear to have been crammed into one piece;
 - generic supporting copy that does not earn its place;
 - duplicated CTAs/social prompts;

@@ -45,6 +45,10 @@ EDITORIAL RULES
 - Build a varied weekly experience: current change/news, events/what's-on, money/value, home/property/renting/transport, food/leisure/local discovery, community/service/family/health where earned, and one fair challenge/Unfiltered angle where evidence supports it.
 - Current discovery leads should materially influence the slate. Treat them as leads only, not proven facts. Every REFRESH/CREATE NEW brief must require fresh verification during article research. Do not reproduce a headline claim as fact merely because it appears here.
 - Do not produce 15 evergreen archive articles while ignoring the current discovery pack.
+- Commercial opportunity should be obvious where natural: identify expert/authority, feature/activation, list-building or specialist-brand routes, but never invent a sponsor or let commercial value rescue a weak editorial idea.
+- A real paid/current partner commitment may increase priority only after the editorial floor passes.
+- Avoid a civic/public-service-heavy portfolio: normally no more than about 4 of 9 Master Articles should be dominated by councils, planning scrutiny, bins, public-service administration or transport bureaucracy.
+- Include at least two discovery, enjoyment, recommendation, people-led or lighter-interest Master Articles.
 - Human questions must sound natural. Avoid overusing mate, friend, sensible, useful, practical, key question, whether.
 - Do not invent partners. Partner path may be Open.
 - Same entity is fine with a materially different question; same story/claim/angle is duplication.

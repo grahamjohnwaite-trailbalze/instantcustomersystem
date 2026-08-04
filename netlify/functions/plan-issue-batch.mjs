@@ -31,6 +31,10 @@ SOURCE-TO-IDEA DISCIPLINE:
 - Across the issue aim for a broad Spotlight mix: Home & Property; Home Improvement & Garden; Money & Household Costs; Family & Children; Health & Wellbeing; Food & Dining; Pets & Animals; Motoring & Transport; Travel/Days Out/Experiences; Leisure/Culture/Entertainment; Community & Local Change; Work/Business/Opportunity.
 - Human variety matters: include discovery, recommendation, enjoyment, useful service, shareable/list/resource potential and commercial pathways as appropriate. Facts/answers first; engagement second.
 - Commercial potential should be visible, but never rescue a weak editorial idea. One strong article may support several partner routes.
+- COMMERCIAL VISIBILITY: for every strong article, identify the natural expert/authority, feature/activation, list-building or specialist-brand pathways where they genuinely exist. Do not invent a sponsor and do not force a commercial lane.
+- A real paid/current partner commitment may increase priority, but only after reader value, specificity, freshness and factual confidence pass the editorial floor.
+- Avoid a civic/public-service-heavy Master Article portfolio. Unless an exceptional breaking-news week justifies it, no more than about 4 of 9 Master Articles should be dominated by councils, planning scrutiny, bins, public-service administration or transport bureaucracy.
+- The Master Article layer itself should contain at least two discovery, enjoyment, recommendation, people-led or lighter-interest pieces; do not expect supporting components to supply all personality.
 
  Existing library is a resource bank, not a quota; REUSE should be earned. Use REFRESH when an old article/question needs current verification or a materially updated angle.
  REFRESH DISCIPLINE:
