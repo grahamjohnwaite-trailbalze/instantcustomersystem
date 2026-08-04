@@ -1,0 +1,19 @@
+ICS / TBOS v3.9.16 — Decisive Official Source Gate
+
+Fixes the SkiYodl/ABTA case exposed in v3.9.15.
+
+WHAT CHANGED
+- One editor-confirmed official source may now pass the core evidence gate by itself when it contains substantive evidence tied to the supplied URL.
+- The system no longer requires arbitrary source-count padding when a regulator, official trade body, public authority or equivalent source directly confirms the event and reader action.
+- A qualifying decisive source is marked as core evidence relaxed and can resolve to VERIFIED_NOW.
+- The unnecessary 45-second recovery search is skipped when the decisive official source already establishes the article premise.
+- Existing safeguards remain: the URL must classify as official, the editor must confirm the pasted evidence text, and the evidence must be substantive.
+
+SKIYODL ACCEPTANCE TEST
+1. Reload Build Issue after deployment.
+2. Select Article 1.
+3. Click Research current article.
+4. Expected Research Pack: Evidence Class VERIFIED_NOW, with the ABTA source retained and no source-count failure.
+5. Mark evidence verified.
+6. Write current Master Article.
+7. Confirm the rewritten article states that ABTA confirms the voluntary winding-up and gives the separate package-holiday and accommodation-only routes.

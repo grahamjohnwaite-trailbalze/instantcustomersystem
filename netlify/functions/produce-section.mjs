@@ -366,11 +366,25 @@ async function fastEvidencePack(fields,cls){
   const official=chosen.filter(x=>x.source_type==='official').length;
   const local=chosen.filter(x=>x.source_type==='local').length;
   const specificStrong=chosen.filter(x=>Number(x.relevance)>=5).length;
-  const sufficient=chosen.length>=2&&(official+local>=1)&&specificStrong>=1&&chosen.every(x=>Number(x.relevance)>=3);
+  // One decisive, editor-confirmed official source can establish the core claim by itself.
+  // This is essential for regulator/trade-body notices that directly state the event,
+  // date, responsible body and reader action, even when the publisher blocks fetching.
+  const decisiveEditorOfficial=Boolean(
+    editorSource?.editor_confirmed_text &&
+    sourceTypeFor(editorSource.url,editorSource.source)==='official' &&
+    Number(editorSource.relevance||0)>=15 &&
+    String(editorSource.description||'').includes('EDITOR-CONFIRMED SOURCE TEXT:') &&
+    String(editorSource.description||'').length>=220
+  );
+  const sufficient=decisiveEditorOfficial||(chosen.length>=2&&(official+local>=1)&&specificStrong>=1&&chosen.every(x=>Number(x.relevance)>=3));
   return {
     research_status:sufficient?'Sufficient':'Insufficient',
-    research_summary:`Source precision gate retained ${chosen.length} distinct article-specific source leads (${official} official, ${local} local; ${specificStrong} strongly matched). Generic reference pages, duplicate stories and sources without the article's entity/topic anchors were removed before writing.`,
+    research_summary:decisiveEditorOfficial
+      ?`Decisive editor-confirmed official source retained. It may establish the core article premise and reader action without source-count padding.`
+      :`Source precision gate retained ${chosen.length} distinct article-specific source leads (${official} official, ${local} local; ${specificStrong} strongly matched). Generic reference pages, duplicate stories and sources without the article's entity/topic anchors were removed before writing.`,
     sources:chosen,
+    decisive_editor_source:decisiveEditorOfficial,
+    core_evidence_relaxed:decisiveEditorOfficial,
     missing_evidence:sufficient?[]:['The source precision gate found too little distinct article-specific evidence. It will not pad the pack with generic or tangential sources. Human verification is required before publication.']
   };
 }
