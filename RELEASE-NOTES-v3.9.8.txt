@@ -1,0 +1,16 @@
+ICS / TBOS v3.9.8 — COMPACT PLANNER TIMEOUT FIX
+
+Purpose
+- Keep the v3.9.5–v3.9.7 recent-publication duplicate guard.
+- Stop 18-second AI timeouts preventing Norfolk Issue 11 from reaching 9 decisions.
+
+Changes
+- Planner remains 9 x 1-article micro-batches; each accepted decision saves immediately.
+- Planner prompt is substantially smaller: 14 leads, 36 ranked article candidates, compact history and prior-choice context.
+- Existing candidates are ranked to favour LOCALISE / available assets before unknown-history assets.
+- AI ceiling raised from 18s to 24s, while compacting the prompt to stay below the platform inactivity window.
+- No internal retry: duplicate/rejected candidates still fail fast and are excluded on the next Resume click.
+- Visible Canvas version updated to v3.9.8.
+
+Acceptance test
+Continue Norfolk Issue 11 from the already-saved partial plan. Do not recollect signals. Resume planning and confirm the accepted count progresses beyond 3 without repeated grooming or recent Norfolk duplicates.

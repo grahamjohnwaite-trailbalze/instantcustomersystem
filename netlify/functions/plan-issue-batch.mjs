@@ -12,60 +12,52 @@ export default async(request)=>{
     const publication=String(d.publication||'').trim(),issueNumber=String(d.issueNumber||'').trim(),issuePromise=String(d.issuePromise||'').trim();
     if(!publication||!issuePromise)return json(400,{ok:false,error:'publication and issuePromise are required'});
     const batch=Number(d.batch||1),totalBatches=Math.max(1,Number(d.totalBatches)||9),label=String(d.batchLabel||`Decision ${batch}`),requestedCount=Math.max(1,Math.min(2,Number(d.targetCount)||1)),brief=String(d.batchBrief||`Produce ${requestedCount} distinct article decision.`);
-    const signals=(Array.isArray(d.signals)?d.signals:[]).slice(0,18).map((x,i)=>`${i+1}. [${x.scope||'lead'}] ${String(x.signal||'').slice(0,180)} | ${String(x.published_at||x.why_now||'').slice(0,80)} | ${String(x.source_title||'').slice(0,80)}`).join('\n');
-    const blockedRecentHistory=(Array.isArray(d.blockedRecentHistory)?d.blockedRecentHistory:[]).slice(0,80).map(x=>String(x||'').trim()).filter(Boolean);
+    const signals=(Array.isArray(d.signals)?d.signals:[]).slice(0,14).map((x,i)=>`${i+1}. ${String(x.signal||'').slice(0,150)} | ${String(x.source_title||'').slice(0,60)}`).join('\n');
+    const blockedRecentHistory=(Array.isArray(d.blockedRecentHistory)?d.blockedRecentHistory:[]).slice(0,50).map(x=>String(x||'').trim()).filter(Boolean);
     const blockedPack=blockedRecentHistory.map((x,i)=>`${i+1}. ${x}`).join('\n');
     const rejectedCandidates=(Array.isArray(d.rejectedCandidates)?d.rejectedCandidates:[]).slice(0,30).map(String).filter(Boolean);
-    const existing=(Array.isArray(d.existingArticles)?d.existingArticles:[]).slice(0,120).map(x=>({id:String(x.id||''),title:String(x.title||''),purpose:String(x.purpose||'').slice(0,180),freshness:String(x.freshness||''),topic:String(x.topic||''),proof:String(x.proof||'').slice(0,160),history_status:String(x.history_status||''),history_match:String(x.history_match||''),history_publication:String(x.history_publication||''),history_score:Number(x.history_score||0)})).filter(x=>x.id&&x.title);
+    const existing=(Array.isArray(d.existingArticles)?d.existingArticles:[]).slice(0,90).map(x=>({id:String(x.id||''),title:String(x.title||''),purpose:String(x.purpose||'').slice(0,100),freshness:String(x.freshness||''),topic:String(x.topic||''),history_status:String(x.history_status||''),history_match:String(x.history_match||''),history_publication:String(x.history_publication||''),history_score:Number(x.history_score||0)})).filter(x=>x.id&&x.title);
     const usableExisting=existing.filter(x=>!rejectedCandidates.some(t=>guardSimilarity(x.title,t)>=0.38));
-    const inventory=usableExisting.map((x,i)=>`${i+1}. ${x.id} | ${x.title} | ${x.purpose} | ${x.freshness} | ${x.topic} | HISTORY=${x.history_status||'UNKNOWN'}${x.history_publication?` | MATCH=${x.history_publication}: ${x.history_match} (${x.history_score}%)`:''}`).join('\n');
+    const rankedExisting=[...usableExisting].sort((a,b)=>{const rank=x=>String(x.history_status||'').startsWith('LOCALISE')?0:String(x.history_status||'').startsWith('AVAILABLE')?1:2;return rank(a)-rank(b)}).slice(0,36);
+    const inventory=rankedExisting.map((x,i)=>`${i+1}. ${x.id} | ${x.title} | ${x.topic||x.purpose} | ${x.freshness} | ${x.history_status||'UNKNOWN'}${x.history_publication?` | from ${x.history_publication}`:''}`).join('\n');
     const prior=(Array.isArray(d.priorArticles)?d.priorArticles:[]).slice(0,10).map((x,i)=>`${i+1}. ${x.title} — ${x.question} | mode=${x.mode||''} | life_lane=${x.life_lane||''} | commercial=${x.lane||''} | source=${x.source_signal||''}`).join('\n');
-    const prompt=`You are senior editor for Trail Blaze ${publication}. Plan ONLY ${requestedCount} Master Article decision${requestedCount===1?'':'s'} for planning decision ${batch}/${totalBatches}: ${label}. Do not browse the web.\n\nAUTHORITATIVE ISSUE: ${publication} | Issue #${issueNumber||'—'} | TARGET SEND ${String(d.sendDate||'')}\nISSUE PROMISE: ${issuePromise}\nIf the issue promise contains an old date or conflicts with the authoritative issue line, ignore the stale date and plan for the authoritative target send date.\nEDITOR NOTES: ${String(d.knownSignals||'None').slice(0,1000)}\nBATCH JOB: ${brief}\n\nCURRENT DISCOVERY LEADS (leads only; not verified facts):\n${signals}\n\nHARD BLOCK — RECENTLY PUBLISHED IN TARGET PUBLICATION (DO NOT REUSE, LOCALISE, REFRESH OR RECREATE THE SAME QUESTION/ANGLE):\n${blockedPack||'None supplied'}\n\nREJECTED EARLIER IN THIS PLANNING RUN — DO NOT PROPOSE THESE OR CLOSE REWRITES AGAIN:\n${rejectedCandidates.length?rejectedCandidates.map((x,i)=>`${i+1}. ${x}`).join('\n'):'None'}\n\nEXISTING ARTICLE LIBRARY (already excludes known same-publication recent duplicates):\n${inventory||'None'}\n\nALREADY CHOSEN IN THIS ISSUE — DO NOT DUPLICATE OR REUSE THEIR SOURCE LEADS:\n${prior||'None'}\n\nReturn exactly ${requestedCount} distinct article decision${requestedCount===1?'':'s'}. One question per article.
-SOURCE-TO-IDEA DISCIPLINE:
-- Every CREATE NEW or current-event REFRESH decision must be grounded in one specific CURRENT DISCOVERY LEAD above.
-- source_signal MUST start with the exact lead number, for example "Lead 4: ...", and accurately describe what that lead is actually about.
-- Do not broaden a phone-use enforcement story into speeding, a Pride/library-display dispute into branch/service changes, or otherwise change the event/topic merely because it creates a nicer article.
-- The proposed question may go one step beyond the headline only when the linked signal genuinely supports that direction.
-- If no discovery lead supports a proposed current article, choose a different supported idea instead.
-- A discovery lead already used by any priorArticles entry is normally unavailable for another article in the same issue.
-- Do not create a second article from the same underlying event merely by changing the wording, audience or CTA.
+    const prompt=`You are the senior editor for Trail Blaze ${publication}. Choose ONE Master Article for decision ${batch}/${totalBatches}. Return JSON only. Do not browse.
 
- PORTFOLIO-FIRST DISCIPLINE:
-- Before inventing a new article, actively inspect the EXISTING ARTICLE LIBRARY for a strong proven article or concept that can be reused or refreshed for this issue.
-- A normal Spotlight issue should be assembled mostly from already-produced or localisable assets plus a smaller number of genuinely current/new stories. Current signals are gap-fillers and freshness inputs, not the whole issue.
-- Across the full 9-decision issue plan, prefer strong REUSE/LOCALISE/REFRESH assets when genuinely suitable. For this single decision, choose the strongest remaining portfolio gap; do not force reuse.
-- Do not choose a weak archive article merely to satisfy that preference: reader value, specificity and issue fit still win.
-- Use the ALREADY CHOSEN list to fill missing Life Lanes and tones. Avoid civic/council/transport clustering unless the week genuinely demands it.
-- Across the issue aim for a broad Spotlight mix: Home & Property; Home Improvement & Garden; Money & Household Costs; Family & Children; Health & Wellbeing; Food & Dining; Pets & Animals; Motoring & Transport; Travel/Days Out/Experiences; Leisure/Culture/Entertainment; Community & Local Change; Work/Business/Opportunity.
-- Human variety matters: include discovery, recommendation, enjoyment, useful service, shareable/list/resource potential and commercial pathways as appropriate. Facts/answers first; engagement second.
-- Commercial potential should be visible, but never rescue a weak editorial idea. One strong article may support several partner routes.
-- COMMERCIAL VISIBILITY: for every strong article, identify the natural expert/authority, feature/activation, list-building or specialist-brand pathways where they genuinely exist. Do not invent a sponsor and do not force a commercial lane.
-- A real paid/current partner commitment may increase priority, but only after reader value, specificity, freshness and factual confidence pass the editorial floor.
-- Avoid a civic/public-service-heavy Master Article portfolio. Unless an exceptional breaking-news week justifies it, no more than about 4 of 9 Master Articles should be dominated by councils, planning scrutiny, bins, public-service administration or transport bureaucracy.
-- The Master Article layer itself should contain at least two discovery, enjoyment, recommendation, people-led or lighter-interest pieces; do not expect supporting components to supply all personality.
+ISSUE: ${publication} #${issueNumber||'—'} | send ${String(d.sendDate||'')}
+PROMISE: ${issuePromise}
+JOB: ${brief}
 
- REUSE / PUBLICATION-HISTORY GATE:
-- HISTORY=BLOCKED RECENT DUPLICATE means this asset or materially similar topic is already known published in the TARGET publication. NEVER return it as REUSE, LOCALISE or REFRESH unless the brief explicitly names a materially changed answer; normally choose a different asset.
-- HISTORY=LOCALISE FROM OTHER PUBLICATION means the concept appears in another publication but not the target publication in the current minimum-history layer. Return mode LOCALISE when adapting that existing asset to the target publication.
-- HISTORY=UNKNOWN HISTORY — REVIEW is not proof that the article is unused. You may propose it only when strong, but make the uncertainty explicit in why_now.
-- A generated SEED/question-universe record is an idea candidate only, never proof of research or publication.
-- Same title is not required for duplication: compare underlying reader question, decision and factual answer.
-- HARD RULE: anything materially matching the HARD BLOCK list is unavailable even under a rewritten title. Choose another concept.
-- HARD RULE: anything materially matching REJECTED EARLIER IN THIS PLANNING RUN is also unavailable. Do not waste another decision on the same rejected concept.
-- If the safe existing-article pool is exhausted or weak, prefer a genuinely different CREATE NEW article from an unused current discovery lead rather than recycling a blocked/rejected library idea.
-- Cross-publication LOCALISE candidates should be preferred over same-publication UNKNOWN HISTORY assets when reader value is similar.
- Existing library is a resource bank, not a quota; REUSE should be earned. Use REFRESH when an old article/question needs current verification or a materially updated angle.
- REFRESH DISCIPLINE:
-- REFRESH is not allowed merely because an existing article is evergreen, still relevant, seasonal again, or easy to update.
-- For every REFRESH, why_now must state exactly what materially changed since the earlier article: a new rule, decision, figure, price, policy, local development, evidence set, result or other change that materially alters the answer.
-- If you cannot name that change, choose CREATE NEW instead.
-- Recently covered ideas should have a strong presumption against REFRESH unless the answer has materially changed.
- CREATE NEW for genuinely new/current opportunities. Human UK wording. Include local proof/evidence needs. Do not invent businesses, facts, partners, events or reader quotes. For contentious angles include a fair countercase.\n\nSTRICT JSON ONLY:\n{"issue_summary":"","articles":[{"mode":"REUSE|LOCALISE|REFRESH|CREATE NEW","existing_article_id":"","title":"","question":"","problem":"","hook":"","reader":"","value":"","local_proof":"","evidence":"","life_lane":"Home & Property|Home Improvement & Garden|Money & Household Costs|Family & Children|Health & Wellbeing|Food & Dining|Pets & Animals|Motoring & Transport|Travel, Days Out & Experiences|Leisure, Culture & Entertainment|Community & Local Change|Work, Business & Opportunity|Open","lane":"Authority|Feature Partner|Activation|Community|Editorial|Open","partner_path":"","cta_type":"None|Reply|Comment|Save|Nominate|Button|Ask Expert|Booking|Directory","cta_text":"","stance":"PRACTICAL|NEUTRAL|CHALLENGE|CONTRARIAN|DEBATE|UNFILTERED","why_now":"","countercase":"","source_signal":""}]}`;
+CURRENT LEADS (leads, not verified facts):
+${signals}
+
+RECENT TARGET-PUBLICATION TOPICS — HARD BLOCK, including close rewrites:
+${blockedPack||'None'}
+
+REJECTED THIS RUN — HARD BLOCK:
+${rejectedCandidates.length?rejectedCandidates.join(' | '):'None'}
+
+SAFE/REVIEW ARTICLE CANDIDATES:
+${inventory||'None'}
+
+ALREADY CHOSEN:
+${prior||'None'}
+
+RULES:
+- Never repeat a recent blocked, rejected, or already-chosen question/angle. Same concept under a new title is still a duplicate.
+- Prefer LOCALISE from another publication when strong and not already used in ${publication}.
+- REUSE only when history does not show recent same-publication use. UNKNOWN HISTORY must be stated in why_now.
+- REFRESH requires a real changed fact/rule/figure/decision that materially changes the answer.
+- CREATE NEW must use one unused current lead and source_signal must start with its exact Lead number.
+- Fill a missing Life Lane/tone. Avoid another civic/council/transport piece if the current slate is already serious. Aim for human/discovery/recommendation/value/shareability and natural commercial routes without forcing sponsors.
+- Facts/answers first. Do not invent businesses, experts, prices, events, sources or quotes.
+
+STRICT JSON ONLY:
+{"issue_summary":"","articles":[{"mode":"REUSE|LOCALISE|REFRESH|CREATE NEW","existing_article_id":"","title":"","question":"","problem":"","hook":"","reader":"","value":"","local_proof":"","evidence":"","life_lane":"Home & Property|Home Improvement & Garden|Money & Household Costs|Family & Children|Health & Wellbeing|Food & Dining|Pets & Animals|Motoring & Transport|Travel, Days Out & Experiences|Leisure, Culture & Entertainment|Community & Local Change|Work, Business & Opportunity|Open","lane":"Authority|Feature Partner|Activation|Community|Editorial|Open","partner_path":"","cta_type":"None|Reply|Comment|Save|Nominate|Button|Ask Expert|Booking|Directory","cta_text":"","stance":"PRACTICAL|NEUTRAL|CHALLENGE|CONTRARIAN|DEBATE|UNFILTERED","why_now":"","countercase":"","source_signal":""}]}`;
     const model=String(process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
-    const validIds=new Set(usableExisting.map(x=>x.id));
-    // v3.9.6 deliberately performs one model call only. A duplicate or timeout is returned quickly
-    // and the client resumes the same one-article decision, rather than risking a Netlify 504 on an internal retry.
-    const response=await createResponse({input:prompt,useWeb:false,model,timeoutMs:18000});
+    const validIds=new Set(rankedExisting.map(x=>x.id));
+    // v3.9.8 uses one compact model call with a 24s ceiling. A duplicate or timeout is returned quickly
+    // The prompt is intentionally compact so one decision can finish before the platform inactivity window.
+    const response=await createResponse({input:prompt,useWeb:false,model,timeoutMs:24000});
     const result=parseJsonText(outputText(response));
     const articles=(Array.isArray(result.articles)?result.articles:[]).slice(0,requestedCount).map(a=>{
       let mode=normalizeMode(a.mode),id=String(a.existing_article_id||'').trim();
