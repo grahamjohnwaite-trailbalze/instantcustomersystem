@@ -897,7 +897,7 @@ function knownHistoryMatch(title,publication=currentPublicationName()){
  if(best.publication===publication)return {status:'BLOCKED RECENT DUPLICATE',match:best};
  return {status:'LOCALISE FROM OTHER PUBLICATION',match:best};
 }
-function inventoryWithReuseGuard(list,limit=55){
+function inventoryWithReuseGuard(list,limit=120){
  const publication=currentPublicationName();
  return (list||[]).slice(0,limit).map(s=>{const x=inferArticleIntelligence(s),title=val(s.fields,'Section Title'),g=knownHistoryMatch(title,publication);return {id:s.id,title,purpose:val(s.fields,'Reader Value')||val(s.fields,'Core Reader Question'),proof:val(s.fields,'Local Proof Needed'),freshness:x.freshness,topic:x.topic,history_status:g.status,history_match:g.match?.title||'',history_publication:g.match?.publication||'',history_score:g.match?Math.round(g.match.score*100):0}})
  // v3.9.5: known same-publication recent articles are not planner inventory at all.
@@ -1259,6 +1259,10 @@ function exportCanvasBackup(){
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function smartPlanKey(){return 'ics:smartPlan:'+assemblyIssueId()}
+function smartRejectedKey(){return 'ics:smartRejected:'+assemblyIssueId()}
+function getSmartRejected(){try{return JSON.parse(localStorage.getItem(smartRejectedKey())||'[]')}catch{return []}}
+function addSmartRejected(title){title=String(title||'').trim();if(!title)return;const v=getSmartRejected();if(!v.some(x=>normalizePlanTitle(x)===normalizePlanTitle(title)))v.push(title);localStorage.setItem(smartRejectedKey(),JSON.stringify(v.slice(-30)))}
+function clearSmartRejected(){localStorage.removeItem(smartRejectedKey())}
 function smartSignalsKey(){return 'ics:smartSignals:'+assemblyIssueId()}
 function getSmartSignals(){try{return JSON.parse(localStorage.getItem(smartSignalsKey())||'[]')}catch{return []}}
 function saveSmartSignals(v){localStorage.setItem(smartSignalsKey(),JSON.stringify(v||[]))}
@@ -1611,7 +1615,7 @@ async function collectSmartSignals(){
     E('smart-scan-progress').textContent='Collecting fast current headline/event discovery leads. These are discovery leads only; article research verifies claims later.';
     const discovered=await api('collect-issue-signals',{method:'POST',body:JSON.stringify(base)});
     const signals=Array.isArray(discovered.signals)?discovered.signals:[];
-    saveSmartSignals(signals);localStorage.removeItem(smartPlanKey());saveSmartPlanBatches([]);renderSmartPlan();
+    saveSmartSignals(signals);localStorage.removeItem(smartPlanKey());saveSmartPlanBatches([]);clearSmartRejected();renderSmartPlan();
     E('smart-scan-progress').textContent=`${signals.length} current discovery leads saved. Next: Build / Resume Issue Plan.`;updateWorkflowGuide();alert(`${signals.length} current discovery leads saved. Next: Build / Resume Issue Plan.`);
   }catch(e){renderSmartPlan();alert('Signal collection stopped: '+e.message+'\n\nAny previously saved signals are still available.');}
   finally{btn.disabled=false;btn.textContent=old}
@@ -1627,8 +1631,8 @@ async function buildSmartPlanFromSavedSignals(){
     await loadArticleLibrary();
     const existingPlan=getSmartPlan();if(existingPlan?.articles?.length===9){alert('A complete 9-article default plan already exists. Keep, edit, add, remove or replace choices, then lock it.');return}
     let batches=getSmartPlanBatches();
-    const base={publication:currentPublicationName(),issueNumber:val(S.issue.fields,'Issue Number')||'',issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||'',signals,blockedRecentHistory:recentHistoryForPublication(currentPublicationName())};
-    const inventory=inventoryWithReuseGuard(S.articleLibrary,55);
+    const base={publication:currentPublicationName(),issueNumber:val(S.issue.fields,'Issue Number')||'',issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||'',signals,blockedRecentHistory:recentHistoryForPublication(currentPublicationName()),rejectedCandidates:getSmartRejected()};
+    const inventory=inventoryWithReuseGuard(S.articleLibrary,120);
     // v3.9.6: nine single-article micro-batches. Each successful decision is saved immediately,
     // keeping every Netlify function call comfortably below the platform inactivity window.
     const groups=[
@@ -1652,7 +1656,16 @@ async function buildSmartPlanFromSavedSignals(){
     const plan={createdAt:new Date().toISOString(),publication:base.publication,sendDate:base.sendDate,issuePromise:promise,issue_summary:batches.map(b=>b.issue_summary).filter(Boolean).join(' '),signals,articles,counts};
     localStorage.setItem(smartPlanKey(),JSON.stringify(plan));renderSmartPlan();updateWorkflowGuide();
     alert(`Default 9-article plan ready: ${counts.REUSE||0} REUSE · ${counts.LOCALISE||0} LOCALISE · ${counts.REFRESH||0} REFRESH · ${counts['CREATE NEW']||0} CREATE NEW. Review it before creating briefs.`);
-  }catch(e){renderSmartPlan();const m='Planning paused: '+e.message+'\n\nEvery completed article decision has been kept. Click Build / Resume Issue Plan again to resume from the next missing decision.';E('smart-scan-progress').textContent=m;updateWorkflowGuide();alert(m);}
+  }catch(e){
+    const msg=String(e.message||'');
+    const mDup=msg.match(/Recent-history guard rejected[^:]*:\s*(.+?)\.\s*Click Build/i);
+    if(mDup){mDup[1].split(' | ').map(x=>x.trim()).filter(Boolean).forEach(addSmartRejected)}
+    renderSmartPlan();
+    const rejected=getSmartRejected();
+    const extra=rejected.length?`\n\nRejected this planning run (${rejected.length}) are now hard-banned from being proposed again: ${rejected.join(' | ')}`:'';
+    const m='Planning paused: '+msg+'\n\nEvery completed article decision has been kept. Click Build / Resume Issue Plan again to resume from the next missing decision.'+extra;
+    E('smart-scan-progress').textContent=m;updateWorkflowGuide();alert(m);
+  }
   finally{btn.disabled=false;btn.textContent=old}
 }
 async function applySmartPlanToBuild(){
