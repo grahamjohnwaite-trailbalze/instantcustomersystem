@@ -1,0 +1,21 @@
+ICS v3.9.9 — BULK PRODUCTION PIPELINE FIX
+
+Purpose
+Fix the bulk "Write all approved articles" workflow discovered during the Norfolk Issue 11 proof.
+
+Problem confirmed
+The bulk button called Master Article generation directly. For B/C evidence classes, produce-section correctly refused to write without a saved Research Pack, producing: "Research is not complete. Run Research selected article first."
+
+Changes
+1. Bulk production is now a staged two-step pipeline per queued article:
+   Research -> save Research Pack/checkpoint -> Write Master Article.
+2. VERIFIED_NOW and ATTRIBUTED_REPORT research outcomes may proceed to writing using the saved Research Pack.
+3. BLOCKED / RESEARCH_INCOMPLETE / SOURCE_CHECK_REQUIRED stop that article before writing and continue the queue.
+4. One article failure no longer stops the rest of the bulk queue.
+5. Progress panel explicitly shows Step 1/2 Researching and Step 2/2 Writing.
+6. Final production summary/status is rendered in the page and selectable/copyable.
+7. Existing single-article Research and Write controls remain unchanged.
+8. Existing v3.9.8 planner/reuse guard behaviour is preserved.
+
+Acceptance test
+Open Norfolk Spotlight Issue 11 in Build Issue and click Write all approved articles. The 9 queued articles should no longer all fail immediately with "Research is not complete". Each should first complete research; publishable research then proceeds to Master Article writing. Any blocked/research-incomplete item should be held for review while the remaining queue continues.
