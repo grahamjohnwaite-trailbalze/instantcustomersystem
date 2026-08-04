@@ -330,6 +330,68 @@ async function fastEvidencePack(fields,cls){
   };
 }
 
+
+function independentQuestionRecoveryEligible(fields){
+  const title=String(value(fields,'Section Title')||'');
+  const question=String(value(fields,'Core Reader Question')||'');
+  const notes=String(value(fields,'Notes')||'');
+  const blob=`${title} ${question}`.toLowerCase();
+  const story=`${title} ${notes}`.toLowerCase();
+  const guideShape=/\b(how|which|what|where|guide|tips?|ways?|best|worth|parents?|famil(?:y|ies)|children|things to do|events?|books?|save|compare|choose|find)\b/.test(blob);
+  const hardSpecific=/\b(liquidation|insolven|administrator|court|charged|arrest|crash|collision|death|dies|closure|closes|planning decision|approved|refused|investigation|fraud|fire|company enters|council vote|election result)\b/.test(story);
+  return guideShape&&!hardSpecific;
+}
+function independentQuestionSearchTerms(fields){
+  const title=String(value(fields,'Section Title')||'').trim();
+  const q=String(value(fields,'Core Reader Question')||'').trim();
+  const compact=x=>String(x||'').replace(/[—–:?!(),"']/g,' ').replace(/\s+/g,' ').trim();
+  const terms=[
+    compact(q),
+    compact(`Norfolk ${q}`),
+    compact(title),
+    compact(`Norfolk ${title}`)
+  ];
+  if(/child|read|book|liter/i.test(`${title} ${q}`)){
+    terms.push(compact(`Norfolk libraries ${q}`));
+    terms.push(compact(`site:booktrust.org.uk ${q}`));
+  }
+  if(/event|what's on|things to do|literary|author/i.test(`${title} ${q}`)){
+    terms.push(compact(`site:visitnorfolk.com Norfolk August 2026 literary events books authors`));
+    terms.push(compact(`site:norfolk.gov.uk libraries events Norfolk August 2026`));
+  }
+  return [...new Set(terms.filter(Boolean))].slice(0,7);
+}
+async function fastIndependentQuestionPack(fields,cls){
+  if(!independentQuestionRecoveryEligible(fields))return null;
+  const queries=independentQuestionSearchTerms(fields);
+  const jobs=[];
+  for(const q of queries.slice(0,5))jobs.push(fetchTextFast(bingWebUrl(q)).then(r=>parseRssEvidence(r.text,q,'Bing Web RSS')));
+  for(const q of queries.slice(0,2))jobs.push(fetchTextFast(googleNewsUrl(q)).then(r=>parseRssEvidence(r.text,q,'Google News RSS')));
+  const settled=await Promise.allSettled(jobs);
+  let raw=settled.flatMap(x=>x.status==='fulfilled'?x.value:[]);
+  raw=raw.filter(x=>!genericDriftSource(x)&&!wrongGeographySource(x,fields));
+  raw=raw.map(x=>({...x,relevance:Number(x.relevance||relevanceScore(x,fields))})).filter(x=>x.relevance>=2);
+  raw.sort((a,b)=>b.relevance-a.relevance);
+  const seen=new Set(),chosen=[];
+  for(const x of raw){
+    const url=cleanUrl(x.url); if(!url)continue;
+    const k=evidenceFingerprint(x); if(!k||seen.has(k)||chosen.some(y=>sameStory(x,y)))continue;
+    seen.add(k);
+    chosen.push({title:String(x.title||x.source||'').slice(0,220),url,supports:String(x.description||`Search result for: ${x.query}`).slice(0,700),source_type:sourceTypeFor(url,x.source),relevance:x.relevance});
+    if(chosen.length>=6)break;
+  }
+  const strong=chosen.filter(x=>/official|primary|local/i.test(x.source_type)||/\.gov\.uk|gov\.uk|nhs\.uk|visitnorfolk\.com|booktrust\.org\.uk/i.test(x.url)).length;
+  if(chosen.length<2||strong<1)return null;
+  return {
+    research_status:'Sufficient',
+    research_summary:`Independent question recovery found ${chosen.length} relevant sources after the original discovery lead could not carry the article. The article should answer the approved reader question from these sources rather than write about the failed source search.`,
+    sources:chosen,
+    required_now_missing:[],future_tests:[],optional_missing:[],missing_evidence:[],
+    resolved_subject:{name:String(value(fields,'Core Reader Question')||value(fields,'Section Title')||'Approved reader question'),location:'Norfolk, England',responsible_body:'Independent verified sources',reference:'Question-first recovery',confidence:'medium'},
+    recovery_used:true,recovery_model:'FAST-INDEPENDENT-QUESTION-v1',independent_question_recovery:true
+  };
+}
+
 function mergeEvidenceSources(primary=[],secondary=[]){
   const out=[],seen=new Set();
   for(const src of [...primary,...secondary]){
@@ -369,8 +431,11 @@ FAST PASS
 ${JSON.stringify(firstPass||{},null,2)}
 
 TASK
-1. Resolve the exact real-world subject first. Do not substitute a different project.
-2. This publication means Norfolk, England. Reject Norfolk, Virginia and other same-name places.
+1. Resolve the exact real-world subject first. Do not substitute a different project when the article is about a specific company, decision, incident, scheme or named event.
+2. QUESTION-FIRST RECOVERY: if the discovery article itself is unavailable but the approved brief is a guide/advice/recommendation question rather than a specific breaking-news claim, you MAY abandon the discovery article as the spine and answer the approved reader question independently from credible primary, official and genuinely local sources. In that case, do not write a meta-story about the source being unavailable.
+3. For guide/list/event briefs, it is acceptable to build a fresh verified set of examples that answers the reader question; do not require proof that those examples appeared in the original discovery article. Verify every example directly and state only supported details.
+4. If enough independent evidence cannot answer the approved question well, return Insufficient so the item can be RETRY / REPLACE. Do not invent an article about failed research.
+5. This publication means Norfolk, England. Reject Norfolk, Virginia and other same-name places.
 3. For roads/potholes, identify the accountable highway authority and find the most direct official council, committee, contract, scheme or GOV.UK source.
 4. The supplied newspaper/RSS lead is discovery only. It may establish what to search for, but primary/official evidence should support material reader-facing facts where available.
 5. Return no more than 4 distinct sources. Map each source to a specific claim. Do not pad.
@@ -599,6 +664,7 @@ EDITORIAL BRAIN — PLAN THE HUMAN STORY BEFORE WRITING
 - Spotlight may form and express fair editorial opinions from supported facts. Clearly signal opinion with natural wording such as "That sounds promising, but...", "The fair test is...", "Drivers would be entitled to ask..." or equivalent. Do not present opinion as verified fact.
 - Do not manufacture controversy. Select the fitting emotional treatment: curiosity, warmth, humour, pride, reassurance, frustration, scepticism, surprise or urgency.
 - Do not repeatedly tell readers that evidence is missing. Explain the verified position once, then use the uncertainty to sharpen the real question, the practical test or what should happen next.
+- NEVER turn an unsuccessful source search into the subject of the published article. If the research pack says independent_question_recovery is true, answer the approved reader question directly from the replacement evidence and ignore the unavailable discovery story except as provenance. If the core question still cannot be answered, return Fix Required rather than writing a meta-article about what could not be verified.
 - Use a specific, answerable discussion prompt. Avoid generic endings such as "What do you think?".
 - The final paragraph should open the door: invite a location, experience, recommendation, example, disagreement or useful local tip that can improve a follow-up story.
 - Every paragraph must earn its place by doing at least one job: hook, explain, localise, interpret, help, surprise or invite.
@@ -871,11 +937,27 @@ export default async(request)=>{
               confidence:resolved.confidence||''
             });
           }catch(recoveryError){
-            research.research_status='Insufficient';
-            research.recovery_used=true;
-            research.research_summary=[research.research_summary,`Entity-first recovery could not complete within the ${Math.round(RECOVERY_BUDGET_MS/1000)}-second budget: ${String(recoveryError?.message||recoveryError).slice(0,220)}`].filter(Boolean).join(' ');
-            research.missing_evidence=[...(research.missing_evidence||[]),`Entity-first second-pass research did not complete within ${Math.round(RECOVERY_BUDGET_MS/1000)} seconds.`];
             log('research_recovery_failed',{message:String(recoveryError?.message||recoveryError)});
+            let independent=null;
+            if(independentQuestionRecoveryEligible(fields)){
+              traceLine('Independent question recovery','START','original source recovery failed');
+              try{
+                independent=await withTimeout(fastIndependentQuestionPack(fields,cls),12000,'Independent question recovery');
+              }catch(independentError){
+                log('independent_question_recovery_failed',{message:String(independentError?.message||independentError)});
+              }
+            }
+            if(independent){
+              research=independent;
+              researchModel=independent.recovery_model;
+              traceLine('Independent question recovery','DONE',`${research.sources?.length||0} sources`);
+              log('independent_question_recovery_completed',{sourceCount:research.sources?.length||0});
+            }else{
+              research.research_status='Insufficient';
+              research.recovery_used=true;
+              research.research_summary=[research.research_summary,`Entity-first recovery could not complete within the ${Math.round(RECOVERY_BUDGET_MS/1000)}-second budget: ${String(recoveryError?.message||recoveryError).slice(0,220)}`].filter(Boolean).join(' ');
+              research.missing_evidence=[...(research.missing_evidence||[]),`Entity-first second-pass research did not complete within ${Math.round(RECOVERY_BUDGET_MS/1000)} seconds.`];
+            }
           }
         }
         log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0,recoveryUsed:!!research.recovery_used});
@@ -914,7 +996,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.7.1`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.7.2`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1060,7 +1142,7 @@ export default async(request)=>{
     }
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.1`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.2`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
