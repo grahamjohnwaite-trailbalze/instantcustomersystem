@@ -1,0 +1,10 @@
+Upload only these files to the existing preview-v3.9.1 GitHub branch, preserving paths:
+
+app/index.html
+netlify/functions/plan-issue-batch.mjs
+netlify/functions/plan-issue.mjs
+
+Optional documentation:
+RELEASE-NOTES-v3.9.2.txt
+
+Do not merge the pull request to main yet. Netlify Deploy Preview #3 should rebuild automatically after the commit.

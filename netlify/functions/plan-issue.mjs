@@ -8,6 +8,7 @@ export default async(request)=>{
     if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
     const data=await request.json().catch(()=>({}));
     const publication=String(data.publication||'').trim();
+    const issueNumber=String(data.issueNumber||'').trim();
     const issuePromise=String(data.issuePromise||'').trim();
     const sendDate=String(data.sendDate||'').trim();
     const knownSignals=String(data.knownSignals||'').trim();
@@ -39,7 +40,8 @@ REFRESH = existing question/article is strong but needs new facts, dates, prices
 CREATE NEW = current signal, event, national-to-local consequence, seasonal need or uncovered question merits a new article.
 
 EDITORIAL RULES
-- Existing library is a resource bank, not a quota. REUSE should normally be a minority.
+- PORTFOLIO FIRST: actively inspect the existing library before creating fresh work. A normal Spotlight issue should primarily curate strong produced/localisable assets plus a smaller number of genuinely current/new stories.
+- Existing library is a resource bank, not a quota. REUSE/REFRESH should be earned, but CREATE NEW should not dominate merely because current signals exist.
 - Build a varied weekly experience: current change/news, events/what's-on, money/value, home/property/renting/transport, food/leisure/local discovery, community/service/family/health where earned, and one fair challenge/Unfiltered angle where evidence supports it.
 - Current discovery leads should materially influence the slate. Treat them as leads only, not proven facts. Every REFRESH/CREATE NEW brief must require fresh verification during article research. Do not reproduce a headline claim as fact merely because it appears here.
 - Do not produce 15 evergreen archive articles while ignoring the current discovery pack.
@@ -49,16 +51,16 @@ EDITORIAL RULES
 - For a contentious angle, include the strongest credible countercase.
 
 STRICT JSON ONLY:
-{"issue_summary":"","articles":[{"order":1,"mode":"REUSE|REFRESH|CREATE NEW","existing_article_id":"","title":"","question":"","problem":"","hook":"","reader":"","value":"","local_proof":"","evidence":"","lane":"Authority|Featured Partner|Community|Editorial|Open","partner_path":"","cta_type":"None|Reply|Comment|Save|Nominate|Button|Ask Expert|Booking|Directory","cta_text":"","stance":"PRACTICAL|NEUTRAL|CHALLENGE|CONTRARIAN|DEBATE|UNFILTERED","why_now":"","countercase":"","source_signal":""}]}`;
+{"issue_summary":"","articles":[{"order":1,"mode":"REUSE|REFRESH|CREATE NEW","existing_article_id":"","title":"","question":"","problem":"","hook":"","reader":"","value":"","local_proof":"","evidence":"","life_lane":"Home & Property|Home Improvement & Garden|Money & Household Costs|Family & Children|Health & Wellbeing|Food & Dining|Pets & Animals|Motoring & Transport|Travel, Days Out & Experiences|Leisure, Culture & Entertainment|Community & Local Change|Work, Business & Opportunity|Open","lane":"Authority|Featured Partner|Community|Editorial|Open","partner_path":"","cta_type":"None|Reply|Comment|Save|Nominate|Button|Ask Expert|Booking|Directory","cta_text":"","stance":"PRACTICAL|NEUTRAL|CHALLENGE|CONTRARIAN|DEBATE|UNFILTERED","why_now":"","countercase":"","source_signal":""}]}`;
 
     const model=String(process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
-    const response=await createResponse({input:prompt,useWeb:false,model,timeoutMs:24000});
+    const response=await createResponse({input:prompt,useWeb:false,model,timeoutMs:60000});
     const result=parseJsonText(outputText(response));
     const validIds=new Set(existing.map(x=>x.id));
     const articles=(Array.isArray(result.articles)?result.articles:[]).slice(0,9).map((a,i)=>{
       let mode=normalizeMode(a.mode),id=String(a.existing_article_id||'').trim();
       if((mode==='REUSE'||mode==='REFRESH')&&!validIds.has(id)){mode='CREATE NEW';id='';}
-      return {order:i+1,mode,existing_article_id:id,title:String(a.title||'').trim(),question:String(a.question||'').trim(),problem:String(a.problem||'').trim(),hook:String(a.hook||'').trim(),reader:String(a.reader||'').trim(),value:String(a.value||'').trim(),local_proof:String(a.local_proof||'').trim(),evidence:String(a.evidence||'').trim(),lane:String(a.lane||'Editorial').trim(),partner_path:String(a.partner_path||'Open').trim(),cta_type:String(a.cta_type||'None').trim(),cta_text:String(a.cta_text||'').trim(),stance:String(a.stance||'PRACTICAL').trim(),why_now:String(a.why_now||'').trim(),countercase:String(a.countercase||'').trim(),source_signal:String(a.source_signal||'').trim()};
+      return {order:i+1,mode,existing_article_id:id,title:String(a.title||'').trim(),question:String(a.question||'').trim(),problem:String(a.problem||'').trim(),hook:String(a.hook||'').trim(),reader:String(a.reader||'').trim(),value:String(a.value||'').trim(),local_proof:String(a.local_proof||'').trim(),evidence:String(a.evidence||'').trim(),life_lane:String(a.life_lane||'Open').trim(),lane:String(a.lane||'Editorial').trim(),partner_path:String(a.partner_path||'Open').trim(),cta_type:String(a.cta_type||'None').trim(),cta_text:String(a.cta_text||'').trim(),stance:String(a.stance||'PRACTICAL').trim(),why_now:String(a.why_now||'').trim(),countercase:String(a.countercase||'').trim(),source_signal:String(a.source_signal||'').trim()};
     }).filter(a=>a.title&&a.question);
     if(articles.length!==9)return json(502,{ok:false,error:`Planner returned ${articles.length} usable articles; expected 9.`});
     const counts=articles.reduce((o,a)=>(o[a.mode]=(o[a.mode]||0)+1,o),{});

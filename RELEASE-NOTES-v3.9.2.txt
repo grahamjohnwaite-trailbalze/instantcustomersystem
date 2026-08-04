@@ -1,0 +1,33 @@
+ICS v3.9.2 Preview Patch — Norfolk acceptance-test fixes
+Date: 4 Aug 2026
+
+PURPOSE
+Fix the real blockers exposed by Norfolk Spotlight Issue 11 planning before continuing assembly.
+
+CHANGED
+1. Planner OpenAI timeout increased from ~22-24s to 60s.
+2. 3-article resumable batches retained.
+3. Planner now uses PORTFOLIO-FIRST logic:
+   - actively inspect produced/localisable articles before inventing fresh work
+   - current discovery signals add freshness and fill gaps rather than dominate the issue
+   - normally no more than two CREATE NEW decisions per 3-article batch when strong library assets exist
+4. Each new batch inspects already chosen articles and fills missing Life Lanes / reader jobs.
+5. Batch briefs changed from rigid civic/service buckets to:
+   - Strongest Mix
+   - Value + Commercial Breadth
+   - Human + Discovery + Share
+6. Adds Spotlight Life Lane field to planner decisions.
+7. Issue number + send date are now authoritative planner context; stale dates in old promise text are explicitly ignored.
+8. UI shows publication + issue number + send date + status above the issue promise.
+9. Workflow buttons numbered 1–7.
+10. Next required early workflow step highlights red; completed early steps turn green.
+11. Planner status is persistent and has a Copy planner status button.
+12. Corrects residual 15-article / 5-article batch messages to 9 articles / 3-article batches.
+
+FILES TO REPLACE ON preview-v3.9.1 BRANCH
+- app/index.html
+- netlify/functions/plan-issue-batch.mjs
+- netlify/functions/plan-issue.mjs
+
+TEST
+After Netlify rebuilds, refresh Deploy Preview #3, confirm sidebar says v3.9.2, then clear the partial Norfolk Issue 11 Smart Plan (not the issue itself), retain/recollect signals as appropriate, and rerun Build / Resume Issue Plan.
