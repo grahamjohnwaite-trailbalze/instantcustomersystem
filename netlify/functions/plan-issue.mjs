@@ -1,7 +1,7 @@
 import {createResponse,outputText,parseJsonText} from './_openai.mjs';
 
 const json=(status,body)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8'}});
-const normalizeMode=v=>['REUSE','REFRESH','CREATE NEW'].includes(String(v||'').toUpperCase())?String(v).toUpperCase():'CREATE NEW';
+const normalizeMode=v=>['REUSE','LOCALISE','REFRESH','CREATE NEW'].includes(String(v||'').toUpperCase())?String(v).toUpperCase():'CREATE NEW';
 
 export default async(request)=>{
   try{
@@ -13,12 +13,12 @@ export default async(request)=>{
     const sendDate=String(data.sendDate||'').trim();
     const knownSignals=String(data.knownSignals||'').trim();
     const signals=(Array.isArray(data.signals)?data.signals:[]).slice(0,24).map(x=>({scope:String(x.scope||''),signal:String(x.signal||''),question:String(x.question||''),why_now:String(x.why_now||''),why_local:String(x.why_local||''),source_title:String(x.source_title||''),source_url:String(x.source_url||''),published_at:String(x.published_at||'')}));
-    const existing=(Array.isArray(data.existingArticles)?data.existingArticles:[]).slice(0,60).map(x=>({id:String(x.id||''),title:String(x.title||''),purpose:String(x.purpose||''),freshness:String(x.freshness||''),topic:String(x.topic||''),proof:String(x.proof||'').slice(0,280)})).filter(x=>x.id&&x.title);
+    const existing=(Array.isArray(data.existingArticles)?data.existingArticles:[]).slice(0,60).map(x=>({id:String(x.id||''),title:String(x.title||''),purpose:String(x.purpose||''),freshness:String(x.freshness||''),topic:String(x.topic||''),proof:String(x.proof||'').slice(0,280),history_status:String(x.history_status||''),history_match:String(x.history_match||''),history_publication:String(x.history_publication||''),history_score:Number(x.history_score||0)})).filter(x=>x.id&&x.title);
     if(!publication||!issuePromise)return json(400,{ok:false,error:'publication and issuePromise are required'});
     if(signals.length<5)return json(400,{ok:false,error:'At least 5 current discovery signals are required before planning.'});
 
     const signalPack=signals.map((x,i)=>`${i+1}. [${x.scope||'discovery'}] ${x.signal}\nDATE=${x.published_at||x.why_now}\nDISCOVERY SOURCE=${x.source_title} ${x.source_url}`).join('\n\n');
-    const inventory=existing.map((x,i)=>`${i+1}. ID=${x.id} | ${x.title} | ${x.purpose} | freshness=${x.freshness} | topic=${x.topic} | proof=${x.proof}`).join('\n');
+    const inventory=existing.map((x,i)=>`${i+1}. ID=${x.id} | ${x.title} | ${x.purpose} | freshness=${x.freshness} | topic=${x.topic} | proof=${x.proof} | HISTORY=${x.history_status||'UNKNOWN'}${x.history_publication?` | MATCH=${x.history_publication}: ${x.history_match} (${x.history_score}%)`:''}`).join('\n');
     const prompt=`You are the senior issue editor for Trail Blaze's ${publication}. Build a default 9-MASTER-ARTICLE slate for one upcoming issue. DO NOT browse the web: current research has already been supplied below.
 
 TODAY: ${new Date().toISOString().slice(0,10)}
@@ -55,7 +55,7 @@ EDITORIAL RULES
 - For a contentious angle, include the strongest credible countercase.
 
 STRICT JSON ONLY:
-{"issue_summary":"","articles":[{"order":1,"mode":"REUSE|REFRESH|CREATE NEW","existing_article_id":"","title":"","question":"","problem":"","hook":"","reader":"","value":"","local_proof":"","evidence":"","life_lane":"Home & Property|Home Improvement & Garden|Money & Household Costs|Family & Children|Health & Wellbeing|Food & Dining|Pets & Animals|Motoring & Transport|Travel, Days Out & Experiences|Leisure, Culture & Entertainment|Community & Local Change|Work, Business & Opportunity|Open","lane":"Authority|Featured Partner|Community|Editorial|Open","partner_path":"","cta_type":"None|Reply|Comment|Save|Nominate|Button|Ask Expert|Booking|Directory","cta_text":"","stance":"PRACTICAL|NEUTRAL|CHALLENGE|CONTRARIAN|DEBATE|UNFILTERED","why_now":"","countercase":"","source_signal":""}]}`;
+{"issue_summary":"","articles":[{"order":1,"mode":"REUSE|LOCALISE|REFRESH|CREATE NEW","existing_article_id":"","title":"","question":"","problem":"","hook":"","reader":"","value":"","local_proof":"","evidence":"","life_lane":"Home & Property|Home Improvement & Garden|Money & Household Costs|Family & Children|Health & Wellbeing|Food & Dining|Pets & Animals|Motoring & Transport|Travel, Days Out & Experiences|Leisure, Culture & Entertainment|Community & Local Change|Work, Business & Opportunity|Open","lane":"Authority|Featured Partner|Community|Editorial|Open","partner_path":"","cta_type":"None|Reply|Comment|Save|Nominate|Button|Ask Expert|Booking|Directory","cta_text":"","stance":"PRACTICAL|NEUTRAL|CHALLENGE|CONTRARIAN|DEBATE|UNFILTERED","why_now":"","countercase":"","source_signal":""}]}`;
 
     const model=String(process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
     const response=await createResponse({input:prompt,useWeb:false,model,timeoutMs:60000});
@@ -63,7 +63,7 @@ STRICT JSON ONLY:
     const validIds=new Set(existing.map(x=>x.id));
     const articles=(Array.isArray(result.articles)?result.articles:[]).slice(0,9).map((a,i)=>{
       let mode=normalizeMode(a.mode),id=String(a.existing_article_id||'').trim();
-      if((mode==='REUSE'||mode==='REFRESH')&&!validIds.has(id)){mode='CREATE NEW';id='';}
+      if((mode==='REUSE'||mode==='LOCALISE'||mode==='REFRESH')&&!validIds.has(id)){mode='CREATE NEW';id='';}
       return {order:i+1,mode,existing_article_id:id,title:String(a.title||'').trim(),question:String(a.question||'').trim(),problem:String(a.problem||'').trim(),hook:String(a.hook||'').trim(),reader:String(a.reader||'').trim(),value:String(a.value||'').trim(),local_proof:String(a.local_proof||'').trim(),evidence:String(a.evidence||'').trim(),life_lane:String(a.life_lane||'Open').trim(),lane:String(a.lane||'Editorial').trim(),partner_path:String(a.partner_path||'Open').trim(),cta_type:String(a.cta_type||'None').trim(),cta_text:String(a.cta_text||'').trim(),stance:String(a.stance||'PRACTICAL').trim(),why_now:String(a.why_now||'').trim(),countercase:String(a.countercase||'').trim(),source_signal:String(a.source_signal||'').trim()};
     }).filter(a=>a.title&&a.question);
     if(articles.length!==9)return json(502,{ok:false,error:`Planner returned ${articles.length} usable articles; expected 9.`});

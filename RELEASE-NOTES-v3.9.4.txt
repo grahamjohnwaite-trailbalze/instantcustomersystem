@@ -1,0 +1,19 @@
+ICS v3.9.4 — MINIMUM PUBLICATION HISTORY / REUSE GUARD
+
+Purpose
+Stop Smart Plan treating every existing library asset as safe REUSE.
+
+Added
+- Minimum known publication-history layer from 4 Aug 2026 Letterman PBS/CBS/NS snapshots.
+- Same-publication match => BLOCKED RECENT DUPLICATE.
+- Other-publication match => LOCALISE FROM OTHER PUBLICATION.
+- No confirmed match => UNKNOWN HISTORY — REVIEW (not proof of freshness).
+- Title/topic overlap check catches renamed versions such as Norfolk cooling and £20,000 deposit variants.
+- Planner receives history status/provenance on each existing asset.
+- New LOCALISE decision mode for cross-publication adaptation.
+- Lock Approved Plan is blocked while known same-publication REUSE/REFRESH duplicates remain.
+- Smart Plan cards visibly show reuse-guard result and matched publication/title.
+- Explicit provenance rule: generated SEED/question-universe records are ideas only, never publication evidence.
+
+Scope
+This is NOT full Archive Recovery. It is a minimum trust layer for the Norfolk/PBS/niche acceptance run. Full historical archive ingestion remains NEXT after core Canvas proof.
