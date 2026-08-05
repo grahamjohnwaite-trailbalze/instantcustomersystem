@@ -1,0 +1,11 @@
+ICS / TBOS v3.9.21 — SHORT BRIEF VISIBLE REVIEW + SELECTION SAFETY
+
+Fixes confirmed during Norfolk Issue #11 acceptance testing:
+- Building a Short Brief no longer calls the older generic intelligence routine afterwards.
+- The selected article record is preserved throughout brief expansion.
+- Generated long-form values are copied into the in-memory record immediately.
+- The full long-form brief remains visible below Short Brief Mode for review.
+- Save Section can persist the generated brief and approved short-brief metadata.
+- Includes v3.9.20 publication-derived Location Lock recovery.
+
+Test: open the same property article, confirm Norfolk, England appears, click Build full brief, then review the visible detailed fields before saving.
