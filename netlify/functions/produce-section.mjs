@@ -700,10 +700,13 @@ Evidence required: ${evidence}
 Production class: ${cls}
 Current discovery lead: ${current||'Not supplied'}
 Plan provenance: ${provenance||'Not supplied'}
+Geography/editor notes: ${notes.match(/Geography lock:[^\n]*/i)?.[0]||'Not supplied'}
 Editor-supplied authoritative source URL: ${editorAuthoritativeSourceUrl(fields)||'Not supplied'}
 
 RESEARCH RULES
 - EDITOR SOURCE PRIORITY: when editor-supplied authoritative evidence is present, assess the exact URL and the EDITOR-CONFIRMED SOURCE TEXT first. Treat the pasted wording as source evidence tied to that URL when direct extraction is blocked (for example HTTP 403), while still checking internal consistency and publisher authority. Extract what it confirms, what it does not confirm, dates, named bodies and customer/action instructions. Do not ignore it merely because an older checkpoint disagrees.
+- GEOGRAPHY LOCK: obey any Geography lock in the editor notes before collecting evidence. For Norfolk, England, explicitly reject Norfolk, Virginia and other same-name places. A wrong-location source is unusable.
+- QUESTION-FIRST RECOVERY: when the approved subject is an evergreen reader question, research the underlying question directly. Do not make an unavailable discovery story the spine of the article.
 - ENTITY FIRST: resolve the exact named subject/project/organisation/site/service from the discovery lead before broad research. Use distinctive proper nouns, places, scheme names and reference numbers as search anchors.
 - If the lead is vague, first search to identify the exact subject. Never substitute a different local project because it is easier to find.
 - Search the current web thoroughly.
@@ -730,6 +733,11 @@ Return 2-8 strongest sources. Do not pad with irrelevant generic sources.`;
 function promptFor(fields,cls,research){
   const useEvidence=cls!=='A — Question Only';
   const sourcePack=JSON.stringify(research||{},null,2);
+  const notes=String(value(fields,'Notes')||'');
+  const persona=(notes.match(/Default expert persona(?: before sponsorship)?:\s*([^\n]+)/i)||[])[1]||'';
+  const sponsorRole=(notes.match(/Sponsor override role?:\s*([^\n]+)/i)||[])[1]||'';
+  const niches=(notes.match(/Niche pathways:\s*([^\n]+)/i)||[])[1]||'';
+  const geography=(notes.match(/Geography lock:\s*([^\n]+)/i)||[])[1]||'';
   return `You are the production editor for Spotlight. Build one complete MASTER ARTICLE PACKAGE ready for manual upload to Letterman.
 
 STYLE, AUDIENCE AND SAFETY
@@ -738,9 +746,13 @@ STYLE, AUDIENCE AND SAFETY
 - Keep sentences and paragraphs easy to read. Use contractions where natural. Prefer concrete nouns, numbers, examples and actions over polished adjectives or abstract explanation.
 - Headline and subhead must be clickable, conversational and specific without becoming misleading or clickbait.
 - Apply three reader tests: PUB TEST (would a normal person say it this way?), FACEBOOK TEST (would someone who clicked keep reading?), SO WHAT TEST (does the reader quickly understand why it affects them?).
-- Avoid repeated AI-ish constructions and filler such as useful, practical, meaningful, straightforward, key question, important distinction, matters, whether, crucial, navigate, 'The question is…' and 'That matters because…'. Normal one-off use is fine; patterned repetition is not.
-- LOCALISATION GATE: the finished article must not be publishable in another location simply by swapping the place name. When the subject supports it, use several verified named towns, roads, venues, businesses, current prices, figures, official decisions or other local examples. Local proof should do real editorial work, not decorate generic copy.
+- LANGUAGE GUARD: avoid recurring AI-ish words and constructions such as quietly, useful, practical, meaningful, straightforward, key question, important distinction, matters, excessive whether, crucial, navigate, 'The question is…' and 'That matters because…'. If one appears, prefer ordinary conversational wording unless it is genuinely the clearest word.
+- LOCALISATION GATE: SEO/title/meta may carry the location strongly. In conversational body copy, normally mention the publication location once, then use additional named places, prices, figures, services or decisions only when they genuinely strengthen the answer. Never stuff the county/city name into repeated paragraphs.
+- UNSPONSORED BUSINESS RULE: do not name one commercial provider merely to prove locality. Name a business only when it is independently editorially relevant, compared fairly with alternatives, or is a confirmed partner whose role is supplied in the brief.
 - Genuine local voices or partner-supplied comments may be used when supplied and attributed. NEVER invent reader comments, quotes, consensus or local opinion. If genuine local voices are unavailable, the article may ask readers for them for a follow-up.
+- EXPERT LANE: default persona = ${persona||'Not supplied'}; sponsor override role = ${sponsorRole||'Not supplied'}. An unsponsored persona is an editorial recurring character only: never fabricate a quote, credential, personal experience or professional claim for them. A confirmed real sponsor may replace the persona only when real identity/commentary is supplied.
+- NICHE PATHWAYS: ${niches||'Not supplied'}. Write the root idea so it can be reused/localised without making the current edition generic.
+- GEOGRAPHY: ${geography||'Use the publication area in the approved brief'}. Reject wrong-place framing.
 - Never invent recommendations, prices, dates, businesses or factual claims.
 - Use named local proof only where supported by the supplied research pack.
 - Distinguish fact, opinion and reader questions.
@@ -798,6 +810,10 @@ Commercial pathway: ${value(fields,'Commercial Pathway')}
 Primary action: ${value(fields,'Primary Next Action')}
 CTA type: ${value(fields,'CTA Type')}
 Existing CTA text: ${value(fields,'CTA Text')}
+Default expert persona: ${persona||'Not supplied'}
+Sponsor override role: ${sponsorRole||'Not supplied'}
+Niche pathways: ${niches||'Not supplied'}
+Geography lock: ${geography||'Not supplied'}
 
 RESEARCH PACK
 ${sourcePack}
@@ -883,8 +899,12 @@ function evidenceGate(fields,cls,research){
 }
 
 function packageBlock(result,sources,model){
+  const body=String(result.article_body||'').trim();
+  const title=String(result.article_title||'').trim();
+  const packageReady=!!(title&&body&&body.length>=180&&!/fix required|research incomplete|unable to verify|could not verify/i.test(body));
   const payload={
     version:'MASTER_ARTICLE_V1',model_used:model||'',
+    article_title:title,article_body:body,
     article_subhead:String(result.article_subhead||'').trim(),
     editorial_stance:String(result.editorial_stance||'').trim(),
     editorial_strategy:(result.editorial_strategy&&typeof result.editorial_strategy==='object')?result.editorial_strategy:{},
@@ -895,7 +915,7 @@ function packageBlock(result,sources,model){
     featured_image_brief:String(result.featured_image_brief||'').trim(),featured_image_alt:String(result.featured_image_alt||'').trim(),
     newsletter_headline:String(result.newsletter_headline||'').trim(),newsletter_teaser:String(result.newsletter_teaser||'').trim(),
     social_facebook:String(result.social_facebook||'').trim(),social_linkedin:String(result.social_linkedin||'').trim(),social_x:String(result.social_x||'').trim(),
-    letterman_status:'Ready for Letterman',letterman_article_id:'',published_url:'',newsletter_queue_status:'Not queued',sync_status:'Manual',
+    letterman_status:packageReady?'Ready for Letterman':'NOT READY — BODY/PREFLIGHT',letterman_article_id:'',published_url:'',newsletter_queue_status:'Not queued',sync_status:'Manual',
     evidence_summary:String(result.evidence_summary||'').trim(),sources
   };
   return `MASTER ARTICLE PACKAGE v1\n${JSON.stringify(payload,null,2)}\nEND MASTER ARTICLE PACKAGE`;
@@ -1107,7 +1127,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.7.3`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.9.17`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1245,7 +1265,15 @@ export default async(request)=>{
     const gate=evidenceGate(fields,cls,research);
     const lockDecision=researchLockDecision(research);
     const editorialOutcome=evidenceOutcome(cls,research,gate);
-    const qa=(result.qa_result==='Pass'&&lockDecision.code!=='BLOCKED')?'Pass':'Fix Required';
+    const body=String(result.article_body||'').trim();
+    const titleOut=String(result.article_title||value(fields,'Section Title')||'').trim();
+    const badMeta=/research incomplete|unable to verify|could not verify|fix required/i.test(body);
+    const bodyPresent=body.length>=180;
+    const geo=String((String(value(fields,'Notes')||'').match(/Geography lock:\s*([^\n]+)/i)||[])[1]||'').toLowerCase();
+    const wrongNorfolk=geo.includes('norfolk, england')&&/norfolk,? virginia|\bvirginia\b/i.test(body);
+    const preflight=!!(titleOut&&bodyPresent&&!badMeta&&!wrongNorfolk);
+    const qa=(result.qa_result==='Pass'&&lockDecision.code!=='BLOCKED'&&preflight)?'Pass':'Fix Required';
+    if(!preflight){result.exception=[String(result.exception||'').trim(),!bodyPresent?'Full article body missing or too short':'',badMeta?'Published copy contains unresolved research/meta language':'',wrongNorfolk?'Wrong geography detected: Norfolk, Virginia':''].filter(Boolean).join(' ');}
     const outcome=qa==='Pass'?{code:lockDecision.code,label:lockDecision.code==='VERIFIED_NOW'?'Verified now':'Attributed report',missing:[],future_tests:editorialOutcome.future_tests||[],optional_missing:editorialOutcome.optional_missing||[]}:editorialOutcome;
     if(outcome.code!=='COMPLETE'){
       result.exception=[String(result.exception||'').trim(),...(outcome.missing||[])].filter(Boolean).join(' ');
@@ -1253,7 +1281,7 @@ export default async(request)=>{
     }
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.3`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.9.17`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
