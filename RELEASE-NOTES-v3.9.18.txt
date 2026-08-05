@@ -1,0 +1,16 @@
+ICS / TBOS v3.9.18 — SHORT BRIEF PERSISTENCE + FULL BRIEF EXPANSION
+
+Fixes the first v3.9.17 acceptance-test defect:
+- Build Full Brief no longer clears/reverts the Short Brief fields immediately after expansion.
+- Expanded long-form fields are copied into the selected section's in-memory working record before the operator saves.
+- Nothing is written to Airtable until Save section is clicked.
+- The long-form production brief remains visible for exception review.
+- Existing v3.9.17 commercial/persona/geography metadata is preserved.
+
+Acceptance test:
+1. Add a new section.
+2. Complete only Short Brief Mode.
+3. Click Build full brief.
+4. Confirm the Short Brief entries remain visible.
+5. Confirm Reader Hook, Universal Reader Problem, Reader Type, Decision Constraint, Reader Value, Local Proof Needed, Evidence Required, Commercial Pathway, Primary Next Action, CTA, archive/reuse and Notes are filled below.
+6. Only then click Save section.
