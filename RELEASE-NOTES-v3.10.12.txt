@@ -1,0 +1,11 @@
+ICS v3.10.12 — Open Question + Geography Evidence Guard
+
+Fixes:
+- Applies the open-question exception before expensive recovery.
+- Preserves valid existing Norfolk evidence if targeted recovery times out or returns malformed JSON.
+- Prevents fallback recovery from replacing good UK evidence with unrelated same-name US Norfolk results.
+- Explicitly rejects Norfolk State University, Norfolk Southern, US .edu/.mil same-name drift for Norfolk, England briefs.
+- Production service label bumped to v3.7.5.
+
+Acceptance test:
+Re-run Research selected article on Article 03. Expected: retain the verified Hay Hill / Anglia Square / King's Lynn evidence set, mark the open-question article sufficient, and do not introduce Norfolk State University or Norfolk Southern.

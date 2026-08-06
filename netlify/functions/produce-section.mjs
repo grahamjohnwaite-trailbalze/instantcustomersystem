@@ -207,7 +207,10 @@ function wrongGeographySource(x,fields){
   const article=[value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Local Proof Needed'),value(fields,'Notes')].join(' ').toLowerCase();
   const blob=[x.title,x.description,x.source,x.url].join(' ').toLowerCase();
   // Prevent same-name US places from passing a UK locality match (for example Norfolk, Virginia).
-  if(/\bnorfolk\b/.test(article)&&/virginia|hampton roads|virginia beach|chesapeake|wtkr\.com|13newsnow|wavy\.com/.test(blob))return true;
+  if(/\bnorfolk\b/.test(article)&&/virginia|hampton roads|virginia beach|chesapeake|wtkr\.com|13newsnow|wavy\.com|norfolk state university|\bnsu\.edu\b|norfolk southern|norfolksouthern\.com|\b22 states\b/.test(blob))return true;
+  // A Norfolk (England) article must not accept US institutions or companies merely
+  // because their proper name contains the word Norfolk.
+  if(/\bnorfolk\b/.test(article)&&/(\.edu\b|\.mil\b)/.test(blob)&&!/\.ac\.uk\b/.test(blob))return true;
   if(/\bsuffolk\b/.test(article)&&/suffolk county,? new york|long island|virginia/.test(blob))return true;
   return false;
 }
@@ -1066,10 +1069,19 @@ export default async(request)=>{
           research.research_status='Insufficient';
           research.missing_evidence=[...(Array.isArray(research.missing_evidence)?research.missing_evidence:[]),...gate.reasons];
         }
+        // v3.7.5: Open reader-question briefs may already have enough verified local examples
+        // in the fast evidence pack. Relax non-core reader-vote/quote demands BEFORE
+        // launching expensive recovery so good Norfolk evidence is not discarded.
+        research=relaxOpenQuestionEvidenceDemands(fields,research);
+        gate=evidenceGate(fields,cls,research);
+        if(research.open_question_verified && research.research_status==='Sufficient'){
+          gate={pass:true,reasons:[]};
+        }
         if(research.research_status!=='Sufficient'||!gate.pass){
           traceLine('Targeted research recovery','START','fast pass insufficient');
           await saveTrace();
           log('research_recovery_started',{sourceCount:research.sources?.length||0,missing:research.missing_evidence?.length||0});
+          const preRecoveryResearch=JSON.parse(JSON.stringify(research));
           try{
             const recoveryModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
             research=await stage('Targeted web research recovery',()=>recoverEvidencePack(fields,cls,research,recoveryModel),RECOVERY_BUDGET_MS+3000);
@@ -1098,6 +1110,18 @@ export default async(request)=>{
             });
           }catch(recoveryError){
             log('research_recovery_failed',{message:String(recoveryError?.message||recoveryError)});
+            // Never throw away a valid pre-recovery Norfolk evidence set merely because
+            // the model recovery timed out or returned malformed JSON. For open questions,
+            // first re-test the retained evidence under the open-question exception.
+            const preserved=relaxOpenQuestionEvidenceDemands(fields,JSON.parse(JSON.stringify(preRecoveryResearch)));
+            let preservedGate=evidenceGate(fields,cls,preserved);
+            if(preserved.open_question_verified && preserved.research_status==='Sufficient') preservedGate={pass:true,reasons:[]};
+            if(preservedGate.pass){
+              research=preserved;
+              researchModel='FAST-EVIDENCE-RSS-v1';
+              traceLine('Preserved local evidence','DONE',`${research.sources?.length||0} retained sources`);
+              log('research_recovery_preserved_local',{sourceCount:research.sources?.length||0});
+            }else{
             let independent=null;
             if(independentQuestionRecoveryEligible(fields)){
               traceLine('Independent question recovery','START','original source recovery failed');
@@ -1117,6 +1141,7 @@ export default async(request)=>{
               research.recovery_used=true;
               research.research_summary=[research.research_summary,`Entity-first recovery could not complete within the ${Math.round(RECOVERY_BUDGET_MS/1000)}-second budget: ${String(recoveryError?.message||recoveryError).slice(0,220)}`].filter(Boolean).join(' ');
               research.missing_evidence=[...(research.missing_evidence||[]),`Entity-first second-pass research did not complete within ${Math.round(RECOVERY_BUDGET_MS/1000)} seconds.`];
+            }
             }
           }
         }
@@ -1161,7 +1186,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.7.4`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.7.5`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1307,7 +1332,7 @@ export default async(request)=>{
     }
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.4`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.5`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
