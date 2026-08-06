@@ -1,0 +1,9 @@
+ICS v3.10.9 — Strict Subject Lane + Sponsor Classification
+
+Fixes the remaining v3.10.8 audit contamination:
+- Master editorial lanes are classified only from title + core reader question.
+- Master sponsor opportunities are classified only from title + core reader question.
+- why_now, problem, purpose and issue-wide context can no longer make unrelated Masters count as Food/Hospitality or Reader Voice.
+- Supporting components remain type/purpose driven because their type is the intended editorial treatment.
+- Named business/owner/company stories classify as BUSINESS & PEOPLE before property/planning overlap.
+- Existing freshness, sponsor visibility, rotation, mood, source and duplication guards retained.
