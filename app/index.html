@@ -42,7 +42,9 @@
 .workflow-card{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:9px;padding:11px;background:#f8fbff}.workflow-card.good{border-left-color:var(--good);background:#f0faf6}.workflow-card.warn{border-left-color:var(--warn);background:#fffaf0}.workflow-steps{display:grid;gap:6px;margin-top:9px}.workflow-step{padding:7px 8px;border-radius:7px;background:#fff;border:1px solid var(--line);font-size:11px}.workflow-step.done{background:#eaf7f1;color:var(--good);border-color:#bfe3d3}.workflow-step.current{background:#eef5ff;color:#174f9f;border-color:#b9cef1;font-weight:800}.workflow-next{margin-top:9px;font-size:12px;font-weight:800}.field-focus{outline:3px solid rgba(35,102,209,.18);border-radius:8px;scroll-margin-top:20px}
 
 .command-centre{display:grid;grid-template-columns:1.4fr repeat(4,minmax(110px,.55fr));gap:10px;margin:0 0 14px}.command-main,.command-metric{background:#fff;border:1px solid #d8dee8;border-radius:12px;padding:12px}.command-main h2{margin:0 0 4px}.command-progress{height:10px;background:#e9eef5;border-radius:999px;overflow:hidden;margin:10px 0 8px}.command-progress span{display:block;height:100%;background:var(--accent);border-radius:999px}.command-metric strong{display:block;font-size:23px;line-height:1.1}.command-metric span{font-size:11px;color:#667085}.command-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.registry-strip{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.registry-chip{font-size:11px;border:1px solid #d8dee8;border-radius:999px;padding:4px 7px;background:#f8fafc}.object-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#667085}.lifecycle-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.life-step{font-size:9px;border:1px solid #d8dee8;border-radius:999px;padding:2px 5px;background:#fff;color:#667085}.life-step.done{background:#eaf8f0;border-color:#b7e2c8;color:#176b3a}.life-step.current{background:#edf4ff;border-color:#b9d1ff;color:#174ea6;font-weight:800}.next-action-banner{border-left:4px solid var(--accent);background:#f4f8ff;border-radius:8px;padding:9px 10px;margin-top:8px}.component-identity{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:9px;border:1px solid #d8dee8;border-radius:9px;background:#f8fafc}.component-identity .field{margin:0}@media(max-width:1100px){.command-centre{grid-template-columns:1fr 1fr}.command-main{grid-column:1/-1}}@media(max-width:700px){.command-centre{grid-template-columns:1fr}.command-main{grid-column:auto}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.9.16<br><strong>Component Command Centre</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan, produce and distribute one structured component system.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+
+.engine-profile{border:1px solid #cbd5e1;background:linear-gradient(180deg,#f8fbff,#fff);border-radius:12px;padding:12px;margin:0 0 14px}.engine-profile-grid{display:grid;grid-template-columns:1.3fr repeat(4,minmax(110px,.7fr));gap:10px;align-items:stretch}.engine-profile-card{border:1px solid #d8dee8;background:#fff;border-radius:10px;padding:10px}.engine-profile-card strong{display:block;font-size:15px}.engine-profile-card span{display:block;font-size:11px;color:#667085;margin-top:3px}.engine-health{margin-top:10px;padding:9px 10px;border-radius:8px;background:#f8fafc;border-left:4px solid #94a3b8}.engine-health.ready{background:#eefaf3;border-left-color:#22a06b}.engine-health.review{background:#fff8e8;border-left-color:#d97706}.engine-health.blocked{background:#fff0f0;border-left-color:#dc2626}.lane-chip-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.lane-chip{font-size:10px;padding:3px 6px;border:1px solid #d8dee8;border-radius:999px;background:#fff}@media(max-width:1050px){.engine-profile-grid{grid-template-columns:1fr 1fr}.engine-profile-card:first-child{grid-column:1/-1}}@media(max-width:650px){.engine-profile-grid{grid-template-columns:1fr}.engine-profile-card:first-child{grid-column:auto}}
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.10.0<br><strong>Universal Planning Engine</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -78,6 +80,16 @@
 </div>
 <div class="planner-score" id="planner-score"><div><strong id="score-headlines">0</strong><span>Master Articles</span></div><div><strong id="score-interactive">0</strong><span>Other Components</span></div><div><strong id="score-authority">0</strong><span>Partner Components</span></div><div><strong id="score-activation">0</strong><span>Letterman-ready</span></div><div><strong id="score-commitments">0</strong><span>Points Remaining</span></div></div>
 <div class="muted" id="issue-context-summary" style="margin:0 0 8px 2px;font-weight:700"></div><div class="issue-promise-bar"><div class="field"><label>Issue promise / organising question</label><textarea id="assembly-theme" placeholder="What should readers decide, discover, feel or do by the end of this issue?"></textarea></div><button class="btn secondary" id="save-canvas-theme">Save promise</button></div>
+<section class="engine-profile" id="engine-profile-panel">
+<div class="engine-profile-grid">
+  <div class="engine-profile-card"><strong id="engine-profile-name">Engine Profile</strong><span id="engine-profile-desc">Publication DNA will choose the planning rules automatically.</span><div class="lane-chip-row" id="engine-profile-lanes"></div></div>
+  <div class="engine-profile-card"><strong id="engine-target-sections">—</strong><span>Target sections</span></div>
+  <div class="engine-profile-card"><strong id="engine-target-masters">—</strong><span>Master Articles</span></div>
+  <div class="engine-profile-card"><strong id="engine-target-support">—</strong><span>Life / support blocks</span></div>
+  <div class="engine-profile-card"><strong id="engine-profile-mode">AUTO</strong><span>Profile selection</span></div>
+</div>
+<div class="engine-health" id="engine-health"><strong>Planning gate:</strong> Build a plan to test lane spread, mood and rhythm before production.</div>
+</section>
 <section class="panel" id="smart-plan-panel" style="display:block;margin-bottom:14px">
   <div class="section-head" style="margin-bottom:8px"><div><h2 style="margin:0">Smart Issue Plan</h2><div class="muted" id="smart-plan-status">Build the plan, then keep/edit/replace individual choices before locking it.</div></div><div class="toolbar"><button class="btn secondary" id="smart-plan-audit">Analyse Issue Balance</button><button class="btn secondary" id="smart-commercial-completion">Review Commercial Opportunities</button><button class="btn secondary" id="smart-copy-status" type="button">Copy planner status</button><button class="btn secondary" id="smart-plan-lock">Lock Approved Plan</button><button class="btn" id="smart-plan-apply" disabled>Create Missing Article Briefs</button><button class="btn secondary" id="smart-plan-hide">Hide Plan</button></div></div>
   <div class="field"><label>Known current signals / events / must-include notes (optional)</label><textarea id="smart-plan-signals" placeholder="Paste anything you already know should be considered: local events, breaking local story, national change with a Norfolk impact, partner commitment, seasonal trigger..."></textarea></div>
@@ -162,7 +174,7 @@
 <dialog id="issue-dialog"><form method="dialog" class="modal"><h2>Create issue</h2><div class="form-grid"><div class="field full"><label>Publication</label><select id="new-publication"></select></div><div class="field"><label>Issue number</label><input id="new-number" type="number"></div><div class="field"><label>Send date</label><input id="new-date" type="date" value="2026-07-16"></div><div class="field full"><label>Main theme</label><textarea id="new-theme" placeholder="The question or tension holding the issue together"></textarea></div></div><div class="savebar"><button class="btn secondary" value="cancel">Cancel</button><button class="btn" id="create-issue" value="default">Create and open</button></div></form></dialog><dialog id="article-dialog"><div class="modal"><h2>Master Article / Letterman package</h2><textarea id="article-package-text" style="width:100%;min-height:500px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#article-dialog').close()">Close</button><button class="btn" id="copy-article-package">Copy article package</button></div></div></dialog><dialog id="preview-dialog"><div class="modal"><h2>Production / Letterman copy</h2><textarea id="preview-text" style="width:100%;min-height:430px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#preview-dialog').close()">Close</button><button class="btn" id="copy-preview">Copy</button></div></div></dialog>
 <script>
 const S={publications:[],issues:[],sections:[],articleLibrary:[],issue:null,section:null,hot:[],productionUi:{}};const E=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));const val=(f,k)=>f?.[k]??'';const fmt=d=>d?new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00')):'—';
-async function api(path,opt={}){const r=await fetch('/.netlify/functions/'+path,{headers:{'content-type':'application/json',accept:'application/json'},...opt});const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={ok:false,error:`Invalid server response (${r.status}). ${raw.slice(0,300)||'No response body.'}`}}if(!r.ok||!d.ok){const err=new Error(d.error||`Request failed (${r.status})`);err.details=d.details;throw err}return d}function conn(ok,msg){E('dot').className='dot '+(ok?'ok':'bad');E('connection').textContent=msg}function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));E('view-'+v).classList.add('active');document.querySelector(`[data-view="${v}"]`).classList.add('active');E('page-title').textContent={dashboard:'Dashboard',publications:'Publications',issues:'Issues',build:'Issue Command Centre',assemble:'Issue Canvas'}[v];E('page-sub').textContent=v==='build'?'Plan, write and export one real issue.':v==='assemble'?'Plan, produce and distribute one structured component system.':(S.issue?`${pubName(S.issue.fields.Publication)} production workspace.`:'Publication-aware production workspace.');if(v==='assemble'){renderAssembly();updateWorkflowGuide()}}
+async function api(path,opt={}){const r=await fetch('/.netlify/functions/'+path,{headers:{'content-type':'application/json',accept:'application/json'},...opt});const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={ok:false,error:`Invalid server response (${r.status}). ${raw.slice(0,300)||'No response body.'}`}}if(!r.ok||!d.ok){const err=new Error(d.error||`Request failed (${r.status})`);err.details=d.details;throw err}return d}function conn(ok,msg){E('dot').className='dot '+(ok?'ok':'bad');E('connection').textContent=msg}function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));E('view-'+v).classList.add('active');document.querySelector(`[data-view="${v}"]`).classList.add('active');E('page-title').textContent={dashboard:'Dashboard',publications:'Publications',issues:'Issues',build:'Issue Command Centre',assemble:'Issue Canvas'}[v];E('page-sub').textContent=v==='build'?'Plan, write and export one real issue.':v==='assemble'?'Plan with one universal engine, then produce and distribute publication-specific issues.':(S.issue?`${pubName(S.issue.fields.Publication)} production workspace.`:'Publication-aware production workspace.');if(v==='assemble'){renderAssembly();updateWorkflowGuide()}}
 function pubName(ids){return S.publications.find(p=>p.id===(ids||[])[0])?.fields['Publication Name']||'Unlinked'}function pill(v){return `<span class="pill ${/ready|published|complete/i.test(v)?'good':/warning|blocked|late/i.test(v)?'warn':''}">${esc(v||'Not set')}</span>`}
 function currentPublicationName(){return S.issue?pubName(S.issue.fields.Publication):''}
 function currentPlaceName(){const n=currentPublicationName();return n.replace(/\s+Spotlight\s*$/i,'').trim()||'local area'}
@@ -1163,6 +1175,108 @@ async function copyText(t){await navigator.clipboard.writeText(t);alert('Copied.
 async function createIssue(ev){ev.preventDefault();const fields={Publication:[E('new-publication').value],'Issue Number':Number(E('new-number').value)||undefined,'Send Date':E('new-date').value,'Issue Status':'PLANNED','Main Theme':E('new-theme').value};const d=await api('issues',{method:'POST',body:JSON.stringify({fields})});S.issues.unshift(d.record);E('issue-dialog').close();render();await openIssue(d.record.id)}
 
 
+const ENGINE_PROFILES={
+ SPOTLIGHT:{
+  key:'SPOTLIGHT',name:'Spotlight',description:'Broad local-life publication: useful, enjoyable, surprising and locally specific.',targetSections:[24,30],targetMasters:[8,10],targetSupport:[14,18],defaultMasters:9,
+  lanes:['LOCAL LIFE','FOOD & HOSPITALITY',"WHAT'S ON",'PLACES & DISCOVERY','MONEY & CONSUMER','HOME & PROPERTY','FAMILY & COMMUNITY','MOTORING & TRAVEL','FUN & CURIOSITY','READER VOICE','BUSINESS & PEOPLE','TOPICAL / BREAKING'],
+  minimumGroups:[
+   {label:'Food / Hospitality',min:2,lanes:['FOOD & HOSPITALITY']},
+   {label:"What's On / Discovery",min:2,lanes:["WHAT'S ON",'PLACES & DISCOVERY']},
+   {label:'Local Life / Community',min:2,lanes:['LOCAL LIFE','FAMILY & COMMUNITY','BUSINESS & PEOPLE']},
+   {label:'Fun / Curiosity',min:2,lanes:['FUN & CURIOSITY']},
+   {label:'Reader interaction',min:3,lanes:['READER VOICE']}
+  ],
+  maxHeavyMoodShare:.40,
+  supportRecipe:['OPENING NOTE','READER POLL','FOOD FIND','LOCAL TRIVIA',"WHAT'S ON",'READER RECOMMENDATION','WORTH THE DRIVE?','SALLY SAVERS','LOCAL DEBATE','WEEKEND IDEA','PUB / RESTAURANT QUESTION','COMMUNITY VOICE','LOCAL BUSINESS FIND','NOMINATION','HUMOUR','EXPERT QUICK CHECK','BEFORE YOU GO']
+ },
+ HOME_SELLER:{
+  key:'HOME_SELLER',name:'Home Seller Insider',description:'Niche seller publication using the same planner with a property-specific editorial mix.',targetSections:[12,18],targetMasters:[5,7],targetSupport:[6,11],defaultMasters:6,
+  lanes:['PRICING & VALUATION','ESTATE AGENTS','PRESENTATION','LEGAL & CONVEYANCING','MORTGAGES & FINANCE','SURVEYS & CONDITION','MOVING','NEGOTIATION','SELLER MISTAKES','BUYER PSYCHOLOGY','READER VOICE','EXPERT'],
+  minimumGroups:[{label:'Selling strategy',min:2,lanes:['PRICING & VALUATION','NEGOTIATION','BUYER PSYCHOLOGY']},{label:'Process / protection',min:2,lanes:['LEGAL & CONVEYANCING','SURVEYS & CONDITION','MORTGAGES & FINANCE']},{label:'Reader interaction',min:2,lanes:['READER VOICE']}],maxHeavyMoodShare:.50,
+  supportRecipe:['OPENING NOTE','READER POLL','QUICK PRICE CHECK','READER QUESTION','EXPERT QUICK CHECK','MYTH V FACT','READER RECOMMENDATION','NOMINATION','BEFORE YOU GO']
+ },
+ TASTE_TRAIL:{
+  key:'TASTE_TRAIL',name:'Taste Trail',description:'Food-first discovery publication: places, dishes, value, openings and reader recommendations.',targetSections:[14,20],targetMasters:[5,7],targetSupport:[8,13],defaultMasters:6,
+  lanes:['RESTAURANTS','PUBS','CAFES','TAKEAWAYS','LOCAL PRODUCERS','DISHES & MENUS','VALUE','OPENINGS & CLOSURES','FOOD EVENTS','PLACES & DISCOVERY','READER VOICE','HOSPITALITY PEOPLE'],
+  minimumGroups:[{label:'Places to eat/drink',min:4,lanes:['RESTAURANTS','PUBS','CAFES','TAKEAWAYS']},{label:'Discovery / events',min:2,lanes:['FOOD EVENTS','PLACES & DISCOVERY','OPENINGS & CLOSURES']},{label:'Reader interaction',min:2,lanes:['READER VOICE']}],maxHeavyMoodShare:.45,
+  supportRecipe:['OPENING NOTE','READER POLL','FOOD FIND','PUB / RESTAURANT QUESTION','QUICK PRICE CHECK','READER RECOMMENDATION','FOOD FIND','LOCAL TRIVIA','NOMINATION','BEFORE YOU GO']
+ },
+ PET_INSIDER:{
+  key:'PET_INSIDER',name:'Pet Insider',description:'Pet niche publication: health, behaviour, costs, local places, services and reader pets.',targetSections:[12,18],targetMasters:[5,7],targetSupport:[6,11],defaultMasters:6,
+  lanes:['HEALTH','BEHAVIOUR & TRAINING','FOOD & NUTRITION','COSTS','WALKS & PLACES','SERVICES','PRODUCTS','LOCAL PET LIFE','READER PETS','EXPERT','FUN & CURIOSITY'],
+  minimumGroups:[{label:'Health / behaviour',min:2,lanes:['HEALTH','BEHAVIOUR & TRAINING']},{label:'Local pet life',min:2,lanes:['WALKS & PLACES','LOCAL PET LIFE','SERVICES']},{label:'Reader / fun',min:2,lanes:['READER PETS','FUN & CURIOSITY']}],maxHeavyMoodShare:.50,
+  supportRecipe:['OPENING NOTE','READER POLL','READER PETS','LOCAL TRIVIA','WEEKEND IDEA','READER RECOMMENDATION','EXPERT QUICK CHECK','NOMINATION','HUMOUR','BEFORE YOU GO']
+ }
+};
+function engineProfileForPublication(name=currentPublicationName()){
+ const n=String(name||'').toLowerCase();
+ if(/home seller/.test(n))return ENGINE_PROFILES.HOME_SELLER;
+ if(/taste trail/.test(n))return ENGINE_PROFILES.TASTE_TRAIL;
+ if(/pet insider|local pet/.test(n))return ENGINE_PROFILES.PET_INSIDER;
+ return ENGINE_PROFILES.SPOTLIGHT;
+}
+function normaliseEditorialLane(v){return String(v||'').trim().toUpperCase().replace(/\s+/g,' ')}
+function classifySpotlightLane(text){
+ const t=String(text||'').toLowerCase();
+ if(/restaurant|pub|cafe|coffee|breakfast|lunch|dinner|takeaway|chippy|food|drink|menu|roast|hospitality/.test(t))return 'FOOD & HOSPITALITY';
+ if(/event|festival|theatre|cinema|concert|market|what.?s on|exhibition|gig/.test(t))return "WHAT'S ON";
+ if(/walk|day out|attraction|visit|village|hidden|worth the drive|beach|park|place to go|discover/.test(t))return 'PLACES & DISCOVERY';
+ if(/mortgage|house|property|rent|letting|buyer|seller|conveyanc|survey|boiler|roof|plumber|garden/.test(t))return 'HOME & PROPERTY';
+ if(/bill|saving|price|insurance|refund|consumer|subscription|wallet|pay|money|cost/.test(t))return 'MONEY & CONSUMER';
+ if(/school|child|family|library|charity|club|volunteer|community/.test(t))return 'FAMILY & COMMUNITY';
+ if(/mot|car|road|traffic|parking|vehicle|bus|train|travel|holiday/.test(t))return 'MOTORING & TRAVEL';
+ if(/trivia|fact|odd|weird|fun|quiz|joke|did you know|curious/.test(t))return 'FUN & CURIOSITY';
+ if(/poll|vote|tell us|your recommendation|reader|nominate|question|have your say/.test(t))return 'READER VOICE';
+ if(/business|shop|founder|owner|independent|expert|people/.test(t))return 'BUSINESS & PEOPLE';
+ if(/breaking|latest|announcement|closed|closure|opens|opening/.test(t))return 'TOPICAL / BREAKING';
+ return 'LOCAL LIFE';
+}
+function classifyNicheLane(text,profile){
+ const t=String(text||'').toLowerCase();
+ if(profile.key==='HOME_SELLER'){
+  if(/price|valuation|asking|value/.test(t))return 'PRICING & VALUATION';if(/estate agent|agent/.test(t))return 'ESTATE AGENTS';if(/stage|presentation|declutter|viewing|photo/.test(t))return 'PRESENTATION';if(/legal|conveyanc|solicitor|contract/.test(t))return 'LEGAL & CONVEYANCING';if(/mortgage|finance|loan/.test(t))return 'MORTGAGES & FINANCE';if(/survey|condition|defect|repair/.test(t))return 'SURVEYS & CONDITION';if(/move|removal|moving/.test(t))return 'MOVING';if(/negot|offer/.test(t))return 'NEGOTIATION';if(/mistake|avoid|wrong/.test(t))return 'SELLER MISTAKES';if(/buyer|psycholog/.test(t))return 'BUYER PSYCHOLOGY';if(/reader|poll|question|nominate/.test(t))return 'READER VOICE';return 'EXPERT';
+ }
+ if(profile.key==='TASTE_TRAIL'){
+  if(/restaurant/.test(t))return 'RESTAURANTS';if(/pub|beer|ale/.test(t))return 'PUBS';if(/cafe|coffee/.test(t))return 'CAFES';if(/takeaway|chippy|pizza|kebab/.test(t))return 'TAKEAWAYS';if(/producer|farm shop|butcher|bakery/.test(t))return 'LOCAL PRODUCERS';if(/menu|dish|breakfast|lunch|dinner|roast/.test(t))return 'DISHES & MENUS';if(/price|value|cheap|cost|under £|deal/.test(t))return 'VALUE';if(/open|close|closure|new/.test(t))return 'OPENINGS & CLOSURES';if(/event|festival|market/.test(t))return 'FOOD EVENTS';if(/reader|poll|recommend|nominate/.test(t))return 'READER VOICE';if(/chef|owner|team|people/.test(t))return 'HOSPITALITY PEOPLE';return 'PLACES & DISCOVERY';
+ }
+ if(profile.key==='PET_INSIDER'){
+  if(/vet|health|dental|ill|injur/.test(t))return 'HEALTH';if(/train|behavio|bark|recall/.test(t))return 'BEHAVIOUR & TRAINING';if(/food|diet|nutrition/.test(t))return 'FOOD & NUTRITION';if(/cost|insurance|bill|price/.test(t))return 'COSTS';if(/walk|park|place|beach/.test(t))return 'WALKS & PLACES';if(/groom|walker|sitter|service/.test(t))return 'SERVICES';if(/product|toy|lead|bed/.test(t))return 'PRODUCTS';if(/reader|pet of|photo|nominate/.test(t))return 'READER PETS';if(/expert|vet|trainer/.test(t))return 'EXPERT';if(/fun|fact|quiz|odd/.test(t))return 'FUN & CURIOSITY';return 'LOCAL PET LIFE';
+ }
+ return classifySpotlightLane(t);
+}
+function editorialLaneFor(item,profile=engineProfileForPublication()){
+ const explicit=normaliseEditorialLane(item?.editorial_lane||item?.life_lane||item?.lifeLane||'');
+ if(profile.lanes.includes(explicit))return explicit;
+ return classifyNicheLane([item?.title,item?.question,item?.purpose,item?.content,item?.problem,item?.why_now,item?.lane].join(' '),profile);
+}
+function editorialMood(item){
+ const t=[item?.title,item?.question,item?.purpose,item?.content,item?.problem,item?.why_now,item?.stance].join(' ').toLowerCase();
+ if(/urgent|warning|deadline|must|act now/.test(t))return 'URGENT';
+ if(/bill|saving|price|cost|cheaper|money|mortgage/.test(t))return 'SAVE MONEY';
+ if(/repair|check|problem|complaint|avoid|fix|what to do|how to/.test(t))return 'PROBLEM SOLVING';
+ if(/debate|versus|vs\b|overpriced|should|controvers|unfiltered/.test(t))return 'DEBATE';
+ if(/community|family|people|reader story|charity|volunteer/.test(t))return 'HUMAN';
+ if(/food|pub|restaurant|cafe|event|weekend|day out|enjoy/.test(t))return 'ENJOY';
+ if(/discover|hidden|place|walk|attraction|visit/.test(t))return 'DISCOVER';
+ if(/trivia|fact|odd|weird|quiz|curious|did you know/.test(t))return 'CURIOUS';
+ if(/poll|vote|tell us|recommend|nominate|reader/.test(t))return 'COMMUNITY';
+ return 'USEFUL';
+}
+function plannedSupportItems(profile=engineProfileForPublication(),publication=currentPublicationName()){
+ const local=String(publication||'Local').replace(/\s+(Spotlight|Taste Trail|Pet Insider|Home Seller Insider).*$/i,'').trim()||'Local';
+ return (profile.supportRecipe||[]).map((type,i)=>({kind:'component',type,title:(COMPONENT_DEFS.find(x=>x.type===type)?.title||type),purpose:(COMPONENT_DEFS.find(x=>x.type===type)?.purpose||''),order:100+i,publication:local}));
+}
+function renderEngineProfile(){
+ const p=engineProfileForPublication();if(!E('engine-profile-name'))return;
+ E('engine-profile-name').textContent=p.name+' Engine Profile';E('engine-profile-desc').textContent=p.description;
+ E('engine-target-sections').textContent=p.targetSections.join('–');E('engine-target-masters').textContent=p.targetMasters.join('–');E('engine-target-support').textContent=p.targetSupport.join('–');E('engine-profile-mode').textContent='AUTO · '+p.key;
+ E('engine-profile-lanes').innerHTML=p.lanes.map(x=>`<span class="lane-chip">${esc(x)}</span>`).join('');
+ const plan=getSmartPlan?.();const h=plan?.articles?.length?issueBalanceAudit(plan):null;const box=E('engine-health');
+ if(!h){box.className='engine-health';box.innerHTML='<strong>Planning gate:</strong> Build a plan to test lane spread, mood and rhythm before production.';return}
+ box.className='engine-health '+(h.status==='READY'?'ready':h.status==='NEEDS ATTENTION'?'blocked':'review');
+ box.innerHTML=`<strong>Planning gate: ${esc(h.status)}</strong> · projected ${h.projectedSections} sections · ${h.lifeLanes.length} lanes · heavy mood ${Math.round(h.heavyMoodShare*100)}%${h.findings.length?`<br>${h.findings.slice(0,3).map(x=>'• '+esc(x)).join('<br>')}`:' · balanced enough to proceed.'}`;
+}
+
 const COMPONENT_DEFS=[
  {type:'OPENING NOTE',title:'Opening Note',family:'Short Editorial',purpose:'Set the issue promise and give readers a reason to continue.',template:'SHORT COMPONENT',points:1},
  {type:'NEWS BRIEF',title:'News Brief',family:'Short Editorial',purpose:'Give the essential verified update without forcing a full article.',template:'SHORT COMPONENT',points:2},
@@ -1183,7 +1297,25 @@ const COMPONENT_DEFS=[
  {type:'COMMUNITY VOICE',title:'Community Voice',family:'Community',purpose:'Add a useful local voice, cause or community contribution.',template:'SHORT COMPONENT',points:2},
  {type:'ACTIVATION / OFFER',title:'Activation / Offer',family:'Commercial',purpose:'Give the reader a useful action: visit, book, nominate, download, claim, attend, ask or reply.',template:'PARTNER TIP',points:3},
  {type:'FACEBOOK DISCUSSION',title:'Facebook Discussion',family:'Distribution',purpose:'Create a standalone stop-and-comment post connected to the issue.',template:'SHORT COMPONENT',points:1},
- {type:'CLOSING QUESTION',title:'Closing Question',family:'Engagement',purpose:'End with one specific reply or comment question.',template:'SHORT COMPONENT',points:1}
+ {type:'CLOSING QUESTION',title:'Closing Question',family:'Engagement',purpose:'End with one specific reply or comment question.',template:'SHORT COMPONENT',points:1},
+ {type:'LOCAL TRIVIA',title:'Local Trivia',family:'Fun & Curiosity',purpose:'Give one verified surprising local fact and one simple reader question.',template:'SHORT COMPONENT',points:1},
+ {type:"WHAT'S ON",title:"What's On",family:'Lifestyle',purpose:'Give a short timely set of local things worth doing, with verified dates and places.',template:'SHORT COMPONENT',points:2},
+ {type:'FOOD FIND',title:'Food Find',family:'Food & Hospitality',purpose:'Surface one specific local food, pub, restaurant, cafe or takeaway discovery with a clear reason to care.',template:'SHORT COMPONENT',points:2},
+ {type:'PUB / RESTAURANT QUESTION',title:'Pub / Restaurant Question',family:'Food & Hospitality',purpose:'Ask one specific local food or hospitality question that can feed a future guide.',template:'SHORT COMPONENT',points:1},
+ {type:'WORTH THE DRIVE?',title:'Worth The Drive?',family:'Places & Discovery',purpose:'Recommend or ask about one specific place readers might travel locally to discover.',template:'SHORT COMPONENT',points:1},
+ {type:'QUICK PRICE CHECK',title:'Quick Price Check',family:'Money & Consumer',purpose:'Compare one simple price or cost readers can understand quickly.',template:'SHORT COMPONENT',points:1},
+ {type:'SALLY SAVERS',title:'Sally Savers',family:'Money & Consumer',purpose:'Give one fresh, specific money-saving check without repeating the main article.',template:'SHORT COMPONENT',points:1},
+ {type:'LOCAL DEBATE',title:'Local Debate',family:'Reader Voice',purpose:'Put one specific local tension or choice to readers without turning it into a generic what-do-you-think prompt.',template:'SHORT COMPONENT',points:1},
+ {type:'READER VOICE',title:'Reader Voice',family:'Reader Voice',purpose:'Use or request one specific reader contribution that can shape future editorial coverage.',template:'SHORT COMPONENT',points:1},
+ {type:'WEEKEND IDEA',title:'Weekend Idea',family:'Places & Discovery',purpose:'Give one timely local idea for something enjoyable to do.',template:'SHORT COMPONENT',points:1},
+ {type:'LOCAL BUSINESS FIND',title:'Local Business Find',family:'Business & People',purpose:'Surface one specific independent local business because it is editorially interesting, not because it paid for an advert.',template:'SHORT COMPONENT',points:2},
+ {type:'EXPERT QUICK CHECK',title:'Expert Quick Check',family:'Partner',purpose:'Give one concise check an appropriate expert could help explain; do not fabricate a real expert or quote.',template:'SHORT COMPONENT',points:2},
+ {type:'NOMINATION',title:'Nominate Something',family:'Reader Voice',purpose:'Ask readers to nominate one specific local place, business, person or service for a future evidence-led feature.',template:'SHORT COMPONENT',points:1},
+ {type:'HUMOUR',title:'Quick Breather',family:'Fun & Curiosity',purpose:'Add one short relatable observation or joke that gives the issue breathing room.',template:'SHORT COMPONENT',points:1},
+ {type:'READER QUESTION',title:'Reader Question',family:'Reader Voice',purpose:'Ask one precise reader question that can enter the Question Bank.',template:'SHORT COMPONENT',points:1},
+ {type:'MYTH V FACT',title:'Myth v Fact',family:'Fun & Curiosity',purpose:'Test one belief and give a fair sourced answer.',template:'SHORT COMPONENT',points:1},
+ {type:'READER PETS',title:'Reader Pets',family:'Reader Voice',purpose:'Invite one specific pet story, photo or recommendation that can shape a future pet feature.',template:'SHORT COMPONENT',points:1},
+ {type:'BEFORE YOU GO',title:'Before You Go',family:'Engagement',purpose:'End warmly with one specific question or action that gives the next issue a useful lead.',template:'SHORT COMPONENT',points:1}
 ]
 let canvasSelectedUid=null,dragPayload=null;
 function assemblyIssueId(){return S.issue?.id||localStorage.getItem('ics:lastIssue')||'none'}
@@ -1383,8 +1515,15 @@ async function replaceSmartArticle(order){
     if(btn){btn.disabled=false;btn.textContent='Replace'}
   }
 }
-function lockSmartPlan(){const plan=getSmartPlan();if(!plan?.articles?.length||plan.articles.length!==9){alert('Complete all 9 article decisions first.');return}const h=reuseGuardSummary(plan);if(h.blocked){alert(`${h.blocked} REUSE/REFRESH item${h.blocked===1?' is':'s are'} blocked by known same-publication history. Replace or change the angle before locking.`);return}const a=smartPlanAlignmentSummary(plan),r=refreshGateSummary(plan),d=sameIssueDuplicationSummary(plan);if(a.bad){alert(`${a.bad} SOURCE MISMATCH item${a.bad===1?'':'s'} must be edited or replaced before the plan can be locked.`);return}if(r.replace){alert(`${r.replace} REFRESH item${r.replace===1?'':'s'} do not identify a material change and should be replaced or edited before the plan can be locked.`);return}if(d.duplicate){alert(`${d.duplicate} same-issue duplicate pair${d.duplicate===1?'':'s'} must be replaced or edited before the plan can be locked.`);return}plan.lockedAt=new Date().toISOString();recalcSmartCounts(plan);saveSmartPlan(plan);renderSmartPlan();alert(`Approved plan locked. Source check: ${a.ok} aligned · ${a.warn} editor-reviewed. Refresh gate: ${r.ok} justified. Same-issue duplication: clear. Create Missing Article Briefs is now enabled.`)}
-
+function lockSmartPlan(){
+ const plan=getSmartPlan(),profile=engineProfileForPublication();
+ const target=profile.defaultMasters||9;
+ if(!plan?.articles?.length||plan.articles.length!==target){alert(`Complete all ${target} Master Article decisions first for the ${profile.name} profile.`);return}
+ const h=reuseGuardSummary(plan);if(h.blocked){alert(`${h.blocked} REUSE/REFRESH item${h.blocked===1?' is':'s are'} blocked by known same-publication history. Replace or change the angle before locking.`);return}
+ const a=smartPlanAlignmentSummary(plan),r=refreshGateSummary(plan),d=sameIssueDuplicationSummary(plan);if(a.bad){alert(`${a.bad} SOURCE MISMATCH item${a.bad===1?'':'s'} must be edited or replaced before the plan can be locked.`);return}if(r.replace){alert(`${r.replace} REFRESH item${r.replace===1?'':'s'} do not identify a material change and should be replaced or edited before the plan can be locked.`);return}if(d.duplicate){alert(`${d.duplicate} same-issue duplicate pair${d.duplicate===1?'':'s'} must be replaced or edited before the plan can be locked.`);return}
+ const balance=issueBalanceAudit(plan);if(balance.status==='NEEDS ATTENTION'){alert(`PLANNING GATE BLOCKED — ${profile.name}\n\n${balance.findings.join('\n- ')}\n\nReplace/rebalance the plan before production. No Airtable briefs have been created.`);return}
+ plan.engineProfile=profile.key;plan.projectedSupportRecipe=profile.supportRecipe;plan.lockedAt=new Date().toISOString();recalcSmartCounts(plan);saveSmartPlan(plan);renderSmartPlan();renderEngineProfile();alert(`Approved ${profile.name} plan locked. Projected full issue: ${balance.projectedSections} sections. Source, duplication and editorial-balance gates passed. Create Missing Article Briefs is now enabled.`)
+}
 function signalWords(text=''){
   const stop=new Set('the a an and or but to of in on at for from with by is are was were be been this that what which who will would should could can do does did have has had new local norfolk current reported report reports why now'.split(/\s+/));
   return [...new Set(String(text).toLowerCase().replace(/https?:\/\/\S+/g,' ').replace(/[^a-z0-9]+/g,' ').split(/\s+/).filter(w=>w.length>2&&!stop.has(w)))];
@@ -1525,32 +1664,42 @@ function commercialValueForArticle(a){
   return {labels,expert,partner,explicit,has:labels.length>0||!!explicit};
 }
 function issueBalanceAudit(plan){
+  const profile=engineProfileForPublication();
   const arts=plan?.articles||[];
+  const supports=plannedSupportItems(profile);
+  const projected=[...arts,...supports];
   const expert=new Set(),partner=new Set(),engage=new Set(),lifeLanes=new Set();
   const tones={PRACTICAL:0,EDGE:0,LIGHT:0,HUMAN:0};
+  const laneCounts={},moodCounts={};
   let commercialArticles=0,civicHeavy=0;
   for(const a of arts){
-    const cv=commercialValueForArticle(a);
-    cv.expert.forEach(x=>expert.add(x));cv.partner.forEach(x=>partner.add(x));
-    if(cv.has)commercialArticles++;
-    engagementSignals(a).forEach(x=>engage.add(x));
-    tones[toneBucket(a)]=(tones[toneBucket(a)]||0)+1;
-    if(a?.life_lane&&String(a.life_lane).toLowerCase()!=='open')lifeLanes.add(a.life_lane);
-    if(isCivicHeavyArticle(a))civicHeavy++;
+    const cv=commercialValueForArticle(a);cv.expert.forEach(x=>expert.add(x));cv.partner.forEach(x=>partner.add(x));if(cv.has)commercialArticles++;
+    engagementSignals(a).forEach(x=>engage.add(x));tones[toneBucket(a)]=(tones[toneBucket(a)]||0)+1;if(isCivicHeavyArticle(a))civicHeavy++;
+  }
+  for(const item of projected){
+    const lane=editorialLaneFor(item,profile);if(lane){lifeLanes.add(lane);laneCounts[lane]=(laneCounts[lane]||0)+1}
+    const mood=editorialMood(item);moodCounts[mood]=(moodCounts[mood]||0)+1;
   }
   const findings=[];
-  // Commercial opportunity is deliberately visible, but there is no arbitrary sponsor quota.
+  const projectedSections=projected.length;
+  if(projectedSections<profile.targetSections[0]||projectedSections>profile.targetSections[1])findings.push(`Projected issue size is ${projectedSections}; ${profile.name} normally targets ${profile.targetSections[0]}–${profile.targetSections[1]} sections.`);
+  if(arts.length<profile.targetMasters[0]||arts.length>profile.targetMasters[1])findings.push(`Master Article count is ${arts.length}; ${profile.name} normally targets ${profile.targetMasters[0]}–${profile.targetMasters[1]}.`);
+  for(const g of profile.minimumGroups||[]){const count=(g.lanes||[]).reduce((n,l)=>n+(laneCounts[l]||0),0);if(count<g.min)findings.push(`${g.label} is underweight (${count}/${g.min} minimum in the projected issue).`)}
   if(commercialArticles===0)findings.push('No obvious commercial pathways are visible yet. Strengthen at least one strong reader-first article so a suitable expert, feature partner or activation could add value.');
-  else if(commercialArticles<Math.min(4,arts.length))findings.push(`Only ${commercialArticles}/${arts.length} Master Articles currently show an obvious commercial pathway. Look for natural expert, feature, resource or activation value — do not force a sponsor into weak content.`);
-  if((tones.LIGHT||0)+(tones.HUMAN||0)<2)findings.push('The Master Article mix is too serious. Add at least two discovery, enjoyment, people-led or lighter reader moments across the article layer.');
-  if((tones.EDGE||0)<1)findings.push('Unfiltered/debate edge is low. Add one credible challenge, comparison or debate angle where the subject genuinely earns it.');
-  if(engage.size<2)findings.push('Reader engagement variety is low. Add stronger save/share/discussion potential without turning every article into a question.');
-  const practical=tones.PRACTICAL||0;
-  if(practical>6)findings.push(`The Master Article layer is heavily weighted to practical/problem-solving pieces (${practical}/${arts.length}). Replace one or two with discovery, recommendation, human interest or enjoyment.`);
-  if(civicHeavy>4)findings.push(`Civic/public-service stories are dominating the plan (${civicHeavy}/${arts.length}). Keep the strongest current stories, then rebalance with other Life Lanes.`);
-  if(lifeLanes.size<5&&arts.length>=8)findings.push(`Life Lane spread is narrow (${lifeLanes.size} represented). A normal Spotlight plan should usually draw substantial articles from several different parts of local life.`);
-  const status=findings.length===0?'READY':findings.length<=2?'REVIEW':'NEEDS ATTENTION';
-  return {expert:[...expert],partner:[...partner],commercialArticles,engagement:[...engage],tones,civicHeavy,lifeLanes:[...lifeLanes],findings,status};
+  else if(commercialArticles<Math.min(4,arts.length))findings.push(`Only ${commercialArticles}/${arts.length} Master Articles currently show an obvious commercial pathway. Look for natural expert, feature, resource or activation value — do not force a sponsor.`);
+  const heavy=(moodCounts['SAVE MONEY']||0)+(moodCounts['PROBLEM SOLVING']||0)+(moodCounts.URGENT||0);
+  const heavyMoodShare=projectedSections?heavy/projectedSections:0;
+  if(heavyMoodShare>profile.maxHeavyMoodShare)findings.push(`Heavy problem/admin mood would dominate ${Math.round(heavyMoodShare*100)}% of the projected issue. Rebalance before production.`);
+  if(profile.key==='SPOTLIGHT'){
+    const enjoyment=(moodCounts.ENJOY||0)+(moodCounts.DISCOVER||0)+(moodCounts.CURIOUS||0)+(moodCounts.HUMAN||0);
+    if(enjoyment<6)findings.push(`Spotlight has too little life in the projected issue (${enjoyment} enjoy/discover/curious/human moments). Add food, places, people, discovery or fun before production.`);
+  }
+  if((tones.LIGHT||0)+(tones.HUMAN||0)<2&&arts.length>=8)findings.push('The Master Article layer is too serious. Add at least two discovery, enjoyment or people-led article moments.');
+  if((tones.EDGE||0)<1&&profile.key==='SPOTLIGHT')findings.push('Unfiltered/debate edge is low. Add one credible challenge, comparison or debate angle where earned.');
+  if(civicHeavy>4)findings.push(`Civic/public-service stories are dominating the Master Article plan (${civicHeavy}/${arts.length}). Keep the strongest current stories, then rebalance.`);
+  const hard=findings.filter(x=>/underweight|dominate|too little life|Projected issue size|Master Article count/.test(x));
+  const status=hard.length?'NEEDS ATTENTION':findings.length<=2?'REVIEW':'NEEDS ATTENTION';
+  return {profile:profile.key,expert:[...expert],partner:[...partner],commercialArticles,engagement:[...engage],tones,civicHeavy,lifeLanes:[...lifeLanes],laneCounts,moodCounts,heavyMoodShare,projectedSections,projectedSupport:supports.length,findings,status};
 }
 
 
@@ -1608,9 +1757,10 @@ async function copyCommercialCompletion(){
   catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}
 }
 function issueBalanceAuditText(plan){
-  const a=issueBalanceAudit(plan);
-  const fmt=(label,vals,target)=>`${label}: ${vals.length}${target?` / target ${target}`:''}${vals.length?` — ${vals.join(' · ')}`:''}`;
-  return [`ISSUE BALANCE — ${a.status}`,fmt('Authority / expert opportunities',a.expert),fmt('Feature / activation opportunities',a.partner),`Master Articles with natural commercial pathways: ${a.commercialArticles}/${(plan.articles||[]).length}`,fmt('Life Lanes represented',a.lifeLanes),fmt('Engagement modes',a.engagement),`Editorial mix: Practical ${a.tones.PRACTICAL||0} · Edge ${a.tones.EDGE||0} · Light ${a.tones.LIGHT||0} · Human ${a.tones.HUMAN||0}`,'',a.findings.length?'Needs attention:':'Balanced enough to move forward.',...a.findings.map(x=>`- ${x}`)].join('\n');
+  const a=issueBalanceAudit(plan),p=engineProfileForPublication();
+  const laneLine=Object.entries(a.laneCounts).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
+  const moodLine=Object.entries(a.moodCounts).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
+  return [`ISSUE BALANCE — ${a.status}`,`Engine profile: ${p.name}`,`Projected full issue: ${a.projectedSections} sections · ${plan.articles?.length||0} Master Articles · ${a.projectedSupport} planned life/support blocks`,`Lane mix: ${laneLine||'None'}`,`Mood mix: ${moodLine||'None'}`,`Heavy problem/admin share: ${Math.round(a.heavyMoodShare*100)}% / max ${Math.round(p.maxHeavyMoodShare*100)}%`,`Authority / expert opportunities: ${a.expert.length}`,`Feature / activation opportunities: ${a.partner.length}`,`Master Articles with natural commercial pathways: ${a.commercialArticles}/${(plan.articles||[]).length}`,'',a.findings.length?'Needs attention:':'Balanced enough to move forward.',...a.findings.map(x=>`- ${x}`)].join('\n');
 }
 async function copyIssueBalanceAudit(){
   const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the Issue Plan first.');return}
@@ -1619,38 +1769,40 @@ async function copyIssueBalanceAudit(){
   catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Audit copied.')}
 }
 function commercialAuditHtml(plan){
-  const a=issueBalanceAudit(plan),mark=n=>n>=5?'✓':'⚠';
+  const a=issueBalanceAudit(plan),p=engineProfileForPublication();
+  const laneLine=Object.entries(a.laneCounts).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
+  const moodLine=Object.entries(a.moodCounts).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
   return `<div class="check smart-audit-panel" style="margin-bottom:10px">
-    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><strong>ISSUE BALANCE — ${esc(a.status)}</strong><button class="btn secondary" id="copy-smart-audit" type="button">Copy Audit</button></div>
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><strong>${esc(p.name.toUpperCase())} PLANNING GATE — ${esc(a.status)}</strong><button class="btn secondary" id="copy-smart-audit" type="button">Copy Audit</button></div>
     <div class="audit-grid" style="margin-top:8px">
-      <div><strong>Authority / expert opportunities:</strong> ${a.expert.length}</div>
-      <div><strong>Feature / activation opportunities:</strong> ${a.partner.length}</div>
-      <div><strong>Editorial mix:</strong> Practical ${a.tones.PRACTICAL||0} · Edge ${a.tones.EDGE||0} · Light ${a.tones.LIGHT||0} · Human ${a.tones.HUMAN||0}</div>
-      <div><strong>Engagement:</strong> ${a.engagement.length?esc(a.engagement.join(' · ')):'Needs attention'}</div>
+      <div><strong>Projected issue:</strong> ${a.projectedSections} sections</div><div><strong>Master / support:</strong> ${(plan.articles||[]).length} / ${a.projectedSupport}</div>
+      <div><strong>Heavy problem/admin mood:</strong> ${Math.round(a.heavyMoodShare*100)}% / max ${Math.round(p.maxHeavyMoodShare*100)}%</div><div><strong>Commercial coverage:</strong> ${a.commercialArticles}/${(plan.articles||[]).length} Masters</div>
     </div>
-    ${a.findings.length?`<div style="margin-top:8px"><strong>Needs attention</strong><br>${a.findings.map(x=>`• ${esc(x)}`).join('<br>')}</div>`:`<div style="margin-top:8px"><strong>Balanced enough to move forward.</strong></div>`}
-    <div style="margin-top:8px"><strong>Commercial opportunity coverage:</strong> ${a.commercialArticles}/${(plan.articles||[]).length} Master Articles have a natural expert, feature, activation or other commercial pathway. Authority/expert lanes: ${a.expert.length}. Feature/activation lanes: ${a.partner.length}.</div>
-    <div style="margin-top:8px" class="muted"><strong>Commercial safeguard:</strong> Make sellable opportunities obvious, especially where a real partner commitment exists, but never create filler or lower reader value to hit a quota. Components can carry partner value too.</div>
+    <div style="margin-top:8px"><strong>Projected lane mix:</strong><br><span class="muted">${esc(laneLine||'No lanes detected')}</span></div>
+    <div style="margin-top:8px"><strong>Projected mood mix:</strong><br><span class="muted">${esc(moodLine||'No moods detected')}</span></div>
+    ${a.findings.length?`<div style="margin-top:8px"><strong>Needs attention before production</strong><br>${a.findings.map(x=>`• ${esc(x)}`).join('<br>')}</div>`:`<div style="margin-top:8px"><strong>Balanced enough to move forward.</strong></div>`}
+    <div style="margin-top:8px" class="muted"><strong>Rule:</strong> editorial balance is checked before production. Commercial opportunity sits underneath reader value; it cannot rescue a flat issue.</div>
   </div>`;
 }
 function renderSmartPlan(){
+ renderEngineProfile();
  const plan=getSmartPlan(),panel=E('smart-plan-panel');if(!panel)return;panel.style.display='block';const apply=E('smart-plan-apply'),lock=E('smart-plan-lock');
- if(!plan){const sig=getSmartSignals(),batches=getSmartPlanBatches(),arts=batches.flatMap(b=>b.articles||[]);E('smart-plan-status').textContent='No completed Smart Issue Plan yet. Partial decisions survive timeouts and are shown below.';E('smart-plan-summary').innerHTML=sig.length?'<strong>Next:</strong> Build / Resume Issue Plan.':'<strong>Next:</strong> Collect Signals first.';E('smart-scan-progress').textContent=(sig.length?`${sig.length} current signals saved. `:'')+(arts.length?`${arts.length}/9 article decisions saved.`:'');E('smart-plan-signals-list').innerHTML=sig.length?`<div class="check"><strong>Saved current signals</strong><br>${sig.map(x=>`${esc(x.signal)}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';E('smart-plan-list').innerHTML=arts.length?`<div class="check"><strong>Partial plan — ${arts.length}/9 saved</strong></div>`+arts.map((a,i)=>`<div class="check"><span class="mini-badge ${planModeClass(a.mode)}">${esc(a.mode)}</span> <strong>${i+1}. ${esc(a.title)}</strong><br><span class="muted">${esc(a.question)}</span></div>`).join(''):'';apply.disabled=true;lock.disabled=true;return}
+ if(!plan){const sig=getSmartSignals(),batches=getSmartPlanBatches(),arts=batches.flatMap(b=>b.articles||[]);E('smart-plan-status').textContent='No completed Smart Issue Plan yet. Partial decisions survive timeouts and are shown below.';E('smart-plan-summary').innerHTML=sig.length?'<strong>Next:</strong> Build / Resume Issue Plan.':'<strong>Next:</strong> Collect Signals first.';E('smart-scan-progress').textContent=(sig.length?`${sig.length} current signals saved. `:'')+(arts.length?`${arts.length}/${engineProfileForPublication().defaultMasters||9} article decisions saved.`:'');E('smart-plan-signals-list').innerHTML=sig.length?`<div class="check"><strong>Saved current signals</strong><br>${sig.map(x=>`${esc(x.signal)}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';E('smart-plan-list').innerHTML=arts.length?`<div class="check"><strong>Partial plan — ${arts.length}/9 saved</strong></div>`+arts.map((a,i)=>`<div class="check"><span class="mini-badge ${planModeClass(a.mode)}">${esc(a.mode)}</span> <strong>${i+1}. ${esc(a.title)}</strong><br><span class="muted">${esc(a.question)}</span></div>`).join(''):'';apply.disabled=true;lock.disabled=true;return}
  const c=plan.counts||{},locked=smartPlanLocked(plan);E('smart-plan-status').textContent=locked?`LOCKED ✓ ${plan.articles.length} articles · ${c.REUSE||0} reuse · ${c.LOCALISE||0} localise · ${c.REFRESH||0} refresh · ${c['CREATE NEW']||0} create new.`:`EDITOR REVIEW — ${plan.articles.length} articles · Keep, Edit or Replace individual choices, then lock the plan.`;E('smart-plan-summary').innerHTML=`<strong>Editorial shape</strong><br>${esc(plan.issue_summary||'')}<br><small>${locked?`Locked ${new Date(plan.lockedAt).toLocaleString()}`:'Nothing is written to Airtable until you lock the plan and create briefs.'}</small>`;E('smart-scan-progress').textContent=`${(plan.signals||[]).length} current signals saved and used in this plan.`;const sig=Array.isArray(plan.signals)?plan.signals:[];E('smart-plan-signals-list').innerHTML=sig.length?`<div class="check"><strong>Current signals researched</strong><br>${sig.map(x=>`${esc(x.signal)}${x.why_local?' — '+esc(x.why_local):''}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';const alignment=smartPlanAlignmentSummary(plan),refreshGate=refreshGateSummary(plan),dupGate=sameIssueDuplicationSummary(plan);
   const historyGate=reuseGuardSummary(plan); E('smart-plan-list').innerHTML=commercialAuditHtml(plan)+`<div class="check"><strong>Reuse guard:</strong> ${historyGate.blocked} blocked same-publication · ${historyGate.localise} localise from another publication · ${historyGate.review} history review${historyGate.blocked?'<br><strong>Do not lock while BLOCKED RECENT DUPLICATE items remain.</strong>':''}<br><strong>Source alignment:</strong> ${alignment.ok} aligned · ${alignment.warn} review · ${alignment.bad} mismatch${alignment.bad?'<br><strong>Do not lock while SOURCE MISMATCH items remain.</strong>':''}<br><strong>Refresh gate:</strong> ${refreshGate.ok} justified · ${refreshGate.replace} should be replaced${refreshGate.replace?'<br><strong>Do not lock while REFRESH TOO WEAK items remain.</strong>':''}<br><strong>Same-issue duplication:</strong> ${dupGate.duplicate} duplicate pair${dupGate.duplicate===1?'':'s'} · ${dupGate.review} close pair${dupGate.review===1?'':'s'}${dupGate.duplicate?'<br><strong>Do not lock while same-issue duplicates remain.</strong>':''}</div>`+(plan.articles||[]).map(a=>{const pa=provenanceAlignment(a,plan),sig=pa.signal,rg=refreshDuplicationCheck(a),dw=duplicateWarningsForArticle(a,plan);return `<div class="check"><div style="display:flex;gap:8px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:260px"><span class="mini-badge ${planModeClass(a.mode)}">${esc(a.mode)}</span> <strong>${a.order}. ${esc(a.title)}</strong>${a.editorDecision?` <span class="mini-badge">${esc(a.editorDecision)}</span>`:''}<br><span class="muted">${esc(a.question)}</span><br><small><strong>Why now:</strong> ${esc(a.why_now||'')} · <strong>Stance:</strong> ${esc(a.stance||'PRACTICAL')} · <strong>Life Lane:</strong> ${esc(a.life_lane||'Open')} · <strong>Commercial:</strong> ${esc(a.lane||'Editorial')}</small>${(()=>{const cv=commercialValueForArticle(a);const path=[...cv.labels,cv.explicit].filter(Boolean);return `<div style="margin-top:4px"><small><strong>Commercial pathways:</strong> ${path.length?esc(path.join(' · ')):'No obvious pathway yet — editorial value can still justify the article.'}</small></div>`})()}<div style="margin-top:7px;padding:8px;border:1px solid var(--line);border-radius:8px"><strong>${esc(pa.label)}</strong> — ${esc(pa.reason)}<br>${sig?`<small><strong>${esc(sig.ref||'Source signal')}:</strong> ${esc(sig.signal||'')}${sig.source_title?` · ${esc(sig.source_title)}`:''}${sig.source_url?` · <a href="${esc(sig.source_url)}" target="_blank" rel="noopener">source</a>`:''}</small>`:`<small>No explicit source signal stored.</small>`}<br><small><strong>Planner provenance:</strong> ${esc(a.source_signal||'Not stored')} · <strong>Decision:</strong> ${esc(a.mode||'')}</small>${(()=>{if(!['REUSE','LOCALISE','REFRESH'].includes(String(a.mode||'').toUpperCase()))return '';const hg=articleReuseGuard(a,plan);return `<div style="margin-top:6px"><strong>${esc(hg.status)}</strong>${hg.match?` — matched ${esc(hg.match.publication)}: ${esc(hg.match.title)} (${Math.round(hg.match.score*100)}% title/topic overlap)`:' — no confirmed publication-history match in the current minimum history layer.'}</div>`})()}${String(a.mode||'').toUpperCase()==='REFRESH'?`<div style="margin-top:6px"><strong>${esc(rg.label)}</strong> — ${esc(rg.reason)}</div>`:''}${dw.length?`<div style="margin-top:6px">${dw.map(x=>{const other=x.a.order===a.order?x.b:x.a;return `<strong>${x.level==='DUPLICATE'?'DUPLICATE IN THIS ISSUE':'CHECK OVERLAP'}</strong> — Article ${other.order}: ${esc(other.title)}. ${esc(x.reason)}`}).join('<br>')}</div>`:''}</div></div><div class="toolbar"><button class="btn secondary" data-smart-keep="${a.order}">Keep</button><button class="btn secondary" data-smart-edit="${a.order}">Edit</button><button class="btn secondary" data-smart-replace="${a.order}">Replace</button></div></div></div>`}).join('');document.querySelectorAll('[data-smart-keep]').forEach(b=>b.onclick=()=>keepSmartArticle(+b.dataset.smartKeep));document.querySelectorAll('[data-smart-edit]').forEach(b=>b.onclick=()=>openSmartArticleEdit(+b.dataset.smartEdit));document.querySelectorAll('[data-smart-replace]').forEach(b=>b.onclick=()=>replaceSmartArticle(+b.dataset.smartReplace));apply.disabled=!locked;lock.disabled=locked;lock.textContent=locked?'Plan Locked ✓':'Lock Approved Plan'
 }
 function plannerStatusText(){
   const sig=getSmartSignals(),plan=getSmartPlan(),batches=getSmartPlanBatches(),arts=plan?.articles||batches.flatMap(b=>b.articles||[]);
-  const lines=[S.issue?`${currentPublicationName()} · Issue #${val(S.issue.fields,'Issue Number')||'—'} · Send ${fmt(val(S.issue.fields,'Send Date'))}`:'No issue selected',`${sig.length} discovery leads saved`,`${arts.length}/9 Master Article decisions saved`];
+  const lines=[S.issue?`${currentPublicationName()} · Issue #${val(S.issue.fields,'Issue Number')||'—'} · Send ${fmt(val(S.issue.fields,'Send Date'))}`:'No issue selected',`${sig.length} discovery leads saved`,`${arts.length}/${engineProfileForPublication().defaultMasters||9} Master Article decisions saved`];
   if(E('smart-scan-progress')?.textContent)lines.push(E('smart-scan-progress').textContent);
   if(E('smart-plan-summary')?.innerText)lines.push(E('smart-plan-summary').innerText);
   return lines.filter(Boolean).join('\n');
 }
 function updateWorkflowGuide(){
   const sig=getSmartSignals(),plan=getSmartPlan(),canvas=getCanvas();
-  const states=[['assembly-auto',sig.length>=5],['assembly-build-plan',!!(plan?.articles?.length===9)],['assembly-smart-assemble',canvas.length>0]];
+  const states=[['assembly-auto',sig.length>=5],['assembly-build-plan',!!(plan?.articles?.length===(engineProfileForPublication().defaultMasters||9))],['assembly-smart-assemble',canvas.length>0]];
   states.forEach(([id,done])=>{const b=E(id);if(!b)return;b.classList.toggle('workflow-done-step',!!done);b.classList.remove('workflow-next-step')});
-  const next= sig.length<5?'assembly-auto':!(plan?.articles?.length===9)?'assembly-build-plan':canvas.length===0?'assembly-smart-assemble':null;
+  const next= sig.length<5?'assembly-auto':!(plan?.articles?.length===(engineProfileForPublication().defaultMasters||9))?'assembly-build-plan':canvas.length===0?'assembly-smart-assemble':null;
   if(next&&E(next))E(next).classList.add('workflow-next-step');
 }
 async function copyPlannerStatus(){await copyText(plannerStatusText())}
@@ -1679,9 +1831,9 @@ async function buildSmartPlanFromSavedSignals(){
   const btn=E('assembly-build-plan'),old=btn.textContent;btn.disabled=true;
   try{
     await loadArticleLibrary();
-    const existingPlan=getSmartPlan();if(existingPlan?.articles?.length===9){alert('A complete 9-article default plan already exists. Keep, edit, add, remove or replace choices, then lock it.');return}
+    const existingPlan=getSmartPlan();const profile=engineProfileForPublication(),targetMasters=profile.defaultMasters||9;if(existingPlan?.articles?.length===targetMasters){alert(`A complete ${targetMasters}-article ${profile.name} plan already exists. Keep, edit or replace choices, then lock it.`);return}
     let batches=getSmartPlanBatches();
-    const base={publication:currentPublicationName(),issueNumber:val(S.issue.fields,'Issue Number')||'',issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||'',signals,blockedRecentHistory:recentHistoryForPublication(currentPublicationName()),rejectedCandidates:getSmartRejected()};
+    const base={publication:currentPublicationName(),issueNumber:val(S.issue.fields,'Issue Number')||'',issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||'',signals,blockedRecentHistory:recentHistoryForPublication(currentPublicationName()),rejectedCandidates:getSmartRejected(),engineProfile:profile.key,engineName:profile.name,editorialLanes:profile.lanes,minimumGroups:profile.minimumGroups,maxHeavyMoodShare:profile.maxHeavyMoodShare,targetSections:profile.targetSections,targetMasters:profile.targetMasters};
     const inventory=inventoryWithReuseGuard(S.articleLibrary,90);
     // v3.9.8: nine single-article micro-batches with broadened candidate pool and rejection memory. Each successful decision is saved immediately,
     // keeping every Netlify function call comfortably below the platform inactivity window.
@@ -1690,22 +1842,22 @@ async function buildSmartPlanFromSavedSignals(){
       {label:'VALUE + COMMERCIAL BREADTH',brief:'Fill missing Life Lanes. Prioritise money/home/service value, proven reusable/localisable assets, and natural commercial or specialist-brand pathways without forcing a sponsor. Avoid another civic/accountability story unless unusually important.'},
       {label:'HUMAN + DISCOVERY + SHARE',brief:'Deliberately add human variety: food/leisure/discovery/weekend, recommendation/list/resource/shareable value, family/pets/health/community where earned. Prefer existing/localisable assets where strong. Do not finish with a council-heavy or question-formula-heavy slate.'}
     ];
-    const specs=Array.from({length:9},(_,i)=>({batch:i+1,label:groups[Math.floor(i/3)].label,count:1,brief:groups[Math.floor(i/3)].brief+` This is decision ${i+1} of 9; inspect every prior choice and fill the strongest remaining gap.`}));
+    const specs=Array.from({length:targetMasters},(_,i)=>{const g=groups[Math.min(groups.length-1,Math.floor(i/(targetMasters/3)))];return {batch:i+1,label:g.label,count:1,brief:g.brief+` This is decision ${i+1} of ${targetMasters}. Follow the ${profile.name} engine lanes and projected support recipe. Do not let one problem/admin mood dominate.`}});
     for(const spec of specs){
       if(batches.some(b=>b.batch===spec.batch&&Array.isArray(b.articles)&&b.articles.length===1))continue;
       const prior=batches.flatMap(b=>b.articles||[]).map(a=>({title:a.title,question:a.question,mode:a.mode,life_lane:a.life_lane||'',lane:a.lane||'',existing_article_id:a.existing_article_id||'',source_signal:a.source_signal||''}));
-      btn.textContent=`Building plan ${spec.batch}/9…`;
-      E('smart-scan-progress').textContent=`Planning ${spec.batch}/9 ${spec.label}. Each article decision is saved immediately.`;
-      const data=await api('plan-issue-batch',{method:'POST',body:JSON.stringify({...base,existingArticles:inventory,batch:spec.batch,batchLabel:spec.label,batchBrief:spec.brief,targetCount:1,totalBatches:9,priorArticles:prior})});
+      btn.textContent=`Building plan ${spec.batch}/${targetMasters}…`;
+      E('smart-scan-progress').textContent=`Planning ${spec.batch}/${targetMasters} ${spec.label}. Each article decision is saved immediately.`;
+      const data=await api('plan-issue-batch',{method:'POST',body:JSON.stringify({...base,existingArticles:inventory,batch:spec.batch,batchLabel:spec.label,batchBrief:spec.brief,targetCount:1,totalBatches:targetMasters,priorArticles:prior,engineProfile:profile.key,editorialLanes:profile.lanes,minimumGroups:profile.minimumGroups,maxHeavyMoodShare:profile.maxHeavyMoodShare})});
       const saved={batch:spec.batch,label:spec.label,articles:data.articles||[],issue_summary:data.issue_summary||''};
       batches=batches.filter(b=>b.batch!==spec.batch).concat(saved).sort((a,b)=>a.batch-b.batch);saveSmartPlanBatches(batches);renderSmartPlan();
     }
-    const articles=batches.sort((a,b)=>a.batch-b.batch).flatMap(b=>b.articles||[]).slice(0,9).map((a,i)=>({...a,order:i+1}));
-    if(articles.length!==9)throw new Error(`Only ${articles.length}/9 article decisions are saved. Click Build / Resume Issue Plan again to resume.`);
+    const articles=batches.sort((a,b)=>a.batch-b.batch).flatMap(b=>b.articles||[]).slice(0,targetMasters).map((a,i)=>({...a,order:i+1}));
+    if(articles.length!==targetMasters)throw new Error(`Only ${articles.length}/${targetMasters} article decisions are saved. Click Build / Resume Issue Plan again to resume.`);
     const counts=articles.reduce((o,a)=>(o[a.mode]=(o[a.mode]||0)+1,o),{});
-    const plan={createdAt:new Date().toISOString(),publication:base.publication,sendDate:base.sendDate,issuePromise:promise,issue_summary:batches.map(b=>b.issue_summary).filter(Boolean).join(' '),signals,articles,counts};
+    const plan={createdAt:new Date().toISOString(),publication:base.publication,sendDate:base.sendDate,issuePromise:promise,issue_summary:batches.map(b=>b.issue_summary).filter(Boolean).join(' '),signals,articles,counts,engineProfile:profile.key,projectedSupportRecipe:profile.supportRecipe};
     localStorage.setItem(smartPlanKey(),JSON.stringify(plan));renderSmartPlan();updateWorkflowGuide();
-    alert(`Default 9-article plan ready: ${counts.REUSE||0} REUSE · ${counts.LOCALISE||0} LOCALISE · ${counts.REFRESH||0} REFRESH · ${counts['CREATE NEW']||0} CREATE NEW. Review it before creating briefs.`);
+    alert(`${profile.name} ${targetMasters}-article plan ready: ${counts.REUSE||0} REUSE · ${counts.LOCALISE||0} LOCALISE · ${counts.REFRESH||0} REFRESH · ${counts['CREATE NEW']||0} CREATE NEW. Review it before creating briefs.`);
   }catch(e){
     const msg=String(e.message||'');
     const mDup=msg.match(/Recent-history guard rejected[^:]*:\s*(.+?)\.\s*Click Build/i);
@@ -1744,30 +1896,19 @@ async function applySmartPlanToBuild(){
   finally{btn.disabled=false;btn.textContent=old}
 }
 function buildSmartCanvas(articles){
-  const pub=currentPublicationName()||'Local Spotlight';const local=pub.replace(/\s+Spotlight.*$/i,'').trim()||pub;
-  const comp=(type,title='',purpose='')=>{const def=COMPONENT_DEFS.find(x=>x.type===type);const b=makeComponentBlock(def||{type,title:type,purpose:''});if(title)b.title=title;if(purpose)b.purpose=purpose;return b};
-  const partner=(title,purpose)=>{const b=makePartnerBlock();b.title=title;b.purpose=purpose;b.status='NEEDS DECISION';return b};
-  const items=[comp('OPENING NOTE','Opening Note',`Set up the ${local} issue promise in 2-4 short lines and preview the strongest reasons to keep reading.`)];
-  const between=[
-    ()=>comp('READER POLL',`${local} Quick Vote`,`One specific, easy-to-answer ${local} question connected to the nearby article.`),
-    ()=>comp('TIP / HACK','One Useful Thing','Give readers one small action connected to the nearby issue context.'),
-    ()=>comp('JOKE','Quick Breather',`A short suitable ${local} observation or joke to break up heavier material.`),
-    ()=>comp('Q&A','Reader Question','Answer or surface one useful question raised by the nearby Master Articles.'),
-    ()=>comp('INTERESTING FACT','Worth Knowing',`One verified surprising ${local} fact connected to nearby context, or a question if proof is missing.`),
-    ()=>comp('READER RECOMMENDATION',`Your ${local} Recommendation`,`Ask for a named ${local} recommendation that can feed a future guide or article.`),
-    ()=>comp('MYTH V FACT','Myth v Fact','Test one belief raised by the nearby article and give the fair sourced answer.'),
-    ()=>comp('FACEBOOK DISCUSSION','Take It To Facebook','Create one standalone stop-and-comment question connected to nearby context.')
-  ];
-  let used=0;articles.forEach((a,i)=>{items.push(a);if(i<articles.length-1&&used<between.length&&[0,2,4,6,8,10,12,13].includes(i))items.push(between[used++]())});
-  items.splice(Math.min(8,items.length),0,partner('Resident Expert / Featured Partner 1','Attach a real partner only where the reader problem and partner expertise genuinely match.'));
-  items.splice(Math.min(17,items.length),0,partner('Resident Expert / Featured Partner 2','Attach another real partner where it improves the resource; do not invent or force a category.'));
-  items.push(comp('READER VOTE','Worth It Or Overpriced?','A quick value judgement tied to a lighter issue theme.'));
-  items.push(comp('COMMUNITY VOICE','Community Voice','Surface one useful local voice, cause or contribution with named proof.'));
-  items.push(comp('FEATURED PARTNER / OFFER','Do Something This Week','One worthwhile visit, booking, nomination, download, event or reply action; editorially useful even without a partner.'));
-  items.push(comp('CLOSING QUESTION','One Last Question','End with one specific question readers can reply to or answer on social.'));
-  const extras=[()=>comp('READER QUESTION','What Should We Answer Next?','Ask for one precise reader question that can enter the Question Bank.'),()=>comp('QUICK WIN','Two-Minute Win','One tiny action or check readers can make now.'),()=>comp('NOMINATION','Name The Local One',`Ask readers to nominate a specific ${local} business, place, person or service for a future evidence-led guide.`),()=>comp('HUMOUR','You Know The Feeling…',`A short relatable ${local} observation that gives the issue breathing room.`)];
-  let n=0;while(items.length<26){items.splice(Math.max(1,items.length-1),0,extras[n%extras.length]());n++;}
-  return items.slice(0,26);
+  const pub=currentPublicationName()||'Local Publication',profile=engineProfileForPublication(pub);const local=pub.replace(/\s+(Spotlight|Taste Trail|Pet Insider|Home Seller Insider).*$/i,'').trim()||pub;
+  const comp=(type,title='',purpose='')=>{const def=COMPONENT_DEFS.find(x=>x.type===type);const b=makeComponentBlock(def||{type,title:type,purpose:''});if(title)b.title=title;if(purpose)b.purpose=purpose;b.lifeLane=editorialLaneFor(b,profile);return b};
+  const supports=(profile.supportRecipe||[]).map(type=>comp(type));
+  if(supports[0]?.type==='OPENING NOTE')supports[0].purpose=`Set up the ${local} issue promise in 2–4 short lines and preview the strongest reasons to keep reading.`;
+  const items=[];let ai=0,si=0;
+  if(supports.length)items.push(supports[si++]);
+  while(ai<articles.length||si<supports.length){
+    if(ai<articles.length){const a=articles[ai++];a.lifeLane=editorialLaneFor(a,profile);items.push(a)}
+    if(si<supports.length)items.push(supports[si++]);
+    if(si<supports.length && (items.length%5===0||ai>=articles.length))items.push(supports[si++]);
+  }
+  const max=profile.targetSections[1];
+  return items.slice(0,max);
 }
 async function smartAssembleIssue(){
   if(!S.issue){alert('Open an issue first.');return}
@@ -1783,7 +1924,7 @@ async function smartAssembleIssue(){
   if(missing.length){alert(`The approved plan is not ready to assemble yet. Produce/finish these Master Articles first:\n\n${missing.join('\n')}\n\nREUSE articles must still be present in the library; REFRESH/CREATE NEW articles must be completed in this issue.`);return}
   if(getCanvas().length&&!confirm('Replace the current Canvas with the approved Smart Issue Plan?'))return;
   const items=buildSmartCanvas(chosen);localStorage.setItem(assemblyKey(),JSON.stringify(items));canvasSelectedUid=items[0]?.uid||null;renderAssembly();
-  alert(`Approved Smart Plan assembled: ${chosen.length} Master Articles · ${items.length-chosen.length-2} supporting components · 2 partner blocks · ${items.length} total blocks.`)
+  alert(`Approved ${engineProfileForPublication().name} plan assembled: ${chosen.length} Master Articles · ${items.length-chosen.length} supporting/life components · ${items.length} total blocks.`)
 }
 
 function autoAssembleIssue(){
