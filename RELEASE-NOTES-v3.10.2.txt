@@ -1,0 +1,19 @@
+ICS v3.10.2 — SIGNAL POOL EXPANSION
+
+Built from v3.10.1 Freshness + Archive Guard.
+
+CHANGES
+- Collect Signals now runs four editorial discovery passes instead of one:
+  1. CURRENT — timely developments/events/changes
+  2. LIFE — food, hospitality, places, days out, recommendations
+  3. HUMAN — community, families, curiosity, fun, reader voice
+  4. EVERGREEN — seasonal and evergreen reader questions
+- Results are merged and semantically-light deduplicated client-side.
+- Candidate pool is capped at 40 distinct leads.
+- Planning now requires at least 18 distinct signals rather than 5.
+- Collector clearly warns when fewer than 18 survive dedupe.
+- Successful pools are preserved even if one discovery pass fails.
+- Existing v3.10.1 Freshness + Archive Guard remains active.
+
+IMPORTANT
+This expands the live discovery pool. It does NOT yet claim the full 6,000+ Trail Blaze idea bank is wired into Airtable retrieval; that is a separate integration step.
