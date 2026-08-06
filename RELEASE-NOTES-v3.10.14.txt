@@ -1,0 +1,10 @@
+ICS v3.10.14 — Open Service Question Gate Fix
+
+Fixes Article 04-style open service/frustration questions being blocked after authoritative Norfolk evidence was already found.
+
+Changes:
+- Treats a demand for a recent verified failure for every possible service type as non-blocking when the article is explicitly an open reader question.
+- Treats “choose one service vs compare several” as an editorial framing decision, not a research blocker.
+- Writer must frame examples as starting points and must not claim current countywide failure, consensus or a winner without evidence.
+- Hard factual claims and invented reader sentiment remain blocked.
+- Production Service v3.7.7.
