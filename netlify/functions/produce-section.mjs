@@ -557,6 +557,57 @@ function isGuideAdviceBrief(fields){
     && !/\b(liquidat|administrat|arrest|charged|court|death|killed|crash|fire|closure|closed|bankrupt|insolvenc|fraud|investigation|planning decision|council decision)\b/i.test(blob);
 }
 
+function isOpenReaderConversationBrief(fields){
+  const title=String(value(fields,'Section Title')||'');
+  const question=String(value(fields,'Core Reader Question')||'');
+  const hook=String(value(fields,'Reader Hook')||'');
+  const blob=`${title} ${question} ${hook}`.toLowerCase();
+  const openShape=/\b(which|what|where|who)\b/.test(blob) && /\b(recommend|nominate|send a friend|worth|better|changed|most|frustrat|annoy|should be easier|favourite|favorite|best|surpris|improv|lost|would you|do you)\b/.test(blob);
+  const hardClaim=/\b(definitely|proves?|confirmed winner|readers? (?:say|agree|voted|chose)|survey (?:shows|found)|most popular|number one|#1)\b/.test(blob);
+  return openShape&&!hardClaim;
+}
+
+function relaxOpenQuestionEvidenceDemands(fields,research){
+  if(!research||!isOpenReaderConversationBrief(fields)) return research;
+  const sources=Array.isArray(research.sources)?research.sources:[];
+  const strong=sources.filter(x=>
+    /official|primary|local/i.test(String(x.source_type||'')) ||
+    /\.gov\.uk|gov\.uk|norfolk\.gov\.uk|visitnorthnorfolk|visitnorfolk|official/i.test(String(x.url||''))
+  );
+  // Open reader-question articles do not need a pre-existing reader vote, winner,
+  // resident quote or single resolved subject when credible Norfolk examples already
+  // exist. Those examples seed the conversation; the writer must not manufacture
+  // consensus or present one example as the reader-selected answer.
+  if(sources.length<2||strong.length<1) return research;
+
+  const nonBlocking=(item)=>{
+    const t=String(item||'').toLowerCase();
+    return /reader (?:submission|nomination|vote|poll)|reader[- ]nominated|resident account|first[- ]hand account|trader perspective|audience(?:'s)? overall choice|selected as the article.?s subject|defined subject|one service or habit|grouped by .*service type|exact selected place|if it differs from the candidate examples|question bank entry|planning provenance|source or contents of the .*question bank|county[- ]wide survey|complaint dataset/.test(t)
+      || /verification of any claimed .* (?:loss|closure|disruption|business effect|measurable benefit)/.test(t)
+      || /direct provider.*selected problem/.test(t)
+      || /at least one local example for the selected subject/.test(t);
+  };
+
+  const required=Array.isArray(research.required_now_missing)?research.required_now_missing:[];
+  const legacy=Array.isArray(research.missing_evidence)?research.missing_evidence:[];
+  const moved=[...required,...legacy].filter(nonBlocking);
+  const movedSet=new Set(moved);
+  research.required_now_missing=required.filter(x=>!movedSet.has(x));
+  research.missing_evidence=legacy.filter(x=>!movedSet.has(x) && !/^Research stage reported insufficient evidence\./i.test(String(x||'')));
+  research.optional_missing=[...new Set([...(research.optional_missing||[]),...moved])];
+
+  if(research.required_now_missing.length===0){
+    research.research_status='Sufficient';
+    research.core_evidence_relaxed=true;
+    research.open_question_verified=true;
+    research.research_summary=[
+      String(research.research_summary||'').trim(),
+      'Open-question gate: credible Norfolk examples are sufficient to seed a reader nomination/debate article. Do not claim a winner, countywide consensus or reader testimony that is not supplied; present verified examples as starting points and invite readers to add their own.'
+    ].filter(Boolean).join(' ');
+  }
+  return research;
+}
+
 function relaxNonCoreEvidenceDemands(fields,research){
   if(!research||!isGuideAdviceBrief(fields)) return research;
   const sources=Array.isArray(research.sources)?research.sources:[];
@@ -750,6 +801,7 @@ STYLE, AUDIENCE AND SAFETY
 - A question mark must never disguise an unsupported factual premise. Verify the premise first, then ask the legitimate unanswered question.
 - Do not manufacture hearsay. Phrases such as "we heard", "a source suggested", "people are saying" or "it's being said on social media" may be used only when genuine traceable source material exists in the research pack and the wording accurately reflects it.
 - When research.future_tests is present, use those items as future tests/questions or follow-up hooks, not as reasons to declare the article unverifiable.
+- OPEN-QUESTION RULE: when research.open_question_verified is true, verified examples are there to seed a reader nomination, comparison or debate. Present them as starting points, not winners. Do not invent reader submissions, resident testimony, consensus or a countywide conclusion. The article may ask readers to supply those for a follow-up.
 - When research.optional_missing is present, omit those details unless independently supported.
 - One primary CTA only. The CTA should match the reader's next natural action. It may be engagement, list-building, a lead magnet, a Resident Expert, a Featured Partner, a booking, an offer, a directory/resource, a community action or another genuinely useful next step; do not manufacture a weak button just because a field exists.
 - Raw clean destination URLs only.
@@ -1069,6 +1121,8 @@ export default async(request)=>{
           }
         }
         research=relaxNonCoreEvidenceDemands(fields,research);
+    research=relaxOpenQuestionEvidenceDemands(fields,research);
+        research=relaxOpenQuestionEvidenceDemands(fields,research);
         log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0,recoveryUsed:!!research.recovery_used,coreEvidenceRelaxed:!!research.core_evidence_relaxed});
         const checkpoint=researchCheckpointBlock(key,research,researchModel);
         const checkpointNotes=originalNotes?`${originalNotes}\n\n${checkpoint}\n\n${runningBlock}`:`${checkpoint}\n\n${runningBlock}`;
@@ -1107,7 +1161,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.7.3`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.7.4`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1253,7 +1307,7 @@ export default async(request)=>{
     }
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.3`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.4`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
