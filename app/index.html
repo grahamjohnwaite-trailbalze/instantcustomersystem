@@ -44,7 +44,7 @@
 .command-centre{display:grid;grid-template-columns:1.4fr repeat(4,minmax(110px,.55fr));gap:10px;margin:0 0 14px}.command-main,.command-metric{background:#fff;border:1px solid #d8dee8;border-radius:12px;padding:12px}.command-main h2{margin:0 0 4px}.command-progress{height:10px;background:#e9eef5;border-radius:999px;overflow:hidden;margin:10px 0 8px}.command-progress span{display:block;height:100%;background:var(--accent);border-radius:999px}.command-metric strong{display:block;font-size:23px;line-height:1.1}.command-metric span{font-size:11px;color:#667085}.command-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.registry-strip{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.registry-chip{font-size:11px;border:1px solid #d8dee8;border-radius:999px;padding:4px 7px;background:#f8fafc}.object-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#667085}.lifecycle-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.life-step{font-size:9px;border:1px solid #d8dee8;border-radius:999px;padding:2px 5px;background:#fff;color:#667085}.life-step.done{background:#eaf8f0;border-color:#b7e2c8;color:#176b3a}.life-step.current{background:#edf4ff;border-color:#b9d1ff;color:#174ea6;font-weight:800}.next-action-banner{border-left:4px solid var(--accent);background:#f4f8ff;border-radius:8px;padding:9px 10px;margin-top:8px}.component-identity{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:9px;border:1px solid #d8dee8;border-radius:9px;background:#f8fafc}.component-identity .field{margin:0}@media(max-width:1100px){.command-centre{grid-template-columns:1fr 1fr}.command-main{grid-column:1/-1}}@media(max-width:700px){.command-centre{grid-template-columns:1fr}.command-main{grid-column:auto}}
 
 .engine-profile{border:1px solid #cbd5e1;background:linear-gradient(180deg,#f8fbff,#fff);border-radius:12px;padding:12px;margin:0 0 14px}.engine-profile-grid{display:grid;grid-template-columns:1.3fr repeat(4,minmax(110px,.7fr));gap:10px;align-items:stretch}.engine-profile-card{border:1px solid #d8dee8;background:#fff;border-radius:10px;padding:10px}.engine-profile-card strong{display:block;font-size:15px}.engine-profile-card span{display:block;font-size:11px;color:#667085;margin-top:3px}.engine-health{margin-top:10px;padding:9px 10px;border-radius:8px;background:#f8fafc;border-left:4px solid #94a3b8}.engine-health.ready{background:#eefaf3;border-left-color:#22a06b}.engine-health.review{background:#fff8e8;border-left-color:#d97706}.engine-health.blocked{background:#fff0f0;border-left-color:#dc2626}.lane-chip-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.lane-chip{font-size:10px;padding:3px 6px;border:1px solid #d8dee8;border-radius:999px;background:#fff}@media(max-width:1050px){.engine-profile-grid{grid-template-columns:1fr 1fr}.engine-profile-card:first-child{grid-column:1/-1}}@media(max-width:650px){.engine-profile-grid{grid-template-columns:1fr}.engine-profile-card:first-child{grid-column:auto}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.10.5<br><strong>Diverse Signal Collector</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.10.6<br><strong>Core Sponsor Lane Coverage + Feature Rotation</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -1228,9 +1228,11 @@ const ENGINE_PROFILES={
    {label:'Fun / Curiosity',min:2,lanes:['FUN & CURIOSITY']},
    {label:'Reader interaction',min:3,lanes:['READER VOICE']}
   ],
-  commercialTargets:{minCategories:4,maxCategories:8,minExpert:2,minPartner:2},
+  commercialTargets:{minCategories:10,maxCategories:13,minExpert:4,minPartner:4},
+  laneCaps:{'FOOD & HOSPITALITY':4,'READER VOICE':5,'MOTORING & TRAVEL':3,'FUN & CURIOSITY':4},
+  sponsorFeatureTargetPerMonth:'1–2',
   maxHeavyMoodShare:.40,
-  supportRecipe:['OPENING NOTE','READER POLL','FOOD FIND','LOCAL TRIVIA',"WHAT'S ON",'READER RECOMMENDATION','WORTH THE DRIVE?','SALLY SAVERS','LOCAL DEBATE','WEEKEND IDEA','PUB / RESTAURANT QUESTION','COMMUNITY VOICE','MOTORING QUICK CHECK','HOME QUICK CHECK','LOCAL BUSINESS FIND','NOMINATION','EXPERT QUICK CHECK','BEFORE YOU GO']
+  supportRecipe:['OPENING NOTE','READER POLL','FOOD FIND','LOCAL TRIVIA',"WHAT'S ON",'READER RECOMMENDATION','WORTH THE DRIVE?','SALLY SAVERS','LOCAL DEBATE','PROPERTY DESK','PET QUICK CHECK','HEALTH QUICK CHECK','MOTORING QUICK CHECK','HOME QUICK CHECK','LOCAL BUSINESS FIND','COMMUNITY VOICE','NOMINATION','BEFORE YOU GO']
  },
  HOME_SELLER:{
   key:'HOME_SELLER',name:'Home Seller Insider',description:'Niche seller publication using the same planner with a property-specific editorial mix.',targetSections:[12,18],targetMasters:[5,7],targetSupport:[6,11],defaultMasters:6,
@@ -1327,6 +1329,9 @@ const COMPONENT_DEFS=[
  {type:'THREE-POINT TIP',title:'Three-Point Tip',family:'Short Editorial',purpose:'Give three practical actions the reader can use immediately.',template:'SHORT COMPONENT',points:1},
  {type:'MOTORING QUICK CHECK',title:'Motoring Quick Check',family:'Lifestyle',purpose:'Give one timely motoring or travel check with a clear reader action and a natural garage, vehicle or travel-service route where relevant.',template:'SHORT COMPONENT',points:1},
  {type:'HOME QUICK CHECK',title:'Home Quick Check',family:'Lifestyle',purpose:'Give one timely home, property or household check with a clear reader action and a natural property, trade or home-service route where relevant.',template:'SHORT COMPONENT',points:1},
+ {type:'PROPERTY DESK',title:'Property Desk',family:'Lifestyle',purpose:'One compact property-life block covering a useful seller/buyer/renter question and keeping mortgage, estate agency/lettings, conveyancing and surveying expertise visibly available without forcing four separate articles.',template:'SHORT COMPONENT',points:2},
+ {type:'PET QUICK CHECK',title:'Pet Quick Check',family:'Lifestyle',purpose:'Give one concise pet-life question, behaviour check, local service prompt or reader pet problem with a natural pet-expert route where relevant.',template:'SHORT COMPONENT',points:1},
+ {type:'HEALTH QUICK CHECK',title:'Health & Wellness Quick Check',family:'Lifestyle',purpose:'Give one concise everyday health, mobility, dental or wellbeing question with a natural qualified-expert route where relevant; never fabricate medical claims.',template:'SHORT COMPONENT',points:1},
  {type:'DID YOU KNOW?',title:'Did You Know?',family:'Short Editorial',purpose:'Share one verified surprising fact with clear relevance.',template:'SHORT COMPONENT',points:1},
  {type:'EVENT PICK',title:'Event Pick',family:'Lifestyle',purpose:'Recommend one timely local event with date, place, price and reason to care.',template:'SHORT COMPONENT',points:2},
  {type:'USEFUL LINK',title:'Useful Link',family:'Evergreen',purpose:'Point readers to one genuinely useful official or local resource.',template:'SHORT COMPONENT',points:1},
@@ -1687,6 +1692,54 @@ function classifyCommercialOpportunity(a){
 
   return lanes;
 }
+const CORE_SPONSOR_LANES=[
+ {key:'MORTGAGE',label:'Mortgage',type:'AUTHORITY'},
+ {key:'ESTATE',label:'Estate Agent / Lettings',type:'AUTHORITY'},
+ {key:'LEGAL',label:'Legal / Conveyancing',type:'AUTHORITY'},
+ {key:'SURVEYOR',label:'Surveyor',type:'AUTHORITY'},
+ {key:'HOME',label:'Home / Trades',type:'AUTHORITY'},
+ {key:'MOTORING',label:'Motoring / Garage',type:'AUTHORITY'},
+ {key:'PET',label:'Pet',type:'AUTHORITY'},
+ {key:'HEALTH',label:'Health / Wellness',type:'AUTHORITY'},
+ {key:'FOOD',label:'Food / Hospitality',type:'ACTIVATION'},
+ {key:'EVENTS',label:'Attractions / Events',type:'ACTIVATION'},
+ {key:'RETAIL',label:'Retail / Local Business',type:'ACTIVATION'},
+ {key:'COMMUNITY',label:'Community / Charity',type:'ACTIVATION'},
+ {key:'FAMILY',label:'Family / Activities',type:'ACTIVATION'}
+];
+function sponsorLaneKeysForItem(item){
+ const t=[item?.type,item?.title,item?.question,item?.problem,item?.why_now,item?.purpose,item?.lane,item?.life_lane].join(' ').toLowerCase();
+ const out=new Set();
+ const add=k=>out.add(k);
+ if(/mortgage|remortg|borrowing|interest rate|first[- ]time buyer/.test(t))add('MORTGAGE');
+ if(/estate agent|letting|tenant|landlord|renting|property desk/.test(t))add('ESTATE');
+ if(/conveyanc|solicitor|legal|will\b|probate|property desk/.test(t))add('LEGAL');
+ if(/surveyor|survey|structural|subsidence|valuation|property desk/.test(t))add('SURVEYOR');
+ if(/home quick|home service|boiler|builder|plumber|electrician|roof|garden|trade/.test(t))add('HOME');
+ if(/motoring|garage|vehicle|\bcar\b|driver|mot\b/.test(t))add('MOTORING');
+ if(/pet quick|\bpet\b|\bdog\b|groom|animal|training/.test(t))add('PET');
+ if(/health quick|wellness|health|physio|mobility|injury|dentist|dental|wellbeing/.test(t))add('HEALTH');
+ if(/food find|restaurant|pub|cafe|coffee|breakfast|lunch|dinner|takeaway|food|hospitality/.test(t))add('FOOD');
+ if(/what's on|event|venue|theatre|festival|attraction|worth the drive|weekend idea|day out/.test(t))add('EVENTS');
+ if(/local business find|retail|shop|independent business|high street/.test(t))add('RETAIL');
+ if(/community voice|charity|volunteer|community support/.test(t))add('COMMUNITY');
+ if(/family|child|school|nursery|activity/.test(t))add('FAMILY');
+ // Property Desk is deliberately a compact visibility block for the four core property authority categories.
+ if(String(item?.type||'').toUpperCase()==='PROPERTY DESK'){['MORTGAGE','ESTATE','LEGAL','SURVEYOR'].forEach(add)}
+ return [...out];
+}
+function sponsorCoverageForPlan(plan,projected){
+ const rows=CORE_SPONSOR_LANES.map(x=>({...x,visible:false,treatment:'NONE',masters:0,support:0}));
+ const byKey=Object.fromEntries(rows.map(x=>[x.key,x]));
+ for(const item of projected||[]){
+   const isMaster=!item?.kind||item?.kind!=='component';
+   for(const key of sponsorLaneKeysForItem(item)){
+     const r=byKey[key];if(!r)continue;r.visible=true;
+     if(isMaster){r.masters++;r.treatment='MASTER'}else{r.support++;if(r.treatment!=='MASTER')r.treatment='IMPLIED / SHORT'}
+   }
+ }
+ return {rows,visible:rows.filter(x=>x.visible).length,missing:rows.filter(x=>!x.visible),authorityVisible:rows.filter(x=>x.type==='AUTHORITY'&&x.visible).length,activationVisible:rows.filter(x=>x.type==='ACTIVATION'&&x.visible).length};
+}
 function engagementSignals(a){
   const t=[a?.title,a?.question,a?.problem,a?.why_now].join(' ').toLowerCase();
   const out=[];
@@ -1732,21 +1785,21 @@ function issueBalanceAudit(plan){
     const mood=editorialMood(item);moodCounts[mood]=(moodCounts[mood]||0)+1;
   }
   const findings=[];
+  const sponsorCoverage=sponsorCoverageForPlan(plan,projected);
   const freshness=freshnessGuardSummary(plan);
   findings.push(...freshness.findings);
   const projectedSections=projected.length;
   if(projectedSections<profile.targetSections[0]||projectedSections>profile.targetSections[1])findings.push(`Projected issue size is ${projectedSections}; ${profile.name} normally targets ${profile.targetSections[0]}–${profile.targetSections[1]} sections.`);
   if(arts.length<profile.targetMasters[0]||arts.length>profile.targetMasters[1])findings.push(`Master Article count is ${arts.length}; ${profile.name} normally targets ${profile.targetMasters[0]}–${profile.targetMasters[1]}.`);
   for(const g of profile.minimumGroups||[]){const count=(g.lanes||[]).reduce((n,l)=>n+(laneCounts[l]||0),0);if(count<g.min)findings.push(`${g.label} is underweight (${count}/${g.min} minimum in the projected issue).`)}
+  for(const [lane,cap] of Object.entries(profile.laneCaps||{})){const count=laneCounts[lane]||0;if(count>cap)findings.push(`${lane} is over-concentrated (${count}/${cap} normal maximum). Reassign or rotate supporting components so one lifestyle lane does not dominate the issue.`)}
+  if(profile.key==='SPOTLIGHT'&&sponsorCoverage.missing.length)findings.push(`Core sponsor-lane visibility is incomplete (${sponsorCoverage.visible}/${CORE_SPONSOR_LANES.length}). Missing: ${sponsorCoverage.missing.map(x=>x.label).join(', ')}. Use a Master, short component or implied editorial opportunity — do not force an advert.`);
   if(commercialArticles===0)findings.push('No obvious commercial pathways are visible yet. Strengthen at least one strong reader-first article so a suitable expert, feature partner or activation could add value.');
   else if(commercialArticles<Math.min(4,arts.length))findings.push(`Only ${commercialArticles}/${arts.length} Master Articles currently show an obvious commercial pathway. Look for natural expert, feature, resource or activation value — do not force a sponsor.`);
   if(profile.key==='SPOTLIGHT'&&profile.commercialTargets){
     const ct=profile.commercialTargets;
-    const allCommercial=new Set([...expert,...partner]);
-    if(allCommercial.size<ct.minCategories)findings.push(`Sponsor/expert coverage is too narrow (${allCommercial.size}/${ct.minCategories} minimum distinct commercial categories). Add natural editorial lanes rather than forcing sponsorship into every Master Article.`);
-    if(expert.size<ct.minExpert)findings.push(`Resident-expert coverage is underweight (${expert.size}/${ct.minExpert}). Add at least ${ct.minExpert} natural expert-help lanes across the full issue.`);
-    if(partner.size<ct.minPartner)findings.push(`Activation/featured-partner coverage is underweight (${partner.size}/${ct.minPartner}). Add at least ${ct.minPartner} natural local-business or experience lanes across the full issue.`);
-    if(allCommercial.size>ct.maxCategories)findings.push(`Commercial coverage is over-engineered (${allCommercial.size} categories). Keep the strongest ${ct.maxCategories} or fewer and let the rest stay purely editorial.`);
+    if(sponsorCoverage.authorityVisible<ct.minExpert)findings.push(`Authority-lane visibility is underweight (${sponsorCoverage.authorityVisible}/${ct.minExpert} minimum). Use editorial questions or quick checks to keep core expert categories visible.`);
+    if(sponsorCoverage.activationVisible<ct.minPartner)findings.push(`Activation-lane visibility is underweight (${sponsorCoverage.activationVisible}/${ct.minPartner} minimum). Use food, events, retail, family or community content where it genuinely helps the reader.`);
   }
   const heavy=(moodCounts['SAVE MONEY']||0)+(moodCounts['PROBLEM SOLVING']||0)+(moodCounts.URGENT||0);
   const heavyMoodShare=projectedSections?heavy/projectedSections:0;
@@ -1758,9 +1811,9 @@ function issueBalanceAudit(plan){
   if((tones.LIGHT||0)+(tones.HUMAN||0)<2&&arts.length>=8)findings.push('The Master Article layer is too serious. Add at least two discovery, enjoyment or people-led article moments.');
   if((tones.EDGE||0)<1&&profile.key==='SPOTLIGHT')findings.push('Unfiltered/debate edge is low. Add one credible challenge, comparison or debate angle where earned.');
   if(civicHeavy>4)findings.push(`Civic/public-service stories are dominating the Master Article plan (${civicHeavy}/${arts.length}). Keep the strongest current stories, then rebalance.`);
-  const hard=findings.filter(x=>/underweight|coverage is too narrow|dominate|too little life|Projected issue size|Master Article count|CREATE NEW|direct REUSE/.test(x));
+  const hard=findings.filter(x=>/underweight|over-concentrated|visibility is incomplete|dominate|too little life|Projected issue size|Master Article count|CREATE NEW|direct REUSE/.test(x));
   const status=hard.length?'NEEDS ATTENTION':findings.length<=2?'REVIEW':'NEEDS ATTENTION';
-  return {profile:profile.key,expert:[...expert],partner:[...partner],commercialArticles,engagement:[...engage],tones,civicHeavy,lifeLanes:[...lifeLanes],laneCounts,moodCounts,heavyMoodShare,projectedSections,projectedSupport:supports.length,freshness,findings,status};
+  return {profile:profile.key,expert:[...expert],partner:[...partner],commercialArticles,sponsorCoverage,engagement:[...engage],tones,civicHeavy,lifeLanes:[...lifeLanes],laneCounts,moodCounts,heavyMoodShare,projectedSections,projectedSupport:supports.length,freshness,findings,status};
 }
 
 
@@ -1837,11 +1890,12 @@ function commercialAuditHtml(plan){
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><strong>${esc(p.name.toUpperCase())} PLANNING GATE — ${esc(a.status)}</strong><button class="btn secondary" id="copy-smart-audit" type="button">Copy Audit</button></div>
     <div class="audit-grid" style="margin-top:8px">
       <div><strong>Projected issue:</strong> ${a.projectedSections} sections</div><div><strong>Master / support:</strong> ${(plan.articles||[]).length} / ${a.projectedSupport}</div>
-      <div><strong>Heavy problem/admin mood:</strong> ${Math.round(a.heavyMoodShare*100)}% / max ${Math.round(p.maxHeavyMoodShare*100)}%</div><div><strong>Commercial coverage:</strong> ${a.commercialArticles}/${(plan.articles||[]).length} Masters</div>
+      <div><strong>Heavy problem/admin mood:</strong> ${Math.round(a.heavyMoodShare*100)}% / max ${Math.round(p.maxHeavyMoodShare*100)}%</div><div><strong>Core sponsor lanes:</strong> ${a.sponsorCoverage?.visible||0}/${CORE_SPONSOR_LANES.length} visible</div>
     </div>
     <div style="margin-top:8px"><strong>Freshness:</strong> ${a.freshness.createNew} fresh new · ${a.freshness.freshAngle} fresh angle · ${a.freshness.reuse} direct reuse · ${a.freshness.minCreateNew} fresh-new minimum</div>
     <div style="margin-top:8px"><strong>Projected lane mix:</strong><br><span class="muted">${esc(laneLine||'No lanes detected')}</span></div>
     <div style="margin-top:8px"><strong>Projected mood mix:</strong><br><span class="muted">${esc(moodLine||'No moods detected')}</span></div>
+    <div style="margin-top:8px"><strong>Core sponsor opportunity matrix:</strong><br><span class="muted">${(a.sponsorCoverage?.rows||[]).map(x=>`${esc(x.label)}: ${esc(x.treatment)}${x.masters?` · ${x.masters} Master`:''}`).join(' · ')}</span><br><small>Rotation rule: every core sponsor lane should be visible each issue; each category should receive a substantial feature about ${esc(p.sponsorFeatureTargetPerMonth||'1–2')} times per month. Unsold lanes stay editorial-first and may be implied opportunities.</small></div>
     ${a.findings.length?`<div style="margin-top:8px"><strong>Needs attention before production</strong><br>${a.findings.map(x=>`• ${esc(x)}`).join('<br>')}</div>`:`<div style="margin-top:8px"><strong>Balanced enough to move forward.</strong></div>`}
     <div style="margin-top:8px" class="muted"><strong>Rule:</strong> editorial balance is checked before production. Commercial opportunity sits underneath reader value; it cannot rescue a flat issue.</div>
   </div>`;
