@@ -585,10 +585,14 @@ function relaxOpenQuestionEvidenceDemands(fields,research){
 
   const nonBlocking=(item)=>{
     const t=String(item||'').toLowerCase();
-    return /reader (?:submission|nomination|vote|poll)|reader[- ]nominated|resident account|first[- ]hand account|trader perspective|audience(?:'s)? overall choice|selected as the article.?s subject|defined subject|one service or habit|grouped by .*service type|exact selected place|if it differs from the candidate examples|question bank entry|planning provenance|source or contents of the .*question bank|county[- ]wide survey|complaint dataset/.test(t)
+    return /reader (?:submission|nomination|vote|poll)|reader[- ]nominated|resident (?:account|nomination|testimony)|first[- ]hand (?:account|testimony)|local testimony|trader perspective|audience(?:'s)? overall choice|selected as the article.?s subject|defined subject|one service or habit|grouped by .*service type|exact selected place|if it differs from the candidate examples|question bank entry|planning provenance|source or contents of the .*question bank|county[- ]wide survey|complaint dataset/.test(t)
       || /verification of any claimed .* (?:loss|closure|disruption|business effect|measurable benefit)/.test(t)
       || /direct provider.*selected problem/.test(t)
-      || /at least one local example for the selected subject/.test(t);
+      || /at least one local example for the selected subject/.test(t)
+      || /establish which change has made the greatest difference|view the changes positively or negatively/.test(t)
+      || /evidence comparing .* if the article (?:states|strongly implies)|comparative evidence/.test(t)
+      || /independent evidence of .* actual effect on everyday life|effect on everyday life.*rather than only .* intended benefits/.test(t)
+      || /usage, accessibility, events, footfall or business experience/.test(t);
   };
 
   const required=Array.isArray(research.required_now_missing)?research.required_now_missing:[];
@@ -1069,7 +1073,7 @@ export default async(request)=>{
           research.research_status='Insufficient';
           research.missing_evidence=[...(Array.isArray(research.missing_evidence)?research.missing_evidence:[]),...gate.reasons];
         }
-        // v3.7.5: Open reader-question briefs may already have enough verified local examples
+        // v3.7.6: Open reader-question briefs may already have enough verified local examples
         // in the fast evidence pack. Relax non-core reader-vote/quote demands BEFORE
         // launching expensive recovery so good Norfolk evidence is not discarded.
         research=relaxOpenQuestionEvidenceDemands(fields,research);
@@ -1186,7 +1190,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.7.5`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.7.6`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1332,7 +1336,7 @@ export default async(request)=>{
     }
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.5`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.6`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
