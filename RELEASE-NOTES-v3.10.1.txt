@@ -1,0 +1,36 @@
+ICS v3.10.1 — FRESHNESS + ARCHIVE GUARD
+
+Built from the clean v3.9.16 / v3.10.0 planning baseline.
+
+Purpose
+- Stop Spotlight plans recycling the same recently published Master Articles.
+- Treat the live same-publication article library as publication history, not a default reuse pool.
+- Force genuinely fresh Master Article decisions before a plan can be locked.
+
+Changes
+1. Live archive guard
+   - Produced Master Articles from the current publication are added dynamically to recent history.
+   - Same-publication exact/similar titles are blocked from the planner reuse inventory.
+   - The static known-history list remains as fallback/background history.
+
+2. Freshness gate
+   - Spotlight requires at least 6 CREATE NEW Master Articles in a 9-article plan.
+   - Direct REUSE is capped at 2 and is still subject to the live archive block.
+   - Planning Gate now displays Fresh new / Fresh angle / Direct reuse.
+   - Lock Approved Plan is blocked when freshness rules fail.
+
+3. Planner prompts
+   - Same-publication published articles are explicitly described as history, not the default content pool.
+   - Planner is told to prefer current signals and genuinely fresh reader questions.
+
+4. Replacement flow
+   - Replacement requests receive the same live recent-history block.
+
+5. Stale-plan invalidation
+   - v3.10.0 Smart Issue Plan and batch local-storage keys are versioned out.
+   - Existing saved discovery signals remain available, but a fresh v3.10.1 plan must be built.
+
+Acceptance test
+- Norfolk Spotlight fresh issue: collect signals, build plan, do not produce.
+- Expected planning summary: >=6 fresh new, <=2 direct reuse, no blocked same-publication recent duplicates.
+- Human check: plan must not substantially repeat the just-published Norfolk issue.

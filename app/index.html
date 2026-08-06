@@ -44,7 +44,7 @@
 .command-centre{display:grid;grid-template-columns:1.4fr repeat(4,minmax(110px,.55fr));gap:10px;margin:0 0 14px}.command-main,.command-metric{background:#fff;border:1px solid #d8dee8;border-radius:12px;padding:12px}.command-main h2{margin:0 0 4px}.command-progress{height:10px;background:#e9eef5;border-radius:999px;overflow:hidden;margin:10px 0 8px}.command-progress span{display:block;height:100%;background:var(--accent);border-radius:999px}.command-metric strong{display:block;font-size:23px;line-height:1.1}.command-metric span{font-size:11px;color:#667085}.command-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.registry-strip{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.registry-chip{font-size:11px;border:1px solid #d8dee8;border-radius:999px;padding:4px 7px;background:#f8fafc}.object-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#667085}.lifecycle-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.life-step{font-size:9px;border:1px solid #d8dee8;border-radius:999px;padding:2px 5px;background:#fff;color:#667085}.life-step.done{background:#eaf8f0;border-color:#b7e2c8;color:#176b3a}.life-step.current{background:#edf4ff;border-color:#b9d1ff;color:#174ea6;font-weight:800}.next-action-banner{border-left:4px solid var(--accent);background:#f4f8ff;border-radius:8px;padding:9px 10px;margin-top:8px}.component-identity{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:9px;border:1px solid #d8dee8;border-radius:9px;background:#f8fafc}.component-identity .field{margin:0}@media(max-width:1100px){.command-centre{grid-template-columns:1fr 1fr}.command-main{grid-column:1/-1}}@media(max-width:700px){.command-centre{grid-template-columns:1fr}.command-main{grid-column:auto}}
 
 .engine-profile{border:1px solid #cbd5e1;background:linear-gradient(180deg,#f8fbff,#fff);border-radius:12px;padding:12px;margin:0 0 14px}.engine-profile-grid{display:grid;grid-template-columns:1.3fr repeat(4,minmax(110px,.7fr));gap:10px;align-items:stretch}.engine-profile-card{border:1px solid #d8dee8;background:#fff;border-radius:10px;padding:10px}.engine-profile-card strong{display:block;font-size:15px}.engine-profile-card span{display:block;font-size:11px;color:#667085;margin-top:3px}.engine-health{margin-top:10px;padding:9px 10px;border-radius:8px;background:#f8fafc;border-left:4px solid #94a3b8}.engine-health.ready{background:#eefaf3;border-left-color:#22a06b}.engine-health.review{background:#fff8e8;border-left-color:#d97706}.engine-health.blocked{background:#fff0f0;border-left-color:#dc2626}.lane-chip-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.lane-chip{font-size:10px;padding:3px 6px;border:1px solid #d8dee8;border-radius:999px;background:#fff}@media(max-width:1050px){.engine-profile-grid{grid-template-columns:1fr 1fr}.engine-profile-card:first-child{grid-column:1/-1}}@media(max-width:650px){.engine-profile-grid{grid-template-columns:1fr}.engine-profile-card:first-child{grid-column:auto}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.10.0<br><strong>Universal Planning Engine</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.10.1<br><strong>Freshness + Archive Guard</strong></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -935,10 +935,29 @@ function reuseWords(text=''){
 function titleSimilarity(a,b){
  const A=reuseWords(a),B=reuseWords(b);if(!A.length||!B.length)return 0;const bs=new Set(B),hit=A.filter(x=>bs.has(x)).length;return hit/Math.min(A.length,B.length);
 }
+function livePublishedHistoryEntries(publication=currentPublicationName()){
+ const rows=[];
+ const add=(record)=>{
+   if(!record||!isProducedArticle(record))return;
+   const title=String(val(record.fields||{},'Section Title')||'').trim();
+   if(!title)return;
+   rows.push({publication,title,source:'LIVE ARTICLE LIBRARY',id:record.id});
+ };
+ (S.articleLibrary||[]).forEach(add);
+ (S.sections||[]).forEach(add);
+ const seen=new Set();
+ return rows.filter(x=>{const k=normalizePlanTitle(x.title);if(!k||seen.has(k))return false;seen.add(k);return true});
+}
+function allPublishedHistoryEntries(publication=currentPublicationName()){
+ const rows=[];
+ for(const [pub,titles] of Object.entries(KNOWN_PUBLISHED_HISTORY))for(const title of titles)rows.push({publication:pub,title,source:'KNOWN HISTORY'});
+ rows.push(...livePublishedHistoryEntries(publication));
+ return rows;
+}
 function knownHistoryMatch(title,publication=currentPublicationName()){
  let best=null;
- for(const [pub,titles] of Object.entries(KNOWN_PUBLISHED_HISTORY))for(const t of titles){
-   const score=titleSimilarity(title,t);if(!best||score>best.score)best={publication:pub,title:t,score};
+ for(const row of allPublishedHistoryEntries(publication)){
+   const score=titleSimilarity(title,row.title);if(!best||score>best.score)best={publication:row.publication,title:row.title,score,source:row.source,id:row.id||''};
  }
  if(!best||best.score<0.5)return {status:'UNKNOWN HISTORY — REVIEW',match:null};
  if(best.publication===publication)return {status:'BLOCKED RECENT DUPLICATE',match:best};
@@ -946,11 +965,17 @@ function knownHistoryMatch(title,publication=currentPublicationName()){
 }
 function inventoryWithReuseGuard(list,limit=120){
  const publication=currentPublicationName();
+ // v3.10.1: same-publication produced articles are live history, not a default reuse pool.
+ // Every article in this publication library is therefore checked against the live archive and blocked from direct reuse.
  return (list||[]).slice(0,limit).map(s=>{const x=inferArticleIntelligence(s),title=val(s.fields,'Section Title'),g=knownHistoryMatch(title,publication);return {id:s.id,title,purpose:val(s.fields,'Reader Value')||val(s.fields,'Core Reader Question'),proof:val(s.fields,'Local Proof Needed'),freshness:x.freshness,topic:x.topic,history_status:g.status,history_match:g.match?.title||'',history_publication:g.match?.publication||'',history_score:g.match?Math.round(g.match.score*100):0}})
- // v3.9.5: known same-publication recent articles are not planner inventory at all.
  .filter(x=>x.history_status!=='BLOCKED RECENT DUPLICATE');
 }
-function recentHistoryForPublication(publication=currentPublicationName()){return (KNOWN_PUBLISHED_HISTORY[publication]||[]).slice(0,80)}
+function recentHistoryForPublication(publication=currentPublicationName()){
+ const staticTitles=(KNOWN_PUBLISHED_HISTORY[publication]||[]);
+ const liveTitles=livePublishedHistoryEntries(publication).map(x=>x.title);
+ const seen=new Set();
+ return [...liveTitles,...staticTitles].filter(x=>{const k=normalizePlanTitle(x);if(!k||seen.has(k))return false;seen.add(k);return true}).slice(0,180);
+}
 function articleReuseGuard(a,plan=getSmartPlan()){
  if(!a)return {status:'UNKNOWN HISTORY — REVIEW',match:null};
  const exact=(S.articleLibrary||[]).find(x=>x.id===a.existing_article_id);
@@ -958,6 +983,20 @@ function articleReuseGuard(a,plan=getSmartPlan()){
  return knownHistoryMatch(candidateTitle,plan?.publication||currentPublicationName());
 }
 function reuseGuardSummary(plan){let blocked=0,localise=0,review=0;for(const a of plan?.articles||[]){if(!['REUSE','LOCALISE','REFRESH'].includes(String(a.mode||'').toUpperCase()))continue;const g=articleReuseGuard(a,plan);if(g.status==='BLOCKED RECENT DUPLICATE')blocked++;else if(g.status==='LOCALISE FROM OTHER PUBLICATION')localise++;else review++;}return{blocked,localise,review}}
+function freshnessGuardSummary(plan){
+ const arts=plan?.articles||[];
+ const counts=arts.reduce((o,a)=>{const m=String(a.mode||'CREATE NEW').toUpperCase();o[m]=(o[m]||0)+1;return o},{ });
+ const createNew=counts['CREATE NEW']||0,refresh=counts.REFRESH||0,localise=counts.LOCALISE||0,reuse=counts.REUSE||0;
+ const freshAngle=refresh+localise;
+ const freshTotal=createNew+freshAngle;
+ const profile=engineProfileForPublication();
+ const minCreateNew=profile.key==='SPOTLIGHT'?Math.min(6,arts.length):Math.ceil(arts.length*.5);
+ const maxReuse=profile.key==='SPOTLIGHT'?Math.min(2,Math.max(0,arts.length-minCreateNew)):Math.max(1,Math.floor(arts.length*.25));
+ const findings=[];
+ if(createNew<minCreateNew)findings.push(`Only ${createNew}/${arts.length} Master Articles are CREATE NEW; ${profile.name} needs at least ${minCreateNew} fresh new articles before production.`);
+ if(reuse>maxReuse)findings.push(`${reuse} direct REUSE articles exceeds the ${profile.name} maximum of ${maxReuse}. Replace recent material with fresh questions.`);
+ return {createNew,refresh,localise,reuse,freshAngle,freshTotal,minCreateNew,maxReuse,findings,ok:findings.length===0};
+}
 
 function inferArticleIntelligence(s){
   const f=s?.fields||{};
@@ -1440,8 +1479,8 @@ function exportCanvasBackup(){
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-function smartPlanKey(){return 'ics:smartPlan:'+assemblyIssueId()}
-function smartRejectedKey(){return 'ics:smartRejected:'+assemblyIssueId()}
+function smartPlanKey(){return 'ics:smartPlan:v3101:'+assemblyIssueId()}
+function smartRejectedKey(){return 'ics:smartRejected:v3101:'+assemblyIssueId()}
 function getSmartRejected(){try{return JSON.parse(localStorage.getItem(smartRejectedKey())||'[]')}catch{return []}}
 function addSmartRejected(title){title=String(title||'').trim();if(!title)return;const v=getSmartRejected();if(!v.some(x=>normalizePlanTitle(x)===normalizePlanTitle(title)))v.push(title);localStorage.setItem(smartRejectedKey(),JSON.stringify(v.slice(-30)))}
 function clearSmartRejected(){localStorage.removeItem(smartRejectedKey())}
@@ -1449,7 +1488,7 @@ function smartSignalsKey(){return 'ics:smartSignals:'+assemblyIssueId()}
 function getSmartSignals(){try{return JSON.parse(localStorage.getItem(smartSignalsKey())||'[]')}catch{return []}}
 function saveSmartSignals(v){localStorage.setItem(smartSignalsKey(),JSON.stringify(v||[]))}
 function getSmartPlan(){try{return JSON.parse(localStorage.getItem(smartPlanKey())||'null')}catch{return null}}
-function smartPlanBatchesKey(){return 'ics:smartPlanBatches:'+assemblyIssueId()}
+function smartPlanBatchesKey(){return 'ics:smartPlanBatches:v3101:'+assemblyIssueId()}
 function getSmartPlanBatches(){try{return JSON.parse(localStorage.getItem(smartPlanBatchesKey())||'[]')}catch{return []}}
 function saveSmartPlanBatches(v){localStorage.setItem(smartPlanBatchesKey(),JSON.stringify(v||[]))}
 function planModeClass(m){return ['REUSE','LOCALISE'].includes(m)?'ready':'needs'}
@@ -1490,7 +1529,9 @@ async function replaceSmartArticle(order){
           batchLabel:'SINGLE REPLACEMENT',
           batchBrief:`Return one replacement for rejected slot ${order}: "${current.title}". It must be materially different and must not duplicate priorArticles. USED SOURCE LEADS — DO NOT USE: ${usedLeads.length?usedLeads.map(x=>x.replace(':',' ')).join(', '):'none identified'}. Do not reuse the same underlying event, source lead, reader problem or substantially similar question already represented in this issue.${retryContext}`,
           priorArticles:prior,
-          targetCount:1
+          targetCount:1,
+          blockedRecentHistory:recentHistoryForPublication(currentPublicationName()),
+          freshnessPolicy:{minimumCreateNew:6,maximumDirectReuse:2,rule:'Do not return a same-publication published question. Prefer CREATE NEW.'}
         })
       });
       const r=(data.articles||[])[0];
@@ -1519,7 +1560,8 @@ function lockSmartPlan(){
  const plan=getSmartPlan(),profile=engineProfileForPublication();
  const target=profile.defaultMasters||9;
  if(!plan?.articles?.length||plan.articles.length!==target){alert(`Complete all ${target} Master Article decisions first for the ${profile.name} profile.`);return}
- const h=reuseGuardSummary(plan);if(h.blocked){alert(`${h.blocked} REUSE/REFRESH item${h.blocked===1?' is':'s are'} blocked by known same-publication history. Replace or change the angle before locking.`);return}
+ const h=reuseGuardSummary(plan);if(h.blocked){alert(`${h.blocked} REUSE/REFRESH item${h.blocked===1?' is':'s are'} blocked by live same-publication history. Replace or change the angle before locking.`);return}
+ const fresh=freshnessGuardSummary(plan);if(!fresh.ok){alert(`FRESHNESS GATE BLOCKED — ${profile.name}\n\n${fresh.findings.join('\n- ')}\n\nRecent published articles are history, not the default content pool.`);return}
  const a=smartPlanAlignmentSummary(plan),r=refreshGateSummary(plan),d=sameIssueDuplicationSummary(plan);if(a.bad){alert(`${a.bad} SOURCE MISMATCH item${a.bad===1?'':'s'} must be edited or replaced before the plan can be locked.`);return}if(r.replace){alert(`${r.replace} REFRESH item${r.replace===1?'':'s'} do not identify a material change and should be replaced or edited before the plan can be locked.`);return}if(d.duplicate){alert(`${d.duplicate} same-issue duplicate pair${d.duplicate===1?'':'s'} must be replaced or edited before the plan can be locked.`);return}
  const balance=issueBalanceAudit(plan);if(balance.status==='NEEDS ATTENTION'){alert(`PLANNING GATE BLOCKED — ${profile.name}\n\n${balance.findings.join('\n- ')}\n\nReplace/rebalance the plan before production. No Airtable briefs have been created.`);return}
  plan.engineProfile=profile.key;plan.projectedSupportRecipe=profile.supportRecipe;plan.lockedAt=new Date().toISOString();recalcSmartCounts(plan);saveSmartPlan(plan);renderSmartPlan();renderEngineProfile();alert(`Approved ${profile.name} plan locked. Projected full issue: ${balance.projectedSections} sections. Source, duplication and editorial-balance gates passed. Create Missing Article Briefs is now enabled.`)
@@ -1681,6 +1723,8 @@ function issueBalanceAudit(plan){
     const mood=editorialMood(item);moodCounts[mood]=(moodCounts[mood]||0)+1;
   }
   const findings=[];
+  const freshness=freshnessGuardSummary(plan);
+  findings.push(...freshness.findings);
   const projectedSections=projected.length;
   if(projectedSections<profile.targetSections[0]||projectedSections>profile.targetSections[1])findings.push(`Projected issue size is ${projectedSections}; ${profile.name} normally targets ${profile.targetSections[0]}–${profile.targetSections[1]} sections.`);
   if(arts.length<profile.targetMasters[0]||arts.length>profile.targetMasters[1])findings.push(`Master Article count is ${arts.length}; ${profile.name} normally targets ${profile.targetMasters[0]}–${profile.targetMasters[1]}.`);
@@ -1697,9 +1741,9 @@ function issueBalanceAudit(plan){
   if((tones.LIGHT||0)+(tones.HUMAN||0)<2&&arts.length>=8)findings.push('The Master Article layer is too serious. Add at least two discovery, enjoyment or people-led article moments.');
   if((tones.EDGE||0)<1&&profile.key==='SPOTLIGHT')findings.push('Unfiltered/debate edge is low. Add one credible challenge, comparison or debate angle where earned.');
   if(civicHeavy>4)findings.push(`Civic/public-service stories are dominating the Master Article plan (${civicHeavy}/${arts.length}). Keep the strongest current stories, then rebalance.`);
-  const hard=findings.filter(x=>/underweight|dominate|too little life|Projected issue size|Master Article count/.test(x));
+  const hard=findings.filter(x=>/underweight|dominate|too little life|Projected issue size|Master Article count|CREATE NEW|direct REUSE/.test(x));
   const status=hard.length?'NEEDS ATTENTION':findings.length<=2?'REVIEW':'NEEDS ATTENTION';
-  return {profile:profile.key,expert:[...expert],partner:[...partner],commercialArticles,engagement:[...engage],tones,civicHeavy,lifeLanes:[...lifeLanes],laneCounts,moodCounts,heavyMoodShare,projectedSections,projectedSupport:supports.length,findings,status};
+  return {profile:profile.key,expert:[...expert],partner:[...partner],commercialArticles,engagement:[...engage],tones,civicHeavy,lifeLanes:[...lifeLanes],laneCounts,moodCounts,heavyMoodShare,projectedSections,projectedSupport:supports.length,freshness,findings,status};
 }
 
 
@@ -1760,7 +1804,7 @@ function issueBalanceAuditText(plan){
   const a=issueBalanceAudit(plan),p=engineProfileForPublication();
   const laneLine=Object.entries(a.laneCounts).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
   const moodLine=Object.entries(a.moodCounts).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
-  return [`ISSUE BALANCE — ${a.status}`,`Engine profile: ${p.name}`,`Projected full issue: ${a.projectedSections} sections · ${plan.articles?.length||0} Master Articles · ${a.projectedSupport} planned life/support blocks`,`Lane mix: ${laneLine||'None'}`,`Mood mix: ${moodLine||'None'}`,`Heavy problem/admin share: ${Math.round(a.heavyMoodShare*100)}% / max ${Math.round(p.maxHeavyMoodShare*100)}%`,`Authority / expert opportunities: ${a.expert.length}`,`Feature / activation opportunities: ${a.partner.length}`,`Master Articles with natural commercial pathways: ${a.commercialArticles}/${(plan.articles||[]).length}`,'',a.findings.length?'Needs attention:':'Balanced enough to move forward.',...a.findings.map(x=>`- ${x}`)].join('\n');
+  return [`ISSUE BALANCE — ${a.status}`,`Engine profile: ${p.name}`,`Projected full issue: ${a.projectedSections} sections · ${plan.articles?.length||0} Master Articles · ${a.projectedSupport} planned life/support blocks`,`Lane mix: ${laneLine||'None'}`,`Mood mix: ${moodLine||'None'}`,`Heavy problem/admin share: ${Math.round(a.heavyMoodShare*100)}% / max ${Math.round(p.maxHeavyMoodShare*100)}%`,`Authority / expert opportunities: ${a.expert.length}`,`Feature / activation opportunities: ${a.partner.length}`,`Master Articles with natural commercial pathways: ${a.commercialArticles}/${(plan.articles||[]).length}`,`Freshness: ${a.freshness.createNew} fresh new · ${a.freshness.freshAngle} fresh angle · ${a.freshness.reuse} direct reuse`,'',a.findings.length?'Needs attention:':'Balanced enough to move forward.',...a.findings.map(x=>`- ${x}`)].join('\n');
 }
 async function copyIssueBalanceAudit(){
   const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the Issue Plan first.');return}
@@ -1778,6 +1822,7 @@ function commercialAuditHtml(plan){
       <div><strong>Projected issue:</strong> ${a.projectedSections} sections</div><div><strong>Master / support:</strong> ${(plan.articles||[]).length} / ${a.projectedSupport}</div>
       <div><strong>Heavy problem/admin mood:</strong> ${Math.round(a.heavyMoodShare*100)}% / max ${Math.round(p.maxHeavyMoodShare*100)}%</div><div><strong>Commercial coverage:</strong> ${a.commercialArticles}/${(plan.articles||[]).length} Masters</div>
     </div>
+    <div style="margin-top:8px"><strong>Freshness:</strong> ${a.freshness.createNew} fresh new · ${a.freshness.freshAngle} fresh angle · ${a.freshness.reuse} direct reuse · ${a.freshness.minCreateNew} fresh-new minimum</div>
     <div style="margin-top:8px"><strong>Projected lane mix:</strong><br><span class="muted">${esc(laneLine||'No lanes detected')}</span></div>
     <div style="margin-top:8px"><strong>Projected mood mix:</strong><br><span class="muted">${esc(moodLine||'No moods detected')}</span></div>
     ${a.findings.length?`<div style="margin-top:8px"><strong>Needs attention before production</strong><br>${a.findings.map(x=>`• ${esc(x)}`).join('<br>')}</div>`:`<div style="margin-top:8px"><strong>Balanced enough to move forward.</strong></div>`}
@@ -1833,14 +1878,14 @@ async function buildSmartPlanFromSavedSignals(){
     await loadArticleLibrary();
     const existingPlan=getSmartPlan();const profile=engineProfileForPublication(),targetMasters=profile.defaultMasters||9;if(existingPlan?.articles?.length===targetMasters){alert(`A complete ${targetMasters}-article ${profile.name} plan already exists. Keep, edit or replace choices, then lock it.`);return}
     let batches=getSmartPlanBatches();
-    const base={publication:currentPublicationName(),issueNumber:val(S.issue.fields,'Issue Number')||'',issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||'',signals,blockedRecentHistory:recentHistoryForPublication(currentPublicationName()),rejectedCandidates:getSmartRejected(),engineProfile:profile.key,engineName:profile.name,editorialLanes:profile.lanes,minimumGroups:profile.minimumGroups,maxHeavyMoodShare:profile.maxHeavyMoodShare,targetSections:profile.targetSections,targetMasters:profile.targetMasters};
+    const base={publication:currentPublicationName(),issueNumber:val(S.issue.fields,'Issue Number')||'',issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||'',signals,blockedRecentHistory:recentHistoryForPublication(currentPublicationName()),rejectedCandidates:getSmartRejected(),engineProfile:profile.key,engineName:profile.name,editorialLanes:profile.lanes,minimumGroups:profile.minimumGroups,maxHeavyMoodShare:profile.maxHeavyMoodShare,targetSections:profile.targetSections,targetMasters:profile.targetMasters,freshnessPolicy:{minimumCreateNew:profile.key==='SPOTLIGHT'?6:Math.ceil((profile.defaultMasters||9)*.5),maximumDirectReuse:profile.key==='SPOTLIGHT'?2:Math.max(1,Math.floor((profile.defaultMasters||9)*.25)),rule:'Same-publication produced articles are recent history, not the default reuse pool. Prefer CREATE NEW from current signals and genuinely fresh reader questions.'}};
     const inventory=inventoryWithReuseGuard(S.articleLibrary,90);
     // v3.9.8: nine single-article micro-batches with broadened candidate pool and rejection memory. Each successful decision is saved immediately,
     // keeping every Netlify function call comfortably below the platform inactivity window.
     const groups=[
-      {label:'STRONGEST MIX',brief:'Choose the strongest balanced opening slate, not simply the newest headlines. Across these opening choices prefer a strong existing/localisable article when available, current relevance, different Life Lanes and different reader jobs.'},
-      {label:'VALUE + COMMERCIAL BREADTH',brief:'Fill missing Life Lanes. Prioritise money/home/service value, proven reusable/localisable assets, and natural commercial or specialist-brand pathways without forcing a sponsor. Avoid another civic/accountability story unless unusually important.'},
-      {label:'HUMAN + DISCOVERY + SHARE',brief:'Deliberately add human variety: food/leisure/discovery/weekend, recommendation/list/resource/shareable value, family/pets/health/community where earned. Prefer existing/localisable assets where strong. Do not finish with a council-heavy or question-formula-heavy slate.'}
+      {label:'STRONGEST MIX',brief:'Choose the strongest balanced opening slate, not simply the newest headlines. Across these opening choices prefer current relevance and a genuinely fresh reader question, different Life Lanes and different reader jobs.'},
+      {label:'VALUE + COMMERCIAL BREADTH',brief:'Fill missing Life Lanes. Prioritise money/home/service value, fresh reader questions, carefully justified localisation only when materially different, and natural commercial or specialist-brand pathways without forcing a sponsor. Avoid another civic/accountability story unless unusually important.'},
+      {label:'HUMAN + DISCOVERY + SHARE',brief:'Deliberately add human variety: food/leisure/discovery/weekend, recommendation/list/resource/shareable value, family/pets/health/community where earned. Prefer genuinely fresh reader questions from current signals. Same-publication published articles are history, not a reuse pool. Do not finish with a council-heavy or question-formula-heavy slate.'}
     ];
     const specs=Array.from({length:targetMasters},(_,i)=>{const g=groups[Math.min(groups.length-1,Math.floor(i/(targetMasters/3)))];return {batch:i+1,label:g.label,count:1,brief:g.brief+` This is decision ${i+1} of ${targetMasters}. Follow the ${profile.name} engine lanes and projected support recipe. Do not let one problem/admin mood dominate.`}});
     for(const spec of specs){
