@@ -838,6 +838,8 @@ RESEARCH RULES
 - Treat newspapers/news sites primarily as discovery or corroboration. Do not make the article dependent on naming them when the underlying official/primary evidence can be found.
 - Distinguish evidence needed NOW from outcomes that cannot yet exist. A future result of a trial, rollout, consultation or proposed scheme should become a FUTURE TEST/question, not automatically make research insufficient.
 - The returned evidence MUST satisfy the LOCAL PROOF requirement, not merely provide generic national background.
+- ADAPTIVE QUESTION PRIORITY: identify the story mode before researching. For advice, money, family, health, home, pets, motoring and consumer questions, research the real decision, options, rules, trade-offs and worked examples an expert would explain face-to-face. For news, breaking updates and controversies, research what happened, who/where is affected, the strongest primary evidence, what changes now, what remains unknown and any legitimate countercase. For discovery/comparison pieces, verify the examples, prices, inclusions and limits.
+- LOCALISATION PROPORTION: do not force irrelevant local facts into a nationally governed question. Use local proof where it changes the answer or makes it concrete; otherwise keep the authoritative national rule accurate and localise through a genuine local example, cost, provider context or reader application only when supported.
 - When the brief requires local proof, include genuinely place-specific or directly relevant regional primary sources for the named publication area. Generic national background is not enough.
 - If the brief names a body such as Anglian Water, NHS, NICE, FCA, MoneyHelper, a promoter, ticket agent or local council, actively search that body.
 - Current prices, dates, availability, service details and material current claims require current sources.
@@ -885,6 +887,13 @@ STYLE, AUDIENCE AND SAFETY
 - Short paragraphs suitable for a narrow article page.
 - The article must stand alone outside the newsletter.
 - QUESTION-FIRST RULE: answer ONE clear reader question well. Do not turn a broad topic into a catch-all guide.
+- ADAPTIVE STORY MODE: choose the treatment from the approved question and evidence. Use one dominant mode: CONVERSATION ADVICE, NEWS EXPLAINER, DEBATE / CONTROVERSY, RECOMMENDATION / DISCOVERY, PRACTICAL SERVICE, COMPARISON / VALUE, HUMAN / COMMUNITY, or BREAKING UPDATE. Do not force every article into a personal-question template.
+- CONVERSATION ADVICE MODE: for advice, finance, property, health, pets, motoring and similar expert questions, write as if answering a genuine Zoom Q&A, podcast question, dinner-table/pub conversation or WhatsApp message. Answer early, explain choices/trade-offs, show evidence/examples, then give the natural next step.
+- NEWS / BREAKING MODE: lead with what happened, where, who is affected, what changes now and what remains uncertain. Keep evidence and attribution strong. Do not bolt on an invented persona merely to make news sound conversational.
+- DEBATE / CONTROVERSY MODE: surface the real tension, strongest evidence on both sides and the actual point of disagreement. Invite a specific reader view without manufacturing outrage or consensus.
+- DISCOVERY / COMPARISON / SERVICE MODE: match the structure to the reader job — recommendation, verified comparison, checklist, price/value test or useful local discovery — rather than repeating the same article formula.
+- ILLUSTRATIVE PERSONA RULE: ordinary invented names, ages and everyday situations ARE allowed as storytelling devices for common scenarios (for example, 'Millie is three...'). They may add personality and specificity, but they are NEVER evidence. Never invent attributed quotes, testimony, credentials, business ownership, medical/legal/financial outcomes, survey results, reader consensus or factual claims. If the article could cause a reader to believe the persona supplied real testimony, reframe it as an illustrative scenario.
+- PARTNER MODEL: the editorial answer must work without a sponsor. Where a natural expert/partner lane exists, structure the question so a genuine named partner could later supply or replace the specialist commentary without changing the reader problem. Never invent that partner or their advice.
 - SPLIT TEST: if the brief naturally contains two or more questions that could each make a useful standalone 250-600 word article, answer only the approved core question here and return the other distinct questions in related_questions for the content bank. Do not cram them into this article.
 - Length is earned by the question: normally 250-600 words, with roughly 350-500 as the sweet spot. Go beyond 600 only when the reader genuinely needs the extra detail; a 1,000+ word cornerstone piece should be exceptional, not the default. Cut repetition rather than padding to a target.
 - SPOTLIGHT VOICE: keep personality, humour and an Unfiltered edge where the subject earns it. Do not manufacture outrage or clickbait, but do challenge lazy assumptions and bland official framing when evidence supports a sharper question.
@@ -927,6 +936,7 @@ Commercial pathway: ${value(fields,'Commercial Pathway')}
 Primary action: ${value(fields,'Primary Next Action')}
 CTA type: ${value(fields,'CTA Type')}
 Existing CTA text: ${value(fields,'CTA Text')}
+Editorial planning notes: ${String(value(fields,'Notes')||'').split('MASTER ARTICLE RESEARCH CHECKPOINT')[0].slice(0,1800)}
 
 RESEARCH PACK
 ${sourcePack}
@@ -1269,7 +1279,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.7.10`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.7.12`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1415,7 +1425,7 @@ export default async(request)=>{
     }
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.10`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.12`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
