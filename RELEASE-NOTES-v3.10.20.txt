@@ -1,0 +1,21 @@
+ICS v3.10.20 — STORY REPLACEMENT RESET + VISIBLE WRITING MODE
+
+Fixes the Article 08 replacement workflow exposed in Norfolk Spotlight Issue #12.
+
+Changes
+- Generate section intelligence now detects when the operator has replaced a story by changing its title/core reader question.
+- On a genuine story replacement, stale story-specific intelligence is cleared BEFORE regeneration: old reader problem, audience, proof/evidence requirements, source link, commercial pathway, CTA/action, social question, archive note, QA/final copy and research state.
+- Keeps the issue running-order marker but replaces old Smart Plan story notes with a clean manual-replacement marker.
+- Adds a visible Writing Mode control to the detailed section editor: AUTO, Conversation Advice, News Explainer, Debate / Controversy, Recommendation / Discovery, Practical Service, Comparison / Value, Human / Community, Breaking Update.
+- Writing Mode persists inside Notes so no new Airtable field is required.
+- Expands finance recognition to Junior ISA, savings, investing, university fund, Premium Bonds and family-finance questions.
+- Family/university saving questions now generate appropriate parent audience, worked-example evidence needs, financial-adviser pathway and social question rather than stale local-planning language.
+- National financial rules are not forced to use fake Norfolk local proof; the builder asks for a realistic worked example and authoritative UK evidence instead.
+
+Operator workflow
+1. Change Section Title and Core Reader Question.
+2. Click Generate section intelligence.
+3. ICS detects the replacement, clears the previous story intelligence and rebuilds the brief.
+4. Review Writing Mode and regenerated fields.
+5. Save section.
+6. Research current article.
