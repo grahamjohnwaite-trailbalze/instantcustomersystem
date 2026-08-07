@@ -1,0 +1,16 @@
+ICS v3.10.17 — Current-News Entity Lock + Core Lane Bridge
+
+Production service: v3.7.10
+
+Fixes
+- Adds a current-news entity lock for planning/approval stories so an older lookalike case cannot silently replace the current lead.
+- Current decision research now requires recent/current decision identity evidence; historical-only matches are returned Insufficient for re-resolution.
+- Planning application/reference numbers are treated as internal evidence identifiers by default, not reader-facing copy.
+- Cleans obvious script/analytics noise from evidence support text.
+
+Issue balance / commercial coverage
+- Keeps the 8–10 Master Article target. Masters are not expected to carry all 13 sponsor/partner lanes.
+- Core sponsor matrix now shows how many lanes are covered by Masters versus short/implied components.
+- Full-issue gate still requires all core sponsor lanes to be visible somewhere in the projected issue.
+- Adds an explicit Money & Consumer visibility gate so finance/value cannot disappear merely because Home/Property content is present. Sally Savers, a price check or finance quick check can satisfy this without forcing another Master Article.
+- Existing life-lane Master guard from v3.10.16 remains active.

@@ -347,6 +347,35 @@ function hasDirectCurrentDecisionAuthority(sources=[]){
   });
 }
 
+function evidenceYears(x){
+  const blob=[x?.title,x?.supports,x?.description,x?.url].join(' ');
+  return [...blob.matchAll(/\b(20\d{2})\b/g)].map(m=>Number(m[1])).filter(y=>y>=2000&&y<=2100);
+}
+function currentDecisionEntityLock(fields,resolved,sources=[]){
+  if(!isHardCurrentDecisionBrief(fields))return {pass:true,reason:''};
+  const nowYear=new Date().getFullYear();
+  const subjectBlob=[resolved?.name,resolved?.location,resolved?.reference,resolved?.responsible_body].join(' ');
+  const subjectYears=[...subjectBlob.matchAll(/\b(20\d{2})\b/g)].map(m=>Number(m[1]));
+  const official=sources.filter(x=>/official|primary/i.test(String(x?.source_type||''))||/\.gov\.uk|gov\.uk|planning|moderngov|council/i.test(String(x?.url||'')));
+  const officialYears=official.flatMap(evidenceYears);
+  const freshest=Math.max(0,...subjectYears,...officialYears);
+  // A current approval story must not silently switch to an older lookalike planning case.
+  // Current-year or previous-year decision/application evidence is acceptable; older-only evidence is not.
+  if(freshest && freshest < nowYear-1){
+    return {pass:false,reason:`Current-news entity lock: the resolved planning evidence appears historical (latest identifiable year ${freshest}) rather than a current ${nowYear} decision. Do not substitute an older lookalike application; re-resolve the exact current scheme.`};
+  }
+  return {pass:true,reason:''};
+}
+function cleanEvidenceSupportText(text=''){
+  let t=stripTags(String(text||''));
+  // Remove obvious page-script / analytics dumps while retaining human-readable evidence notes.
+  if(/dataLayer|GoogleAnalyticsObject|gtag\(|Typekit\.load|createElement\(|localStorage|getElementsByTagName|function\s*\(/i.test(t)){
+    const first=t.split(/(?:dataLayer|GoogleAnalyticsObject|gtag\(|Typekit\.load|createElement\(|localStorage|getElementsByTagName|function\s*\()/i)[0].trim();
+    t=first||'Direct page extraction retained for identity/source verification; script noise removed.';
+  }
+  return t.replace(/\s+/g,' ').trim().slice(0,700);
+}
+
 async function fastEvidencePack(fields,cls){
   if(cls==='A — Question Only')return {research_status:'Sufficient',research_summary:'Question-only article; no research required.',sources:[],missing_evidence:[]};
   const queries=articleSearchTerms(fields);
@@ -526,7 +555,7 @@ TASK
    - OPTIONAL may be omitted.
 7. A trial can be written about before results exist only when its existence, responsible body and present purpose are verified.
 8. If the exact subject cannot be verified, return Insufficient and say what identity or official confirmation is missing.
-9. CURRENT PLANNING / APPROVAL STORIES: resolve the applicant/business/person, exact site/address or settlement, planning authority and application/decision reference where possible. Search the relevant UK council planning/decision material. Do not return Sufficient for an approval explainer from a single newspaper/RSS headline alone. Require direct official/primary confirmation of the decision or, if that is genuinely unavailable, at least two independent article-specific local sources plus a clearly resolved subject and authority.
+9. CURRENT PLANNING / APPROVAL STORIES: resolve the applicant/business/person, exact site/address or settlement, planning authority and application/decision reference where possible. Search the relevant UK council planning/decision material. Do not return Sufficient for an approval explainer from a single newspaper/RSS headline alone. Require direct official/primary confirmation of the decision or, if that is genuinely unavailable, at least two independent article-specific local sources plus a clearly resolved subject and authority. CURRENT-NEWS ENTITY LOCK: do not substitute an older planning case merely because it shares the same category (for example another dog groomer, gym or housing scheme). A current lead must resolve to current-year or recent decision evidence that matches the place, proposal and authority; if only an older lookalike case can be found, return Insufficient and say the current entity still needs resolving.
 10. Geography is hard-gated to Norfolk, England. Remove US same-name results before returning sources, including Norfolk VA property portals, Zillow, Realtor, Redfin, Norfolk State University and Norfolk Southern.
 
 Return ONLY valid JSON:
@@ -543,7 +572,7 @@ async function recoverEvidencePack(fields,cls,firstPass,model){
   const recoveredSources=(Array.isArray(recovered.sources)?recovered.sources:[]).map(x=>({
     title:String(x.title||'').trim(),
     url:cleanUrl(x.url),
-    supports:stripTags(String(x.supports||'')).trim(),
+    supports:cleanEvidenceSupportText(String(x.supports||'')),
     source_type:String(x.source_type||sourceTypeFor(x.url,x.title)).trim()||'other',
     relevance:Math.max(5,Number(x.relevance||0))
   })).filter(x=>x.url);
@@ -564,6 +593,11 @@ async function recoverEvidencePack(fields,cls,firstPass,model){
   if(hardCurrentDecision && !(directAuthority || (localIndependent>=2 && hasResolvedSubject && resolvedAuthority))){
     timedStatus='Insufficient';
     requiredNow.push('Direct official/primary confirmation of the current planning or approval decision, or two independent local sources with the exact subject and planning authority resolved.');
+  }
+  const entityLock=currentDecisionEntityLock(fields,resolved,merged);
+  if(!entityLock.pass){
+    timedStatus='Insufficient';
+    if(entityLock.reason&&!requiredNow.includes(entityLock.reason))requiredNow.push(entityLock.reason);
   }
   return {
     research_status:timedStatus,
@@ -839,6 +873,7 @@ STYLE, AUDIENCE AND SAFETY
 - Distinguish fact, opinion and reader questions.
 - EDITORIAL SOURCE RULE: Spotlight is the publisher, not a news-curation feed. Do not normally write "EDP24 reports", "the BBC says", "according to [newspaper]" or otherwise foreground discovery/news-media sources in reader-facing copy. Use those sources internally to discover/corroborate the story. Prefer attribution to the underlying official body, document, dataset, organisation or direct published statement when attribution is useful.
 - It is fine to say "Norfolk County Council says...", "council papers show...", "NHS guidance says..." or equivalent primary-source attribution where that adds authority.
+- PLANNING REFERENCE RULE: planning application/reference numbers are primarily internal evidence identifiers. Do not put a planning reference number in the headline, subhead or opening, and do not clutter the body with it unless the reader genuinely needs the number to find or distinguish the application. Prefer the business/person, exact place and practical outcome in reader-facing copy; retain the reference in Sources / Internal QA.
 - EVIDENCE TIMING RULE: facts verified now may be stated as facts. Outcomes that genuinely do not exist yet may be explored as clearly unanswered questions: "Could this...?", "Will it...?", "What happens if...?", "What should we watch?". Do not turn a future unknown into a publication blocker merely because results do not yet exist.
 - A question mark must never disguise an unsupported factual premise. Verify the premise first, then ask the legitimate unanswered question.
 - Do not manufacture hearsay. Phrases such as "we heard", "a source suggested", "people are saying" or "it's being said on social media" may be used only when genuine traceable source material exists in the research pack and the wording accurately reflects it.
@@ -1217,7 +1252,7 @@ export default async(request)=>{
 
     if(mode==='research'){
       const decision=researchLockDecision(research);
-      const retained=(research.sources||[]).map(x=>({title:String(x.title||'').trim(),url:cleanUrl(x.url),supports:stripTags(String(x.supports||'')).trim(),source_type:String(x.source_type||'')})).filter(x=>x.url).slice(0,8);
+      const retained=(research.sources||[]).map(x=>({title:String(x.title||'').trim(),url:cleanUrl(x.url),supports:cleanEvidenceSupportText(String(x.supports||'')),source_type:String(x.source_type||'')})).filter(x=>x.url).slice(0,8);
       const pack=[
         `RESEARCH PACK v1`,
         `Research ID: rp_${runId}`,
@@ -1234,7 +1269,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.7.9`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.7.10`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1380,7 +1415,7 @@ export default async(request)=>{
     }
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.9`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.10`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
