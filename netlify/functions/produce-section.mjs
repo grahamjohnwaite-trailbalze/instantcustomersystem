@@ -5,7 +5,7 @@ const ALLOWED_CLASSES=new Set(['A — Question Only','B — Light Proof','C — 
 const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
-const RECOVERY_BUDGET_MS=45000;
+const RECOVERY_BUDGET_MS=65000;
 const RELEASE_VERSION='3.7.1';
 function withTimeout(promise,timeoutMs,label){
   let timer;
@@ -207,7 +207,7 @@ function wrongGeographySource(x,fields){
   const article=[value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Local Proof Needed'),value(fields,'Notes')].join(' ').toLowerCase();
   const blob=[x.title,x.description,x.source,x.url].join(' ').toLowerCase();
   // Prevent same-name US places from passing a UK locality match (for example Norfolk, Virginia).
-  if(/\bnorfolk\b/.test(article)&&/virginia|hampton roads|virginia beach|chesapeake|wtkr\.com|13newsnow|wavy\.com|norfolk state university|\bnsu\.edu\b|norfolk southern|norfolksouthern\.com|\b22 states\b/.test(blob))return true;
+  if(/\bnorfolk\b/.test(article)&&/virginia|hampton roads|virginia beach|chesapeake|wtkr\.com|13newsnow|wavy\.com|norfolk state university|\bnsu\.edu\b|norfolk southern|norfolksouthern\.com|\b22 states\b|\bnorfolk,? va\b|\bnorfolk va\b|\/norfolk-va\/|zillow\.com|realtor\.com|redfin\.com|homes for sale in norfolk va|real estate & homes for sale/.test(blob))return true;
   // A Norfolk (England) article must not accept US institutions or companies merely
   // because their proper name contains the word Norfolk.
   if(/\bnorfolk\b/.test(article)&&/(\.edu\b|\.mil\b)/.test(blob)&&!/\.ac\.uk\b/.test(blob))return true;
@@ -332,6 +332,21 @@ function articleSearchTerms(fields){
   }
   return [...new Set(queries)].slice(0,9);
 }
+function isHardCurrentDecisionBrief(fields){
+  const title=String(value(fields,'Section Title')||'');
+  const question=String(value(fields,'Core Reader Question')||'');
+  const notes=String(value(fields,'Notes')||'');
+  const blob=`${title} ${question} ${notes}`.toLowerCase();
+  return /\b(plans? (?:approved|refused)|planning (?:approval|approved|decision|permission)|development (?:approved|refused)|application (?:approved|refused)|council (?:approved|refused)|gets? (?:planning )?permission|permission granted)\b/.test(blob);
+}
+function hasDirectCurrentDecisionAuthority(sources=[]){
+  return sources.some(x=>{
+    const u=String(x?.url||'').toLowerCase();
+    const t=String(x?.source_type||'').toLowerCase();
+    return /official|primary/.test(t)||/\.gov\.uk|gov\.uk|planning|moderngov|council/.test(u);
+  });
+}
+
 async function fastEvidencePack(fields,cls){
   if(cls==='A — Question Only')return {research_status:'Sufficient',research_summary:'Question-only article; no research required.',sources:[],missing_evidence:[]};
   const queries=articleSearchTerms(fields);
@@ -379,12 +394,16 @@ async function fastEvidencePack(fields,cls){
     String(editorSource.description||'').includes('EDITOR-CONFIRMED SOURCE TEXT:') &&
     String(editorSource.description||'').length>=220
   );
-  const sufficient=decisiveEditorOfficial||(chosen.length>=2&&(official+local>=1)&&specificStrong>=1&&chosen.every(x=>Number(x.relevance)>=3));
+  const hardCurrentDecision=isHardCurrentDecisionBrief(fields);
+  const baseSufficient=decisiveEditorOfficial||(chosen.length>=2&&(official+local>=1)&&specificStrong>=1&&chosen.every(x=>Number(x.relevance)>=3));
+  // Current planning/approval explainers must not pass on one newspaper headline plus generic search noise.
+  // Force entity-first recovery unless the fast pack already contains direct official/primary confirmation.
+  const sufficient=baseSufficient&&(!hardCurrentDecision||decisiveEditorOfficial||hasDirectCurrentDecisionAuthority(chosen));
   return {
     research_status:sufficient?'Sufficient':'Insufficient',
     research_summary:decisiveEditorOfficial
       ?`Decisive editor-confirmed official source retained. It may establish the core article premise and reader action without source-count padding.`
-      :`Source precision gate retained ${chosen.length} distinct article-specific source leads (${official} official, ${local} local; ${specificStrong} strongly matched). Generic reference pages, duplicate stories and sources without the article's entity/topic anchors were removed before writing.`,
+      :`Source precision gate retained ${chosen.length} distinct article-specific source leads (${official} official, ${local} local; ${specificStrong} strongly matched). Generic reference pages, duplicate stories and sources without the article's entity/topic anchors were removed before writing.${hardCurrentDecision&&!hasDirectCurrentDecisionAuthority(chosen)?' Current-decision gate: official/primary confirmation is still required before writing.':''}`,
     sources:chosen,
     decisive_editor_source:decisiveEditorOfficial,
     core_evidence_relaxed:decisiveEditorOfficial,
@@ -507,6 +526,8 @@ TASK
    - OPTIONAL may be omitted.
 7. A trial can be written about before results exist only when its existence, responsible body and present purpose are verified.
 8. If the exact subject cannot be verified, return Insufficient and say what identity or official confirmation is missing.
+9. CURRENT PLANNING / APPROVAL STORIES: resolve the applicant/business/person, exact site/address or settlement, planning authority and application/decision reference where possible. Search the relevant UK council planning/decision material. Do not return Sufficient for an approval explainer from a single newspaper/RSS headline alone. Require direct official/primary confirmation of the decision or, if that is genuinely unavailable, at least two independent article-specific local sources plus a clearly resolved subject and authority.
+10. Geography is hard-gated to Norfolk, England. Remove US same-name results before returning sources, including Norfolk VA property portals, Zillow, Realtor, Redfin, Norfolk State University and Norfolk Southern.
 
 Return ONLY valid JSON:
 {"research_status":"Sufficient or Insufficient","resolved_subject":{"name":"","location":"","responsible_body":"","reference":"","confidence":"high/medium/low"},"research_summary":"","sources":[{"title":"","url":"","supports":"","source_type":"official/primary/local/discovery/other","reader_facing":true}],"required_now_missing":[],"future_tests":[],"optional_missing":[],"missing_evidence":[]}`;
@@ -526,7 +547,7 @@ async function recoverEvidencePack(fields,cls,firstPass,model){
     source_type:String(x.source_type||sourceTypeFor(x.url,x.title)).trim()||'other',
     relevance:Math.max(5,Number(x.relevance||0))
   })).filter(x=>x.url);
-  const merged=mergeEvidenceSources(recoveredSources,firstPass?.sources||[]);
+  const merged=mergeEvidenceSources(recoveredSources,firstPass?.sources||[]).filter(x=>!genericDriftSource(x)&&!wrongGeographySource({title:x.title,description:x.supports,source:x.source_type,url:x.url},fields));
   const requiredNow=Array.isArray(recovered.required_now_missing)?recovered.required_now_missing.map(x=>String(x||'').trim()).filter(Boolean):[];
   const futureTests=Array.isArray(recovered.future_tests)?recovered.future_tests.map(x=>String(x||'').trim()).filter(Boolean):[];
   const optionalMissing=Array.isArray(recovered.optional_missing)?recovered.optional_missing.map(x=>String(x||'').trim()).filter(Boolean):[];
@@ -535,7 +556,15 @@ async function recoverEvidencePack(fields,cls,firstPass,model){
   const hasResolvedSubject=Boolean(String(resolved.name||'').trim());
   const hasEvidence=merged.length>0;
   // Editorial timing rule: future outcomes and optional detail do not make today's research insufficient.
-  const timedStatus=(requiredNow.length===0 && hasResolvedSubject && hasEvidence)?'Sufficient':(String(recovered.research_status||'Insufficient')==='Sufficient'?'Sufficient':'Insufficient');
+  let timedStatus=(requiredNow.length===0 && hasResolvedSubject && hasEvidence)?'Sufficient':(String(recovered.research_status||'Insufficient')==='Sufficient'?'Sufficient':'Insufficient');
+  const hardCurrentDecision=isHardCurrentDecisionBrief(fields);
+  const directAuthority=hasDirectCurrentDecisionAuthority(merged);
+  const localIndependent=merged.filter(x=>String(x.source_type||'').toLowerCase()==='local').length;
+  const resolvedAuthority=Boolean(String(resolved.responsible_body||'').trim());
+  if(hardCurrentDecision && !(directAuthority || (localIndependent>=2 && hasResolvedSubject && resolvedAuthority))){
+    timedStatus='Insufficient';
+    requiredNow.push('Direct official/primary confirmation of the current planning or approval decision, or two independent local sources with the exact subject and planning authority resolved.');
+  }
   return {
     research_status:timedStatus,
     research_summary:String(recovered.research_summary||'').trim()||'Second-pass research completed.',
@@ -614,10 +643,9 @@ function relaxOpenQuestionEvidenceDemands(fields,research){
     research.research_status='Sufficient';
     research.core_evidence_relaxed=true;
     research.open_question_verified=true;
-    research.research_summary=[
-      String(research.research_summary||'').trim(),
-      'Open-question gate: credible Norfolk examples are sufficient to seed a reader nomination/debate article. Do not claim a winner, countywide consensus or reader testimony that is not supplied; present verified examples as starting points and invite readers to add their own.'
-    ].filter(Boolean).join(' ');
+    const openNote='Open-question gate: credible Norfolk examples are sufficient to seed a reader nomination/debate article. Do not claim a winner, countywide consensus or reader testimony that is not supplied; present verified examples as starting points and invite readers to add their own.';
+    const baseSummary=String(research.research_summary||'').trim();
+    research.research_summary=baseSummary.includes('Open-question gate:')?baseSummary:[baseSummary,openNote].filter(Boolean).join(' ');
   }
   return research;
 }
@@ -1206,7 +1234,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.7.8`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.7.9`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1352,7 +1380,7 @@ export default async(request)=>{
     }
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.8`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.9`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),

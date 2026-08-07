@@ -1,0 +1,21 @@
+ICS v3.10.16 — Current-News Recovery + Life-Lane Guard
+
+Production research fixes
+- Hard UK geography guard now rejects Norfolk, Virginia property/search contamination (including Zillow/Realtor/Redfin and /norfolk-va/ results) before evidence can be retained.
+- Current planning/approval stories can no longer pass from a newspaper/RSS headline plus generic search results. They must trigger entity-first recovery unless direct official/primary confirmation is already present.
+- Current-decision recovery now explicitly resolves applicant/business/person, site/location, planning authority and decision/application reference where possible, and searches for council/official material.
+- Targeted research budget raised from 45s to 65s to reduce avoidable entity-recovery timeouts.
+- Recovered and first-pass sources are geography-filtered again before merge, so a bad early result cannot leak back into the final pack.
+- Hard current-decision validation requires direct authority evidence, or two independent local sources with exact subject and authority resolved.
+- Open-question guidance is appended once only instead of repeating in research summaries.
+- Production Service bumped to v3.7.9.
+
+Spotlight life-lane guard
+- Adds a Master-layer life check, separate from overall issue/support balance.
+- Target: at least 4 life-led Masters and at least 2 discovery/fun/what's-on Masters.
+- Food Master target is normally 2; 3 is a soft review when the angles are genuinely different; 4+ is a planning block.
+- Civic/public-service Master concentration has a normal maximum of 3.
+- Existing overall life, mood, sponsor and support-lane checks remain in place.
+
+Operator note
+- This patch does not invalidate already-produced Masters. For the current Norfolk issue, keep the strong finished food pieces; use blocked/replacement slots and supporting components to broaden into discovery, people, fun, places and reader-life content rather than rebuilding completed work.
