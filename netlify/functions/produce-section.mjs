@@ -6,7 +6,26 @@ const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=65000;
-const RELEASE_VERSION='3.7.1';
+const RELEASE_VERSION='3.7.10';
+
+function publicationContext(fields={}){
+  const supplied=String(fields.__publicationName||fields['Publication Name']||'').trim();
+  const blob=[supplied,value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Local Proof Needed'),value(fields,'Notes')].join(' ').toLowerCase();
+  let name=supplied,area='',country='England',councilDomain='',policeDomain='',visitDomain='';
+  if(/peterborough/.test(blob)){
+    name=name||'Peterborough Spotlight';area='Peterborough';councilDomain='peterborough.gov.uk';policeDomain='cambs.police.uk';visitDomain='visitpeterborough.com';
+  }else if(/cambridgeshire|cambridge/.test(blob)){
+    name=name||'Cambridgeshire Spotlight';area='Cambridgeshire';councilDomain='cambridgeshire.gov.uk';policeDomain='cambs.police.uk';visitDomain='visitcambridge.org';
+  }else if(/norfolk|norwich|king'?s lynn|great yarmouth|cromer|hunstanton/.test(blob)){
+    name=name||'Norfolk Spotlight';area='Norfolk';councilDomain='norfolk.gov.uk';policeDomain='norfolk.police.uk';visitDomain='visitnorfolk.com';
+  }else{
+    area=(supplied.replace(/\s+(Spotlight|Taste Trail|Pet Insider|Home Seller Insider).*$/i,'').trim()||'the publication area');
+    name=name||area;
+  }
+  return {name,area,country,location:`${area}, ${country}`,councilDomain,policeDomain,visitDomain};
+}
+function publicationArea(fields={}){return publicationContext(fields).area}
+
 function withTimeout(promise,timeoutMs,label){
   let timer;
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const e=new Error(`${label} timed out after ${Math.round(timeoutMs/1000)} seconds`);e.status=408;reject(e)},timeoutMs)});
@@ -153,7 +172,7 @@ function googleNewsUrl(q){return `https://news.google.com/rss/search?q=${encodeU
 function sourceTypeFor(url='',title=''){
   const h=hostOf(url),blob=(h+' '+title).toLowerCase();
   if(/\.gov\.uk$|gov\.uk|nhs\.uk|nice\.org\.uk|police\.uk|parliament\.uk|abta\.com|fca\.org\.uk|caa\.co\.uk|ofcom\.org\.uk|ofgem\.gov\.uk|ombudsman|official/.test(blob))return 'official';
-  if(/norfolk|edp24|eastern daily press|bbc\.co\.uk|itv\.com/.test(blob))return 'local';
+  if(/norfolk|edp24|eastern daily press|peterborough|peterboroughtoday|cambridgeshire|cambridgeindependent|cambridge-news|bbc\.co\.uk|itv\.com/.test(blob))return 'local';
   return 'other';
 }
 
@@ -184,8 +203,9 @@ function relevanceScore(x,fields){
   const blob=[x.title,x.description,x.source,x.url].join(' ').toLowerCase();
   // Strong anchors for local article identity.
   if(/\ba149\b/i.test(title+' '+q)&&/\ba149\b/i.test(blob))score+=5;
-  if(/\bnorfolk\b/i.test(title+' '+q+' '+proof)&&/\bnorfolk\b/i.test(blob))score+=2;
-  const specific=tokens(title).filter(w=>!['norfolk'].includes(w));
+  const area=publicationArea(fields).toLowerCase();
+  if(area&&area!=='the publication area'&&(title+' '+q+' '+proof).toLowerCase().includes(area)&&blob.includes(area))score+=2;
+  const specific=tokens(title).filter(w=>w!==area);
   if(specific.filter(w=>hay.has(w)).length>=2)score+=2;
   return score;
 }
@@ -279,7 +299,8 @@ function precisionAnchors(fields){
   const notes=String(value(fields,'Notes')||'');
   const current=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
   const all=[title,q,proof,current].join(' ');
-  const entities=[...new Set((all.match(/\bA\d{1,3}\b|\bNorfolk\b|\bSuffolk\b|\bSEND\b|\bNHS\b|\bGigabit\b|\bKing'?s Lynn\b|\bGreat Yarmouth\b|\bNorwich\b|\bCromer\b|\bHunstanton\b/gi)||[]).map(x=>x.toLowerCase()))];
+  const ctx=publicationContext(fields);
+  const entities=[...new Set([...(all.match(/\bA\d{1,3}\b|\bNorfolk\b|\bPeterborough\b|\bCambridgeshire\b|\bCambridge\b|\bSuffolk\b|\bSEND\b|\bNHS\b|\bGigabit\b|\bKing'?s Lynn\b|\bGreat Yarmouth\b|\bNorwich\b|\bCromer\b|\bHunstanton\b/gi)||[]).map(x=>x.toLowerCase()),ctx.area.toLowerCase()].filter(Boolean))];
   const topicGroups=[];
   if(/housing|homes|estate|developer|planning/i.test(all))topicGroups.push(['housing','homes','estate','developer','planning','development']);
   if(/road|traffic|junction|transport|a\d+/i.test(all))topicGroups.push(['road','traffic','junction','transport','a149','highway']);
@@ -311,26 +332,23 @@ function articleSearchTerms(fields){
   const notes=String(value(fields,'Notes')||'');
   const current=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
   const compact=s=>String(s||'').replace(/[—–:?!(),"']/g,' ').replace(/\s+/g,' ').trim();
-  const key=[title,q].join(' ').match(/\b[A-Z]\d{1,3}\b|\bNorfolk\b|\bSEND\b|\bGigabit\b|\bpothole\w*\b|\bhousing\b|\btravel hub\b|\bobesity\b|\blibrar\w*\b|\bspeeding\b|\bsurvey\b/gi)||[];
+  const ctx=publicationContext(fields), area=ctx.area;
+  const key=[title,q].join(' ').match(/\b[A-Z]\d{1,3}\b|\bNorfolk\b|\bPeterborough\b|\bCambridgeshire\b|\bCambridge\b|\bSEND\b|\bGigabit\b|\bpothole\w*\b|\bhousing\b|\btravel hub\b|\bobesity\b|\blibrar\w*\b|\bspeeding\b|\bsurvey\b/gi)||[];
   const base=[...new Set(key.map(x=>x.toLowerCase()))].join(' ');
   const editorUrl=editorAuthoritativeSourceUrl(fields);
-  const queries=[
-    compact(title),
-    compact(`${base} ${q}`).slice(0,180),
-    compact(current).slice(0,180),
-    compact(`site:norfolk.gov.uk ${base} ${title}`).slice(0,180),
-    compact(`site:gov.uk ${base} ${title}`).slice(0,180)
-  ].filter(Boolean);
+  const queries=[compact(title),compact(`${base} ${q}`).slice(0,180),compact(current).slice(0,180)];
+  if(ctx.councilDomain)queries.push(compact(`site:${ctx.councilDomain} ${base} ${title}`).slice(0,180));
+  queries.push(compact(`site:gov.uk ${base} ${title}`).slice(0,180));
   if(editorUrl){try{const h=new URL(editorUrl).hostname.replace(/^www\./,'');queries.unshift(compact(`site:${h} ${title}`));}catch{}}
-  if(/nhs|obesity|health|send/i.test(title+' '+q+' '+evidence))queries.push(compact(`site:nhs.uk Norfolk ${title}`).slice(0,180));
-  if(/police|speed/i.test(title+' '+q))queries.push(compact(`site:norfolk.police.uk ${title}`).slice(0,180));
-  if(/planning|housing|a149|self-build/i.test(title+' '+q+' '+proof))queries.push(compact(`Norfolk planning ${title}`).slice(0,180));
+  if(/nhs|obesity|health|send/i.test(title+' '+q+' '+evidence))queries.push(compact(`site:nhs.uk ${area} ${title}`).slice(0,180));
+  if(/police|speed/i.test(title+' '+q)&&ctx.policeDomain)queries.push(compact(`site:${ctx.policeDomain} ${area} ${title}`).slice(0,180));
+  if(/planning|housing|a\d+|self-build/i.test(title+' '+q+' '+proof))queries.push(compact(`${area} planning ${title}`).slice(0,180));
   if(/pothole|road repair|highway repair/i.test(title+' '+q+' '+proof+' '+current)){
     queries.unshift(compact(`"${current.replace(/\|.*$/,'').replace(/^Lead\s+\d+:\s*/i,'').trim()}"`).slice(0,180));
-    queries.push('site:norfolk.gov.uk Norfolk County Council pothole repair trial techniques');
+    if(ctx.councilDomain)queries.push(compact(`site:${ctx.councilDomain} ${area} pothole repair trial techniques`).slice(0,180));
     queries.push('site:gov.uk pothole repair reporting repeat repairs council 2026');
   }
-  return [...new Set(queries)].slice(0,9);
+  return [...new Set(queries.filter(Boolean))].slice(0,9);
 }
 function isHardCurrentDecisionBrief(fields){
   const title=String(value(fields,'Section Title')||'');
@@ -455,19 +473,15 @@ function independentQuestionSearchTerms(fields){
   const title=String(value(fields,'Section Title')||'').trim();
   const q=String(value(fields,'Core Reader Question')||'').trim();
   const compact=x=>String(x||'').replace(/[—–:?!(),"']/g,' ').replace(/\s+/g,' ').trim();
-  const terms=[
-    compact(q),
-    compact(`Norfolk ${q}`),
-    compact(title),
-    compact(`Norfolk ${title}`)
-  ];
+  const ctx=publicationContext(fields), area=ctx.area;
+  const terms=[compact(q),compact(`${area} ${q}`),compact(title),compact(`${area} ${title}`)];
   if(/child|read|book|liter/i.test(`${title} ${q}`)){
-    terms.push(compact(`Norfolk libraries ${q}`));
+    terms.push(compact(`${area} libraries ${q}`));
     terms.push(compact(`site:booktrust.org.uk ${q}`));
   }
   if(/event|what's on|things to do|literary|author/i.test(`${title} ${q}`)){
-    terms.push(compact(`site:visitnorfolk.com Norfolk August 2026 literary events books authors`));
-    terms.push(compact(`site:norfolk.gov.uk libraries events Norfolk August 2026`));
+    if(ctx.visitDomain)terms.push(compact(`site:${ctx.visitDomain} ${area} August 2026 events`));
+    if(ctx.councilDomain)terms.push(compact(`site:${ctx.councilDomain} libraries events ${area} August 2026`));
   }
   return [...new Set(terms.filter(Boolean))].slice(0,7);
 }
@@ -490,14 +504,15 @@ async function fastIndependentQuestionPack(fields,cls){
     chosen.push({title:String(x.title||x.source||'').slice(0,220),url,supports:String(x.description||`Search result for: ${x.query}`).slice(0,700),source_type:sourceTypeFor(url,x.source),relevance:x.relevance});
     if(chosen.length>=6)break;
   }
-  const strong=chosen.filter(x=>/official|primary|local/i.test(x.source_type)||/\.gov\.uk|gov\.uk|nhs\.uk|visitnorfolk\.com|booktrust\.org\.uk/i.test(x.url)).length;
+  const ctx=publicationContext(fields);
+  const strong=chosen.filter(x=>/official|primary|local/i.test(x.source_type)||/\.gov\.uk|gov\.uk|nhs\.uk|booktrust\.org\.uk/i.test(x.url)||[ctx.councilDomain,ctx.visitDomain].filter(Boolean).some(d=>String(x.url||'').includes(d))).length;
   if(chosen.length<2||strong<1)return null;
   return {
     research_status:'Sufficient',
     research_summary:`Independent question recovery found ${chosen.length} relevant sources after the original discovery lead could not carry the article. The article should answer the approved reader question from these sources rather than write about the failed source search.`,
     sources:chosen,
     required_now_missing:[],future_tests:[],optional_missing:[],missing_evidence:[],
-    resolved_subject:{name:String(value(fields,'Core Reader Question')||value(fields,'Section Title')||'Approved reader question'),location:'Norfolk, England',responsible_body:'Independent verified sources',reference:'Question-first recovery',confidence:'medium'},
+    resolved_subject:{name:String(value(fields,'Core Reader Question')||value(fields,'Section Title')||'Approved reader question'),location:publicationContext(fields).location,responsible_body:'Independent verified sources',reference:'Question-first recovery',confidence:'medium'},
     recovery_used:true,recovery_model:'FAST-INDEPENDENT-QUESTION-v1',independent_question_recovery:true
   };
 }
@@ -526,6 +541,7 @@ function recoveryResearchPrompt(fields,cls,firstPass){
   const notes=String(value(fields,'Notes')||'');
   const current=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
   const provenance=(notes.match(/Plan provenance:\s*([^\n]+)/i)||[])[1]||'';
+  const ctx=publicationContext(fields);
   return `You are the bounded second-pass evidence researcher for one UK local-news article.
 
 ARTICLE
@@ -545,7 +561,7 @@ TASK
 2. QUESTION-FIRST RECOVERY: if the discovery article itself is unavailable but the approved brief is a guide/advice/recommendation question rather than a specific breaking-news claim, you MAY abandon the discovery article as the spine and answer the approved reader question independently from credible primary, official and genuinely local sources. In that case, do not write a meta-story about the source being unavailable.
 3. For guide/list/event briefs, it is acceptable to build a fresh verified set of examples that answers the reader question; do not require proof that those examples appeared in the original discovery article. Verify every example directly and state only supported details.
 4. If enough independent evidence cannot answer the approved question well, return Insufficient so the item can be RETRY / REPLACE. Do not invent an article about failed research.
-5. This publication means Norfolk, England. Reject Norfolk, Virginia and other same-name places.
+5. This publication is ${ctx.name}. The required geography is ${ctx.location}. Reject same-name places outside the UK publication area.
 3. For roads/potholes, identify the accountable highway authority and find the most direct official council, committee, contract, scheme or GOV.UK source.
 4. The supplied newspaper/RSS lead is discovery only. It may establish what to search for, but primary/official evidence should support material reader-facing facts where available.
 5. Return no more than 4 distinct sources. Map each source to a specific claim. Do not pad.
@@ -556,7 +572,7 @@ TASK
 7. A trial can be written about before results exist only when its existence, responsible body and present purpose are verified.
 8. If the exact subject cannot be verified, return Insufficient and say what identity or official confirmation is missing.
 9. CURRENT PLANNING / APPROVAL STORIES: resolve the applicant/business/person, exact site/address or settlement, planning authority and application/decision reference where possible. Search the relevant UK council planning/decision material. Do not return Sufficient for an approval explainer from a single newspaper/RSS headline alone. Require direct official/primary confirmation of the decision or, if that is genuinely unavailable, at least two independent article-specific local sources plus a clearly resolved subject and authority. CURRENT-NEWS ENTITY LOCK: do not substitute an older planning case merely because it shares the same category (for example another dog groomer, gym or housing scheme). A current lead must resolve to current-year or recent decision evidence that matches the place, proposal and authority; if only an older lookalike case can be found, return Insufficient and say the current entity still needs resolving.
-10. Geography is hard-gated to Norfolk, England. Remove US same-name results before returning sources, including Norfolk VA property portals, Zillow, Realtor, Redfin, Norfolk State University and Norfolk Southern.
+10. Geography is hard-gated to ${ctx.location}. Remove results from same-name places outside the UK. For Norfolk specifically, reject Norfolk, Virginia and US property/university/company results.
 
 Return ONLY valid JSON:
 {"research_status":"Sufficient or Insufficient","resolved_subject":{"name":"","location":"","responsible_body":"","reference":"","confidence":"high/medium/low"},"research_summary":"","sources":[{"title":"","url":"","supports":"","source_type":"official/primary/local/discovery/other","reader_facing":true}],"required_now_missing":[],"future_tests":[],"optional_missing":[],"missing_evidence":[]}`;
@@ -677,7 +693,7 @@ function relaxOpenQuestionEvidenceDemands(fields,research){
     research.research_status='Sufficient';
     research.core_evidence_relaxed=true;
     research.open_question_verified=true;
-    const openNote='Open-question gate: credible Norfolk examples are sufficient to seed a reader nomination/debate article. Do not claim a winner, countywide consensus or reader testimony that is not supplied; present verified examples as starting points and invite readers to add their own.';
+    const openNote='Open-question gate: credible local examples are sufficient to seed a reader nomination/debate article. Do not claim a winner, countywide consensus or reader testimony that is not supplied; present verified examples as starting points and invite readers to add their own.';
     const baseSummary=String(research.research_summary||'').trim();
     research.research_summary=baseSummary.includes('Open-question gate:')?baseSummary:[baseSummary,openNote].filter(Boolean).join(' ');
   }
@@ -694,12 +710,12 @@ function relaxNonCoreEvidenceDemands(fields,research){
   const question=String(value(fields,'Core Reader Question')||'');
   const localProof=String(value(fields,'Local Proof Needed')||'');
   const articleBlob=(title+' '+question+' '+localProof).toLowerCase();
-  const demandsLocalNamedClaim=/\b(named|specific)\s+(?:norfolk|local)\s+(?:retailer|business|venue|operator|route|scheme)|\bwhich norfolk (?:retailer|business|venue|operator|route)\b/i.test(articleBlob);
+  const demandsLocalNamedClaim=/\b(named|specific)\s+(?:local|publication-area)\s+(?:retailer|business|venue|operator|route|scheme)|\bwhich (?:local|named) (?:retailer|business|venue|operator|route)\b/i.test(articleBlob);
 
   const canBeOptional=(item)=>{
     const t=String(item||'');
     if(/hands[- ]on|representative (?:android )?devices?|google pixel|samsung galaxy|representative participating uk issuers?|tested? on current|real[- ]world device testing/i.test(t)) return true;
-    if(!demandsLocalNamedClaim && /norfolk[- ]relevant retailers?|local pass|particular norfolk business|specific norfolk retailer|transport operators? before naming/i.test(t)) return true;
+    if(!demandsLocalNamedClaim && /norfolk[- ]relevant retailers?|local pass|particular local business|specific local retailer|transport operators? before naming/i.test(t)) return true;
     if(/supplied .* article could not be independently reviewed|exact feature list and expert attribution remain unverified|original discovery (?:article|lead).*unavailable/i.test(t)) return true;
     return false;
   };
@@ -874,7 +890,7 @@ STYLE, AUDIENCE AND SAFETY
 - Use named local proof only where supported by the supplied research pack.
 - Distinguish fact, opinion and reader questions.
 - EDITORIAL SOURCE RULE: Spotlight is the publisher, not a news-curation feed. Do not normally write "EDP24 reports", "the BBC says", "according to [newspaper]" or otherwise foreground discovery/news-media sources in reader-facing copy. Use those sources internally to discover/corroborate the story. Prefer attribution to the underlying official body, document, dataset, organisation or direct published statement when attribution is useful.
-- It is fine to say "Norfolk County Council says...", "council papers show...", "NHS guidance says..." or equivalent primary-source attribution where that adds authority.
+- It is fine to say "the council says...", "council papers show...", "NHS guidance says..." or equivalent primary-source attribution where that adds authority.
 - PLANNING REFERENCE RULE: planning application/reference numbers are primarily internal evidence identifiers. Do not put a planning reference number in the headline, subhead or opening, and do not clutter the body with it unless the reader genuinely needs the number to find or distinguish the application. Prefer the business/person, exact place and practical outcome in reader-facing copy; retain the reference in Sources / Internal QA.
 - EVIDENCE TIMING RULE: facts verified now may be stated as facts. Outcomes that genuinely do not exist yet may be explored as clearly unanswered questions: "Could this...?", "Will it...?", "What happens if...?", "What should we watch?". Do not turn a future unknown into a publication blocker merely because results do not yet exist.
 - A question mark must never disguise an unsupported factual premise. Verify the premise first, then ask the legitimate unanswered question.
@@ -1060,7 +1076,7 @@ export default async(request)=>{
     if(!rawRecord)return json(404,{ok:false,error:'The selected section could not be found in Airtable.'});
     const record=cleanRecord(rawRecord);
     log('airtable_lookup_completed',{recordId:record.id,title:String(record.fields?.['Section Title']||'')});
-    const fields=record.fields||{};
+    const fields={...(record.fields||{}),__publicationName:String(data.publicationName||'').trim()};
     const cls=ALLOWED_CLASSES.has(data.productionClass)?data.productionClass:productionClass(fields);
     const sourceNotes=String(value(fields,'Notes')||'');
     const originalNotes=stripRuntimeBlocks(sourceNotes);
