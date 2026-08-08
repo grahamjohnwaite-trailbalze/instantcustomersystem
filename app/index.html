@@ -44,7 +44,7 @@
 .command-centre{display:grid;grid-template-columns:1.4fr repeat(4,minmax(110px,.55fr));gap:10px;margin:0 0 14px}.command-main,.command-metric{background:#fff;border:1px solid #d8dee8;border-radius:12px;padding:12px}.command-main h2{margin:0 0 4px}.command-progress{height:10px;background:#e9eef5;border-radius:999px;overflow:hidden;margin:10px 0 8px}.command-progress span{display:block;height:100%;background:var(--accent);border-radius:999px}.command-metric strong{display:block;font-size:23px;line-height:1.1}.command-metric span{font-size:11px;color:#667085}.command-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.registry-strip{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.registry-chip{font-size:11px;border:1px solid #d8dee8;border-radius:999px;padding:4px 7px;background:#f8fafc}.object-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#667085}.lifecycle-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.life-step{font-size:9px;border:1px solid #d8dee8;border-radius:999px;padding:2px 5px;background:#fff;color:#667085}.life-step.done{background:#eaf8f0;border-color:#b7e2c8;color:#176b3a}.life-step.current{background:#edf4ff;border-color:#b9d1ff;color:#174ea6;font-weight:800}.next-action-banner{border-left:4px solid var(--accent);background:#f4f8ff;border-radius:8px;padding:9px 10px;margin-top:8px}.component-identity{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:9px;border:1px solid #d8dee8;border-radius:9px;background:#f8fafc}.component-identity .field{margin:0}@media(max-width:1100px){.command-centre{grid-template-columns:1fr 1fr}.command-main{grid-column:1/-1}}@media(max-width:700px){.command-centre{grid-template-columns:1fr}.command-main{grid-column:auto}}
 
 .engine-profile{border:1px solid #cbd5e1;background:linear-gradient(180deg,#f8fbff,#fff);border-radius:12px;padding:12px;margin:0 0 14px}.engine-profile-grid{display:grid;grid-template-columns:1.3fr repeat(4,minmax(110px,.7fr));gap:10px;align-items:stretch}.engine-profile-card{border:1px solid #d8dee8;background:#fff;border-radius:10px;padding:10px}.engine-profile-card strong{display:block;font-size:15px}.engine-profile-card span{display:block;font-size:11px;color:#667085;margin-top:3px}.engine-health{margin-top:10px;padding:9px 10px;border-radius:8px;background:#f8fafc;border-left:4px solid #94a3b8}.engine-health.ready{background:#eefaf3;border-left-color:#22a06b}.engine-health.review{background:#fff8e8;border-left-color:#d97706}.engine-health.blocked{background:#fff0f0;border-left-color:#dc2626}.lane-chip-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.lane-chip{font-size:10px;padding:3px 6px;border:1px solid #d8dee8;border-radius:999px;background:#fff}@media(max-width:1050px){.engine-profile-grid{grid-template-columns:1fr 1fr}.engine-profile-card:first-child{grid-column:1/-1}}@media(max-width:650px){.engine-profile-grid{grid-template-columns:1fr}.engine-profile-card:first-child{grid-column:auto}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.11.9<br><strong>Plan-to-Brief Sync Fix</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-08 · edited plan items update existing briefs · stale story state cleared · no forced quantity carry-over</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.11.10<br><strong>Support Component Production</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-08 · selected support blocks can now be produced from their saved brief, source requirements, issue context and attached partner · one action maximum</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">Plan → Build → Canvas</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -165,7 +165,7 @@
 <div class="field"><label>Production template</label><input id="inspect-template" disabled></div>
 <div class="field"><label>Production points</label><input id="inspect-points" type="number" min="1" max="8"></div>
 <div class="field"><label>Legacy status</label><select id="inspect-status"><option>NEEDS DECISION</option><option>NEEDS PRODUCTION</option><option>READY</option></select></div>
-<div class="toolbar"><button class="btn secondary" id="create-component-copy">Create context-aware starter</button><button class="btn" id="save-inspector">Save component</button></div>
+<div class="toolbar"><button class="btn secondary" id="create-component-copy">Create context-aware starter</button><button class="btn" id="produce-selected-component">Produce component</button><button class="btn" id="save-inspector">Save component</button></div>
 <div class="toolbar"><button class="btn danger" id="remove-canvas-block">Remove component</button></div>
 </div>
 </section>
@@ -1539,6 +1539,80 @@ function createStarterCopy(){const items=getCanvas(),b=items.find(x=>x.uid===can
  else text=`${b.type}\n\nISSUE PROMISE: ${theme}\nLIFE LANE: ${lane||'[Choose lane]'}\nREADER JOB: ${b.purpose||'[Clarify the job]'}\nNEARBY CONTEXT: ${localContext||'No neighbouring items yet'}\n\n[CREATE FINISHED LETTERMAN-READY CONTENT HERE]\n\nLOCAL PROOF / SOURCE: ${b.proof||'[Add if factual]'}\nPRIMARY ACTION: ${b.cta||'[One action maximum]'}`;
  E('inspect-content').value=text;if(!E('inspect-life-lane').value&&lane)E('inspect-life-lane').value=lane;E('inspect-status').value='NEEDS PRODUCTION'}
 
+async function produceSelectedComponent(){
+  if(!canvasSelectedUid){alert('Select a supporting component first.');return}
+  saveInspector();
+  const items=getCanvas();
+  const i=items.findIndex(x=>x.uid===canvasSelectedUid);
+  if(i<0)return;
+  const block=items[i];
+  if(block.kind==='article'){alert('Use Master Article production for articles.');return}
+  const c=componentContext(block);
+  const theme=c.theme||E('assembly-theme')?.value||'';
+  const before=c.before?.title||'';
+  const after=c.after?.title||'';
+  const starter=String(block.productionBrief||block.content||'').trim();
+  const proof=String(block.proof||'').trim();
+  const partner=String(block.partner||'').trim();
+  const partnerCategory=String(block.category||'').trim();
+  const commitment=String(block.commitment||'').trim();
+  const primaryAction=String(block.cta||block.button||'').trim();
+  const button=E('produce-selected-component');
+  const original=button.textContent;
+  button.disabled=true;button.textContent='Producing…';
+  try{
+    const prompt=`You are producing ONE finished supporting component for a Trail Blaze Local Spotlight newsletter.
+
+PUBLICATION: ${S.publication?.name||S.publication?.fields?.Name||currentPublicationName()||'Spotlight'}
+ISSUE PROMISE: ${theme}
+COMPONENT TYPE: ${block.type}
+LABEL: ${block.title}
+PURPOSE / READER JOB: ${block.purpose||''}
+LIFE LANE: ${block.lifeLane||''}
+NEARBY ITEMS: ${[before&&`Before: ${before}`,after&&`After: ${after}`].filter(Boolean).join(' | ')||'None yet'}
+ATTACHED PARTNER: ${partner||'None'}
+PARTNER CATEGORY: ${partnerCategory||'None'}
+PARTNER COMMITMENT: ${commitment||'Not stated'}
+LOCAL PROOF / SOURCE REQUIREMENT: ${proof||'No factual source supplied — do not invent facts.'}
+PRODUCTION BRIEF / STARTER: ${starter||'No starter supplied.'}
+PRIMARY ACTION REQUESTED: ${primaryAction||'None — add no CTA unless the reader job clearly needs one.'}
+
+Write ONLY the finished Letterman-ready component copy.
+- Normally 60–140 words; shorter is fine when the format needs it. Never turn it into a mini Master Article.
+- One clear reader job. Answer or deliver value quickly.
+- Natural UK English and Spotlight personality. Sound like a local publication, not a report, brochure or AI explainer.
+- Use named local proof only when it is supplied or safely supported by the brief.
+- Do not invent prices, qualifications, testimonials, outcomes, quotes, services, claims or reader comments.
+- If a real partner is attached, integrate the partner naturally as the relevant expert/featured partner, not as an advert.
+- IMPORTANT: never invent advice and attribute it to the named partner. If the brief does not actually contain that partner's supplied advice, write any general editorial advice without quotation or personal attribution, and use the partner name only as the resident expert/route for follow-up.
+- ONE CTA maximum. If the requested action is blank and no action is needed, end without a CTA.
+- Do not include internal labels such as ISSUE PROMISE, READER JOB, LOCAL PROOF, PRODUCTION BRIEF, or [CREATE FINISHED...].
+- Do not include a markdown heading unless the copy genuinely needs a short reader-facing subhead; the component label is already stored separately.
+- Avoid filler phrases such as useful, practical, meaningful, key, crucial, straightforward, 'The question is', 'The honest answer', and 'in plain English'.`;
+    const data=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
+    const text=String(data.text||'').trim();
+    if(!text)throw new Error('No finished component copy returned.');
+    block.productionBrief=starter;
+    block.content=text;
+    block.contentStatus='APPROVED';
+    block.productionStatus='READY FOR LETTERMAN';
+    block.status='READY';
+    block.productionError='';
+    localStorage.setItem(assemblyKey(),JSON.stringify(items));
+    renderAssembly();
+    canvasSelectedUid=block.uid;
+    renderInspector();
+    alert('Component produced. Review the finished copy, make any small edit if needed, then Save component.');
+  }catch(err){
+    block.status='NEEDS PRODUCTION';
+    block.productionStatus='NOT STARTED';
+    block.productionError=String(err?.message||err);
+    localStorage.setItem(assemblyKey(),JSON.stringify(items));
+    renderAssembly();
+    canvasSelectedUid=block.uid;renderInspector();
+    alert('Component production failed: '+(err?.message||err));
+  }finally{button.disabled=false;button.textContent=original}
+}
 
 function exportCanvasBackup(){
   const issueId=assemblyIssueId();
@@ -2383,6 +2457,11 @@ ISSUE PROMISE: ${promise}
 COMPONENT TYPE: ${block.type}
 HEADLINE/LABEL: ${block.title}
 PURPOSE/READER JOB: ${block.purpose||''}
+ATTACHED PARTNER: ${block.partner||'None'}
+PARTNER CATEGORY: ${block.category||'None'}
+LOCAL PROOF / SOURCE REQUIREMENT: ${block.proof||'No factual source supplied — do not invent facts.'}
+SAVED PRODUCTION BRIEF: ${block.productionBrief||block.content||'None'}
+PRIMARY ACTION REQUESTED: ${block.cta||block.button||'None'}
 
 MASTER ARTICLE CONTEXT:
 ${articleContext}
@@ -2398,6 +2477,7 @@ Write ONLY the finished newsletter component copy.
 - Give this component ONE distinct job. It must add something the nearby Master Articles do not: a decision, laugh, fact, question, local recommendation, action or genuine voice. Do not paraphrase a nearby article or repeat its CTA/question in different words.
 - Use specific local relevance where supported by supplied context. A generic component that could run anywhere by swapping the place name has not earned its slot.
 - Never invent facts, businesses, prices, quotes, events, experts, sponsors or reader comments. If a factual claim needs evidence that is not supplied, turn it into a reader question/request for local input instead of inventing an answer.
+- If a real partner is attached, integrate them naturally as the relevant expert/featured partner, not as an advert. Never invent advice or a quote and attribute it to that partner; only attribute partner advice actually supplied in the brief/source requirement.
 - Avoid machine-smoothed filler such as useful, practical, meaningful, key, crucial, straightforward, 'The question is…' or 'That matters because…'.
 - Keep Spotlight's human edge: humour, a cheeky observation or a fair challenge is welcome where it fits, but never invent controversy.
 - One primary action maximum. No markdown heading because the label is stored separately.`;
@@ -2408,7 +2488,10 @@ Write ONLY the finished newsletter component copy.
       });
       const text=String(data.text||'').trim();
       if(!text)throw new Error('No component copy returned');
+      if(!block.productionBrief)block.productionBrief=String(block.content||'').trim();
       block.content=text;
+      block.contentStatus='APPROVED';
+      block.productionStatus='READY FOR LETTERMAN';
       block.status='READY';
       passed++;
       localStorage.setItem(assemblyKey(),JSON.stringify(canvas));
@@ -2887,7 +2970,7 @@ E('smart-plan-lock').onclick=lockSmartPlan;E('smart-plan-apply').onclick=applySm
 E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
 E('save-inspector').onclick=saveInspector;E('inspect-type').onchange=()=>{const t=E('inspect-type').value,d=COMPONENT_DEFS.find(x=>x.type===t);E('inspect-template').value=t==='MASTER ARTICLE'?'MASTER ARTICLE':(d?.template||(t==='PARTNER PRESENCE'?'PARTNER TIP':'SHORT COMPONENT'));E('inspect-points').value=t==='MASTER ARTICLE'?5:(d?.points||(t==='PARTNER PRESENCE'?3:2));if(t==='PARTNER PRESENCE'){E('inspect-has-partner').checked=true;E('partner-fields').hidden=false}};E('inspect-has-partner').onchange=toggleInspectorPartner;E('inspect-commercial-role').onchange=()=>{const role=E('inspect-commercial-role').value;if(['AUTHORITY','ACTIVATION','REVENUE'].includes(role)&&!E('inspect-has-partner').checked){E('inspect-partner-suggestion').textContent='This commercial role may benefit from a partner, but attach one only when a real partner is confirmed.'}};
 E('remove-canvas-block').onclick=()=>{if(canvasSelectedUid)removeCanvasBlock(canvasSelectedUid)};
-E('create-component-copy').onclick=createStarterCopy;
+E('create-component-copy').onclick=createStarterCopy;E('produce-selected-component').onclick=produceSelectedComponent;
 E('jump-next-component').onclick=jumpToNextIncompleteComponent;
 E('command-open-build').onclick=()=>show('build');
 
