@@ -6,7 +6,7 @@ const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=65000;
-const RELEASE_VERSION='3.8.0';
+const RELEASE_VERSION='3.8.1';
 const WRITER_PROMPT_VERSION='ARTICLE-BUILDER-STABLE-v1';
 
 function publicationContext(fields={}){
@@ -42,19 +42,31 @@ function normaliseWritingMode(raw=''){
   if(/human|community/.test(v))return 'HUMAN / COMMUNITY';
   return String(raw||'').trim().toUpperCase();
 }
-function articleMode(fields={}){
-  const notes=String(value(fields,'Notes')||'');
-  const explicit=normaliseWritingMode((notes.match(/Writing mode:\s*([^\n]+)/i)||[])[1]||value(fields,'Writing Mode')||'');
-  if(explicit)return explicit;
+function inferredArticleMode(fields={}){
   const title=String(value(fields,'Section Title')||'');
   const q=String(value(fields,'Core Reader Question')||'');
   const blob=`${title} ${q}`.toLowerCase();
   if(/\b(five|six|seven|eight|nine|ten|\d+)\b.*\b(places|ways|things|applications|pubs|restaurants|takeaways|attractions|ideas)|\blist\b|round[- ]?up/.test(blob))return 'LIST / ROUND-UP';
   if(/\b(sold|sale|collapsed|administration|administrator|council shake|reorganisation|delayed|decision|latest|today|rates today|what happens next|taxpayers?|announced|approved|refused)\b/.test(blob))return 'NEWS EXPLAINER';
-  if(/\b(best|worth (?:the )?(?:trip|journey)|recommend|recommendation|underrated|better than people expect|takeaway|restaurant|pub|attraction|hidden gem|where should|which .* worth)\b/.test(blob))return 'RECOMMENDATION / DISCOVERY';
+  if(/\b(best|worth (?:the )?(?:trip|journey)|recommend|recommendation|underrated|better than people expect|takeaway|restaurant|pub|attraction|hidden gem|where should|which .* worth|loyal following|keeps? people going back)\b/.test(blob))return 'RECOMMENDATION / DISCOVERY';
   if(/better or worse|changed most|frustrat|debate|should .* be|what do people think/.test(blob))return 'DEBATE / READER VOICE';
   if(/mortgage|money|saving|should i|should you|how should|what should|advice|buyer|remortgage|health|pet|motoring/.test(blob))return 'CONVERSATION ADVICE';
   return 'PRACTICAL SERVICE';
+}
+function articleMode(fields={}){
+  const notes=String(value(fields,'Notes')||'');
+  const explicit=normaliseWritingMode((notes.match(/Writing mode:\s*([^\n]+)/i)||[])[1]||value(fields,'Writing Mode')||'');
+  const inferred=inferredArticleMode(fields);
+  if(!explicit)return inferred;
+  const blob=[value(fields,'Section Title'),value(fields,'Core Reader Question')].join(' ').toLowerCase();
+  const strongDiscovery=/takeaway|restaurant|pub|attraction|worth (?:the )?(?:trip|journey)|recommend|underrated|hidden gem|loyal following|keeps? people going back/.test(blob);
+  const strongNews=/sold|sale|collapsed|administration|administrator|reorganisation|delayed|decision|latest|today|what happens next|taxpayers?|announced|approved|refused/.test(blob);
+  // Stabilisation rule: a stale planner mode must not overpower an obviously different reader job.
+  // Manual overrides still win when the question is genuinely ambiguous.
+  if(explicit==='NEWS EXPLAINER'&&inferred==='RECOMMENDATION / DISCOVERY'&&strongDiscovery&&!strongNews)return inferred;
+  if(explicit==='RECOMMENDATION / DISCOVERY'&&inferred==='NEWS EXPLAINER'&&strongNews)return inferred;
+  if(explicit==='PRACTICAL SERVICE'&&['RECOMMENDATION / DISCOVERY','NEWS EXPLAINER','LIST / ROUND-UP','DEBATE / READER VOICE','CONVERSATION ADVICE'].includes(inferred))return inferred;
+  return explicit;
 }
 function researchStrategy(fields={},cls='B — Light Proof'){
   const mode=articleMode(fields);
@@ -941,7 +953,21 @@ function researchPromptFor(fields,cls){
   const notes=String(value(fields,'Notes')||'');
   const current=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
   const provenance=(notes.match(/Plan provenance:\s*([^\n]+)/i)||[])[1]||'';
+  const strategy=researchStrategy(fields,cls);
+  const ctx=publicationContext(fields);
+  const routeRule=strategy.route==='MULTI_CANDIDATE'
+    ? `- MULTI-CANDIDATE DISCOVERY: do NOT force this question into one pre-existing entity. Deliberately identify 3-6 credible ${ctx.area} candidates that answer the reader question. Use current venue/business pages, menus where relevant, trusted local/specialist coverage and traceable review patterns. Verify candidate identity/location/current operation. Summarise repeated review themes only when more than one traceable source supports the theme; never manufacture anonymous consensus or claim an objective winner.`
+    : strategy.route==='EDITORIAL_FRAME'
+      ? `- EDITORIAL FRAME: verify enough specific ${ctx.area} examples and current facts to frame the debate or reader question. A final public consensus does not need to exist before publication.`
+      : `- ENTITY FIRST: when this article is about a specific company, decision, project, incident, scheme or named event, resolve that exact real-world subject before broad research. Never substitute a different local project because it is easier to find.`;
   return `You are the evidence researcher for a local-news MASTER ARTICLE. Research BEFORE drafting.
+
+EDITORIAL MODE
+Mode: ${strategy.mode}
+Research route: ${strategy.route}
+Risk level: ${strategy.risk}
+Publication: ${ctx.name}
+Required geography: ${ctx.location}
 
 ARTICLE
 Title: ${title}
@@ -955,8 +981,8 @@ Editor-supplied authoritative source URL: ${editorAuthoritativeSourceUrl(fields)
 
 RESEARCH RULES
 - EDITOR SOURCE PRIORITY: when editor-supplied authoritative evidence is present, assess the exact URL and the EDITOR-CONFIRMED SOURCE TEXT first. Treat the pasted wording as source evidence tied to that URL when direct extraction is blocked (for example HTTP 403), while still checking internal consistency and publisher authority. Extract what it confirms, what it does not confirm, dates, named bodies and customer/action instructions. Do not ignore it merely because an older checkpoint disagrees.
-- ENTITY FIRST: resolve the exact named subject/project/organisation/site/service from the discovery lead before broad research. Use distinctive proper nouns, places, scheme names and reference numbers as search anchors.
-- If the lead is vague, first search to identify the exact subject. Never substitute a different local project because it is easier to find.
+${routeRule}
+- GEOGRAPHY HARD GATE: reject same-name places outside ${ctx.location}. A source about Peterborough, Ontario or another non-UK Peterborough must never count as local evidence for Peterborough Spotlight.
 - Search the current web thoroughly.
 - Prefer primary/official sources: local councils, GOV.UK, regulators, NHS/NICE, water companies, transport/highway bodies, official venue/business pages, official menus and ticket pages.
 - Treat newspapers/news sites primarily as discovery or corroboration. Do not make the article dependent on naming them when the underlying official/primary evidence can be found.
