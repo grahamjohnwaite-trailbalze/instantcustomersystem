@@ -115,6 +115,21 @@ function applyEditorialEvidencePolicy(fields,research,cls){
   research.research_strategy=strategy;
   return research;
 }
+function defaultCtaText(fields,result){
+  const mode=articleMode(fields);
+  const stance=String(result?.editorial_stance||'').toUpperCase();
+  if(/RECOMMENDATION|DISCOVERY|LIST|ROUND-UP/.test(mode))return 'Nominate your favourite';
+  if(/DEBATE|CONTROVERSY/.test(mode))return 'Have your say';
+  if(/NEWS|BREAKING/.test(mode)||/CHALLENGE|UNFILTERED/.test(stance))return 'Tell us what to investigate';
+  if(/CONVERSATION ADVICE|PRACTICAL SERVICE|COMPARISON|VALUE/.test(mode))return 'Save this guide';
+  return 'Have your say';
+}
+function stabiliseWriterPackage(fields,result){
+  const out=(result&&typeof result==='object')?result:{};
+  out.cta_text=String(out.cta_text||value(fields,'CTA Text')||defaultCtaText(fields,out)).trim();
+  return out;
+}
+
 function writerPublishabilityGate(fields,result,research){
   const body=String(result?.article_body||'').trim();
   const mode=articleMode(fields);
@@ -127,6 +142,16 @@ function writerPublishabilityGate(fields,result,research){
   }
   const ctx=publicationContext(fields);
   if(ctx.area&&ctx.area!=='the publication area'&&!body.toLowerCase().includes(ctx.area.toLowerCase()))reasons.push(`Finished copy is not visibly rooted in ${ctx.area}.`);
+  const summary=String(result?.summary_content||'').trim();
+  const seoTitle=String(result?.seo_title||'').trim();
+  const seoDescription=String(result?.seo_description||'').trim();
+  const newsletterTeaser=String(result?.newsletter_teaser||'').trim();
+  const cta=String(result?.cta_text||'').trim();
+  if(summary.length<120)reasons.push('Letterman article summary is missing or too thin.');
+  if(seoTitle.length<25||seoTitle.length>75)reasons.push('SEO title is missing or outside a useful search-title range.');
+  if(seoDescription.length<90||seoDescription.length>180)reasons.push('SEO description is missing or outside a useful search-description range.');
+  if(newsletterTeaser.length<90)reasons.push('Newsletter teaser is missing or too thin to sell the click.');
+  if(!cta)reasons.push('CTA text is missing.');
   return {pass:reasons.length===0,reasons};
 }
 
@@ -989,6 +1014,7 @@ ${routeRule}
 - Distinguish evidence needed NOW from outcomes that cannot yet exist. A future result of a trial, rollout, consultation or proposed scheme should become a FUTURE TEST/question, not automatically make research insufficient.
 - The returned evidence MUST satisfy the LOCAL PROOF requirement, not merely provide generic national background.
 - ADAPTIVE QUESTION PRIORITY: identify the story mode before researching. For advice, money, family, health, home, pets, motoring and consumer questions, research the real decision, options, rules, trade-offs and worked examples an expert would explain face-to-face. For news, breaking updates and controversies, research what happened, who/where is affected, the strongest primary evidence, what changes now, what remains unknown and any legitimate countercase. For discovery/comparison pieces, verify the examples, prices, inclusions and limits.
+- NEWS ATTRIBUTION ROUTE: for current affairs, actively capture material figures or claims made publicly by named councillors, officials, companies, administrators or other directly relevant actors. A credible established news report of a named statement can support ATTRIBUTED publication even when the same figure is not yet in a final official document. Record who said it, what they said, and what remains unconfirmed.
 - LOCALISATION PROPORTION: do not force irrelevant local facts into a nationally governed question. Use local proof where it changes the answer or makes it concrete; otherwise keep the authoritative national rule accurate and localise through a genuine local example, cost, provider context or reader application only when supported.
 - When the brief requires local proof, include genuinely place-specific or directly relevant regional primary sources for the named publication area. Generic national background is not enough.
 - If the brief names a body such as Anglian Water, NHS, NICE, FCA, MoneyHelper, a promoter, ticket agent or local council, actively search that body.
@@ -1047,6 +1073,13 @@ STYLE, AUDIENCE AND SAFETY
 - SPLIT TEST: if the brief naturally contains two or more questions that could each make a useful standalone 250-600 word article, answer only the approved core question here and return the other distinct questions in related_questions for the content bank. Do not cram them into this article.
 - Length is earned by the question: normally 250-600 words, with roughly 350-500 as the sweet spot. Go beyond 600 only when the reader genuinely needs the extra detail; a 1,000+ word cornerstone piece should be exceptional, not the default. Cut repetition rather than padding to a target.
 - SPOTLIGHT VOICE: keep personality, humour and an Unfiltered edge where the subject earns it. Do not manufacture outrage or clickbait, but do challenge lazy assumptions and bland official framing when evidence supports a sharper question.
+- SPOTLIGHT LOCAL WRITING LAYER: the finished copy must sound like a confident local publication, not a research memo. Research language stays backstage. Never use phrases such as "like-for-like evidence", "unsafe to treat as fact", "latest available evidence", "established in the evidence", "the fair test is", "the honest answer", "useful distinction" or "in plain English" as habitual editorial scaffolding. Rewrite them as normal human language.
+- ANSWER THEN EXPLAIN: open with the human/local consequence or the real reader question. Give the answer or tension early, then explain the evidence. Do not spend the opening describing verification limitations.
+- ATTRIBUTED REPORTING: a credible named public statement or reputable report may be used confidently with attribution when that is the appropriate evidence state. Attribution itself is the qualification. Do not downgrade a usable attributed figure to "unsafe" merely because a final official document is not yet published. Keep genuine uncertainty about completion, net recovery, disputed facts or final outcomes clear.
+- EDITORIAL CONFIDENCE: Spotlight may make fair, clearly editorial observations from supported facts — short lines such as "That sounds like a very ugly gap" or "And that is where this becomes a Peterborough money story" are welcome when earned. Do not turn them into unsupported claims.
+- RHYTHM: vary sentence and paragraph length. Use occasional short one-line paragraphs or 2-3 beat questions where they sharpen the story. Avoid uniformly formal explanatory paragraphs.
+- HUMAN LOCAL DETAIL: when the research supports it, use recognisable everyday language, routines and consequences. Prefer "the one saved in your phone" over abstract discussion of consumer loyalty; prefer "How much of Peterborough's money is actually coming back?" over institutional phrasing.
+- DO NOT NARRATE THE RESEARCH PROCESS: the reader should hear the story, not the evidence machinery. Verification caveats belong only where they materially change what the reader can conclude.
 - For contested subjects, do not force false certainty. A credible practical, challenge, contrarian or debate angle is allowed when it is supported and clearly distinguished from fact.
 
 EDITORIAL BRAIN — PLAN THE HUMAN STORY BEFORE WRITING
@@ -1093,6 +1126,16 @@ ${articleMode(fields)}
 
 RESEARCH PACK
 ${sourcePack}
+
+LETTERMAN PACKAGE WRITING RULES
+- ARTICLE SUMMARY: sell the value of the article in natural Spotlight language. It is not an academic abstract. State the local hook, why it affects the reader and what the article resolves or helps them decide.
+- NEWSLETTER TEASER: write for the inbox. It should create curiosity and a reason to click without repeating the headline or giving away the whole article.
+- SEO TITLE: prioritise the real search phrase and location, normally around 50-60 characters where natural. Do not stuff keywords or merely duplicate the editorial headline.
+- SEO DESCRIPTION: normally around 140-160 characters where natural; make the topic, locality and reader payoff clear. It should read naturally, not as a tag list.
+- URL PATH: short, descriptive and lowercase; remove filler words where possible while preserving the search subject.
+- KEYWORDS: use a small natural set tied to the actual story, named place/entity and reader intent. No generic keyword dumping.
+- CTA: cta_text MUST NEVER be blank. Choose one clear next action that matches the article job. Discovery/list -> nomination/recommendation. Debate -> have your say. Investigation/news challenge -> tell us what to investigate/follow next. Guide/advice -> save/use the guide. Do not invent a destination or pretend a button does something the system has not been given.
+- SOCIAL: Facebook should deliver native value and invite a specific response; LinkedIn should not describe itself as "plain-English" or narrate the editorial method; X should be concise and specific.
 
 Return ONLY valid JSON in this exact shape:
 {
@@ -1186,6 +1229,7 @@ function packageBlock(result,sources,model){
     seo_title:String(result.seo_title||'').trim(),seo_description:String(result.seo_description||'').trim(),url_path:String(result.url_path||'').trim().replace(/^\/+/,''),keywords:String(result.keywords||'').trim(),
     featured_image_brief:String(result.featured_image_brief||'').trim(),featured_image_alt:String(result.featured_image_alt||'').trim(),
     newsletter_headline:String(result.newsletter_headline||'').trim(),newsletter_teaser:String(result.newsletter_teaser||'').trim(),
+    cta_text:String(result.cta_text||'').trim(),
     social_facebook:String(result.social_facebook||'').trim(),social_linkedin:String(result.social_linkedin||'').trim(),social_x:String(result.social_x||'').trim(),
     letterman_status:'Ready for Letterman',letterman_article_id:'',published_url:'',newsletter_queue_status:'Not queued',sync_status:'Manual',
     evidence_summary:String(result.evidence_summary||'').trim(),sources
@@ -1561,7 +1605,7 @@ export default async(request)=>{
       await saveTrace();
     }
     log('json_parse_started');
-    let result=parseJsonText(writerRaw);
+    let result=stabiliseWriterPackage(fields,parseJsonText(writerRaw));
     let publishGate=writerPublishabilityGate(fields,result,research);
     if(!publishGate.pass){
       traceLine('Publishability gate','FAIL',publishGate.reasons.join(' | ').slice(0,220));
@@ -1569,7 +1613,7 @@ export default async(request)=>{
       const repaired=await stage('Automatic writer repair',()=>createResponse({input:repairPrompt,useWeb:false,model:writerModel,timeoutMs:42000}),44000);
       writerRaw=outputText(repaired);
       response._model_used=repaired._model_used||response._model_used||writerModel;
-      result=parseJsonText(writerRaw);
+      result=stabiliseWriterPackage(fields,parseJsonText(writerRaw));
       publishGate=writerPublishabilityGate(fields,result,research);
       if(!publishGate.pass){
         result.qa_result='Fix Required';

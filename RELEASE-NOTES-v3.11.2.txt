@@ -1,0 +1,17 @@
+ICS v3.11.2 — Spotlight Writer + Letterman Package Stabilisation
+
+Purpose
+Reduce manual rewriting after research succeeds. This build tightens the shared writer and the full Letterman package rather than rescuing individual articles.
+
+Changes
+- Adds a Spotlight Local Writing Layer: reader-first openings, stronger rhythm, local personality and less research-room language.
+- Adds confident ATTRIBUTED reporting rules for named public statements and credible established reporting.
+- Adds a news research instruction to capture named public statements and material reported figures with attribution and uncertainty.
+- Adds full Letterman package writing rules for article summaries, newsletter teasers, SEO title/description, slug, keywords, CTA and social copy.
+- CTA text can no longer be blank: a context-aware fallback is applied before publishability QA.
+- Publishability QA now checks summary, SEO title/description, newsletter teaser and CTA, not only the article body.
+- CTA is stored inside the Master Article Package as well as the Airtable CTA field.
+- Keeps v3.11.1 publication-aware research, geography guard and article-mode conflict correction.
+
+Acceptance target
+A completed Master must be usable as a complete Letterman package, not merely technically researched or written.
