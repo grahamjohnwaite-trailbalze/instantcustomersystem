@@ -7,7 +7,7 @@ const value=(f,k)=>f?.[k]??'';
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=65000;
 const RELEASE_VERSION='3.8.1';
-const WRITER_PROMPT_VERSION='ARTICLE-BUILDER-STABLE-v1';
+const WRITER_PROMPT_VERSION='ARTICLE-BUILDER-SPOTLIGHT-v2';
 
 function publicationContext(fields={}){
   const supplied=String(fields.__publicationName||fields['Publication Name']||'').trim();
