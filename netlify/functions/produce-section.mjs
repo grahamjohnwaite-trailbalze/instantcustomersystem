@@ -174,7 +174,7 @@ function briefKey(fields,cls){
 }
 function latestCheckpoint(notes,label){
   const re=label==='research'
-    ? /MASTER ARTICLE RESEARCH CHECKPOINT v1\n([\s\S]*?)\nEND MASTER ARTICLE RESEARCH CHECKPOINT/g
+    ? /MASTER ARTICLE RESEARCH CHECKPOINT v2\n([\s\S]*?)\nEND MASTER ARTICLE RESEARCH CHECKPOINT/g
     : /MASTER ARTICLE WRITER CHECKPOINT v(?:1|2|3)\n([\s\S]*?)\nEND MASTER ARTICLE WRITER CHECKPOINT/g;
   const all=[...String(notes||'').matchAll(re)];
   if(!all.length)return null;
@@ -182,7 +182,7 @@ function latestCheckpoint(notes,label){
 }
 function removeCheckpoints(notes){
   return String(notes||'')
-    .replace(/\n?MASTER ARTICLE RESEARCH CHECKPOINT v1\n[\s\S]*?\nEND MASTER ARTICLE RESEARCH CHECKPOINT\s*/g,'')
+    .replace(/\n?MASTER ARTICLE RESEARCH CHECKPOINT v(?:1|2)\n[\s\S]*?\nEND MASTER ARTICLE RESEARCH CHECKPOINT\s*/g,'')
     .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v(?:1|2|3)\n[\s\S]*?\nEND MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
     .trim();
 }
@@ -239,7 +239,7 @@ function lockedResearchFromNotes(notes){
   return null;
 }
 function researchCheckpointBlock(key,research,model){
-  return `MASTER ARTICLE RESEARCH CHECKPOINT v1\n${JSON.stringify({brief_key:key,saved_at:new Date().toISOString(),model:model||'',research},null,2)}\nEND MASTER ARTICLE RESEARCH CHECKPOINT`;
+  return `MASTER ARTICLE RESEARCH CHECKPOINT v2\n${JSON.stringify({brief_key:key,research_prompt_version:'GEOGRAPHY-HARD-GATE-v2',saved_at:new Date().toISOString(),model:model||'',research},null,2)}\nEND MASTER ARTICLE RESEARCH CHECKPOINT`;
 }
 function researchKey(research){
   const sources=(Array.isArray(research?.sources)?research.sources:[]).map(x=>({
@@ -330,7 +330,7 @@ function relevanceScore(x,fields){
   const hay=new Set(tokens([x.title,x.description,x.source,x.url].join(' ')));
   let score=0;
   for(const w of need)if(hay.has(w))score+=1;
-  const blob=[x.title,x.description,x.source,x.url].join(' ').toLowerCase();
+  const blob=[x.title,x.description,x.supports,x.source,x.url].join(' ').toLowerCase();
   // Strong anchors for local article identity.
   if(/\ba149\b/i.test(title+' '+q)&&/\ba149\b/i.test(blob))score+=5;
   const area=publicationArea(fields).toLowerCase();
@@ -355,7 +355,7 @@ function genericDriftSource(x){
 }
 function wrongGeographySource(x,fields){
   const article=[value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Local Proof Needed'),value(fields,'Notes')].join(' ').toLowerCase();
-  const blob=[x.title,x.description,x.source,x.url].join(' ').toLowerCase();
+  const blob=[x.title,x.description,x.supports,x.source,x.url].join(' ').toLowerCase();
   // Prevent same-name US places from passing a UK locality match (for example Norfolk, Virginia).
   if(/\bnorfolk\b/.test(article)&&/virginia|hampton roads|virginia beach|chesapeake|wtkr\.com|13newsnow|wavy\.com|norfolk state university|\bnsu\.edu\b|norfolk southern|norfolksouthern\.com|\b22 states\b|\bnorfolk,? va\b|\bnorfolk va\b|\/norfolk-va\/|zillow\.com|realtor\.com|redfin\.com|homes for sale in norfolk va|real estate & homes for sale/.test(blob))return true;
   // A Norfolk (England) article must not accept US institutions or companies merely
@@ -445,7 +445,7 @@ function precisionAnchors(fields){
 }
 function precisionPass(x,fields){
   if(genericDriftSource(x)||wrongGeographySource(x,fields))return false;
-  const blob=[x.title,x.description,x.source,x.url].join(' ').toLowerCase();
+  const blob=[x.title,x.description,x.supports,x.source,x.url].join(' ').toLowerCase();
   const {entities,topicGroups}=precisionAnchors(fields);
   const entityHits=entities.filter(e=>blob.includes(e)).length;
   const topicHits=topicGroups.filter(group=>group.some(w=>blob.includes(w))).length;
@@ -539,7 +539,7 @@ async function fastEvidencePack(fields,cls){
   const editorSource=await editorAuthoritativeSource(fields);
   if(editorSource)raw.unshift(editorSource);
   // Reject off-topic and wrong-country results before they ever reach Writer. An editor-supplied URL is deliberately retained for qualification.
-  raw=raw.map(x=>({...x,relevance:Number(x.relevance||relevanceScore(x,fields))})).filter(x=>x.seeded_editor||(x.relevance>=3&&precisionPass(x,fields)));
+  raw=raw.map(x=>({...x,relevance:Number(x.relevance||relevanceScore(x,fields))})).filter(x=>x.seeded_editor||(!wrongGeographySource(x,fields)&&(x.relevance>=3&&precisionPass(x,fields))));
   raw.sort((a,b)=>b.relevance-a.relevance);
   const seen=new Set(),dedup=[];
   for(const x of raw){
@@ -1213,10 +1213,27 @@ EDITORIAL READINESS
 Use the strongest 1-5 sources from the research pack. Do not include unused sources.`;
 }
 
+function sanitizeResearchGeography(fields,research){
+  if(!research||!Array.isArray(research.sources))return research;
+  const original=research.sources;
+  const rejected=original.filter(src=>wrongGeographySource({
+    title:src?.title||'',description:src?.supports||src?.description||'',supports:src?.supports||'',source:src?.source_type||'',url:src?.url||''
+  },fields));
+  if(!rejected.length)return research;
+  research.sources=original.filter(src=>!rejected.includes(src));
+  const ctx=publicationContext(fields);
+  const rejectedNames=rejected.map(x=>String(x?.title||x?.url||'wrong-geography source').slice(0,120));
+  research.optional_missing=[...new Set([...(research.optional_missing||[]),`Rejected ${rejected.length} source(s) outside ${ctx.location}: ${rejectedNames.join(' | ')}`])];
+  research.research_summary=[String(research.research_summary||'').trim(),`Geography gate removed ${rejected.length} same-name/out-of-area source(s) before editorial assessment.`].filter(Boolean).join(' ');
+  return research;
+}
+
 function evidenceGate(fields,cls,research){
   if(cls==='A — Question Only')return {pass:true,reasons:[]};
   const sources=Array.isArray(research?.sources)?research.sources:[];
   const reasons=[];
+  const wrongGeo=sources.filter(src=>wrongGeographySource({title:src?.title||'',description:src?.supports||'',supports:src?.supports||'',source:src?.source_type||'',url:src?.url||''},fields));
+  if(wrongGeo.length)reasons.push(`Wrong-geography evidence returned: ${wrongGeo.map(x=>String(x?.title||x?.url||'source')).slice(0,3).join(' | ')}`);
   const requiredNow=Array.isArray(research?.required_now_missing)?research.required_now_missing.filter(Boolean):[];
   if(research?.research_status!=='Sufficient')reasons.push('Research stage reported insufficient evidence.');
   if(requiredNow.length)reasons.push(...requiredNow.map(x=>`Required-now evidence missing: ${x}`));
@@ -1435,6 +1452,7 @@ export default async(request)=>{
         await saveTrace();
         log('research_started',{productionClass:cls,model:researchModel});
         research=await stage('Fast evidence collection',()=>fastEvidencePack(fields,cls),18000);
+        research=sanitizeResearchGeography(fields,research);
         log('research_completed',{model:researchModel,sourceCount:Array.isArray(research.sources)?research.sources.length:0});
         let gate=evidenceGate(fields,cls,research);
         if(!gate.pass){
@@ -1457,6 +1475,7 @@ export default async(request)=>{
           try{
             const recoveryModel=String(process.env.OPENAI_RESEARCH_MODEL||process.env.OPENAI_PRODUCTION_MODEL||'gpt-5.6-luna').trim();
             research=await stage('Targeted web research recovery',()=>recoverEvidencePack(fields,cls,research,recoveryModel),RECOVERY_BUDGET_MS+3000);
+            research=sanitizeResearchGeography(fields,research);
             gate=evidenceGate(fields,cls,research);
             if(!gate.pass){
               research.research_status='Insufficient';
@@ -1526,6 +1545,7 @@ export default async(request)=>{
             }
           }
         }
+        research=sanitizeResearchGeography(fields,research);
         research=relaxNonCoreEvidenceDemands(fields,research);
         research=relaxOpenQuestionEvidenceDemands(fields,research);
         research=applyEditorialEvidencePolicy(fields,research,cls);
@@ -1546,6 +1566,7 @@ export default async(request)=>{
       }
     }
 
+    research=sanitizeResearchGeography(fields,research);
     research=relaxNonCoreEvidenceDemands(fields,research);
     research=applyEditorialEvidencePolicy(fields,research,cls);
 
