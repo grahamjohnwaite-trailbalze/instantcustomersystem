@@ -1233,26 +1233,77 @@ function evidenceGate(fields,cls,research){
   return {pass:reasons.length===0,reasons};
 }
 
-function editorialReadiness(result,publishGate,lockDecision){
+function editorialReadiness(result,publishGate,lockDecision,sources=[],fields={}){
   const raw=(result?.editorial_readiness&&typeof result.editorial_readiness==='object')?result.editorial_readiness:{};
   let status=String(raw.status||'').toUpperCase().trim();
   const allowed=new Set(['READY','MINOR EDIT','REWORK','BLOCKED']);
   if(!allowed.has(status))status='READY';
   if(lockDecision?.code==='BLOCKED')status='BLOCKED';
   else if(!publishGate?.pass||String(result?.qa_result||'').toLowerCase()!=='pass')status='REWORK';
+
   let grade=String(raw.grade||'').toUpperCase().trim();
   if(!['A','B','C'].includes(grade)){
     const scores=(result?.quality_scores&&typeof result.quality_scores==='object')?Object.values(result.quality_scores).map(Number).filter(Number.isFinite):[];
     const avg=scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:0;
     grade=avg>=8.3?'A':avg>=7.2?'B':'C';
   }
-  if(status==='REWORK'||status==='BLOCKED')grade='';
+
   const edits=Array.isArray(raw.suggested_edits)?raw.suggested_edits.map(e=>({
     original:String(e?.original||'').trim(),replacement:String(e?.replacement||'').trim(),reason:String(e?.reason||'').trim()
   })).filter(e=>e.original&&e.replacement&&e.original!==e.replacement).slice(0,3):[];
+  const addEdit=(original,replacement,reason)=>{
+    original=String(original||'').trim(); replacement=String(replacement||'').trim(); reason=String(reason||'').trim();
+    if(!original||!replacement||original===replacement||edits.some(e=>e.original===original))return;
+    if(edits.length<3)edits.push({original,replacement,reason});
+  };
+
+  const title=String(result?.article_title||'').trim();
+  const body=String(result?.article_body||'').trim();
+  const packageText=[title,result?.article_subhead,body,result?.summary_content,result?.newsletter_teaser,result?.social_facebook,result?.social_linkedin,result?.social_x].filter(Boolean).join(' ');
+  const sourceBlob=(Array.isArray(sources)?sources:[]).map(s=>[s?.title,s?.supports,s?.url].filter(Boolean).join(' ')).join(' ');
+  const normalizeMoney=x=>String(x||'').toLowerCase().replace(/,/g,'').replace(/\s+/g,'');
+  const materialMoney=[...new Set((packageText.match(/£\s*\d+(?:\.\d+)?\s*(?:m|million|bn|billion)?/gi)||[]).map(normalizeMoney))];
+  const sourceNorm=normalizeMoney(sourceBlob);
+  const unsupportedMoney=materialMoney.filter(x=>{
+    const compact=x.replace('million','m').replace('billion','bn');
+    const alt=compact.replace('£','');
+    return !sourceNorm.includes(compact)&&!sourceNorm.includes(alt);
+  });
+  if(unsupportedMoney.length){
+    const shown=unsupportedMoney.slice(0,2).join(' / ');
+    addEdit(shown,'Attach a matching source in SOURCES / INTERNAL QA or remove/qualify the figure',`Material figure ${shown} is used in the package but is not traceable in the visible source support notes.`);
+  }
+
+  const loadedWords=[
+    ['gamble','problem'],['scandal','problem'],['disaster','failure'],['betrayal','decision'],['rip-off','poor value'],['outrage','controversy']
+  ];
+  for(const [word,repl] of loadedWords){
+    const re=new RegExp(`\b${word}\b`,'i');
+    if(re.test(title)&&!re.test(sourceBlob)){
+      const safer=title.replace(re,repl);
+      addEdit(title,safer,`Headline word “${word}” is stronger than the visible evidence. Use a factual alternative unless the source pack explicitly supports that characterisation.`);
+      break;
+    }
+  }
+
+  if(/the final loss may be higher/i.test(body)){
+    addEdit('The final loss may be higher once administrator fees, legal costs, taxes and any other claims are settled.','The net recovery could be lower once administrator, legal and sale costs are accounted for.','This states the supported direction of uncertainty more precisely.');
+  }
+
+  const cta=String(result?.cta_text||value(fields,'CTA Text')||'').trim();
+  if(!cta&&status==='READY'){
+    status='MINOR EDIT';
+    addEdit('BUTTON TEXT [blank]','Add a contextual CTA before publication','A completed Letterman package needs one clear reader action.');
+  }
+
   if(status==='READY'&&edits.length)status='MINOR EDIT';
   if(status==='MINOR EDIT'&&!edits.length)status='READY';
-  return {status,grade,rationale:String(raw.rationale||'').trim(),suggested_edits:status==='MINOR EDIT'?edits:[]};
+  if(status==='REWORK'||status==='BLOCKED')grade='';
+  const rationaleBase=String(raw.rationale||'').trim();
+  const rationale=status==='MINOR EDIT'&&edits.length
+    ?`${rationaleBase?`${rationaleBase} `:''}${edits.length} small publication check${edits.length===1?'':'s'} flagged below.`.trim()
+    :rationaleBase;
+  return {status,grade,rationale,suggested_edits:status==='MINOR EDIT'?edits:[]};
 }
 
 function packageBlock(result,sources,model){
@@ -1677,7 +1728,7 @@ export default async(request)=>{
       result.exception=[String(result.exception||'').trim(),...(outcome.missing||[])].filter(Boolean).join(' ');
       result.evidence_summary=[String(result.evidence_summary||'').trim(),String(research.research_summary||'').trim(),outcome.missing?.length?`Missing required-now evidence: ${outcome.missing.join('; ')}`:''].filter(Boolean).join(' ');
     }
-    result.editorial_readiness=editorialReadiness(result,publishGate,lockDecision);
+    result.editorial_readiness=editorialReadiness(result,publishGate,lockDecision,sources,fields);
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
     const serviceNotes=[block,'',`PRODUCTION SERVICE v3.8.0`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');

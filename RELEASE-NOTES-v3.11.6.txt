@@ -1,0 +1,16 @@
+ICS v3.11.6 — Readiness Gate Tightening
+
+Purpose
+Make READY mean genuinely ready, while keeping the operator view simple.
+
+Changes
+- Adds deterministic post-writer checks for material money figures against SOURCES / INTERNAL QA support notes.
+- If a material figure is used but cannot be traced, article becomes MINOR EDIT with an exact operator action rather than silently READY.
+- Flags loaded headline words such as “gamble”, “scandal”, “disaster”, “betrayal”, “rip-off” and “outrage” when the visible source pack does not support that characterisation; proposes a safer factual headline.
+- Adds a precision correction for “final loss may be higher” style wording where “net recovery could be lower after costs” is more accurate.
+- Blank CTA can no longer remain READY.
+- Completed Master Articles no longer show the old contradictory “Hot Button pending — final QA” label; Hot Button is treated as planning metadata once a completed package exists.
+- Keeps the simple operator outcomes: READY / MINOR EDIT / REWORK / BLOCKED plus A / B / C grade.
+
+Next acceptance step
+Use a fresh PBS or CBS article, then move to the 15-candidate content-pool test once cross-publication behaviour is proven.
