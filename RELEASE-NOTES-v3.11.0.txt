@@ -1,0 +1,25 @@
+ICS v3.11.0 — Article Builder Stabilisation v1
+
+Purpose
+Stop article-by-article patching and stabilise the shared Master Article path.
+
+Core changes
+- Automatic article-mode inference when Writing Mode is AUTO/missing.
+- Mode-aware research routes: multi-candidate discovery/list, editorial debate, news attribution, authority advice.
+- Editorial evidence policy: VERIFIED / ATTRIBUTED / EDITORIAL / BLOCKED behaviour.
+- Credible established media and named public statements can support ordinary local journalism when proportionate to risk.
+- Discovery/list articles can use multiple candidates, current venue facts, specialist/local coverage and review patterns without requiring council-document-level proof.
+- Hard geography rejection expanded for Peterborough Ontario/Canada and Cambridge Massachusetts, alongside Norfolk Virginia protection.
+- Writer prompt now receives an explicit article mode.
+- Publishability gate rejects blank/too-short Master bodies and internal production/research language such as FIX REQUIRED BEFORE PUBLICATION.
+- Automatic one-pass writer repair when the first draft fails the publishability gate.
+- Writer checkpoint version bumped so stale poor drafts are not silently reused after this stabilisation change.
+
+Acceptance target
+- Same build must pass: Peterborough discovery/list, Peterborough current-news/accountability, and a second publication (Norfolk or Cambridgeshire).
+- Then run a fresh 9-Master acceptance set. Target: 8/9 publishable first time, with the remaining item recoverable/replaced without developer intervention.
+
+Not included
+- No new planner features.
+- No Source Directory UI yet.
+- No wider UX redesign yet.

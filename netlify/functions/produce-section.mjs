@@ -6,7 +6,8 @@ const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=65000;
-const RELEASE_VERSION='3.7.10';
+const RELEASE_VERSION='3.8.0';
+const WRITER_PROMPT_VERSION='ARTICLE-BUILDER-STABLE-v1';
 
 function publicationContext(fields={}){
   const supplied=String(fields.__publicationName||fields['Publication Name']||'').trim();
@@ -25,6 +26,97 @@ function publicationContext(fields={}){
   return {name,area,country,location:`${area}, ${country}`,councilDomain,policeDomain,visitDomain};
 }
 function publicationArea(fields={}){return publicationContext(fields).area}
+
+
+
+function normaliseWritingMode(raw=''){
+  const v=String(raw||'').trim().toLowerCase();
+  if(!v||v==='auto')return '';
+  if(/news|breaking|explainer|update/.test(v))return 'NEWS EXPLAINER';
+  if(/recommend|discover/.test(v))return 'RECOMMENDATION / DISCOVERY';
+  if(/list|round/.test(v))return 'LIST / ROUND-UP';
+  if(/debate|controvers|reader voice/.test(v))return 'DEBATE / READER VOICE';
+  if(/conversation|advice/.test(v))return 'CONVERSATION ADVICE';
+  if(/comparison|value/.test(v))return 'COMPARISON / VALUE';
+  if(/service|practical/.test(v))return 'PRACTICAL SERVICE';
+  if(/human|community/.test(v))return 'HUMAN / COMMUNITY';
+  return String(raw||'').trim().toUpperCase();
+}
+function articleMode(fields={}){
+  const notes=String(value(fields,'Notes')||'');
+  const explicit=normaliseWritingMode((notes.match(/Writing mode:\s*([^\n]+)/i)||[])[1]||value(fields,'Writing Mode')||'');
+  if(explicit)return explicit;
+  const title=String(value(fields,'Section Title')||'');
+  const q=String(value(fields,'Core Reader Question')||'');
+  const blob=`${title} ${q}`.toLowerCase();
+  if(/\b(five|six|seven|eight|nine|ten|\d+)\b.*\b(places|ways|things|applications|pubs|restaurants|takeaways|attractions|ideas)|\blist\b|round[- ]?up/.test(blob))return 'LIST / ROUND-UP';
+  if(/\b(sold|sale|collapsed|administration|administrator|council shake|reorganisation|delayed|decision|latest|today|rates today|what happens next|taxpayers?|announced|approved|refused)\b/.test(blob))return 'NEWS EXPLAINER';
+  if(/\b(best|worth (?:the )?(?:trip|journey)|recommend|recommendation|underrated|better than people expect|takeaway|restaurant|pub|attraction|hidden gem|where should|which .* worth)\b/.test(blob))return 'RECOMMENDATION / DISCOVERY';
+  if(/better or worse|changed most|frustrat|debate|should .* be|what do people think/.test(blob))return 'DEBATE / READER VOICE';
+  if(/mortgage|money|saving|should i|should you|how should|what should|advice|buyer|remortgage|health|pet|motoring/.test(blob))return 'CONVERSATION ADVICE';
+  return 'PRACTICAL SERVICE';
+}
+function researchStrategy(fields={},cls='B — Light Proof'){
+  const mode=articleMode(fields);
+  const blob=[value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Evidence Required')].join(' ').toLowerCase();
+  const highRisk=/medical|health diagnosis|legal advice|court|criminal|investment|pension|mortgage recommendation|tax advice|benefit entitlement/.test(blob)||cls==='C — Evidence Heavy';
+  if(mode==='RECOMMENDATION / DISCOVERY'||mode==='LIST / ROUND-UP')return {mode,risk:'LIGHT',route:'MULTI_CANDIDATE',minimumCredible:2};
+  if(mode==='DEBATE / READER VOICE')return {mode,risk:'LIGHT',route:'EDITORIAL_FRAME',minimumCredible:2};
+  if(mode==='NEWS EXPLAINER')return {mode,risk:highRisk?'HIGH':'MEDIUM',route:'NEWS_ATTRIBUTION',minimumCredible:2};
+  if(mode==='CONVERSATION ADVICE')return {mode,risk:highRisk?'HIGH':'MEDIUM',route:'AUTHORITY_ADVICE',minimumCredible:2};
+  return {mode,risk:highRisk?'HIGH':'MEDIUM',route:'GENERAL',minimumCredible:2};
+}
+function trustedMediaSource(src={}){
+  const blob=[src.url,src.title,src.source_type].join(' ').toLowerCase();
+  return /bbc\.co\.uk|itv\.com|reuters\.com|apnews\.com|theguardian\.com|independent\.co\.uk|telegraph\.co\.uk|ft\.com|sky\.com|peterboroughtoday|edp24|eastern daily press|cambridgeindependent|cambridge-news|hunts post|stamfordmercury|spaldingtoday/.test(blob)||/\blocal\b|\breported\b|\bdiscovery\b/.test(String(src.source_type||'').toLowerCase());
+}
+function applyEditorialEvidencePolicy(fields,research,cls){
+  if(!research)return research;
+  const strategy=researchStrategy(fields,cls);
+  const sources=(Array.isArray(research.sources)?research.sources:[]).filter(x=>x&&x.url);
+  const official=sources.filter(x=>/official|primary/i.test(String(x.source_type||''))||/\.gov\.uk|gov\.uk|nhs\.uk|police\.uk|parliament\.uk|fca\.org\.uk|caa\.co\.uk|abta\.com/i.test(String(x.url||'')));
+  const media=sources.filter(trustedMediaSource);
+  const credible=[...new Map([...official,...media,...sources.filter(x=>Number(x.relevance||0)>=5)].map(x=>[cleanUrl(x.url),x])).values()];
+  const required=Array.isArray(research.required_now_missing)?research.required_now_missing:[];
+  const legacy=Array.isArray(research.missing_evidence)?research.missing_evidence:[];
+  const trulyCore=(item)=>/identity|exact subject|wrong (?:country|geograph)|responsible body unknown|no credible|core premise|whether .* exists|existence .* not established/i.test(String(item||''));
+  const remaining=[...required,...legacy].filter(trulyCore);
+  const moved=[...required,...legacy].filter(x=>!trulyCore(x)&&!/^Research stage reported insufficient evidence\./i.test(String(x||'')));
+  if((strategy.route==='MULTI_CANDIDATE'||strategy.route==='EDITORIAL_FRAME')&&credible.length>=strategy.minimumCredible){
+    research.research_status='Sufficient';
+    research.editorial_state='EDITORIAL';
+    research.core_evidence_relaxed=true;
+    research.required_now_missing=remaining;
+    research.missing_evidence=remaining;
+    research.optional_missing=[...new Set([...(research.optional_missing||[]),...moved])];
+    research.research_summary=[String(research.research_summary||'').trim(),`Editorial evidence policy: ${strategy.mode} can proceed from multiple credible local examples. Verify current venue/item facts, present recommendations and sentiment as editorial judgement, and do not invent consensus or a definitive winner.`].filter(Boolean).join(' ');
+  }else if(strategy.route==='NEWS_ATTRIBUTION'&&credible.length>=2&&media.length>=1){
+    research.research_status='Sufficient';
+    research.editorial_state=official.length?'VERIFIED':'ATTRIBUTED';
+    research.core_evidence_relaxed=true;
+    research.required_now_missing=remaining;
+    research.missing_evidence=remaining;
+    research.optional_missing=[...new Set([...(research.optional_missing||[]),...moved])];
+    research.research_summary=[String(research.research_summary||'').trim(),`News attribution policy: credible current reporting is sufficient to publish with natural qualification where a material fact is still moving or not independently confirmed. Keep the internal source trail; name the media source in finished copy only when its identity is editorially relevant.`].filter(Boolean).join(' ');
+  }
+  research.article_mode=strategy.mode;
+  research.research_strategy=strategy;
+  return research;
+}
+function writerPublishabilityGate(fields,result,research){
+  const body=String(result?.article_body||'').trim();
+  const mode=articleMode(fields);
+  const reasons=[];
+  if(body.length<700)reasons.push('Article body is blank or too short for a Master Article.');
+  if(/FIX REQUIRED BEFORE PUBLICATION|before this article can go live|the editorial team (?:also )?needs|we are holding publication|holding publication until|needs? (?:local )?reader examples before deciding|research (?:is|was) insufficient|records still need checking before readers/i.test(body+' '+String(result?.article_subhead||'')))reasons.push('Reader-facing copy contains internal research/production language.');
+  if(/RECOMMENDATION \/ DISCOVERY|LIST \/ ROUND-UP/.test(mode)){
+    const title=String(value(fields,'Section Title')||'');
+    if(/which|best|five|six|seven|eight|nine|ten|worth|recommend|attraction|takeaway|restaurant|pub/i.test(title) && !/\b(The|At|In) [A-Z][A-Za-z'’&-]+|\b[A-Z][A-Za-z'’&-]+ (?:Arms|Inn|Hotel|Museum|Park|Centre|Center|Restaurant|Cafe|Café|Pub|Takeaway|Gardens|Hall|House|Theatre|Cinema)\b/.test(body))reasons.push('Discovery/list article does not contain enough named examples to answer the question.');
+  }
+  const ctx=publicationContext(fields);
+  if(ctx.area&&ctx.area!=='the publication area'&&!body.toLowerCase().includes(ctx.area.toLowerCase()))reasons.push(`Finished copy is not visibly rooted in ${ctx.area}.`);
+  return {pass:reasons.length===0,reasons};
+}
 
 function withTimeout(promise,timeoutMs,label){
   let timer;
@@ -172,7 +264,7 @@ function googleNewsUrl(q){return `https://news.google.com/rss/search?q=${encodeU
 function sourceTypeFor(url='',title=''){
   const h=hostOf(url),blob=(h+' '+title).toLowerCase();
   if(/\.gov\.uk$|gov\.uk|nhs\.uk|nice\.org\.uk|police\.uk|parliament\.uk|abta\.com|fca\.org\.uk|caa\.co\.uk|ofcom\.org\.uk|ofgem\.gov\.uk|ombudsman|official/.test(blob))return 'official';
-  if(/norfolk|edp24|eastern daily press|peterborough|peterboroughtoday|cambridgeshire|cambridgeindependent|cambridge-news|bbc\.co\.uk|itv\.com/.test(blob))return 'local';
+  if(/norfolk|edp24|eastern daily press|peterborough|peterboroughtoday|cambridgeshire|cambridgeindependent|cambridge-news|hunts post|stamfordmercury|spaldingtoday|bbc\.co\.uk|itv\.com|reuters\.com|sky\.com/.test(blob))return 'local';
   return 'other';
 }
 
@@ -232,6 +324,8 @@ function wrongGeographySource(x,fields){
   // because their proper name contains the word Norfolk.
   if(/\bnorfolk\b/.test(article)&&/(\.edu\b|\.mil\b)/.test(blob)&&!/\.ac\.uk\b/.test(blob))return true;
   if(/\bsuffolk\b/.test(article)&&/suffolk county,? new york|long island|virginia/.test(blob))return true;
+  if(/\bpeterborough\b/.test(article)&&/peterborough,? ontario|ontario,? canada|\bcanada\b|kawartha|otonabee|trent university|peterborough\.ca|tripadvisor\.ca/.test(blob))return true;
+  if(/\bcambridge(?:shire)?\b/.test(article)&&/cambridge,? massachusetts|\bmassachusetts\b|cambridge,? ma\b|harvard\.edu|mit\.edu/.test(blob))return true;
   return false;
 }
 function editorAuthoritativeEvidence(fields){
@@ -542,7 +636,13 @@ function recoveryResearchPrompt(fields,cls,firstPass){
   const current=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
   const provenance=(notes.match(/Plan provenance:\s*([^\n]+)/i)||[])[1]||'';
   const ctx=publicationContext(fields);
+  const strategy=researchStrategy(fields,cls);
   return `You are the bounded second-pass evidence researcher for one UK local-news article.
+
+EDITORIAL MODE
+Mode: ${strategy.mode}
+Research route: ${strategy.route}
+Risk level: ${strategy.risk}
 
 ARTICLE
 Title: ${title}
@@ -563,8 +663,8 @@ TASK
 4. If enough independent evidence cannot answer the approved question well, return Insufficient so the item can be RETRY / REPLACE. Do not invent an article about failed research.
 5. This publication is ${ctx.name}. The required geography is ${ctx.location}. Reject same-name places outside the UK publication area.
 3. For roads/potholes, identify the accountable highway authority and find the most direct official council, committee, contract, scheme or GOV.UK source.
-4. The supplied newspaper/RSS lead is discovery only. It may establish what to search for, but primary/official evidence should support material reader-facing facts where available.
-5. Return no more than 4 distinct sources. Map each source to a specific claim. Do not pad.
+4. Use the best evidence proportionate to the article. Primary/official sources are preferred where available, but credible established media, specialist sources, venue/business sources and named public statements may be sufficient for ordinary local journalism. Do not block a publishable story merely because every material fact is not repeated in a council PDF. Keep an internal source trail; attribution in finished copy is required only when the identity of the speaker/source is relevant or a material claim remains uncertain.
+5. Return 2-6 distinct useful sources. Map each source to a specific claim. For recommendation/list/discovery work, deliberately find multiple credible candidates and current details; review sentiment may be summarised only when supported across more than one traceable review/source. Never fabricate anonymous consensus.
 6. Separate missing evidence by timing:
    - REQUIRED_NOW blocks publication today.
    - FUTURE_TEST is an outcome not yet knowable and must be framed as a question, not a blocker.
@@ -575,7 +675,7 @@ TASK
 10. Geography is hard-gated to ${ctx.location}. Remove results from same-name places outside the UK. For Norfolk specifically, reject Norfolk, Virginia and US property/university/company results.
 
 Return ONLY valid JSON:
-{"research_status":"Sufficient or Insufficient","resolved_subject":{"name":"","location":"","responsible_body":"","reference":"","confidence":"high/medium/low"},"research_summary":"","sources":[{"title":"","url":"","supports":"","source_type":"official/primary/local/discovery/other","reader_facing":true}],"required_now_missing":[],"future_tests":[],"optional_missing":[],"missing_evidence":[]}`;
+{"research_status":"Sufficient or Insufficient","editorial_state":"VERIFIED|ATTRIBUTED|EDITORIAL|BLOCKED","resolved_subject":{"name":"","location":"","responsible_body":"","reference":"","confidence":"high/medium/low"},"research_summary":"","sources":[{"title":"","url":"","supports":"","source_type":"official/primary/local/discovery/other","reader_facing":true}],"required_now_missing":[],"future_tests":[],"optional_missing":[],"missing_evidence":[]}`;
 }
 async function recoverEvidencePack(fields,cls,firstPass,model){
   const response=await createResponse({
@@ -625,7 +725,8 @@ async function recoverEvidencePack(fields,cls,firstPass,model){
     missing_evidence:requiredNow.length?requiredNow:legacyMissing.filter(x=>!futureTests.includes(x)&&!optionalMissing.includes(x)),
     resolved_subject:resolved,
     recovery_used:true,
-    recovery_model:response._model_used||model||''
+    recovery_model:response._model_used||model||'',
+    editorial_state:String(recovered.editorial_state||'').toUpperCase()
   };
 }
 
@@ -794,8 +895,12 @@ function evidenceOutcome(cls,research,gate){
   if(n===0)return {code:'RESEARCH_INCOMPLETE',label:'Research incomplete',missing:blocking.length?blocking:timing.required};
   return {code:'SOURCE_CHECK_REQUIRED',label:'Source check required',missing:blocking.length?blocking:timing.required};
 }
-function researchLockDecision(research){
+function researchLockDecision(fields,research){
   const sources=Array.isArray(research?.sources)?research.sources:[];
+  const strategy=researchStrategy(fields||{},'B — Light Proof');
+  const declared=String(research?.editorial_state||'').toUpperCase();
+  if(declared==='EDITORIAL'&&sources.length>=2)return {code:'EDITORIAL',humanReview:false,reason:'Multiple credible sources support an editorial/recommendation treatment; no objective winner or invented consensus may be claimed.'};
+  if(declared==='ATTRIBUTED'&&sources.length>=1)return {code:'ATTRIBUTED_REPORT',humanReview:false,reason:'Credible reporting supports publication with proportionate qualification where a material detail remains unconfirmed.'};
   const combined=[
     String(research?.research_status||''),
     String(research?.research_summary||''),
@@ -817,7 +922,10 @@ function researchLockDecision(research){
     return {code:'VERIFIED_NOW',humanReview:false,reason:'An official or primary source directly verifies the article premise.'};
   }
   if(reported.length>=1){
-    return {code:'ATTRIBUTED_REPORT',humanReview:true,reason:'Reporting supports the article premise, but matching official confirmation is incomplete. Claims must remain explicitly attributed.'};
+    return {code:'ATTRIBUTED_REPORT',humanReview:false,reason:'Credible reporting supports the article premise. Keep uncertain material claims qualified; source naming is needed only when editorially relevant.'};
+  }
+  if((strategy.route==='MULTI_CANDIDATE'||strategy.route==='EDITORIAL_FRAME')&&sources.length>=2){
+    return {code:'EDITORIAL',humanReview:false,reason:'Credible local examples are sufficient for an editorial recommendation, list or reader-debate article.'};
   }
   if(sources.length>=1){
     return {code:'RESEARCH_INCOMPLETE',humanReview:true,reason:'Relevant evidence was retained, but it does not yet establish the article premise strongly enough for publication.'};
@@ -905,9 +1013,9 @@ STYLE, AUDIENCE AND SAFETY
 - QUESTION-FIRST RULE: answer ONE clear reader question well. Do not turn a broad topic into a catch-all guide.
 - ADAPTIVE STORY MODE: choose the treatment from the approved question and evidence. Use one dominant mode: CONVERSATION ADVICE, NEWS EXPLAINER, DEBATE / CONTROVERSY, RECOMMENDATION / DISCOVERY, PRACTICAL SERVICE, COMPARISON / VALUE, HUMAN / COMMUNITY, or BREAKING UPDATE. Do not force every article into a personal-question template.
 - CONVERSATION ADVICE MODE: for advice, finance, property, health, pets, motoring and similar expert questions, write as if answering a genuine Zoom Q&A, podcast question, dinner-table/pub conversation or WhatsApp message. Answer early, explain choices/trade-offs, show evidence/examples, then give the natural next step.
-- NEWS / BREAKING MODE: lead with what happened, where, who is affected, what changes now and what remains uncertain. Keep evidence and attribution strong. Do not bolt on an invented persona merely to make news sound conversational.
+- NEWS / BREAKING MODE: lead with what happened, where, who is affected, what changes now and what remains uncertain. Credible established reporting and named public statements are usable evidence for ordinary local journalism. Qualify moving or disputed facts naturally. Do not clutter the copy with source names unless who said/reported it is editorially relevant.
 - DEBATE / CONTROVERSY MODE: surface the real tension, strongest evidence on both sides and the actual point of disagreement. Invite a specific reader view without manufacturing outrage or consensus.
-- DISCOVERY / COMPARISON / SERVICE MODE: match the structure to the reader job — recommendation, verified comparison, checklist, price/value test or useful local discovery — rather than repeating the same article formula.
+- DISCOVERY / COMPARISON / SERVICE MODE: match the structure to the reader job — recommendation, verified comparison, checklist, price/value test or useful local discovery — rather than repeating the same article formula. For lists/recommendations, give named examples and useful specifics. Venue menus, official pages, reputable review patterns and specialist/local coverage can be combined; never pretend one review is a consensus.
 - ILLUSTRATIVE PERSONA RULE: ordinary invented names, ages and everyday situations ARE allowed as storytelling devices for common scenarios (for example, 'Millie is three...'). They may add personality and specificity, but they are NEVER evidence. Never invent attributed quotes, testimony, credentials, business ownership, medical/legal/financial outcomes, survey results, reader consensus or factual claims. If the article could cause a reader to believe the persona supplied real testimony, reframe it as an illustrative scenario.
 - PARTNER MODEL: the editorial answer must work without a sponsor. Where a natural expert/partner lane exists, structure the question so a genuine named partner could later supply or replace the specialist commentary without changing the reader problem. Never invent that partner or their advice.
 - SPLIT TEST: if the brief naturally contains two or more questions that could each make a useful standalone 250-600 word article, answer only the approved core question here and return the other distinct questions in related_questions for the content bank. Do not cram them into this article.
@@ -935,7 +1043,7 @@ ${useEvidence?`- Use ONLY material claims supported by the research pack below.
 - CRITICAL EVIDENCE LANGUAGE: absence of evidence is not evidence that a proposal failed a test. Never write "the answer is no" merely because a document is absent. First distinguish REQUIRED_NOW evidence from a FUTURE_TEST. If an outcome cannot yet exist, frame it as the question the article will follow rather than repeatedly telling readers that Spotlight lacks evidence.
 - If an optional or non-essential detail in the brief could not be verified, OMIT that detail from the article rather than forcing it into the copy.
 - A missing optional detail does NOT by itself require QA Fix Required.
-- Mark QA Fix Required only when evidence needed to answer the CORE QUESTION is missing, or when the drafted article still contains a material claim that is not adequately supported.
+- Mark QA Fix Required only when the CORE PREMISE genuinely lacks a credible basis or the drafted article would materially mislead. Do NOT mark Fix Required merely because an official/primary source is unavailable when credible reporting, named statements or appropriate lower-risk sources support publication with qualification.
 - In evidence_summary, mention useful verification limits without turning every omitted peripheral detail into a publication blocker.`:'- Avoid unnecessary factual claims.'}
 
 APPROVED BRIEF
@@ -953,6 +1061,9 @@ Primary action: ${value(fields,'Primary Next Action')}
 CTA type: ${value(fields,'CTA Type')}
 Existing CTA text: ${value(fields,'CTA Text')}
 Editorial planning notes: ${String(value(fields,'Notes')||'').split('MASTER ARTICLE RESEARCH CHECKPOINT')[0].slice(0,1800)}
+
+ARTICLE MODE
+${articleMode(fields)}
 
 RESEARCH PACK
 ${sourcePack}
@@ -1255,8 +1366,8 @@ export default async(request)=>{
           }
         }
         research=relaxNonCoreEvidenceDemands(fields,research);
-    research=relaxOpenQuestionEvidenceDemands(fields,research);
         research=relaxOpenQuestionEvidenceDemands(fields,research);
+        research=applyEditorialEvidencePolicy(fields,research,cls);
         log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0,recoveryUsed:!!research.recovery_used,coreEvidenceRelaxed:!!research.core_evidence_relaxed});
         const checkpoint=researchCheckpointBlock(key,research,researchModel);
         const checkpointNotes=originalNotes?`${originalNotes}\n\n${checkpoint}\n\n${runningBlock}`:`${checkpoint}\n\n${runningBlock}`;
@@ -1275,9 +1386,10 @@ export default async(request)=>{
     }
 
     research=relaxNonCoreEvidenceDemands(fields,research);
+    research=applyEditorialEvidencePolicy(fields,research,cls);
 
     if(mode==='research'){
-      const decision=researchLockDecision(research);
+      const decision=researchLockDecision(fields,research);
       const retained=(research.sources||[]).map(x=>({title:String(x.title||'').trim(),url:cleanUrl(x.url),supports:cleanEvidenceSupportText(String(x.supports||'')),source_type:String(x.source_type||'')})).filter(x=>x.url).slice(0,8);
       const pack=[
         `RESEARCH PACK v1`,
@@ -1295,11 +1407,11 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.7.12`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.8.0`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
-        'Evidence Status':decision.code==='VERIFIED_NOW'?'Verified':decision.code==='ATTRIBUTED_REPORT'?'Reported — Attribution Required':'Researching',
+        'Evidence Status':decision.code==='VERIFIED_NOW'?'Verified':decision.code==='ATTRIBUTED_REPORT'?'Reported — Attribution Required':decision.code==='EDITORIAL'?'Verified':'Researching',
         'Evidence Checked Date':new Date().toISOString().slice(0,10),
         'Section QA Result':['BLOCKED','RESEARCH_INCOMPLETE'].includes(decision.code)?'Fix Required':'Not Checked',
         'Section Status':['BLOCKED','RESEARCH_INCOMPLETE'].includes(decision.code)?'Researching':'Planned',
@@ -1313,7 +1425,7 @@ export default async(request)=>{
     if(cls!=='A — Question Only'){
       const gateNow=evidenceGate(fields,cls,research);
       const outcomeNow=evidenceOutcome(cls,research,gateNow);
-      if(['BLOCKED','RESEARCH_INCOMPLETE'].includes(researchLockDecision(research).code)){
+      if(['BLOCKED','RESEARCH_INCOMPLETE'].includes(researchLockDecision(fields,research).code)){
       const retained=(research.sources||[]).map(x=>({
         title:String(x.title||'').trim(),
         url:cleanUrl(x.url),
@@ -1383,7 +1495,7 @@ export default async(request)=>{
     }
 
 
-    const activeResearchKey=researchKey(research);
+    const activeResearchKey=researchKey(research)+` | writer:${WRITER_PROMPT_VERSION}`;
     const reusableWriter=(writerCandidate?.research_key&&writerCandidate.research_key===activeResearchKey)?writerCandidate:null;
     if(writerCandidate&&!reusableWriter){
       traceLine('Writer checkpoint invalidated','DONE','research pack changed');
@@ -1423,25 +1535,41 @@ export default async(request)=>{
       await saveTrace();
     }
     log('json_parse_started');
-    const result=parseJsonText(writerRaw);
-    log('json_parse_completed',{qaResult:result.qa_result||'',sourceCount:Array.isArray(result.sources)?result.sources.length:0});
+    let result=parseJsonText(writerRaw);
+    let publishGate=writerPublishabilityGate(fields,result,research);
+    if(!publishGate.pass){
+      traceLine('Publishability gate','FAIL',publishGate.reasons.join(' | ').slice(0,220));
+      const repairPrompt=`${promptFor(fields,cls,research)}\n\nREPAIR PASS — the previous draft failed the publishability gate.\nProblems: ${publishGate.reasons.join('; ')}\nRewrite the COMPLETE JSON package. Do not discuss research methodology, missing checks or internal editorial process in reader-facing fields. Answer the reader question directly with the strongest supported local examples. Previous draft for diagnosis only:\n${JSON.stringify(result).slice(0,12000)}`;
+      const repaired=await stage('Automatic writer repair',()=>createResponse({input:repairPrompt,useWeb:false,model:writerModel,timeoutMs:42000}),44000);
+      writerRaw=outputText(repaired);
+      response._model_used=repaired._model_used||response._model_used||writerModel;
+      result=parseJsonText(writerRaw);
+      publishGate=writerPublishabilityGate(fields,result,research);
+      if(!publishGate.pass){
+        result.qa_result='Fix Required';
+        result.exception=[String(result.exception||'').trim(),`Publishability gate failed: ${publishGate.reasons.join('; ')}`].filter(Boolean).join(' ');
+      }else{
+        traceLine('Automatic writer repair','DONE','publishability gate passed');
+      }
+    }
+    log('json_parse_completed',{qaResult:result.qa_result||'',sourceCount:Array.isArray(result.sources)?result.sources.length:0,publishable:publishGate.pass});
     const writerSources=(Array.isArray(result.sources)?result.sources:[]).map(s=>({title:String(s.title||''),url:cleanUrl(s.url),supports:String(s.supports||'')})).filter(s=>s.url);
     const researchSources=(research.sources||[]).map(s=>({title:s.title,url:s.url,supports:s.supports}));
     const merged=[];
     for(const src of [...researchSources,...writerSources])if(src.url&&!merged.some(x=>x.url===src.url))merged.push(src);
     const sources=merged.slice(0,5);
     const gate=evidenceGate(fields,cls,research);
-    const lockDecision=researchLockDecision(research);
+    const lockDecision=researchLockDecision(fields,research);
     const editorialOutcome=evidenceOutcome(cls,research,gate);
-    const qa=(result.qa_result==='Pass'&&lockDecision.code!=='BLOCKED')?'Pass':'Fix Required';
-    const outcome=qa==='Pass'?{code:lockDecision.code,label:lockDecision.code==='VERIFIED_NOW'?'Verified now':'Attributed report',missing:[],future_tests:editorialOutcome.future_tests||[],optional_missing:editorialOutcome.optional_missing||[]}:editorialOutcome;
+    const qa=(result.qa_result==='Pass'&&publishGate.pass&&lockDecision.code!=='BLOCKED')?'Pass':'Fix Required';
+    const outcome=qa==='Pass'?{code:lockDecision.code,label:lockDecision.code==='VERIFIED_NOW'?'Verified now':lockDecision.code==='EDITORIAL'?'Editorial — source checked':'Attributed report',missing:[],future_tests:editorialOutcome.future_tests||[],optional_missing:editorialOutcome.optional_missing||[]}:editorialOutcome;
     if(outcome.code!=='COMPLETE'){
       result.exception=[String(result.exception||'').trim(),...(outcome.missing||[])].filter(Boolean).join(' ');
       result.evidence_summary=[String(result.evidence_summary||'').trim(),String(research.research_summary||'').trim(),outcome.missing?.length?`Missing required-now evidence: ${outcome.missing.join('; ')}`:''].filter(Boolean).join(' ');
     }
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.7.12`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.8.0`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
       'Section Final Copy':String(result.article_body||'').trim(),
