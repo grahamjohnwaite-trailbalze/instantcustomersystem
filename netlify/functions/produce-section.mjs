@@ -7,7 +7,7 @@ const value=(f,k)=>f?.[k]??'';
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=65000;
 const RELEASE_VERSION='3.8.1';
-const WRITER_PROMPT_VERSION='ARTICLE-BUILDER-SPOTLIGHT-v2';
+const WRITER_PROMPT_VERSION='ARTICLE-BUILDER-SPOTLIGHT-v3';
 
 function publicationContext(fields={}){
   const supplied=String(fields.__publicationName||fields['Publication Name']||'').trim();
@@ -136,6 +136,7 @@ function writerPublishabilityGate(fields,result,research){
   const reasons=[];
   if(body.length<700)reasons.push('Article body is blank or too short for a Master Article.');
   if(/FIX REQUIRED BEFORE PUBLICATION|before this article can go live|the editorial team (?:also )?needs|we are holding publication|holding publication until|needs? (?:local )?reader examples before deciding|research (?:is|was) insufficient|records still need checking before readers/i.test(body+' '+String(result?.article_subhead||'')))reasons.push('Reader-facing copy contains internal research/production language.');
+  if(/like-for-like evidence|unsafe to treat as fact|latest available evidence|established in the evidence|the fair test is|for now, the honest answer|in plain English/i.test(body+' '+String(result?.article_subhead||'')))reasons.push('Spotlight voice gate: research-room or defensive evidence language remains in reader-facing copy.');
   if(/RECOMMENDATION \/ DISCOVERY|LIST \/ ROUND-UP/.test(mode)){
     const title=String(value(fields,'Section Title')||'');
     if(/which|best|five|six|seven|eight|nine|ten|worth|recommend|attraction|takeaway|restaurant|pub/i.test(title) && !/\b(The|At|In) [A-Z][A-Za-z'’&-]+|\b[A-Z][A-Za-z'’&-]+ (?:Arms|Inn|Hotel|Museum|Park|Centre|Center|Restaurant|Cafe|Café|Pub|Takeaway|Gardens|Hall|House|Theatre|Cinema)\b/.test(body))reasons.push('Discovery/list article does not contain enough named examples to answer the question.');
@@ -174,7 +175,7 @@ function briefKey(fields,cls){
 function latestCheckpoint(notes,label){
   const re=label==='research'
     ? /MASTER ARTICLE RESEARCH CHECKPOINT v1\n([\s\S]*?)\nEND MASTER ARTICLE RESEARCH CHECKPOINT/g
-    : /MASTER ARTICLE WRITER CHECKPOINT v(?:1|2)\n([\s\S]*?)\nEND MASTER ARTICLE WRITER CHECKPOINT/g;
+    : /MASTER ARTICLE WRITER CHECKPOINT v(?:1|2|3)\n([\s\S]*?)\nEND MASTER ARTICLE WRITER CHECKPOINT/g;
   const all=[...String(notes||'').matchAll(re)];
   if(!all.length)return null;
   try{return JSON.parse(all[all.length-1][1])}catch{return null}
@@ -182,13 +183,13 @@ function latestCheckpoint(notes,label){
 function removeCheckpoints(notes){
   return String(notes||'')
     .replace(/\n?MASTER ARTICLE RESEARCH CHECKPOINT v1\n[\s\S]*?\nEND MASTER ARTICLE RESEARCH CHECKPOINT\s*/g,'')
-    .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v(?:1|2)\n[\s\S]*?\nEND MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
+    .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v(?:1|2|3)\n[\s\S]*?\nEND MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
     .trim();
 }
 
 function removeWriterCheckpoints(notes){
   return String(notes||'')
-    .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v(?:1|2)\n[\s\S]*?\nEND MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
+    .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v(?:1|2|3)\n[\s\S]*?\nEND MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
     .trim();
 }
 function parsePipeSourceLine(line){
@@ -257,7 +258,7 @@ function researchKey(research){
   });
 }
 function writerCheckpointBlock(key,researchKeyValue,raw,model){
-  return `MASTER ARTICLE WRITER CHECKPOINT v2\n${JSON.stringify({brief_key:key,research_key:String(researchKeyValue||''),saved_at:new Date().toISOString(),model:model||'',raw_output:String(raw||'')},null,2)}\nEND MASTER ARTICLE WRITER CHECKPOINT`;
+  return `MASTER ARTICLE WRITER CHECKPOINT v3\n${JSON.stringify({brief_key:key,research_key:String(researchKeyValue||''),saved_at:new Date().toISOString(),model:model||'',raw_output:String(raw||'')},null,2)}\nEND MASTER ARTICLE WRITER CHECKPOINT`;
 }
 
 function productionClass(fields){

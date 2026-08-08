@@ -780,7 +780,8 @@ function auditMap(){
 
 function masterArticlePackage(fields){
  const notes=String(val(fields,'Notes')||'');
- const match=notes.match(/MASTER ARTICLE PACKAGE v1\n([\s\S]*?)\nEND MASTER ARTICLE PACKAGE/);
+ const matches=[...notes.matchAll(/MASTER ARTICLE PACKAGE v1\n([\s\S]*?)\nEND MASTER ARTICLE PACKAGE/g)];
+ const match=matches[matches.length-1];
  if(!match)return null;
  try{return JSON.parse(match[1])}catch{return null}
 }
