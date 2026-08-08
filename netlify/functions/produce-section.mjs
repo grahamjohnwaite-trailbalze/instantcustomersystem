@@ -238,8 +238,9 @@ function lockedResearchFromNotes(notes){
   }
   return null;
 }
+const CURRENT_RESEARCH_PROMPT_VERSION='GEOGRAPHY-HARD-GATE-v3';
 function researchCheckpointBlock(key,research,model){
-  return `MASTER ARTICLE RESEARCH CHECKPOINT v2\n${JSON.stringify({brief_key:key,research_prompt_version:'GEOGRAPHY-HARD-GATE-v2',saved_at:new Date().toISOString(),model:model||'',research},null,2)}\nEND MASTER ARTICLE RESEARCH CHECKPOINT`;
+  return `MASTER ARTICLE RESEARCH CHECKPOINT v2\n${JSON.stringify({brief_key:key,research_prompt_version:CURRENT_RESEARCH_PROMPT_VERSION,saved_at:new Date().toISOString(),model:model||'',research},null,2)}\nEND MASTER ARTICLE RESEARCH CHECKPOINT`;
 }
 function researchKey(research){
   const sources=(Array.isArray(research?.sources)?research.sources:[]).map(x=>({
@@ -1373,7 +1374,13 @@ export default async(request)=>{
     const savedResearch=latestCheckpoint(sourceNotes,'research');
     const lockedResearch=lockedResearchFromNotes(sourceNotes);
     const savedWriter=latestCheckpoint(sourceNotes,'writer');
-    const reusableResearch=(savedResearch?.brief_key===key)?savedResearch:(lockedResearch?{...lockedResearch,brief_key:key}:null);
+    // Research checkpoints are reusable only when they were created by the current
+    // research prompt version. Older checkpoints and legacy locked research packs may
+    // contain source-selection behaviour that newer safety/geography gates are meant
+    // to replace, so they must trigger a fresh research pass instead of being silently reused.
+    const reusableResearch=(savedResearch?.brief_key===key && savedResearch?.research_prompt_version===CURRENT_RESEARCH_PROMPT_VERSION)
+      ? savedResearch
+      : null;
     const writerCandidate=(savedWriter?.brief_key===key)?savedWriter:null;
     const runningStage=mode==='research'?'Researching only':'Generating from locked research';
     const runningBlock=[`MASTER ARTICLE RUNNING v2.22`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
