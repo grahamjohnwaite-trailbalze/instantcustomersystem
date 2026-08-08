@@ -7,7 +7,7 @@ const value=(f,k)=>f?.[k]??'';
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=65000;
 const RELEASE_VERSION='3.8.1';
-const WRITER_PROMPT_VERSION='ARTICLE-BUILDER-SPOTLIGHT-v3';
+const WRITER_PROMPT_VERSION='ARTICLE-BUILDER-SPOTLIGHT-v4';
 
 function publicationContext(fields={}){
   const supplied=String(fields.__publicationName||fields['Publication Name']||'').trim();
@@ -1182,6 +1182,12 @@ Return ONLY valid JSON in this exact shape:
  "social_x":"concise X caption",
  "evidence_summary":"what was verified and any important limits",
  "sources":[{"title":"","url":"clean raw URL","supports":"claim supported"}],
+ "editorial_readiness":{
+   "status":"READY|MINOR EDIT|REWORK|BLOCKED",
+   "grade":"A|B|C|",
+   "rationale":"one short operator-facing reason",
+   "suggested_edits":[{"original":"exact current wording","replacement":"exact proposed wording","reason":"why this small change improves publication readiness"}]
+ },
  "qa_result":"Pass or Fix Required",
  "exception":"blank when Pass"
 }
@@ -1194,6 +1200,15 @@ QA DECISION
 - Pass: the core reader question is answered with adequate support, and unsupported peripheral details have been omitted.
 - Fix Required: a material claim used in the article is unsupported, or evidence essential to the core answer is missing.
 - Do not fail an otherwise publishable article merely because the original brief requested extra details that were not needed and were left out.
+
+EDITORIAL READINESS
+- READY: publishable now; no material factual, geography, voice, CTA or package issue remains.
+- MINOR EDIT: publishable after 1-3 small specific wording/package fixes. Give exact original -> replacement edits only.
+- REWORK: research is usable but the article needs another substantial writer pass.
+- BLOCKED: a central claim lacks a responsible basis or the article would materially mislead.
+- Grade only READY or MINOR EDIT articles: A = standout/lead candidate, B = strong publishable article, C = useful supporting article. Do not use numerical grades.
+- The grade measures editorial strength, not factual certainty.
+- Keep suggested_edits empty for READY. Do not invent edits just to avoid READY.
 
 Use the strongest 1-5 sources from the research pack. Do not include unused sources.`;
 }
@@ -1218,6 +1233,28 @@ function evidenceGate(fields,cls,research){
   return {pass:reasons.length===0,reasons};
 }
 
+function editorialReadiness(result,publishGate,lockDecision){
+  const raw=(result?.editorial_readiness&&typeof result.editorial_readiness==='object')?result.editorial_readiness:{};
+  let status=String(raw.status||'').toUpperCase().trim();
+  const allowed=new Set(['READY','MINOR EDIT','REWORK','BLOCKED']);
+  if(!allowed.has(status))status='READY';
+  if(lockDecision?.code==='BLOCKED')status='BLOCKED';
+  else if(!publishGate?.pass||String(result?.qa_result||'').toLowerCase()!=='pass')status='REWORK';
+  let grade=String(raw.grade||'').toUpperCase().trim();
+  if(!['A','B','C'].includes(grade)){
+    const scores=(result?.quality_scores&&typeof result.quality_scores==='object')?Object.values(result.quality_scores).map(Number).filter(Number.isFinite):[];
+    const avg=scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:0;
+    grade=avg>=8.3?'A':avg>=7.2?'B':'C';
+  }
+  if(status==='REWORK'||status==='BLOCKED')grade='';
+  const edits=Array.isArray(raw.suggested_edits)?raw.suggested_edits.map(e=>({
+    original:String(e?.original||'').trim(),replacement:String(e?.replacement||'').trim(),reason:String(e?.reason||'').trim()
+  })).filter(e=>e.original&&e.replacement&&e.original!==e.replacement).slice(0,3):[];
+  if(status==='READY'&&edits.length)status='MINOR EDIT';
+  if(status==='MINOR EDIT'&&!edits.length)status='READY';
+  return {status,grade,rationale:String(raw.rationale||'').trim(),suggested_edits:status==='MINOR EDIT'?edits:[]};
+}
+
 function packageBlock(result,sources,model){
   const payload={
     version:'MASTER_ARTICLE_V1',model_used:model||'',
@@ -1233,7 +1270,9 @@ function packageBlock(result,sources,model){
     cta_text:String(result.cta_text||'').trim(),
     social_facebook:String(result.social_facebook||'').trim(),social_linkedin:String(result.social_linkedin||'').trim(),social_x:String(result.social_x||'').trim(),
     letterman_status:'Ready for Letterman',letterman_article_id:'',published_url:'',newsletter_queue_status:'Not queued',sync_status:'Manual',
-    evidence_summary:String(result.evidence_summary||'').trim(),sources
+    evidence_summary:String(result.evidence_summary||'').trim(),
+    editorial_readiness:(result.editorial_readiness&&typeof result.editorial_readiness==='object')?result.editorial_readiness:{status:'READY',grade:'B',rationale:'',suggested_edits:[]},
+    sources
   };
   return `MASTER ARTICLE PACKAGE v1\n${JSON.stringify(payload,null,2)}\nEND MASTER ARTICLE PACKAGE`;
 }
@@ -1638,6 +1677,7 @@ export default async(request)=>{
       result.exception=[String(result.exception||'').trim(),...(outcome.missing||[])].filter(Boolean).join(' ');
       result.evidence_summary=[String(result.evidence_summary||'').trim(),String(research.research_summary||'').trim(),outcome.missing?.length?`Missing required-now evidence: ${outcome.missing.join('; ')}`:''].filter(Boolean).join(' ');
     }
+    result.editorial_readiness=editorialReadiness(result,publishGate,lockDecision);
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
     const serviceNotes=[block,'',`PRODUCTION SERVICE v3.8.0`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
