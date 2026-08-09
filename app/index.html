@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.17.3.7<br><strong>Step 8 QA Rerun Gate</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · deterministic format blockers · visible QA rerun · convergence gate</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.0<br><strong>Step 9 Production Package</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · clean publishing handoff · QA-gated production output</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -411,7 +411,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 <div id="smart-plan-list" class="checklist"></div>
 </section>
 <section class="master-selection-panel-v312" id="master-selection-panel-v312" style="display:none"><div class="section-head" style="margin:0"><div><h2 style="margin:0">Step 5 — Select Masters For This Issue</h2><div class="muted" id="master-selection-summary-v312">Produce the 15 candidates first, then choose the strongest publication-fit set for this issue. Unselected READY articles stay available for later.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn secondary" id="repair-master-integrity-v316" type="button">Repair Produced Masters</button><button class="btn secondary" id="master-selection-save-v312" type="button">Save Selection</button></div></div><div id="master-selection-grid-v312" class="master-selection-grid-v312"></div></section>
-<section id="production-ready-panel-v312c"><div class="eyebrow">Step 9 — Production Ready</div><h2 style="margin:5px 0 6px">Production Package</h2><div class="muted">The issue is assembled and QA checked. Create the finished package for your publishing platform.</div><div class="production-ready-grid"><div><strong id="pr-sections-v312c">—</strong><span>Sections</span></div><div><strong id="pr-masters-v312c">—</strong><span>Master Articles</span></div><div><strong id="pr-status-v312c">CHECK</strong><span>Issue Status</span></div></div><div class="toolbar"><button class="btn" id="pr-generate-v312c" type="button">Prepare Production Package</button><button class="btn secondary" id="pr-copy-v312c" type="button">Open / Copy Package</button></div><div class="warning" style="margin-top:14px"><strong>Universal output:</strong> Letterman is one destination. The production package is designed to work with any newsletter, CMS or publishing platform.</div></section>
+<section id="production-ready-panel-v312c"><div class="eyebrow">Step 9 — Production Ready</div><h2 style="margin:5px 0 6px">Production Package</h2><div class="muted">Create the clean publishing handoff from the QA-approved running order. Internal planning fields are excluded.</div><div class="production-ready-grid"><div><strong id="pr-sections-v312c">—</strong><span>Sections</span></div><div><strong id="pr-masters-v312c">—</strong><span>Master Articles</span></div><div><strong id="pr-status-v312c">CHECK</strong><span>Issue Status</span></div></div><div class="toolbar"><button class="btn" id="pr-generate-v312c" type="button">Generate Production Package</button><button class="btn secondary" id="pr-copy-v312c" type="button">Open / Copy Package</button></div><div class="warning" style="margin-top:14px"><strong>Universal output:</strong> Letterman is one destination. The production package is designed to work with any newsletter, CMS or publishing platform.</div></section>
 <section id="step6-status-panel-v3151" class="panel" style="display:none;margin-bottom:14px">
   <div class="section-head" style="margin:0 0 8px">
     <div>
@@ -496,7 +496,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 </div>
 </section>
 </main></div>
-<dialog id="issue-dialog"><form method="dialog" class="modal"><h2>Create issue</h2><div class="form-grid"><div class="field full"><label>Publication</label><select id="new-publication"></select></div><div class="field"><label>Issue number</label><input id="new-number" type="number"></div><div class="field"><label>Send date</label><input id="new-date" type="date"></div><div class="field full"><label>Main theme</label><textarea id="new-theme" placeholder="The question or tension holding the issue together"></textarea></div></div><div class="savebar"><button class="btn secondary" value="cancel">Cancel</button><button class="btn" id="create-issue" value="default">Create and open</button></div></form></dialog><dialog id="edit-issue-dialog"><form method="dialog" class="modal"><h2>Edit issue details</h2><input id="edit-issue-id" type="hidden"><div class="form-grid"><div class="field"><label>Issue number</label><input id="edit-number" type="number"></div><div class="field"><label>Send date</label><input id="edit-date" type="date"></div><div class="field full"><label>Issue status</label><select id="edit-status"><option>PLANNED</option><option>BUILDING</option><option>QA</option><option value="READY FOR LETTERMAN">PRODUCTION READY</option><option>PUBLISHED</option><option>ARCHIVED</option></select></div><div class="field full"><label>Main theme</label><textarea id="edit-theme"></textarea></div></div><div class="warning" style="margin-top:10px">Use this for a wrong issue number/date or an accidental duplicate. It does not change article content.</div><div class="savebar"><button class="btn secondary" value="cancel">Cancel</button><button class="btn" id="save-edited-issue" value="default">Save issue details</button></div></form></dialog><dialog id="article-dialog"><div class="modal"><h2>Master Article / Production Package</h2><textarea id="article-package-text" style="width:100%;min-height:500px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#article-dialog').close()">Close</button><button class="btn" id="copy-article-package">Copy article package</button></div></div></dialog><dialog id="preview-dialog"><div class="modal"><h2>Production Ready Copy</h2><textarea id="preview-text" style="width:100%;min-height:430px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#preview-dialog').close()">Close</button><button class="btn" id="copy-preview">Copy</button></div></div></dialog>
+<dialog id="issue-dialog"><form method="dialog" class="modal"><h2>Create issue</h2><div class="form-grid"><div class="field full"><label>Publication</label><select id="new-publication"></select></div><div class="field"><label>Issue number</label><input id="new-number" type="number"></div><div class="field"><label>Send date</label><input id="new-date" type="date"></div><div class="field full"><label>Main theme</label><textarea id="new-theme" placeholder="The question or tension holding the issue together"></textarea></div></div><div class="savebar"><button class="btn secondary" value="cancel">Cancel</button><button class="btn" id="create-issue" value="default">Create and open</button></div></form></dialog><dialog id="edit-issue-dialog"><form method="dialog" class="modal"><h2>Edit issue details</h2><input id="edit-issue-id" type="hidden"><div class="form-grid"><div class="field"><label>Issue number</label><input id="edit-number" type="number"></div><div class="field"><label>Send date</label><input id="edit-date" type="date"></div><div class="field full"><label>Issue status</label><select id="edit-status"><option>PLANNED</option><option>BUILDING</option><option>QA</option><option value="READY FOR LETTERMAN">PRODUCTION READY</option><option>PUBLISHED</option><option>ARCHIVED</option></select></div><div class="field full"><label>Main theme</label><textarea id="edit-theme"></textarea></div></div><div class="warning" style="margin-top:10px">Use this for a wrong issue number/date or an accidental duplicate. It does not change article content.</div><div class="savebar"><button class="btn secondary" value="cancel">Cancel</button><button class="btn" id="save-edited-issue" value="default">Save issue details</button></div></form></dialog><dialog id="article-dialog"><div class="modal"><h2>Master Article / Production Package</h2><textarea id="article-package-text" style="width:100%;min-height:500px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#article-dialog').close()">Close</button><button class="btn" id="copy-article-package">Copy article package</button></div></div></dialog><dialog id="preview-dialog"><div class="modal"><h2>Production Ready Package</h2><textarea id="preview-text" style="width:100%;min-height:430px"></textarea><div class="savebar"><button class="btn secondary" onclick="document.querySelector('#preview-dialog').close()">Close</button><button class="btn" id="copy-preview">Copy</button></div></div></dialog>
 <script>
 const S={publications:[],issues:[],sections:[],articleLibrary:[],issue:null,section:null,hot:[],productionUi:{}};const E=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));const val=(f,k)=>f?.[k]??'';const fmt=d=>d?new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00')):'—';
 async function api(path,opt={}){const r=await fetch('/.netlify/functions/'+path,{headers:{'content-type':'application/json',accept:'application/json'},...opt});const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={ok:false,error:`Invalid server response (${r.status}). ${raw.slice(0,300)||'No response body.'}`}}if(!r.ok||!d.ok){const err=new Error(d.error||`Request failed (${r.status})`);err.details=d.details;throw err}return d}function conn(ok,msg){E('dot').className='dot '+(ok?'ok':'bad');E('connection').textContent=msg}function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));E('view-'+v).classList.add('active');document.querySelector(`[data-view="${v}"]`).classList.add('active');E('page-title').textContent={dashboard:'Dashboard',publications:'Publications',issues:'Issues',build:'Issue Command Centre',assemble:'Issue Workflow'}[v];E('page-sub').textContent=v==='build'?'Plan, write and export one real issue.':v==='assemble'?'One clear production step at a time, from planning to production ready.':(S.issue?`${pubName(S.issue.fields.Publication)} production workspace.`:'Publication-aware production workspace.');if(v==='assemble'){renderAssembly();updateWorkflowGuide()}}
@@ -5210,8 +5210,72 @@ RULES:
     btn.disabled=false;btn.textContent=original;
   }
 }
-function assemblyDraft(){const items=getCanvas(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();if(!items.length)return 'Add at least one block to the issue canvas first.';let out=`ISSUE BUILD PACK\n\nISSUE\n${val(S.issue?.fields||{},'Issue Number')||''}\n\nISSUE PROMISE / QUESTION\n${theme||'[ADD ISSUE PROMISE]'}\n\nCOMPLETE RUNNING ORDER`;items.forEach((b,i)=>{out+=`\n\n${i+1}. ${b.title||b.type}\nTYPE: ${b.type}\nSTATUS: ${b.status||'NEEDS DECISION'}`;if(b.partner)out+=`\nPARTNER: ${b.partner}`;if(b.category)out+=`\nCATEGORY: ${b.category}`;if(b.commitment)out+=`\nCOMMITMENT: ${b.commitment}`;if(b.purpose)out+=`\nPURPOSE: ${b.purpose}`;if(b.proof)out+=`\nLOCAL PROOF / SOURCE: ${b.proof}`;if(b.cta)out+=`\nPRIMARY CTA: ${b.cta}`;if(b.button)out+=`\nBUTTON: ${b.button}`;if(b.url)out+=`\nURL: ${b.url}`;if(b.content)out+=`\nCONTENT / BRIEF:\n${b.content}`});const notReady=items.filter(x=>x.status!=='READY');out+=`\n\nPRODUCTION SUMMARY\n${items.filter(x=>x.status==='READY').length} ready\n${notReady.length} still needs production or a decision`;if(notReady.length)out+=`\n\nNOT READY\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+x.status).join('\n')}`;out+='\n\nFINAL QA\n- CHECK: all active paid partners included\n- CHECK: locked categories protected\n- CHECK: one primary action/button per article or slot\n- CHECK: named local proof and source accuracy\n- CHECK: no repeated question/angle from recent issues\n- CHECK: issue rhythm balances serious, useful, interactive and commercial content\n- CHECK: normally around 24-30 total sections with roughly 8-10 concise, information-rich Master Articles; use supporting components for rhythm, interaction and partner value\n- CHECK: Split Test applied to any article carrying more than one standalone reader question\n- CHECK: Spotlight retains human voice, humour and Unfiltered edge where earned\n- CHECK: Resident Expert / Featured Partner opportunities and the most natural CTA are visible without forcing an advert';return out}
-function generateAssembly(){E('preview-text').value=assemblyDraft();E('preview-dialog').showModal()}
+function assemblyDraft(){
+  const items=getCanvas(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();
+  if(!items.length)return 'No assembled running order is available.';
+  const ready=items.filter(x=>String(x.status||'').toUpperCase()==='READY');
+  const notReady=items.filter(x=>String(x.status||'').toUpperCase()!=='READY');
+  const publication=pubName(S.issue?.fields?.Publication||[]);
+  const issueNumber=val(S.issue?.fields||{},'Issue Number')||'';
+  const sendDate=val(S.issue?.fields||{},'Send Date')||'';
+  let out=`PRODUCTION READY PACKAGE
+
+PUBLICATION
+${publication}
+
+ISSUE
+${issueNumber}${sendDate?`
+
+SEND DATE
+${sendDate}`:''}
+
+ISSUE PROMISE / QUESTION
+${theme||'[ADD ISSUE PROMISE]'}
+
+PUBLISHING ORDER — ${items.length} SECTIONS`;
+  items.forEach((b,i)=>{
+    const title=String(b.title||b.type||`Section ${i+1}`).trim();
+    const content=String(b.content||'').trim();
+    out+=`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION ${i+1} — ${title}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    if(b.partner)out+=`
+PARTNER / ATTRIBUTION: ${String(b.partner).trim()}`;
+    if(content)out+=`
+
+${content}`;
+    if(b.button)out+=`
+
+BUTTON: ${String(b.button).trim()}`;
+    else if(b.cta)out+=`
+
+CTA: ${String(b.cta).trim()}`;
+    if(b.url)out+=`
+URL: ${String(b.url).trim()}`;
+  });
+  out+=`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRODUCTION STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${ready.length}/${items.length} sections ready`;
+  if(notReady.length)out+=`
+BLOCKED: ${notReady.length}
+${notReady.map(x=>'- '+(x.title||x.type)+' — '+(x.status||'NOT READY')).join('\n')}`;
+  else out+=`\nQA GATE: PASSED — 0 HARD FIXES\nREADY FOR PUBLISHING HANDOFF`;
+  return out;
+}
+function generateAssembly(){
+  let qa=null;try{qa=JSON.parse(localStorage.getItem(qaKey())||'null')}catch{}
+  if(!qa||Number(qa?.summary?.fix)!==0){
+    alert('Production Package is locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');
+    return;
+  }
+  E('preview-text').value=assemblyDraft();
+  E('preview-dialog').showModal();
+}
 E('view-research').onclick=()=>focusField('Notes');
 E('add-authoritative-source').onclick=async()=>{
  if(!S.section){alert('Select an article first.');return}
