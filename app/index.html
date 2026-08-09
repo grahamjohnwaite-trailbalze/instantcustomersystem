@@ -303,7 +303,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
  body[data-workflow-step="8"] .canvas-layout {grid-template-columns:1fr!important}
 }
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.13.0<br><strong>Step 2 Stabilisation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · Step 2 contract stabilised · candidate slate preserved</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.13.1<br><strong>Step 3 Research Workspace</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · Step 3 auto-brief materialisation · Research All 15</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -316,7 +316,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
 <button class="btn secondary" id="test-openai" style="width:100%;margin-bottom:8px">Test OpenAI connection</button>
 <div id="article-workflow" class="workflow-card" style="margin-bottom:12px"><strong>Current article workflow</strong><div class="muted" style="margin-top:6px">Select an article to see the next required action.</div></div>
 <button class="btn" id="run-production" style="width:100%;margin-bottom:8px">Write all approved articles</button>
-<button class="btn secondary" id="run-next-production" style="width:100%;margin-bottom:8px">1. Research current article</button>
+<button class="btn secondary" id="run-next-production" style="width:100%;margin-bottom:8px">Research All Approved Masters</button>
 <button class="btn secondary" id="generate-selected-production" style="width:100%;margin-bottom:8px">3. Write current Master Article</button>
 <button class="btn secondary" id="preview-article-package" style="width:100%;margin-bottom:8px">4. Preview Letterman package</button>
 <div class="workflow-actions" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
@@ -862,10 +862,18 @@ async function runProduction({one=false,mode="generate"}={}){
  }else{
    let queue;
    try{queue=await productionSections()}catch(e){alert(e.message);return}
-   const pending=queue.filter(x=>!productionDone(x.s));
-   if(!pending.length){E('production-progress').className='philosophy-box';E('production-progress').innerHTML='<strong>Production complete.</strong><div class="muted">All Publish Now sections already have Master Article packages. Use the review queue for anything not yet QA-ready.</div>';return}
+   const pending=mode==='research'
+     ? queue.filter(x=>!researchPackPresent(x.s.fields||{}))
+     : queue.filter(x=>!productionDone(x.s));
+   if(!pending.length){
+     E('production-progress').className='philosophy-box';
+     E('production-progress').innerHTML=mode==='research'
+       ? '<strong>Research complete.</strong><div class="muted">Every approved Master already has a saved Research Pack.</div>'
+       : '<strong>Production complete.</strong><div class="muted">All approved Masters already have Master Article packages. Use the review queue for anything not yet QA-ready.</div>';
+     return;
+   }
    work=pending;
-   if(!confirm(`Run the full production pipeline for ${work.length} pending sections? Each article will be researched first, its Research Pack saved, then the Master Article will be written only when the evidence gate allows it.`))return;
+   if(mode!=='research'&&!confirm(`Run the full production pipeline for ${work.length} pending sections? Each article will be researched first, its Research Pack saved, then the Master Article will be written only when the evidence gate allows it.`))return;
  }
  // Stabilisation v1.1: correct an obviously stale planner mode before research/production.
  if(one&&work[0]?.s){
@@ -935,7 +943,9 @@ async function runProduction({one=false,mode="generate"}={}){
    const failedList=failureDetails.length?`<div class="muted" style="margin-top:6px">${failureDetails.map(x=>`Failed: ${esc(x.title)} — ${esc(x.error)}`).join('<br>')}</div>`:'';
    E('production-progress').innerHTML=`<strong>Production run finished</strong><div class="muted">Written ready ${pass} · Written review ${sourceCheck+editorialReview} · Research blocked ${researchIncomplete} · Technical failed ${failed}</div>${failedList}`;
  }
- E('save-state').textContent=`Master Article pipeline complete. ${pass} complete · ${sourceCheck} source check · ${researchIncomplete} research incomplete · ${editorialReview} editorial review · ${failed} failed. This status is selectable/copyable.`;
+ E('save-state').textContent=mode==='research'
+ ? `Research run complete. ${work.length-failed} processed · ${sourceCheck} source check · ${researchIncomplete} research incomplete/blocked · ${failed} technical failed. Completed Research Packs are preserved.`
+ : `Master Article pipeline complete. ${pass} complete · ${sourceCheck} source check · ${researchIncomplete} research incomplete · ${editorialReview} editorial review · ${failed} failed. This status is selectable/copyable.`;
 }
 function buildProfile(f){
  const title=String(val(f,'Section Title')||'');
@@ -2793,13 +2803,84 @@ function plannerRejectedTitlesFromMessageV312E(msg){
   return [...new Set(out)];
 }
 
+
+async function approvedBriefStatusV3131(){
+  if(!S.issue)return {active:0,expected:0,clean:false};
+  const plan=getSmartPlan(),expected=plan?.articles?.length||0;
+  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+  S.sections=r.records||[];
+  const active=S.sections.filter(approvedPlanIdentity);
+  const orders=active.map(s=>Number(val(s.fields,'Section Order')));
+  const duplicates=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
+  const missing=[...Array(expected)].map((_,i)=>i+1).filter(n=>!orders.includes(n));
+  return {active:active.length,expected,clean:expected>0&&active.length===expected&&!duplicates.length&&!missing.length,duplicates,missing};
+}
+async function openResearchWorkspaceV3131(){
+  if(!S.issue)return;
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length||!smartPlanLocked(plan)){
+    const m='STEP 3 BLOCKED — Lock the approved candidate plan first.';
+    setWorkflowActionStatusV312(3,'Research','Research workspace blocked.',m);return;
+  }
+  const btn=E('workflow-primary-v312');
+  const old=btn?.textContent||'Open Research Workspace';
+  if(btn){btn.disabled=true;btn.textContent='Preparing 15 Master Briefs…';}
+  try{
+    let st=await approvedBriefStatusV3131();
+    if(!st.clean){
+      setWorkflowActionStatusV312(3,'Research',`Preparing ${plan.articles.length} Master briefs…`,'The locked Step 2 slate is being materialised into the research queue. No manual article entry is required.');
+      await applySmartPlanToBuild({quiet:true});
+      st=await approvedBriefStatusV3131();
+    }
+    if(!st.clean){
+      throw new Error(`Approved brief queue is not clean: ${st.active}/${st.expected} active · duplicate orders ${st.duplicates?.join(', ')||'none'} · missing ${st.missing?.join(', ')||'none'}.`);
+    }
+    sortSections();renderSections();renderForm();render();show('build');
+    setWorkflowActionStatusV312(3,'Research',`${st.active}/${st.expected} Master briefs ready.`,`Next: click Research All ${st.expected} Masters. Research Packs are saved article by article; completed research is preserved if the run stops.`);
+    setTimeout(()=>E('run-next-production')?.scrollIntoView({behavior:'smooth',block:'center'}),80);
+  }catch(e){
+    const m='STEP 3 PREPARATION FAILED — '+String(e.message||e);
+    E('save-state').textContent=m;
+    setWorkflowActionStatusV312(3,'Research','Research workspace preparation failed.',m);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=old;}
+  }
+}
+async function researchAllApprovedMastersV3131(){
+  if(!S.issue)return;
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length||!smartPlanLocked(plan)){
+    setWorkflowActionStatusV312(3,'Research','Research blocked.','Lock the Step 2 candidate slate first.');return;
+  }
+  try{
+    const st=await approvedBriefStatusV3131();
+    if(!st.clean){
+      await openResearchWorkspaceV3131();
+      const retry=await approvedBriefStatusV3131();
+      if(!retry.clean)return;
+    }else{
+      sortSections();renderSections();renderForm();
+    }
+    setWorkflowActionStatusV312(3,'Research',`Researching approved Masters…`,`ICS will research every Master without a saved Research Pack. Existing completed Research Packs are skipped.`);
+    await runProduction({one:false,mode:'research'});
+    const queue=await productionSections();
+    const researched=queue.filter(x=>researchPackPresent(x.s.fields||{})).length;
+    const total=queue.length;
+    setWorkflowActionStatusV312(3,'Research',`${researched}/${total} Research Packs saved.`,researched===total?'Step 3 complete. Next: Step 4 — Produce.':'Step 3 finished with exceptions. Review only the named blocked/failed Masters; completed research is preserved.');
+    updateWorkflowShellV312(3);
+  }catch(e){
+    const m='STEP 3 RESEARCH FAILED — '+String(e.message||e);
+    E('save-state').textContent=m;setWorkflowActionStatusV312(3,'Research','Research run stopped.',m);
+  }
+}
+
 function workflowStepInfoV312(step){
  const sig=getSmartSignals(),plan=getSmartPlan(),locked=smartPlanLocked(plan),profile=engineProfileForPublication(),selected=getMasterSelectionV312(),canvas=getCanvas();
  const target=profile.defaultMasters||15,min=profile.targetMasters?.[0]||5,max=profile.targetMasters?.[1]||7;
  const info={
  1:['Plan',sig.length<24?`Collect source signals first. ICS needs at least 24 distinct signals to build the ${target}-candidate plan.`:(!plan?.articles?.length?`Build the ${target}-candidate Master plan from current signals, archive memory and publication rules.`:`The ${target}-candidate plan exists. Review it before approval.`),sig.length<24?'Collect Signals':'Build / Resume 15-Candidate Plan'],
  2:['Approve',!plan?.articles?.length?'Finish Step 1 first.':(!locked?'Review the 15-candidate slate. Locking will name only genuine production blockers; candidate balance remains advisory.':'Plan locked. Create or update all 15 Master briefs.'),!locked?'Lock Approved Plan':'Create / Update 15 Briefs'],
- 3:['Research','Research the approved Master briefs. Select a Master from the list, then use the research action. Batch research is the next automation layer.','Open Research Workspace'],
+ 3:['Research','Open the approved research queue. ICS will create/update the 15 locked Master briefs automatically if needed; no manual article entry.','Open Research Workspace'],
  4:['Produce','Use the existing production pipeline to research/write the 15 Master candidates. Production is resumable and completed work is preserved.','Produce All Approved Masters'],
  5:['Select',`Choose ${min}–${max} strongest READY Masters for this issue. The remaining READY candidates stay bankable rather than being forced into the newsletter.`,`Review Master Selection`],
  6:['Components',canvas.length?`Produce the supporting components already created for this issue. Partner/profile automation will progressively replace manual component entry.`:`Create the selected Masters plus the publication-profile support recipe on the Canvas. This builds the support plan before copy is produced.`,canvas.length?'Produce Supporting Components':'Build Support Plan'],
@@ -2835,7 +2916,7 @@ function runWorkflowPrimaryV312(){
   if(!plan?.articles?.length){updateWorkflowShellV312(1);return}
   if(!smartPlanLocked(plan))E('smart-plan-lock').click();else E('smart-plan-apply').click();return
  }
- if(step===3){show('build');setTimeout(()=>E('run-next-production')?.scrollIntoView({behavior:'smooth',block:'center'}),80);return}
+ if(step===3){openResearchWorkspaceV3131();return}
  if(step===4){show('build');setTimeout(()=>E('run-production')?.click(),80);return}
  if(step===5){show('assemble');E('master-selection-panel-v312')?.scrollIntoView({behavior:'smooth',block:'start'});return}
  if(step===6){show('assemble');if(getCanvas().length)E('assembly-produce').click();else E('assembly-smart-assemble').click();return}
@@ -3032,13 +3113,13 @@ async function buildSmartPlanFromSavedSignals(){
   }
   finally{btn.disabled=false;btn.textContent=old}
 }
-async function applySmartPlanToBuild(){
+async function applySmartPlanToBuild({quiet=false}={}){
   if(!S.issue){alert('Open an issue first.');return}
   const plan=getSmartPlan();if(!plan?.articles?.length){alert('Create a Smart Issue Plan first.');return}
   if(!smartPlanLocked(plan)){alert('Review and Lock Approved Plan before creating Airtable briefs.');return}
   const work=plan.articles.filter(a=>a.mode!=='REUSE');
   if(!work.length){alert('This plan contains no missing or refresh articles. You can assemble it now.');return}
-  if(!confirm(`Create/update ${work.length} REFRESH / CREATE NEW Master Article briefs in this issue? Edited plan items will update the existing brief at the same article number and clear stale story state. REUSE articles remain linked to the existing library.`))return;
+  if(!quiet&&!confirm(`Create/update ${work.length} REFRESH / CREATE NEW Master Article briefs in this issue? Edited plan items will update the existing brief at the same article number and clear stale story state. REUSE articles remain linked to the existing library.`))return null;
   const btn=E('smart-plan-apply'),old=btn.textContent;btn.disabled=true;btn.textContent='Creating briefs…';
   try{
     const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=r.records||[];
@@ -3054,8 +3135,16 @@ async function applySmartPlanToBuild(){
     const idata=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Issue Status':'BUILDING','Main Theme':plan.issuePromise||E('assembly-theme').value}})});S.issue=idata.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);
     const rec=await reconcileApprovedSmartQueue({quiet:true});
     sortSections();renderSections();renderForm();render();show('build');
-    alert(`Smart plan applied: ${created} briefs created · ${updated} updated · ${plan.counts?.REUSE||0} existing articles reserved for reuse. Queue reconciled: ${rec.active} active · ${rec.superseded} superseded preserved · ${rec.clean?'numbering clean ✓':'STOP GATE — queue needs review'}. Produce the missing Master Articles only when numbering is clean.`);
-  }catch(e){alert('Could not apply Smart Plan: '+e.message)}
+    const msg=`Approved Master briefs ready: ${created} created · ${updated} updated · ${rec.active} active · ${rec.superseded} superseded preserved.${rec.clean?' Queue identity clean ✓':' STOP GATE — queue identity needs review.'}`;
+    E('save-state').textContent=msg;
+    if(!quiet)alert(msg);
+    return {created,updated,rec};
+  }catch(e){
+    const msg='Could not create/update approved Master briefs: '+e.message;
+    E('save-state').textContent=msg;
+    if(!quiet)alert(msg);
+    throw e;
+  }
   finally{btn.disabled=false;btn.textContent=old}
 }
 function buildSmartCanvas(articles){
@@ -3789,5 +3878,5 @@ if(E('master-selection-save-v312'))E('master-selection-save-v312').onclick=()=>{
 if(E('toggle-canvas-library'))E('toggle-canvas-library').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('library-open-v312c');E('toggle-canvas-library').textContent=l.classList.contains('library-open-v312c')?'Hide Content Library':'Show Content Library'}else{l.classList.toggle('library-hidden');E('toggle-canvas-library').textContent=l.classList.contains('library-hidden')?'Show Content Library':'Hide Content Library'}};
 if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('inspector-open-v312c');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-open-v312c')?'Hide Selected Section':'Show Selected Section'}else{l.classList.toggle('inspector-hidden');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-hidden')?'Show Selected Section':'Hide Selected Section'}};if(E('pr-generate-v312c'))E('pr-generate-v312c').onclick=generateAssembly;
 if(E('pr-copy-v312c'))E('pr-copy-v312c').onclick=generateAssembly;
-E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('new-issue').onclick=()=>{E('new-date').value='';E('issue-dialog').showModal()};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>runProduction({one:true,mode:'research'});E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
+E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('new-issue').onclick=()=>{E('new-date').value='';E('issue-dialog').showModal()};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>researchAllApprovedMastersV3131();E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
 </script></body></html>
