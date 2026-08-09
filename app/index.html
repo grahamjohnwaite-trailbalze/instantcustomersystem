@@ -3731,7 +3731,7 @@ function workflowStepInfoV312(step){
  5:['Select',`Choose ${min}–${max} strongest READY Masters for this issue. ICS recommends from the actual Step 4 production states and editorial grades; remaining READY candidates stay bankable.`,`Review Master Selection`],
  6:['Components',`Build the supporting and partner components needed to complete this issue. ICS calculates the missing count from the saved Step 5 selection and publication target.`,`Build / Resume Supporting Components`],
  7:['Assemble','Rebuild the running order from the current saved Step 5 Masters and persistent Step 6 support/partner blocks. The old browser assembly is discarded.','Assemble Selected Issue'],
- 8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.',(()=>{try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');return q?.qaVersion==='3.17.3.4'&&q?.summary?.fix>0?'Fix QA Exceptions':'Run Final QA'}catch{return 'Run Final QA'}})()],
+ 8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.',(()=>{try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');return window.__finalQARunningV31734?'Running Final QA…':(q?.qaVersion==='3.17.3.5'&&q?.summary?.fix>0?'Fix QA Exceptions':'Run Final QA')}catch{return 'Run Final QA'}})()],
  9:['Production Ready','Generate the ordered production package after QA. It can then be sent to Letterman or any other publishing platform.','Generate Production Package']
  };return info[step]||info[1]
 }
@@ -3772,7 +3772,7 @@ function updateWorkflowShellV312(forcedStep){
    const hasPlan=!!plan?.articles?.length||getSmartPlanBatches().flatMap(b=>b.articles||[]).length>0;
    resetBtn.style.display=(hasPlan&&workflowSelectedStepV312<=2)?'inline-flex':'none';
  }
- const [name,copy,label]=workflowStepInfoV312(workflowSelectedStepV312);E('workflow-current-v312').textContent=workflowContextLabelV312(workflowSelectedStepV312,name);E('workflow-instruction-v312').textContent=copy;const btn=E('workflow-primary-v312');btn.textContent=label;btn.dataset.step=String(workflowSelectedStepV312);
+ const [name,copy,label]=workflowStepInfoV312(workflowSelectedStepV312);E('workflow-current-v312').textContent=workflowContextLabelV312(workflowSelectedStepV312,name);E('workflow-instruction-v312').textContent=copy;const btn=E('workflow-primary-v312');btn.textContent=label;btn.dataset.step=String(workflowSelectedStepV312);btn.disabled=!!window.__finalQARunningV31734;
  renderMasterSelectionV312();renderSmartTitleReviewV312l(getSmartPlan());
  if(workflowSelectedStepV312===3)setTimeout(()=>hydrateStep3StateV3133(),0);
  if(workflowSelectedStepV312===6)setTimeout(()=>renderStep6StatusV3151(),0);
@@ -3836,7 +3836,14 @@ function runWorkflowPrimaryV312(){
    setTimeout(()=>smartAssembleIssue(),0);
    return
  }
- if(step===8){show('assemble');try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');if(q?.summary?.fix>0){fixQAExceptionsV317();return}}catch{}E('assembly-qa').click();return}
+ if(step===8){
+   if(window.__finalQARunningV31734)return;
+   show('assemble');
+   const primary=E('workflow-primary-v312');
+   if(primary){primary.disabled=true;primary.textContent='Running Final QA…';}
+   try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');if(q?.qaVersion==='3.17.3.5'&&q?.summary?.fix>0){if(primary)primary.disabled=false;fixQAExceptionsV317();return}}catch{}
+   E('assembly-qa').click();return
+ }
  if(step===9){show('assemble');E('assembly-generate').click();return}
 }
 
@@ -4671,7 +4678,7 @@ function renderQAReport(report){
 
 function setQAFixButtonState(report){
   const b=E('qa-fix-v317'); if(!b)return;
-  const fresh=!!(report&&report.qaVersion==='3.17.3.4'&&report.summary);
+  const fresh=!!(report&&report.qaVersion==='3.17.3.5'&&report.summary);
   const fixes=fresh?Number(report.summary.fix||0):0;
   b.disabled=!(fresh&&fixes>0);
   b.textContent=fixes>0?`Fix QA Exceptions (${fixes})`:'Fix QA Exceptions';
@@ -4693,9 +4700,9 @@ function clearQAReportView(message='Run Final QA to review the complete issue.')
 function loadSavedQAReport(){
   try{
     const report=JSON.parse(localStorage.getItem(qaKey())||'null');
-    if(report?.qaVersion==='3.17.3.4')showQAReport(report,false);
-    else clearQAReportView('Fresh QA required in v3.17.3.4. Run Final QA before fixing exceptions.');
-  }catch{clearQAReportView('Fresh QA required in v3.17.3.4. Run Final QA before fixing exceptions.');}
+    if(report?.qaVersion==='3.17.3.5')showQAReport(report,false);
+    else clearQAReportView('Fresh QA required in v3.17.3.5. Run Final QA before fixing exceptions.');
+  }catch{clearQAReportView('Fresh QA required in v3.17.3.5. Run Final QA before fixing exceptions.');}
 }
 async function copyQAReport(){
   const text=E('qa-report-text')?.value||'';
@@ -4744,7 +4751,7 @@ async function runFinalQA(){
       warning:findings.filter(f=>f.severity==='WARNING').length,
       pass:findings.filter(f=>f.severity==='PASS').length
     };
-    const report={qaVersion:'3.17.3.4',createdAt:new Date().toISOString(),summary,findings};
+    const report={qaVersion:'3.17.3.5',createdAt:new Date().toISOString(),summary,findings};
     localStorage.setItem(qaKey(),JSON.stringify(report));
     showQAReport(report,true);
     setWorkflowActionStatusV312(8,'QA',`Final QA complete · ${summary.fix} Fix · ${summary.warning} Warning · ${summary.pass} Pass`,
@@ -4859,7 +4866,7 @@ async function evaluateIssueQAV3173(items){
     findings.push({severity:'WARNING',code:'AI_QA_UNAVAILABLE',message:`Editorial AI review was unavailable, so deterministic QA only was used: ${error.message}`,blocks:[],safeFix:false});
   }
   return {
-    qaVersion:'3.17.3.4',createdAt:new Date().toISOString(),
+    qaVersion:'3.17.3.5',createdAt:new Date().toISOString(),
     summary:{
       fix:findings.filter(f=>f.severity==='FIX').length,
       warning:findings.filter(f=>f.severity==='WARNING').length,
@@ -4945,7 +4952,7 @@ async function fixQAExceptionsV317(){
 
   const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
   if(!saved||saved.qaVersion!=='3.17.3.4'){
-    setWorkflowActionStatusV312(8,'QA','Fresh QA required.','This QA report came from an older Step 8 build. Run Final QA in v3.17.3.4 before fixing exceptions.');
+    setWorkflowActionStatusV312(8,'QA','Fresh QA required.','This QA report came from an older Step 8 build. Run Final QA in v3.17.3.5 before fixing exceptions.');
     localStorage.removeItem(qaKey());
     updateWorkflowShellV312(8);
     return;
@@ -5047,7 +5054,7 @@ async function fixQAExceptionsV317(){
     }
 
     if(!supportPrepared&&!masterLeakPrepared.size){
-      const detail=failed.length?`No safe support repair was prepared.\n- ${failed.join('\n- ')}`:'Final QA contains no supporting hard fix that v3.17.3.4 can safely rewrite automatically.';
+      const detail=failed.length?`No safe support repair was prepared.\n- ${failed.join('\n- ')}`:'Final QA contains no supporting hard fix that v3.17.3.5 can safely rewrite automatically.';
       setWorkflowActionStatusV312(8,'QA','No support repair saved.',detail);
       return;
     }
