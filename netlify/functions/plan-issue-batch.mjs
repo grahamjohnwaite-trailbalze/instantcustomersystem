@@ -58,8 +58,45 @@ STRICT JSON ONLY:
     const validIds=new Set(rankedExisting.map(x=>x.id));
     // v3.9.8 uses one compact model call with a 24s ceiling. A duplicate or timeout is returned quickly
     // The prompt is intentionally compact so one decision can finish before the platform inactivity window.
-    const response=await createResponse({input:prompt,useWeb:false,model,timeoutMs:24000});
-    const result=parseJsonText(outputText(response));
+    let response,result;
+    try{
+      response=await createResponse({input:prompt,useWeb:false,model,timeoutMs:22000});
+      result=parseJsonText(outputText(response));
+    }catch(primaryError){
+      const msg=String(primaryError?.message||'').toLowerCase();
+      const isTimeout=msg.includes('timeout')||msg.includes('timed out')||msg.includes('aborted')||msg.includes('inactivity');
+      if(!isTimeout)throw primaryError;
+
+      // v3.12f: compact fallback. Do not hammer the same long prompt repeatedly.
+      // Give the model only the strongest unused options and the already-chosen titles.
+      const compactInventory=rankedExisting.slice(0,12).map((x,i)=>`${i+1}. ${x.id} | ${x.title} | ${x.topic||x.purpose} | ${x.history_status||'UNKNOWN'}`).join('\n');
+      const compactPrior=(Array.isArray(d.priorArticles)?d.priorArticles:[]).slice(0,15).map((x,i)=>`${i+1}. ${x.title}`).join('\n');
+      const compactSignals=(Array.isArray(d.signals)?d.signals:[]).slice(0,10).map((x,i)=>`${i+1}. ${String(x.signal||'').slice(0,120)}`).join('\n');
+      const fallbackPrompt=`Choose ONE distinct Master Article for Trail Blaze ${publication}, decision ${batch}/${totalBatches}. Return JSON only.
+
+ISSUE PROMISE: ${issuePromise}
+JOB: ${brief}
+
+UNUSED CURRENT LEADS:
+${compactSignals||'None'}
+
+SAFE CANDIDATES:
+${compactInventory||'None'}
+
+ALREADY CHOSEN — DO NOT REPEAT:
+${compactPrior||'None'}
+
+REJECTED — DO NOT REPEAT:
+${rejectedCandidates.join(' | ')||'None'}
+
+Use a clearly different question/angle. Prefer human, discovery, recommendation, value or everyday-life coverage if the slate is already civic-heavy. Do not invent facts, businesses, prices, sources or quotes.
+
+JSON ONLY:
+{"issue_summary":"","articles":[{"mode":"REUSE|LOCALISE|REFRESH|CREATE NEW","existing_article_id":"","title":"","question":"","problem":"","hook":"","reader":"","value":"","local_proof":"","evidence":"","life_lane":"Open","lane":"Editorial","partner_path":"Open","cta_type":"None","cta_text":"","stance":"PRACTICAL","why_now":"","countercase":"","source_signal":""}]}`;
+      response=await createResponse({input:fallbackPrompt,useWeb:false,model,timeoutMs:18000});
+      result=parseJsonText(outputText(response));
+      response._planner_fallback_used=true;
+    }
     const articles=(Array.isArray(result.articles)?result.articles:[]).slice(0,requestedCount).map(a=>{
       let mode=normalizeMode(a.mode),id=String(a.existing_article_id||'').trim();
       if((mode==='REUSE'||mode==='LOCALISE'||mode==='REFRESH')&&!validIds.has(id)){mode='CREATE NEW';id='';}
@@ -70,7 +107,7 @@ STRICT JSON ONLY:
     if(articles.length!==requestedCount)return json(502,{ok:false,error:`Planner batch returned ${articles.length} usable articles; expected ${requestedCount}.`});
     if(dupHits.length)return json(409,{ok:false,error:`Recent-history guard rejected ${dupHits.length} duplicate candidate${dupHits.length===1?'':'s'} in this decision: ${dupHits.map(x=>x.title).join(' | ')}. Click Build / Resume Issue Plan again; every completed article decision remains saved.`});
     if(rejectedHits.length)return json(409,{ok:false,error:`Planning-run guard rejected a previously rejected concept again: ${rejectedHits.map(x=>x.title).join(' | ')}. Click Build / Resume Issue Plan again; this concept is now excluded from the available pool.`});
-    return json(200,{ok:true,batch,label,issue_summary:String(result.issue_summary||'').trim(),articles,modelUsed:response._model_used||model});
+    return json(200,{ok:true,batch,label,issue_summary:String(result.issue_summary||'').trim(),articles,modelUsed:response._model_used||model,fallbackUsed:!!response._planner_fallback_used});
   }catch(error){
     console.error('plan-issue-batch-failed',{message:error?.message,status:error?.status,details:error?.details});
     return json(Number(error?.status)||500,{ok:false,error:String(error?.message||'Planning batch failed.'),details:error?.details});

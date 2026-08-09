@@ -294,7 +294,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
  body[data-workflow-step="8"] .canvas-layout {grid-template-columns:1fr!important}
 }
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12e1<br><strong>Planner Auto-Recovery</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · duplicate auto-recovery · persistent progress + copyable status</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12f<br><strong>Planner Timeout Recovery</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · duplicate + timeout recovery · persistent copyable progress</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -2416,7 +2416,22 @@ async function copyWorkflowStatusV312E(){
   const a=E('workflow-current-v312')?.textContent||'';
   const b=E('workflow-instruction-v312')?.textContent||'';
   const c=E('smart-scan-progress')?.textContent||'';
-  await copyText([a,b,c].filter(Boolean).join('\n'));
+  const value=[a,b,c].filter(Boolean).join('\n');
+  try{
+    if(navigator.clipboard&&window.isSecureContext){
+      await navigator.clipboard.writeText(value);
+    }else{
+      const ta=document.createElement('textarea');
+      ta.value=value;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+    }
+    const btn=E('workflow-copy-status-v312e');
+    if(btn){const old=btn.textContent;btn.textContent='Copied';setTimeout(()=>btn.textContent=old,1200)}
+  }catch(err){
+    // Always leave the exact status visible and selectable if browser copy permission fails.
+    const box=E('workflow-instruction-v312');
+    if(box)box.textContent=value;
+  }
 }
 function plannerRejectedTitlesFromMessageV312E(msg){
   const out=[];
@@ -2625,7 +2640,7 @@ async function buildSmartPlanFromSavedSignals(){
       const prior=batches.flatMap(b=>b.articles||[]).map(a=>({title:a.title,question:a.question,real_life_question:a.real_life_question||a.question||'',writing_mode:a.writing_mode||'AUTO',mode:a.mode,life_lane:a.life_lane||'',lane:a.lane||'',existing_article_id:a.existing_article_id||'',source_signal:a.source_signal||''}));
       btn.textContent=`Building plan ${spec.batch}/${targetMasters}…`;
       let data=null,attempt=0;
-      while(!data && attempt<8){
+      while(!data && attempt<4){
         attempt++;
         const progress=`Planning ${spec.batch}/${targetMasters} ${spec.label}${attempt>1?` · replacement attempt ${attempt}`:''}.`;
         E('smart-scan-progress').textContent=`${progress} Each article decision is saved immediately.`;
@@ -2645,7 +2660,12 @@ async function buildSmartPlanFromSavedSignals(){
           throw err;
         }
       }
-      if(!data)throw new Error(`Planner could not find a valid replacement for decision ${spec.batch}/${targetMasters} after 8 attempts.`);
+      if(!data)throw new Error(`Planner could not find a valid replacement for decision ${spec.batch}/${targetMasters} after 4 replacement attempts.`);
+      if(data.fallbackUsed){
+        const note=`Planning ${spec.batch}/${targetMasters} completed using the compact timeout-recovery route.`;
+        E('smart-scan-progress').textContent=note;
+        setWorkflowActionStatusV312(1,'Plan',note,'Decision saved; continuing automatically.');
+      }
       const saved={batch:spec.batch,label:spec.label,articles:data.articles||[],issue_summary:data.issue_summary||''};
       batches=batches.filter(b=>b.batch!==spec.batch).concat(saved).sort((a,b)=>a.batch-b.batch);saveSmartPlanBatches(batches);renderSmartPlan();
     }
@@ -2665,7 +2685,7 @@ async function buildSmartPlanFromSavedSignals(){
     const m='Planning stopped: '+msg+'\n\nEvery completed article decision has been kept. Resume only after this genuine blocker is resolved.'+extra;
     E('smart-scan-progress').textContent=m;
     setWorkflowActionStatusV312(1,'Plan','Planning stopped — attention required.',msg);
-    updateWorkflowGuide();alert(m);
+    updateWorkflowGuide();
   }
   finally{btn.disabled=false;btn.textContent=old}
 }
