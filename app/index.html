@@ -138,7 +138,137 @@ body[data-workflow-step="2"] #smart-plan-signals-list,
 body[data-workflow-step="2"] #smart-scan-progress{opacity:.65}
 @media(max-width:1000px){body[data-workflow-step="3"] #view-build #builder,body[data-workflow-step="4"] #view-build #builder{grid-template-columns:1fr!important}}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12b<br><strong>Clean Step-Based Interface</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · one stage at a time · universal production terminology · simplified Canvas · advanced diagnostics hidden</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+
+/* v3.12c — ACTUAL SCREEN SEPARATION
+   Operator sees one stage, one job, one main action. */
+body[data-workflow-step] #view-assemble > .section-head,
+body[data-workflow-step] #view-assemble > #canvas-recovery-banner,
+body[data-workflow-step] #view-assemble > #component-command-centre,
+body[data-workflow-step] #view-assemble > #planner-score,
+body[data-workflow-step] #view-assemble > #issue-context-summary,
+body[data-workflow-step] #view-assemble > .issue-promise-bar,
+body[data-workflow-step] #view-assemble > #engine-profile-panel,
+body[data-workflow-step] #view-assemble > #smart-plan-panel,
+body[data-workflow-step] #view-assemble > #master-selection-panel-v312,
+body[data-workflow-step] #view-assemble > .canvas-layout {display:none!important}
+
+/* STEP 1 — PLAN: planning inputs only */
+body[data-workflow-step="1"] #view-assemble > #issue-context-summary,
+body[data-workflow-step="1"] #view-assemble > #engine-profile-panel,
+body[data-workflow-step="1"] #view-assemble > #smart-plan-panel {display:block!important}
+body[data-workflow-step="1"] #smart-plan-list {display:none!important}
+body[data-workflow-step="1"] #smart-plan-lock,
+body[data-workflow-step="1"] #smart-plan-apply,
+body[data-workflow-step="1"] #smart-plan-audit,
+body[data-workflow-step="1"] #smart-commercial-completion,
+body[data-workflow-step="1"] #smart-copy-status {display:none!important}
+
+/* STEP 2 — APPROVE: candidate list and approval controls only */
+body[data-workflow-step="2"] #view-assemble > #issue-context-summary,
+body[data-workflow-step="2"] #view-assemble > #smart-plan-panel {display:block!important}
+body[data-workflow-step="2"] #smart-plan-signals,
+body[data-workflow-step="2"] #smart-plan-signals-list,
+body[data-workflow-step="2"] #smart-scan-progress,
+body[data-workflow-step="2"] #smart-plan-audit,
+body[data-workflow-step="2"] #smart-commercial-completion,
+body[data-workflow-step="2"] #smart-copy-status,
+body[data-workflow-step="2"] #smart-plan-hide {display:none!important}
+body[data-workflow-step="2"] #smart-plan-list {display:block!important}
+
+/* STEP 3 / 4 — MASTER WORKSPACE: no issue-header form, no diagnostics wall */
+body[data-workflow-step="3"] #view-build #builder,
+body[data-workflow-step="4"] #view-build #builder {display:grid!important;grid-template-columns:minmax(320px,420px) minmax(420px,1fr)!important;gap:16px}
+body[data-workflow-step="3"] #view-build .rail,
+body[data-workflow-step="4"] #view-build .rail {display:block!important;min-height:auto!important}
+body[data-workflow-step="3"] #view-build .editor,
+body[data-workflow-step="4"] #view-build .editor {display:none!important}
+body[data-workflow-step="3"] #view-build .intel,
+body[data-workflow-step="4"] #view-build .intel {display:block!important;grid-column:2!important;min-height:auto!important}
+body[data-workflow-step="3"] #view-build .intel > *,
+body[data-workflow-step="4"] #view-build .intel > * {display:none!important}
+body[data-workflow-step="3"] #view-build #article-workflow,
+body[data-workflow-step="3"] #view-build #run-next-production,
+body[data-workflow-step="3"] #view-build .workflow-actions,
+body[data-workflow-step="3"] #view-build #production-progress,
+body[data-workflow-step="4"] #view-build #article-workflow,
+body[data-workflow-step="4"] #view-build #run-production,
+body[data-workflow-step="4"] #view-build #generate-selected-production,
+body[data-workflow-step="4"] #view-build #preview-article-package,
+body[data-workflow-step="4"] #view-build #production-progress {display:block!important}
+body[data-workflow-step="3"] #view-build .workflow-actions {display:grid!important}
+body[data-workflow-step="3"] #view-build #run-next-production,
+body[data-workflow-step="4"] #view-build #run-production {font-size:15px;padding:13px 14px}
+
+/* STEP 5 — SELECT: selection queue only */
+body[data-workflow-step="5"] #view-assemble > #issue-context-summary,
+body[data-workflow-step="5"] #view-assemble > #master-selection-panel-v312 {display:block!important}
+body[data-workflow-step="5"] #master-selection-panel-v312 {background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+
+/* STEP 6 — COMPONENTS: component tools and selected section, no planning noise */
+body[data-workflow-step="6"] #view-assemble > #issue-context-summary,
+body[data-workflow-step="6"] #view-assemble > .issue-promise-bar,
+body[data-workflow-step="6"] #view-assemble > .canvas-layout {display:grid!important}
+body[data-workflow-step="6"] .canvas-layout {grid-template-columns:minmax(300px,360px) minmax(500px,1fr)!important;gap:16px}
+body[data-workflow-step="6"] .canvas-layout > section:nth-child(2) {display:none!important}
+body[data-workflow-step="6"] .canvas-inspector {display:block!important;grid-column:2!important}
+body[data-workflow-step="6"] #assembly-library,
+body[data-workflow-step="6"] .canvas-panel:first-child > h3:first-of-type,
+body[data-workflow-step="6"] .canvas-panel:first-child > .field {display:none!important}
+body[data-workflow-step="6"] .canvas-panel:first-child {min-height:auto!important}
+
+/* STEP 7 — ASSEMBLE: centre stage is the issue running order. Library/inspector stay closed until requested. */
+body[data-workflow-step="7"] #view-assemble > #issue-context-summary,
+body[data-workflow-step="7"] #view-assemble > .issue-promise-bar,
+body[data-workflow-step="7"] #view-assemble > .canvas-layout {display:grid!important}
+body[data-workflow-step="7"] .canvas-layout {grid-template-columns:1fr!important;gap:16px}
+body[data-workflow-step="7"] .canvas-layout.library-open-v312c {grid-template-columns:320px minmax(520px,1fr)!important}
+body[data-workflow-step="7"] .canvas-layout.inspector-open-v312c {grid-template-columns:minmax(520px,1fr) 340px!important}
+body[data-workflow-step="7"] .canvas-layout.library-open-v312c.inspector-open-v312c {grid-template-columns:300px minmax(480px,1fr) 340px!important}
+body[data-workflow-step="7"] .canvas-layout > section:first-child,
+body[data-workflow-step="7"] .canvas-layout > .canvas-inspector {display:none!important}
+body[data-workflow-step="7"] .canvas-layout.library-open-v312c > section:first-child,
+body[data-workflow-step="7"] .canvas-layout.inspector-open-v312c > .canvas-inspector {display:block!important}
+body[data-workflow-step="7"] .canvas-layout > section:nth-child(2) {display:block!important;grid-column:auto!important}
+body[data-workflow-step="7"] #assembly-order .canvas-card {padding:16px 14px;margin-bottom:9px}
+body[data-workflow-step="7"] #assembly-order .canvas-card strong {font-size:15px}
+
+/* STEP 8 — QA: only final QA output and the order it is checking */
+body[data-workflow-step="8"] #view-assemble > #issue-context-summary,
+body[data-workflow-step="8"] #view-assemble > .canvas-layout {display:grid!important}
+body[data-workflow-step="8"] .canvas-layout {grid-template-columns:minmax(520px,1fr) minmax(420px,.8fr)!important;gap:16px}
+body[data-workflow-step="8"] .canvas-layout > section:first-child {display:none!important}
+body[data-workflow-step="8"] .canvas-layout > section:nth-child(2) {display:block!important}
+body[data-workflow-step="8"] .canvas-inspector {display:block!important;grid-column:auto!important}
+body[data-workflow-step="8"] .canvas-inspector > h2,
+body[data-workflow-step="8"] #inspector-empty,
+body[data-workflow-step="8"] #inspector-form {display:none!important}
+body[data-workflow-step="8"] #qa-report-panel {display:block!important}
+
+/* STEP 9 — PRODUCTION READY: clean package surface */
+body[data-workflow-step="9"] #view-assemble > #issue-context-summary,
+body[data-workflow-step="9"] #view-assemble > #production-ready-panel-v312c {display:block!important}
+#production-ready-panel-v312c {display:none;background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:var(--shadow);max-width:920px}
+#production-ready-panel-v312c .production-ready-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+#production-ready-panel-v312c .production-ready-grid div {background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:12px}
+#production-ready-panel-v312c .production-ready-grid strong {display:block;font-size:18px}
+#production-ready-panel-v312c .production-ready-grid span {font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase}
+
+/* Global cleanup */
+body[data-workflow-step] #component-command-centre,
+body[data-workflow-step] #planner-score {display:none!important}
+body[data-workflow-step] #view-assemble > .section-head {display:none!important}
+#workflow-shell-v312 {position:sticky;top:0;z-index:30}
+.workflow-guide-v312 {padding:13px 14px}
+.workflow-guide-v312 .eyebrow2 {font-size:11px}
+.workflow-guide-v312 strong {font-size:15px}
+.workflow-primary-v312 {min-width:190px;font-size:14px;padding:11px 14px}
+@media(max-width:1000px){
+ body[data-workflow-step="3"] #view-build #builder,body[data-workflow-step="4"] #view-build #builder,
+ body[data-workflow-step="6"] .canvas-layout,body[data-workflow-step="7"] .canvas-layout,
+ body[data-workflow-step="8"] .canvas-layout {grid-template-columns:1fr!important}
+}
+
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12c<br><strong>Actual Screen Separation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · one screen per stage · one main action · cleaner Canvas · production-ready terminology</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -218,6 +348,7 @@ body[data-workflow-step="2"] #smart-scan-progress{opacity:.65}
 <div id="smart-plan-list" class="checklist"></div>
 </section>
 <section class="master-selection-panel-v312" id="master-selection-panel-v312" style="display:none"><div class="section-head" style="margin:0"><div><h2 style="margin:0">Step 5 — Select Masters For This Issue</h2><div class="muted" id="master-selection-summary-v312">Produce the 15 candidates first, then choose the strongest publication-fit set for this issue. Unselected READY articles stay available for later.</div></div><button class="btn secondary" id="master-selection-save-v312" type="button">Save Selection</button></div><div id="master-selection-grid-v312" class="master-selection-grid-v312"></div></section>
+<section id="production-ready-panel-v312c"><div class="eyebrow">Step 9 — Production Ready</div><h2 style="margin:5px 0 6px">Production Package</h2><div class="muted">The issue is assembled and QA checked. Create the finished package for your publishing platform.</div><div class="production-ready-grid"><div><strong id="pr-sections-v312c">—</strong><span>Sections</span></div><div><strong id="pr-masters-v312c">—</strong><span>Master Articles</span></div><div><strong id="pr-status-v312c">CHECK</strong><span>Issue Status</span></div></div><div class="toolbar"><button class="btn" id="pr-generate-v312c" type="button">Prepare Production Package</button><button class="btn secondary" id="pr-copy-v312c" type="button">Open / Copy Package</button></div><div class="warning" style="margin-top:14px"><strong>Universal output:</strong> Letterman is one destination. The production package is designed to work with any newsletter, CMS or publishing platform.</div></section>
 <div class="canvas-layout">
 <section class="canvas-panel">
 <h2>Content Library</h2>
@@ -3173,9 +3304,41 @@ function focusWorkflowStepV312B(step,{scroll=true}={}){
   if(scroll)E('workflow-shell-v312')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
+
+// v3.12c — stage behaviour and clean Canvas defaults.
+function applyWorkflowLayoutV312C(step){
+  step=Number(step)||1;
+  const canvas=document.querySelector('.canvas-layout');
+  if(canvas){
+    canvas.classList.remove('library-open-v312c','inspector-open-v312c');
+  }
+  if(step===5)renderMasterSelectionV312();
+  if(step===8){
+    const qa=E('qa-report-panel'); if(qa)qa.style.display='block';
+  }
+  if(step===9){
+    const c=getCanvas();
+    const blocks=Array.isArray(c?.blocks)?c.blocks:[];
+    const masters=blocks.filter(b=>String(b.type||'').toUpperCase()==='MASTER ARTICLE').length;
+    if(E('pr-sections-v312c'))E('pr-sections-v312c').textContent=String(blocks.length||0);
+    if(E('pr-masters-v312c'))E('pr-masters-v312c').textContent=String(masters||0);
+    if(E('pr-status-v312c'))E('pr-status-v312c').textContent=String(val(S.issue?.fields,'Issue Status')||'CHECK').replace('READY FOR LETTERMAN','PRODUCTION READY');
+  }
+  // Assembly controls become explicit "Show" controls rather than ambiguous Hide controls.
+  if(E('toggle-canvas-library'))E('toggle-canvas-library').textContent='Show Content Library';
+  if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').textContent='Show Selected Section';
+}
+const _focusWorkflowStepV312B=focusWorkflowStepV312B;
+focusWorkflowStepV312B=function(step,opt={}){
+  _focusWorkflowStepV312B(step,opt);
+  applyWorkflowLayoutV312C(step);
+};
+
 if(E('workflow-primary-v312'))E('workflow-primary-v312').onclick=runWorkflowPrimaryV312;
 document.querySelectorAll('[data-flow-step]').forEach(b=>b.onclick=()=>focusWorkflowStepV312B(Number(b.dataset.flowStep)));
 if(E('master-selection-save-v312'))E('master-selection-save-v312').onclick=()=>{renderMasterSelectionV312();const n=getMasterSelectionV312().length,pr=engineProfileForPublication(),min=pr.targetMasters?.[0]||5,max=pr.targetMasters?.[1]||7;if(n<min||n>max)alert(`Select ${min}–${max} Masters. Current selection: ${n}.`);else alert(`${n} Masters selected for this issue. Unselected READY candidates remain available for later.`);updateWorkflowShellV312(5)};
-if(E('toggle-canvas-library'))E('toggle-canvas-library').onclick=()=>{const l=document.querySelector('.canvas-layout');l.classList.toggle('library-hidden');E('toggle-canvas-library').textContent=l.classList.contains('library-hidden')?'Show Library':'Hide Library'};
-if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').onclick=()=>{const l=document.querySelector('.canvas-layout');l.classList.toggle('inspector-hidden');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-hidden')?'Show Inspector':'Hide Inspector'};E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('new-issue').onclick=()=>{E('new-date').value='';E('issue-dialog').showModal()};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>runProduction({one:true,mode:'research'});E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
+if(E('toggle-canvas-library'))E('toggle-canvas-library').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('library-open-v312c');E('toggle-canvas-library').textContent=l.classList.contains('library-open-v312c')?'Hide Content Library':'Show Content Library'}else{l.classList.toggle('library-hidden');E('toggle-canvas-library').textContent=l.classList.contains('library-hidden')?'Show Content Library':'Hide Content Library'}};
+if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('inspector-open-v312c');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-open-v312c')?'Hide Selected Section':'Show Selected Section'}else{l.classList.toggle('inspector-hidden');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-hidden')?'Show Selected Section':'Hide Selected Section'}};if(E('pr-generate-v312c'))E('pr-generate-v312c').onclick=generateAssembly;
+if(E('pr-copy-v312c'))E('pr-copy-v312c').onclick=generateAssembly;
+E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('new-issue').onclick=()=>{E('new-date').value='';E('issue-dialog').showModal()};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>runProduction({one:true,mode:'research'});E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
 </script></body></html>
