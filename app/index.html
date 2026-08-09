@@ -303,7 +303,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
  body[data-workflow-step="8"] .canvas-layout {grid-template-columns:1fr!important}
 }
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.13.1<br><strong>Step 3 Research Workspace</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · Step 3 auto-brief materialisation · Research All 15</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.13.2<br><strong>Step 3 Research Status</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · Step 3 persistent completion status · named evidence exceptions</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -2837,13 +2837,18 @@ async function openResearchWorkspaceV3131(){
     }
     sortSections();renderSections();renderForm();render();show('build');
     setWorkflowActionStatusV312(3,'Research',`${st.active}/${st.expected} Master briefs ready.`,`Next: click Research All ${st.expected} Masters. Research Packs are saved article by article; completed research is preserved if the run stops.`);
+    if(btn)btn.textContent=`Research All ${st.expected} Masters`;
     setTimeout(()=>E('run-next-production')?.scrollIntoView({behavior:'smooth',block:'center'}),80);
   }catch(e){
     const m='STEP 3 PREPARATION FAILED — '+String(e.message||e);
     E('save-state').textContent=m;
     setWorkflowActionStatusV312(3,'Research','Research workspace preparation failed.',m);
   }finally{
-    if(btn){btn.disabled=false;btn.textContent=old;}
+    if(btn){
+      btn.disabled=false;
+      const planNow=getSmartPlan(),expected=planNow?.articles?.length||15;
+      btn.textContent=S.workflowStep===3?`Research All ${expected} Masters`:old;
+    }
   }
 }
 async function researchAllApprovedMastersV3131(){
@@ -2864,10 +2869,21 @@ async function researchAllApprovedMastersV3131(){
     setWorkflowActionStatusV312(3,'Research',`Researching approved Masters…`,`ICS will research every Master without a saved Research Pack. Existing completed Research Packs are skipped.`);
     await runProduction({one:false,mode:'research'});
     const queue=await productionSections();
-    const researched=queue.filter(x=>researchPackPresent(x.s.fields||{})).length;
-    const total=queue.length;
-    setWorkflowActionStatusV312(3,'Research',`${researched}/${total} Research Packs saved.`,researched===total?'Step 3 complete. Next: Step 4 — Produce.':'Step 3 finished with exceptions. Review only the named blocked/failed Masters; completed research is preserved.');
+    const rows=queue.map(x=>({item:x,wf:articleWorkflowState(x.s),status:String(val(x.s.fields,'Evidence Status')||'').trim(),title:String(val(x.s.fields,'Section Title')||'Untitled'),order:Number(val(x.s.fields,'Section Order')||0)}));
+    const researched=rows.filter(x=>x.wf.researched).length;
+    const verified=rows.filter(x=>x.wf.verified).length;
+    const total=rows.length;
+    const exceptions=rows.filter(x=>x.wf.researched&&!x.wf.verified);
+    const exceptionLines=exceptions.map(x=>`Article ${x.order}: ${x.title} — ${x.status||'Evidence status not verified'}`);
     updateWorkflowShellV312(3);
+    const headline=`${researched}/${total} researched · ${verified}/${total} verified`;
+    const detail=researched===total
+      ? (exceptions.length
+          ? `Research is complete. ${exceptions.length} evidence exception${exceptions.length===1?'':'s'} remain:\n- ${exceptionLines.join('\n- ')}\nCompleted Research Packs are preserved. Resolve only these exceptions before Step 4 writes the affected Masters.`
+          : 'Step 3 complete — all Research Packs are saved and evidence is verified. Next: Step 4 — Produce.')
+      : `Research stopped before all Masters completed. ${researched}/${total} Research Packs are saved. Completed research is preserved.`;
+    setWorkflowActionStatusV312(3,'Research',headline,detail);
+    E('save-state').textContent=`${headline}. ${exceptions.length?`${exceptions.length} evidence exceptions remain.`:'No evidence exceptions.'}`;
   }catch(e){
     const m='STEP 3 RESEARCH FAILED — '+String(e.message||e);
     E('save-state').textContent=m;setWorkflowActionStatusV312(3,'Research','Research run stopped.',m);
@@ -2916,7 +2932,13 @@ function runWorkflowPrimaryV312(){
   if(!plan?.articles?.length){updateWorkflowShellV312(1);return}
   if(!smartPlanLocked(plan))E('smart-plan-lock').click();else E('smart-plan-apply').click();return
  }
- if(step===3){openResearchWorkspaceV3131();return}
+ if(step===3){
+   approvedBriefStatusV3131().then(st=>{
+     if(st.clean)researchAllApprovedMastersV3131();
+     else openResearchWorkspaceV3131();
+   }).catch(()=>openResearchWorkspaceV3131());
+   return
+ }
  if(step===4){show('build');setTimeout(()=>E('run-production')?.click(),80);return}
  if(step===5){show('assemble');E('master-selection-panel-v312')?.scrollIntoView({behavior:'smooth',block:'start'});return}
  if(step===6){show('assemble');if(getCanvas().length)E('assembly-produce').click();else E('assembly-smart-assemble').click();return}
