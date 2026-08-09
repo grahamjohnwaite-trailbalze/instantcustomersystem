@@ -311,7 +311,12 @@ body.step6-simple #component-editor,
 body.step6-simple .component-form,
 body.step6-simple .selected-component-editor{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.15.0<br><strong>Step 6 Component Automation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · Step 6 batch support generation · manual component editor moved to Advanced</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+
+body[data-workflow-step="6"] .canvas-layout{display:none!important}
+body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
+#step6-status-panel-v3151{user-select:text}
+
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.15.2<br><strong>Step 6 Live Progress</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · live Step 6 progress · per-component counts · persistent current action</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -404,6 +409,26 @@ body.step6-simple .selected-component-editor{display:none!important}
 </section>
 <section class="master-selection-panel-v312" id="master-selection-panel-v312" style="display:none"><div class="section-head" style="margin:0"><div><h2 style="margin:0">Step 5 — Select Masters For This Issue</h2><div class="muted" id="master-selection-summary-v312">Produce the 15 candidates first, then choose the strongest publication-fit set for this issue. Unselected READY articles stay available for later.</div></div><button class="btn secondary" id="master-selection-save-v312" type="button">Save Selection</button></div><div id="master-selection-grid-v312" class="master-selection-grid-v312"></div></section>
 <section id="production-ready-panel-v312c"><div class="eyebrow">Step 9 — Production Ready</div><h2 style="margin:5px 0 6px">Production Package</h2><div class="muted">The issue is assembled and QA checked. Create the finished package for your publishing platform.</div><div class="production-ready-grid"><div><strong id="pr-sections-v312c">—</strong><span>Sections</span></div><div><strong id="pr-masters-v312c">—</strong><span>Master Articles</span></div><div><strong id="pr-status-v312c">CHECK</strong><span>Issue Status</span></div></div><div class="toolbar"><button class="btn" id="pr-generate-v312c" type="button">Prepare Production Package</button><button class="btn secondary" id="pr-copy-v312c" type="button">Open / Copy Package</button></div><div class="warning" style="margin-top:14px"><strong>Universal output:</strong> Letterman is one destination. The production package is designed to work with any newsletter, CMS or publishing platform.</div></section>
+<section id="step6-status-panel-v3151" class="panel" style="display:none;margin-bottom:14px">
+  <div class="section-head" style="margin:0 0 8px">
+    <div>
+      <div class="eyebrow">Step 6 — Components</div>
+      <h2 style="margin:4px 0">Supporting Components</h2>
+      <div class="muted">ICS calculates what is missing from the selected Masters and publication target. You should not have to build these one by one.</div>
+    </div>
+    <button class="btn" id="step6-build-v3151" type="button">Build / Resume Supporting Components</button>
+  </div>
+  <div id="step6-summary-v315" class="check" style="margin-top:10px"></div>
+  <div id="step6-live-v3152" class="check" style="margin-top:10px;display:none">
+    <strong id="step6-live-head-v3152">Working…</strong>
+    <div id="step6-live-current-v3152" class="muted" style="margin-top:5px;white-space:pre-wrap;user-select:text"></div>
+    <div style="height:10px;background:#e9eef5;border-radius:999px;overflow:hidden;margin-top:8px">
+      <div id="step6-progress-bar-v3152" style="height:100%;width:0%;background:#2f6fd8;transition:width .2s ease"></div>
+    </div>
+    <div id="step6-live-count-v3152" class="muted" style="margin-top:5px;user-select:text"></div>
+  </div>
+  <div id="step6-detail-v3151" class="muted" style="margin-top:8px;white-space:pre-wrap;user-select:text"></div>
+</section>
 <div class="canvas-layout">
 <section class="canvas-panel">
 <h2>Content Library</h2>
@@ -3092,6 +3117,19 @@ function supportTargetV315(){
 function currentSupportComponentsV315(){
   return (S.canvas||[]).filter(b=>b.kind==='component');
 }
+
+function setStep6LiveProgressV3152({show=true,done=0,total=0,ready=0,failed=0,current='',phase='Working'}={}){
+  const box=E('step6-live-v3152'),head=E('step6-live-head-v3152'),cur=E('step6-live-current-v3152'),
+        bar=E('step6-progress-bar-v3152'),count=E('step6-live-count-v3152');
+  if(box)box.style.display=show?'block':'none';
+  if(head)head.textContent=phase;
+  if(cur)cur.textContent=current||'';
+  const pct=total?Math.max(0,Math.min(100,Math.round(done/total*100))):0;
+  if(bar)bar.style.width=pct+'%';
+  if(count)count.textContent=`${done}/${total} processed · ${ready} ready · ${failed} failed · ${pct}%`;
+  const detail=current?`${phase}: ${current}`:phase;
+  setWorkflowActionStatusV312(6,'Components',`${done}/${total} processed · ${ready} ready · ${failed} failed`,detail);
+}
 async function buildSupportBatchV315(){
   const t=supportTargetV315();
   if(!t.selectedMasters){
@@ -3106,13 +3144,16 @@ async function buildSupportBatchV315(){
   try{
     const existing=currentSupportComponentsV315();
     if(existing.length>=t.supportNeeded){
+      const readyNow=step6ReadyCountV3151();
       const m=`${existing.length} supporting/partner components already exist for ${t.selectedMasters} selected Masters. Step 6 is ready for review.`;
+      setStep6LiveProgressV3152({show:true,done:existing.length,total:t.supportNeeded,ready:readyNow,failed:0,current:'Supporting component target already met.',phase:'Step 6 complete'});
       setWorkflowActionStatusV312(6,'Components','Supporting component target met.',m);
       return;
     }
 
     const need=t.supportNeeded-existing.length;
     setWorkflowActionStatusV312(6,'Components',`Building ${need} supporting components…`,`Target issue size: ${t.issueTarget} · Selected Masters: ${t.selectedMasters} · Support/partner components needed: ${t.supportNeeded}. ICS will create the missing components automatically.`);
+    setStep6LiveProgressV3152({show:true,done:0,total:need,ready:0,failed:0,current:`Creating ${need} supporting component records…`,phase:'Step 6 starting'});
 
     // Reuse the existing component engine one component at a time, but orchestrate it as a single batch.
     // We deliberately create a balanced reusable sequence instead of asking the operator to pick templates.
@@ -3166,7 +3207,20 @@ async function buildSupportBatchV315(){
 
     // Produce auto-created components in batch using the existing producer when available.
     let produced=0,failed=[];
-    for(const c of created){
+    const batchTotal=created.length;
+    setStep6LiveProgressV3152({show:true,done:0,total:batchTotal,ready:0,failed:0,current:'Preparing supporting component batch…',phase:'Step 6 production running'});
+
+    for(let i=0;i<created.length;i++){
+      const c=created[i];
+      setStep6LiveProgressV3152({
+        show:true,
+        done:i,
+        total:batchTotal,
+        ready:produced,
+        failed:failed.length,
+        current:`Producing ${i+1} of ${batchTotal}: ${c.title}`,
+        phase:'Step 6 production running'
+      });
       try{
         S.selectedCanvasId=c.id;
         if(typeof produceSelectedComponent==='function'){
@@ -3176,19 +3230,93 @@ async function buildSupportBatchV315(){
       }catch(e){
         failed.push(`${c.title}: ${String(e.message||e)}`);
       }
+
+      // Refresh saved state after each component so the operator sees live progress.
+      renderCanvas?.();
+      renderComponentLibrary?.();
+      renderStep6SummaryV315();
+
+      setStep6LiveProgressV3152({
+        show:true,
+        done:i+1,
+        total:batchTotal,
+        ready:produced,
+        failed:failed.length,
+        current:failed.length && failed[failed.length-1].startsWith(c.title)
+          ? `Exception on ${c.title}`
+          : `Completed ${c.title}`,
+        phase:i+1===batchTotal?'Step 6 production finishing':'Step 6 production running'
+      });
+
+      // Yield to the browser so the progress panel paints between components.
+      await new Promise(r=>setTimeout(r,0));
     }
+
     renderCanvas?.();
     renderComponentLibrary?.();
 
     const total=currentSupportComponentsV315().length;
     const ready=currentSupportComponentsV315().filter(x=>String(x.status||x.contentStatus||'').toUpperCase()==='READY'||String(x.productionStatus||'').toUpperCase()==='READY').length;
     const detail=`${total}/${t.supportNeeded} support/partner components created for ${t.selectedMasters} selected Masters.${failed.length?` ${failed.length} production exception${failed.length===1?'':'s'} remain:\n- ${failed.join('\n- ')}`:' Batch generation completed.'}`;
-    setWorkflowActionStatusV312(6,'Components',`${total}/${t.supportNeeded} support components built · ${ready} ready`,detail);
+    setStep6LiveProgressV3152({
+      show:true,
+      done:batchTotal,
+      total:batchTotal,
+      ready,
+      failed:failed.length,
+      current:failed.length?'Batch finished with exceptions.':'All supporting components finished.',
+      phase:failed.length?'Step 6 finished with exceptions':'Step 6 complete'
+    });
+    setWorkflowActionStatusV312(6,'Components',`${total}/${t.supportNeeded} support components built · ${ready} ready · ${failed.length} failed`,detail);
+    renderStep6StatusV3151();
   }catch(e){
+    setStep6LiveProgressV3152({show:true,done:0,total:0,ready:step6ReadyCountV3151(),failed:1,current:String(e.message||e),phase:'Step 6 batch failed'});
     setWorkflowActionStatusV312(6,'Components','Component batch failed.','Existing Masters are preserved. '+String(e.message||e));
+    renderStep6StatusV3151();
   }finally{
     if(btn){btn.disabled=false;btn.textContent='Build / Resume Supporting Components';}
   }
+}
+
+function step6ReadyCountV3151(){
+  return currentSupportComponentsV315().filter(x=>{
+    const s=String(x.status||x.contentStatus||'').toUpperCase();
+    const p=String(x.productionStatus||'').toUpperCase();
+    return s==='READY'||s==='APPROVED'||p==='READY'||p==='PRODUCTION READY'||p==='READY FOR LETTERMAN';
+  }).length;
+}
+function renderStep6StatusV3151(){
+  const panel=E('step6-status-panel-v3151');
+  if(!panel)return;
+  const t=supportTargetV315(),items=currentSupportComponentsV315(),ready=step6ReadyCountV3151();
+  const built=items.length,remaining=Math.max(0,t.supportNeeded-built);
+  panel.style.display=workflowSelectedStepV312===6?'block':'none';
+  renderStep6SummaryV315();
+
+  const detail=E('step6-detail-v3151');
+  if(detail){
+    detail.textContent=
+      `Selected Masters: ${t.selectedMasters}\n`+
+      `Target issue size: ${t.issueTarget}\n`+
+      `Supporting / partner components required: ${t.supportNeeded}\n`+
+      `Built: ${built}\n`+
+      `Ready: ${ready}\n`+
+      `Remaining to build: ${remaining}`;
+  }
+
+  const btn=E('step6-build-v3151');
+  if(btn){
+    btn.textContent=remaining>0?'Build / Resume Supporting Components':
+      (ready>=t.supportNeeded?'Step 6 Complete — Go To Assemble':'Produce Remaining Components');
+  }
+
+  const headline=ready>=t.supportNeeded&&t.supportNeeded>0
+    ? `Step 6 complete · ${built}/${t.supportNeeded} built · ${ready} ready`
+    : `${built}/${t.supportNeeded} support components built · ${ready} ready`;
+  const message=ready>=t.supportNeeded&&t.supportNeeded>0
+    ? 'Supporting component target is complete. Next: Step 7 — Assemble.'
+    : `Selected Masters ${t.selectedMasters} · issue target ${t.issueTarget} · ${remaining} support/partner components still need to be built.`;
+  setWorkflowActionStatusV312(6,'Components',headline,message);
 }
 function renderStep6SummaryV315(){
   const panel=E('step6-summary-v315');if(!panel)return;
@@ -3208,7 +3336,7 @@ function workflowStepInfoV312(step){
  3:['Research','Open the approved research queue. ICS will create/update the 15 locked Master briefs automatically if needed; no manual article entry.','Open Research Workspace'],
  4:['Produce','Use the existing production pipeline to research/write the 15 Master candidates. Production is resumable and completed work is preserved.','Produce All Approved Masters'],
  5:['Select',`Choose ${min}–${max} strongest READY Masters for this issue. ICS recommends from the actual Step 4 production states and editorial grades; remaining READY candidates stay bankable.`,`Review Master Selection`],
- 6:['Components',canvas.length?`Produce the supporting components already created for this issue. Partner/profile automation will progressively replace manual component entry.`:`Create the selected Masters plus the publication-profile support recipe on the Canvas. This builds the support plan before copy is produced.`,canvas.length?'Produce Supporting Components':'Build Support Plan'],
+ 6:['Components',`Build the supporting and partner components needed to complete this issue. ICS calculates the missing count from the saved Step 5 selection and publication target.`,`Build / Resume Supporting Components`],
  7:['Assemble','Assemble only the Masters selected in Step 5, then mix in support/partner blocks to create the running order.','Assemble Selected Issue'],
  8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.','Run Final QA'],
  9:['Production Ready','Generate the ordered production package after QA. It can then be sent to Letterman or any other publishing platform.','Generate Production Package']
@@ -3252,6 +3380,7 @@ function updateWorkflowShellV312(forcedStep){
  const [name,copy,label]=workflowStepInfoV312(workflowSelectedStepV312);E('workflow-current-v312').textContent=workflowContextLabelV312(workflowSelectedStepV312,name);E('workflow-instruction-v312').textContent=copy;const btn=E('workflow-primary-v312');btn.textContent=label;btn.dataset.step=String(workflowSelectedStepV312);
  renderMasterSelectionV312();renderSmartTitleReviewV312l(getSmartPlan());
  if(workflowSelectedStepV312===3)setTimeout(()=>hydrateStep3StateV3133(),0);
+ if(workflowSelectedStepV312===6)setTimeout(()=>renderStep6StatusV3151(),0);
 }
 function runWorkflowPrimaryV312(){
  const step=Number(E('workflow-primary-v312')?.dataset.step||workflowSelectedStepV312||1),plan=getSmartPlan();
@@ -3296,7 +3425,13 @@ function runWorkflowPrimaryV312(){
    });
    return
  }
- if(step===6){show('assemble');if(getCanvas().length)E('assembly-produce').click();else E('assembly-smart-assemble').click();return}
+ if(step===6){
+   show('assemble');
+   workflowSelectedStepV312=6;
+   updateWorkflowShellV312(6);
+   renderStep6StatusV3151();
+   return
+ }
  if(step===7){show('assemble');document.querySelector('.canvas-layout')?.scrollIntoView({behavior:'smooth',block:'start'});return}
  if(step===8){show('assemble');E('assembly-qa').click();return}
  if(step===9){show('assemble');E('assembly-generate').click();return}
@@ -4207,6 +4342,11 @@ E('command-open-build').onclick=()=>show('build');
 
 E('assembly-export').onclick=exportCanvasBackup;if(E('smart-copy-status'))E('smart-copy-status').onclick=copyPlannerStatus;
 if(E('workflow-copy-status-v312e'))E('workflow-copy-status-v312e').onclick=copyWorkflowStatusV312E;
+if(E('step6-build-v3151'))E('step6-build-v3151').onclick=()=>{
+  const t=supportTargetV315(),ready=step6ReadyCountV3151();
+  if(t.supportNeeded>0&&ready>=t.supportNeeded){focusWorkflowStepV312B(7);return;}
+  buildSupportBatchV315();
+};
 if(E('smart-title-toggle-v312l'))E('smart-title-toggle-v312l').onclick=toggleSmartCompactReviewV312l;
 if(E('smart-title-copy-v312l'))E('smart-title-copy-v312l').onclick=copySmartTitlesV312l;
 if(E('smart-title-download-v312l'))E('smart-title-download-v312l').onclick=downloadSmartTitlesV312l;
@@ -4231,7 +4371,14 @@ function focusWorkflowStepV312B(step,{scroll=true}={}){
   if(E('workflow-current-v312'))E('workflow-current-v312').textContent=workflowContextLabelV312(step,name);
   if(E('workflow-instruction-v312'))E('workflow-instruction-v312').textContent=copy;
   if(E('workflow-primary-v312')){E('workflow-primary-v312').textContent=label;E('workflow-primary-v312').dataset.step=String(step)}
-  if(step===6){const l=document.querySelector('.canvas-layout');l?.classList.remove('library-hidden');l?.classList.remove('inspector-hidden')}
+  if(step===6){
+    const l=document.querySelector('.canvas-layout');
+    l?.classList.add('library-hidden');
+    l?.classList.add('inspector-hidden');
+    setTimeout(()=>renderStep6StatusV3151(),0);
+  }else{
+    const p=E('step6-status-panel-v3151');if(p)p.style.display='none';
+  }
   if(scroll)E('workflow-shell-v312')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
