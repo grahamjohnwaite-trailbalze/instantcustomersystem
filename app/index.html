@@ -253,6 +253,31 @@ body[data-workflow-step="9"] #view-assemble > #production-ready-panel-v312c {dis
 #production-ready-panel-v312c .production-ready-grid strong {display:block;font-size:18px}
 #production-ready-panel-v312c .production-ready-grid span {font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase}
 
+/* v3.12d — STEP CONTENT ISOLATION
+   The active workflow step is now the single source of truth for both navigation and content.
+   These rules deliberately hide every planning surface during assembly. */
+body[data-workflow-step="7"] #engine-profile-panel,
+body[data-workflow-step="7"] #smart-plan-panel,
+body[data-workflow-step="7"] #planner-score,
+body[data-workflow-step="7"] #component-command-centre,
+body[data-workflow-step="7"] #master-selection-panel-v312 {display:none!important}
+body[data-workflow-step="7"] #view-assemble > #issue-context-summary {display:block!important}
+body[data-workflow-step="7"] #view-assemble > .issue-promise-bar {display:none!important}
+body[data-workflow-step="7"] #view-assemble > .canvas-layout {display:grid!important}
+
+/* Components should not leak planning panels either. */
+body[data-workflow-step="6"] #engine-profile-panel,
+body[data-workflow-step="6"] #smart-plan-panel,
+body[data-workflow-step="6"] #master-selection-panel-v312 {display:none!important}
+
+/* QA and Production Ready are output screens, never planning screens. */
+body[data-workflow-step="8"] #engine-profile-panel,
+body[data-workflow-step="8"] #smart-plan-panel,
+body[data-workflow-step="8"] #master-selection-panel-v312,
+body[data-workflow-step="9"] #engine-profile-panel,
+body[data-workflow-step="9"] #smart-plan-panel,
+body[data-workflow-step="9"] #master-selection-panel-v312 {display:none!important}
+
 /* Global cleanup */
 body[data-workflow-step] #component-command-centre,
 body[data-workflow-step] #planner-score {display:none!important}
@@ -268,7 +293,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
  body[data-workflow-step="8"] .canvas-layout {grid-template-columns:1fr!important}
 }
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12c<br><strong>Actual Screen Separation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · one screen per stage · one main action · cleaner Canvas · production-ready terminology</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12d<br><strong>Step Content Isolation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · active step and visible screen locked together · planning content isolated from assembly</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -2398,6 +2423,10 @@ function updateWorkflowShellV312(forcedStep){
  const produced=(plan?.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').length;if(locked&&produced>0)auto=4;if(locked&&produced>=(profile.targetMasters?.[0]||5))auto=5;
  const selected=getMasterSelectionV312();if(selected.length>=(profile.targetMasters?.[0]||5)&&canvas.length===0&&produced>=(profile.targetMasters?.[0]||5))auto=7;if(canvas.length)auto=6;if(canvas.length&&canvas.some(b=>b.kind==='component'&&String(b.status||'').toUpperCase()==='READY'))auto=7;
  workflowSelectedStepV312=forcedStep||auto;
+ // v3.12d: one source of truth. The visible active step and the CSS-isolated
+ // operator screen must always use the same workflow step, including after
+ // async issue loading / renderAssembly / updateWorkflowGuide calls.
+ document.body.dataset.workflowStep=String(workflowSelectedStepV312);
  document.querySelectorAll('[data-flow-step]').forEach(b=>{const n=Number(b.dataset.flowStep);b.classList.toggle('active',n===workflowSelectedStepV312);b.classList.toggle('done',n<auto)});
  const [name,copy,label]=workflowStepInfoV312(workflowSelectedStepV312);E('workflow-current-v312').textContent=`Step ${workflowSelectedStepV312} — ${name}`;E('workflow-instruction-v312').textContent=copy;const btn=E('workflow-primary-v312');btn.textContent=label;btn.dataset.step=String(workflowSelectedStepV312);
  renderMasterSelectionV312();
