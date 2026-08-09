@@ -303,7 +303,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
  body[data-workflow-step="8"] .canvas-layout {grid-template-columns:1fr!important}
 }
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12n<br><strong>Manual Edit Source Detach</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · edited concept detaches old lead · Life Lane editable</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12o<br><strong>Publication Guard Word Boundary</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · publication guard exact-word matching · manual edit fix preserved</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -480,15 +480,24 @@ function forbiddenPublicationTermsV312i(){
   }
   return [...out].filter(Boolean);
 }
+function publicationTermPresentV312o(text,term){
+  // Exact token / phrase matching only.
+  // Example: "cambridge" must NOT match "cambridgeshire".
+  const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const hay=` ${norm(text)} `;
+  const needle=norm(term);
+  if(!needle)return false;
+  return hay.includes(` ${needle} `);
+}
 function publicationLeakageForArticleV312i(a){
-  const hay=[a?.title,a?.question,a?.problem,a?.hook,a?.reader,a?.value,a?.local_proof,a?.why_now].filter(Boolean).join(' ').toLowerCase();
-  const hits=forbiddenPublicationTermsV312i().filter(t=>hay.includes(t));
+  const hay=[a?.title,a?.question,a?.problem,a?.hook,a?.reader,a?.value,a?.local_proof,a?.why_now].filter(Boolean).join(' ');
+  const hits=forbiddenPublicationTermsV312i().filter(t=>publicationTermPresentV312o(hay,t));
   return hits.length?{title:a?.title||a?.question||'Untitled',hits}:null;
 }
 function publicationLeakageAuditV312i(plan){
   const hits=(plan?.articles||[]).map(publicationLeakageForArticleV312i).filter(Boolean);
-  const summary=String(plan?.issue_summary||'').toLowerCase();
-  const summaryHits=forbiddenPublicationTermsV312i().filter(t=>summary.includes(t));
+  const summary=String(plan?.issue_summary||'');
+  const summaryHits=forbiddenPublicationTermsV312i().filter(t=>publicationTermPresentV312o(summary,t));
   return {hits,summaryHits,blocked:hits.length>0||summaryHits.length>0};
 }
 function candidateSlateAuditV312i(plan){
