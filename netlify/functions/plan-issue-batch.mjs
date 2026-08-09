@@ -6,6 +6,54 @@ const guardWords=text=>[...new Set(String(text||'').toLowerCase().replace(/£/g,
 const guardSimilarity=(a,b)=>{const A=guardWords(a),B=guardWords(b);if(!A.length||!B.length)return 0;const bs=new Set(B),hit=A.filter(x=>bs.has(x)).length;return hit/Math.min(A.length,B.length)};
 const recentDuplicate=(article,blocked)=>{let best=null;const text=[article?.title,article?.question,article?.problem].filter(Boolean).join(' ');for(const title of blocked){const score=guardSimilarity(text,title);if(!best||score>best.score)best={title,score}}return best&&best.score>=0.45?best:null};
 const rejectedDuplicate=(article,rejected)=>{let best=null;const text=[article?.title,article?.question,article?.problem].filter(Boolean).join(' ');for(const title of rejected){const score=guardSimilarity(text,title);if(!best||score>best.score)best={title,score}}return best&&best.score>=0.38?best:null};
+
+const priorDuplicate=(candidate,priorArticles)=>{
+  const text=[candidate?.title,candidate?.purpose,candidate?.topic].filter(Boolean).join(' ');
+  let best=null;
+  for(const p of Array.isArray(priorArticles)?priorArticles:[]){
+    const title=String(p?.title||'').trim();
+    if(!title)continue;
+    const score=guardSimilarity(text,title);
+    if(!best||score>best.score)best={title,score};
+  }
+  return best&&best.score>=0.42?best:null;
+};
+const safeDeterministicCandidate=(candidates,{blocked=[],rejected=[],prior=[]}={})=>{
+  for(const c of candidates){
+    const probe={title:c.title,question:c.purpose||c.topic,problem:c.topic||c.purpose};
+    if(recentDuplicate(probe,blocked))continue;
+    if(rejectedDuplicate(probe,rejected))continue;
+    if(priorDuplicate(c,prior))continue;
+    return c;
+  }
+  return null;
+};
+const deterministicArticleFromCandidate=(c,publication)=>{
+  const hs=String(c.history_status||'').toUpperCase();
+  const mode=hs.startsWith('LOCALISE')?'LOCALISE':hs.startsWith('AVAILABLE')?'REUSE':'REFRESH';
+  const q=String(c.purpose||c.topic||c.title||'').trim();
+  return {
+    mode,
+    existing_article_id:String(c.id||''),
+    title:titleCaseAllWords(String(c.title||'').trim()),
+    question:q||String(c.title||'').trim(),
+    problem:q||'Needs current research and localisation.',
+    hook:`A strong unused ${publication} angle selected automatically after the planner rejected a duplicate.`,
+    reader:`Readers of ${publication}.`,
+    value:`Give readers a distinct, current and locally specific answer.`,
+    local_proof:`Research and localise this angle specifically for ${publication}; do not assume archived facts are still current.`,
+    evidence:`Fresh research required before production.`,
+    life_lane:'Open',
+    lane:'Editorial',
+    partner_path:'Open',
+    cta_type:'None',
+    cta_text:'',
+    stance:'PRACTICAL',
+    why_now:'Automatic safe-candidate fallback used so one duplicate cannot stop the issue plan.',
+    countercase:'',
+    source_signal:'Archive/idea-bank fallback — research before production'
+  };
+};
 export default async(request)=>{
   try{
     if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
@@ -21,7 +69,8 @@ export default async(request)=>{
     const usableExisting=existing.filter(x=>!rejectedCandidates.some(t=>guardSimilarity(x.title,t)>=0.38));
     const rankedExisting=[...usableExisting].sort((a,b)=>{const rank=x=>String(x.history_status||'').startsWith('LOCALISE')?0:String(x.history_status||'').startsWith('AVAILABLE')?1:2;return rank(a)-rank(b)}).slice(0,36);
     const inventory=rankedExisting.map((x,i)=>`${i+1}. ${x.id} | ${x.title} | ${x.topic||x.purpose} | ${x.freshness} | ${x.history_status||'UNKNOWN'}${x.history_publication?` | from ${x.history_publication}`:''}`).join('\n');
-    const prior=(Array.isArray(d.priorArticles)?d.priorArticles:[]).slice(0,20).map((x,i)=>`${i+1}. ${x.title} — ${x.question} | mode=${x.mode||''} | life_lane=${x.life_lane||''} | commercial=${x.lane||''} | source=${x.source_signal||''}`).join('\n');
+    const priorArticlesRaw=(Array.isArray(d.priorArticles)?d.priorArticles:[]).slice(0,20);
+    const prior=priorArticlesRaw.map((x,i)=>`${i+1}. ${x.title} — ${x.question} | mode=${x.mode||''} | life_lane=${x.life_lane||''} | commercial=${x.lane||''} | source=${x.source_signal||''}`).join('\n');
     const prompt=`You are the senior editor for Trail Blaze ${publication}. Choose ONE Master Article for decision ${batch}/${totalBatches}. Return JSON only. Do not browse.
 
 ISSUE: ${publication} #${issueNumber||'—'} | send ${String(d.sendDate||'')}
@@ -105,9 +154,30 @@ JSON ONLY:
     const dupHits=articles.map(a=>recentDuplicate(a,blockedRecentHistory)).filter(Boolean);
     const rejectedHits=articles.map(a=>rejectedDuplicate(a,rejectedCandidates)).filter(Boolean);
     if(articles.length!==requestedCount)return json(502,{ok:false,error:`Planner batch returned ${articles.length} usable articles; expected ${requestedCount}.`});
-    if(dupHits.length)return json(409,{ok:false,error:`Recent-history guard rejected ${dupHits.length} duplicate candidate${dupHits.length===1?'':'s'} in this decision: ${dupHits.map(x=>x.title).join(' | ')}. Click Build / Resume Issue Plan again; every completed article decision remains saved.`});
-    if(rejectedHits.length)return json(409,{ok:false,error:`Planning-run guard rejected a previously rejected concept again: ${rejectedHits.map(x=>x.title).join(' | ')}. Click Build / Resume Issue Plan again; this concept is now excluded from the available pool.`});
-    return json(200,{ok:true,batch,label,issue_summary:String(result.issue_summary||'').trim(),articles,modelUsed:response._model_used||model,fallbackUsed:!!response._planner_fallback_used});
+    if(dupHits.length||rejectedHits.length){
+      const safe=safeDeterministicCandidate(rankedExisting,{
+        blocked:blockedRecentHistory,
+        rejected:rejectedCandidates,
+        prior:priorArticlesRaw
+      });
+      if(safe){
+        const fallbackArticle=deterministicArticleFromCandidate(safe,publication);
+        return json(200,{
+          ok:true,
+          batch,
+          label,
+          issue_summary:String(result.issue_summary||'').trim(),
+          articles:[fallbackArticle],
+          modelUsed:response._model_used||model,
+          fallbackUsed:true,
+          deterministicFallback:true,
+          rejectedModelCandidate:articles[0]?.title||'',
+          fallbackReason:dupHits.length?'recent-history duplicate':'planning-run duplicate'
+        });
+      }
+      return json(409,{ok:false,error:`Planner rejected a duplicate and no unused safe candidate remained for decision ${batch}/${totalBatches}.`});
+    }
+    return json(200,{ok:true,batch,label,issue_summary:String(result.issue_summary||'').trim(),articles,modelUsed:response._model_used||model,fallbackUsed:!!response._planner_fallback_used,deterministicFallback:false});
   }catch(error){
     console.error('plan-issue-batch-failed',{message:error?.message,status:error?.status,details:error?.details});
     return json(Number(error?.status)||500,{ok:false,error:String(error?.message||'Planning batch failed.'),details:error?.details});
