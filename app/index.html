@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.17.2<br><strong>Step 8 QA Stabilisation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · QA source-of-truth fixes · visible hard-fix action · full Master QA input</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.17.3<br><strong>Step 8 Repair Convergence</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · persistent support repairs · convergence gate · hard-fix severity discipline</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -3731,7 +3731,7 @@ function workflowStepInfoV312(step){
  5:['Select',`Choose ${min}–${max} strongest READY Masters for this issue. ICS recommends from the actual Step 4 production states and editorial grades; remaining READY candidates stay bankable.`,`Review Master Selection`],
  6:['Components',`Build the supporting and partner components needed to complete this issue. ICS calculates the missing count from the saved Step 5 selection and publication target.`,`Build / Resume Supporting Components`],
  7:['Assemble','Rebuild the running order from the current saved Step 5 Masters and persistent Step 6 support/partner blocks. The old browser assembly is discarded.','Assemble Selected Issue'],
- 8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.',(()=>{try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');return q?.summary?.fix>0?'Fix QA Exceptions':'Run Final QA'}catch{return 'Run Final QA'}})()],
+ 8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.',(()=>{try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');return q?.qaVersion==='3.17.3'&&q?.summary?.fix>0?'Fix QA Exceptions':'Run Final QA'}catch{return 'Run Final QA'}})()],
  9:['Production Ready','Generate the ordered production package after QA. It can then be sent to Letterman or any other publishing platform.','Generate Production Package']
  };return info[step]||info[1]
 }
@@ -4668,7 +4668,7 @@ function showQAReport(report,scroll=true){
 function loadSavedQAReport(){
   try{
     const report=JSON.parse(localStorage.getItem(qaKey())||'null');
-    if(report)showQAReport(report,false);
+    if(report?.qaVersion==='3.17.3')showQAReport(report,false);
   }catch{}
 }
 async function copyQAReport(){
@@ -4713,7 +4713,7 @@ async function runFinalQA(){
       warning:findings.filter(f=>f.severity==='WARNING').length,
       pass:findings.filter(f=>f.severity==='PASS').length
     };
-    const report={createdAt:new Date().toISOString(),summary,findings};
+    const report={qaVersion:'3.17.3',createdAt:new Date().toISOString(),summary,findings};
     localStorage.setItem(qaKey(),JSON.stringify(report));
     showQAReport(report,true);
     setWorkflowActionStatusV312(8,'QA',`Final QA complete · ${summary.fix} Fix · ${summary.warning} Warning · ${summary.pass} Pass`,
@@ -4725,8 +4725,8 @@ async function runFinalQA(){
   }
 }
 
-async function rewriteSupportBlockV317(block,problems){
-  const items=getCanvas();
+async function rewriteSupportBlockV317(block,problems,itemsOverride=null){
+  const items=itemsOverride||getCanvas();
   const context=partnerContext(items,items.findIndex(x=>x.uid===block.uid));
   const issueMap=items.map((x,i)=>`${i+1}. ${x.title} — ${String(x.content||x.purpose||'').slice(0,220)}`).join('\n');
   const prompt=`Rewrite ONE newsletter supporting block for ${currentPublicationName()}.
@@ -4801,109 +4801,194 @@ async function repairTruncatedMasterV317(block,index,total){
   block.productionStatus='ASSETS NEEDED';
 }
 
+async function evaluateIssueQAV3173(items){
+  let findings=deterministicQA(items);
+  try{
+    const payload={
+      publication:currentPublicationName(),
+      issuePromise:E('assembly-promise')?.value||'',
+      blocks:items.map((b,i)=>({
+        order:i+1,uid:b.uid,kind:b.kind,type:b.type,title:b.title,purpose:b.purpose,
+        content:b.content,partner:b.partner,category:b.category,cta:b.cta,button:b.button,url:b.url,status:b.status,
+        sourceRule:b.kind==='partner'?'Partner information may include first-party information supplied directly by the organisation. Do not treat lack of public web corroboration alone as a failure.':''
+      }))
+    };
+    const ai=await api('final-qa',{method:'POST',body:JSON.stringify(payload)});
+    if(Array.isArray(ai.findings))findings=findings.concat(ai.findings);
+  }catch(error){
+    findings.push({severity:'WARNING',code:'AI_QA_UNAVAILABLE',message:`Editorial AI review was unavailable, so deterministic QA only was used: ${error.message}`,blocks:[],safeFix:false});
+  }
+  return {
+    qaVersion:'3.17.3',createdAt:new Date().toISOString(),
+    summary:{
+      fix:findings.filter(f=>f.severity==='FIX').length,
+      warning:findings.filter(f=>f.severity==='WARNING').length,
+      pass:findings.filter(f=>f.severity==='PASS').length
+    },
+    findings
+  };
+}
+function fixCodesV3173(report){
+  return new Set((report?.findings||[]).filter(f=>f.severity==='FIX').map(f=>String(f.code||'').trim()).filter(Boolean));
+}
+async function persistSupportRepairV3173(block){
+  if(!block?.refId)throw new Error('Persistent support record id is missing.');
+  const record=(S.sections||[]).find(x=>x.id===block.refId);
+  if(!record||!isPersistentSupportSectionV3153(record))throw new Error('Persistent Step 6 support record was not found.');
+  const meta=supportMetaV3153(record);
+  const notes=supportNotesV3153({
+    type:block.type||meta.type,
+    lifeLane:block.lifeLane||meta.lifeLane,
+    commercialRole:block.commercialRole||meta.commercialRole,
+    partnerName:block.partner||meta.partnerName
+  });
+  const fields={
+    'Section Title':block.title||String(val(record.fields||{},'Section Title')||block.type||'Support'),
+    'Section Final Copy':String(block.content||'').trim(),
+    'Section Status':'Ready',
+    'Section QA Result':'Not Checked',
+    'Notes':notes
+  };
+  if(String(block.cta||block.button||'').trim())fields['CTA Text']=String(block.cta||block.button).trim();
+  if(String(block.url||'').trim())fields['Action Destination URL']=String(block.url).trim();
+  const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:block.refId,fields})});
+  const i=(S.sections||[]).findIndex(x=>x.id===block.refId);
+  if(i>=0)S.sections[i]=d.record;
+  return d.record;
+}
 async function fixQAExceptionsV317(){
   if(!S.issue)return;
-  const items=getCanvas();
-  if(!items.length)return;
+  const originalItems=getCanvas();
+  if(!originalItems.length)return;
+
+  const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
+  if(!saved||saved.qaVersion!=='3.17.3'){
+    setWorkflowActionStatusV312(8,'QA','Fresh QA required.','This QA report came from an older Step 8 build. Run Final QA in v3.17.3 before fixing exceptions.');
+    localStorage.removeItem(qaKey());
+    updateWorkflowShellV312(8);
+    return;
+  }
+  if(!saved.summary?.fix){
+    setWorkflowActionStatusV312(8,'QA','No hard fixes to repair.','Final QA already has 0 Fix. Review warnings, then move to Step 9.');
+    updateWorkflowShellV312(8);return;
+  }
 
   const btn=E('qa-fix-v317');
   const old=btn?.textContent||'Fix QA Exceptions';
-  if(btn){btn.disabled=true;btn.textContent='Fixing QA Exceptions…';}
+  if(btn){btn.disabled=true;btn.textContent='Testing QA Repairs…';}
 
-  let masterFixed=0,supportFixed=0,failed=[];
+  let masterFixed=0,supportPrepared=0;
+  const failed=[];
   try{
-    setWorkflowActionStatusV312(8,'QA','Fixing QA hard exceptions…',
-      'Master truncation is repaired from the saved Research Pack. Supporting-copy fixes do not change the selected Masters or partner commitments.');
+    setWorkflowActionStatusV312(8,'QA','Testing QA hard-fix repairs…',
+      'v3.17.3 works on a temporary copy first. Support repairs are written back to persistent Step 6 records only if fresh whole-issue QA reduces the hard-fix count without introducing a new hard-fix class.');
 
-    // 1. Repair all truncated selected Masters.
-    const masters=items.filter(looksTruncatedMasterV317);
+    // Deterministic Master truncation remains a direct upstream repair from the saved Research Pack.
+    const masters=originalItems.filter(looksTruncatedMasterV317);
     for(let i=0;i<masters.length;i++){
       try{
         await repairTruncatedMasterV317(masters[i],i+1,masters.length);
         masterFixed++;
-        localStorage.setItem(assemblyKey(),JSON.stringify(items));
-        renderAssembly();
-      }catch(e){
-        failed.push(`${masters[i].title}: ${String(e.message||e)}`);
-      }
+        localStorage.setItem(assemblyKey(),JSON.stringify(originalItems));
+      }catch(e){failed.push(`${masters[i].title}: ${String(e.message||e)}`)}
     }
 
-    // 2. Structural support hard fixes.
-    const orphan=items.filter(orphanPartnerTipV317);
+    // Work on a temporary issue copy. Nothing in Step 6 is changed until convergence is proved.
+    const working=JSON.parse(JSON.stringify(originalItems));
+    const orphan=working.filter(orphanPartnerTipV317);
     for(const block of orphan){
       try{
-        block.type='EXPERT QUICK CHECK';
-        block.title='Quick Local Check';
-        block.productionTemplate='SHORT COMPONENT';
-        block.commercialRole='EDITORIAL';
-        block.partner='';
-        block.partnerAttached=false;
-        await rewriteSupportBlockV317(block,'The current reader-facing label says Partner Tip but no real partner is attached. Convert this into a useful editorial quick check. Do not mention partners, sponsors or commercial relationships.');
-        supportFixed++;
+        block.type='EXPERT QUICK CHECK';block.title='Quick Local Check';block.productionTemplate='SHORT COMPONENT';
+        block.commercialRole='EDITORIAL';block.partner='';block.partnerAttached=false;
+        await rewriteSupportBlockV317(block,'The current reader-facing label says Partner Tip but no real partner is attached. Convert this into one distinct editorial quick check. Do not mention partners, sponsors or commercial relationships. It must not repeat any Master Article or another support block.',working);
+        supportPrepared++;
       }catch(e){failed.push(`${block.title}: ${String(e.message||e)}`)}
     }
 
-    const closing=duplicateOpeningClosingV317(items);
+    const closing=duplicateOpeningClosingV317(working);
     if(closing){
       try{
-        closing.type='BEFORE YOU GO';
-        closing.title='Before You Go';
-        closing.productionTemplate='SHORT COMPONENT';
+        closing.type='BEFORE YOU GO';closing.title='Before You Go';closing.productionTemplate='SHORT COMPONENT';
         closing.purpose='Close the issue with one distinct sign-off or reader action. Do not restart the opening theme.';
-        await rewriteSupportBlockV317(closing,'This closing repeats the Opening Note. Write a distinct sign-off or single reader action that closes the issue rather than restarting it.');
-        supportFixed++;
+        await rewriteSupportBlockV317(closing,'This closing repeats the Opening Note. Write a distinct sign-off or single reader action that closes the issue rather than restarting it. Avoid repeating the issue-wide check-details formula.',working);
+        supportPrepared++;
       }catch(e){failed.push(`Before You Go: ${String(e.message||e)}`)}
     }
 
-    // 3. Internal/commercial reader-facing leaks.
-    const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
-    const leakIds=[...new Set((saved?.findings||[]).filter(f=>f.code==='INTERNAL_NOTE_LEAK').flatMap(f=>f.blocks||[]))];
-    for(const block of items.filter(b=>leakIds.includes(b.uid)&&b.kind!=='article')){
-      if(orphan.includes(block)||block===closing)continue;
+    const leakIds=[...new Set((saved.findings||[]).filter(f=>f.code==='INTERNAL_NOTE_LEAK'||/internal|commercial/i.test(String(f.message||''))).flatMap(f=>f.blocks||[]))];
+    const handledIds=new Set([...orphan.map(b=>b.uid),...(closing?[closing.uid]:[])]);
+    for(const block of working.filter(b=>leakIds.includes(b.uid)&&b.kind!=='article'&&!handledIds.has(b.uid))){
       try{
-        await rewriteSupportBlockV317(block,'Remove all internal, production, sponsorship, pricing, commercial-arrangement or editor-facing wording. Keep only reader-facing copy.');
-        supportFixed++;
+        await rewriteSupportBlockV317(block,'Remove every internal, production, sponsorship, pricing, commercial-arrangement or editor-facing phrase. Keep only reader-facing copy. Preserve any real named partner and do not invent facts. Give this block one distinct job that is not already performed elsewhere in the issue.',working);
+        handledIds.add(block.uid);supportPrepared++;
       }catch(e){failed.push(`${block.title}: ${String(e.message||e)}`)}
     }
 
-    // 4. New AI hard fixes that explicitly permit a safe supporting-copy repair.
-    //    These must change persisted reader-facing copy, not merely clear QA state.
-    const handledIds=new Set([...orphan.map(b=>b.uid),...(closing?[closing.uid]:[]),...leakIds]);
-    const aiSafeFixes=(saved?.findings||[]).filter(f=>f.severity==='FIX'&&f.safeFix===true);
+    const aiSafeFixes=(saved.findings||[]).filter(f=>f.severity==='FIX'&&f.safeFix===true);
     for(const finding of aiSafeFixes){
-      for(const block of items.filter(b=>(finding.blocks||[]).includes(b.uid)&&b.kind!=='article'&&!handledIds.has(b.uid))){
+      for(const block of working.filter(b=>(finding.blocks||[]).includes(b.uid)&&b.kind!=='article'&&!handledIds.has(b.uid))){
         try{
           const formatProblem=/news brief|what.?s on|listing|actual local|generic advice/i.test(String(finding.message||''));
-          if(formatProblem){
-            // If the existing block has no evidence to support its claimed format, stop pretending it is news/listings.
-            // Reclassify it as an editorial support block and rewrite it to one distinct reader job.
-            block.type='EXPERT QUICK CHECK';
-            block.title='Quick Local Check';
-            block.productionTemplate='SHORT COMPONENT';
-            block.commercialRole='EDITORIAL';
-            block.partner='';
-            block.partnerAttached=false;
+          if(formatProblem&&!String(block.partner||'').trim()){
+            block.type='EXPERT QUICK CHECK';block.title='Quick Local Check';block.productionTemplate='SHORT COMPONENT';
+            block.commercialRole='EDITORIAL';block.partner='';block.partnerAttached=false;
           }
-          await rewriteSupportBlockV317(block,`${finding.message} Repair the actual reader-facing block. If the current format promises factual news/listings that are not present in the supplied copy or proof, do not invent them: convert the block into one distinct editorial local check or reader action that truthfully matches the available material.`);
-          handledIds.add(block.uid);
-          supportFixed++;
+          await rewriteSupportBlockV317(block,`${finding.message}\n\nRepair the actual reader-facing block, not the QA label. It must have a genuinely different reader job from the adjacent Master and from every other support block. Do not use the stock formula of checking dates, costs, routes, opening times or provider information unless that is uniquely the purpose of this block. If factual evidence is absent, use a distinct opinion, decision, observation or single reader action rather than inventing facts.`,working);
+          handledIds.add(block.uid);supportPrepared++;
         }catch(e){failed.push(`${block.title}: ${String(e.message||e)}`)}
       }
     }
 
-    localStorage.setItem(assemblyKey(),JSON.stringify(items));
+    if(!supportPrepared){
+      const detail=failed.length?`No safe support repair was prepared.\n- ${failed.join('\n- ')}`:'Final QA contains no supporting hard fix that v3.17.3 can safely rewrite automatically.';
+      setWorkflowActionStatusV312(8,'QA','No support repair saved.',detail);
+      return;
+    }
+
+    setWorkflowActionStatusV312(8,'QA','Checking repair convergence…',
+      `${supportPrepared} support repair${supportPrepared===1?'':'s'} prepared temporarily. Running fresh whole-issue QA before anything is written back to Step 6.`);
+    const candidateReport=await evaluateIssueQAV3173(working);
+    const beforeFix=Number(saved.summary.fix||0),afterFix=Number(candidateReport.summary.fix||0);
+    const beforeCodes=fixCodesV3173(saved),afterCodes=fixCodesV3173(candidateReport);
+    const newCodes=[...afterCodes].filter(c=>!beforeCodes.has(c));
+
+    if(!(afterFix<beforeFix)||newCodes.length){
+      const why=newCodes.length?`New hard-fix class detected: ${newCodes.join(', ')}.`:`Hard-fix count did not fall (${beforeFix} → ${afterFix}).`;
+      setWorkflowActionStatusV312(8,'QA','Repair rejected — source records unchanged.',
+        `${why}\nThe temporary rewrite was discarded. v3.17.3 will not churn persistent Step 6 copy when the whole issue does not improve.`);
+      showQAReport(saved,false);
+      return;
+    }
+
+    // Only now persist the changed support records upstream to Step 6 Airtable source-of-truth.
+    const changed=working.filter(w=>{
+      const o=originalItems.find(x=>x.uid===w.uid);
+      return w.kind!=='article'&&o&&(String(w.content||'')!==String(o.content||'')||String(w.type||'')!==String(o.type||'')||String(w.title||'')!==String(o.title||''));
+    });
+    let persisted=0;
+    for(const block of changed){
+      try{await persistSupportRepairV3173(block);persisted++;}
+      catch(e){failed.push(`${block.title}: persistence failed — ${String(e.message||e)}`)}
+    }
+    if(persisted!==changed.length){
+      setWorkflowActionStatusV312(8,'QA','Repair persistence incomplete.',
+        `${persisted}/${changed.length} support repairs reached persistent Step 6 records. Do not continue to Step 9. Run Final QA again after refreshing/reassembling if the app requests it.\n- ${failed.join('\n- ')}`);
+      await refreshPersistentSupportV3153().catch(()=>{});
+      localStorage.removeItem(qaKey());updateWorkflowShellV312(8);return;
+    }
+
+    localStorage.setItem(assemblyKey(),JSON.stringify(working));
     renderAssembly();
+    await refreshPersistentSupportV3153().catch(()=>{});
     localStorage.removeItem(qaKey());
     updateWorkflowShellV312(8);
-
-    const detail=failed.length
-      ? `${masterFixed} Master repairs · ${supportFixed} support fixes · ${failed.length} exceptions remain:\n- ${failed.join('\n- ')}`
-      : `${masterFixed} truncated Masters repaired · ${supportFixed} supporting hard fixes completed. Run Final QA again now.`;
-    setWorkflowActionStatusV312(8,'QA','QA hard-fix pass finished.',detail);
+    setWorkflowActionStatusV312(8,'QA','QA repair converged and persisted.',
+      `${masterFixed} truncated Masters repaired · ${persisted} supporting hard-fix records persisted upstream · hard fixes reduced ${beforeFix} → ${afterFix}. Run Final QA again now to verify the saved source-of-truth.`);
   }finally{
     if(btn){btn.disabled=false;btn.textContent=old;}
   }
 }
+
 async function applySafeFixes(){
   if(!S.issue){alert('Open an issue first.');return}
   const items=getCanvas();

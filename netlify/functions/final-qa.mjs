@@ -51,7 +51,7 @@ Also check for over-polished/AI-ish language across the whole issue. Judge it ag
 
 Do not report a Master Article as truncated merely because a preview, excerpt or context field is shortened. Only flag incomplete copy when the actual supplied reader-facing content visibly ends mid-word, mid-sentence or with a clear missing continuation. A complete concluding sentence is not truncation.
 
-Internal/commercial leakage and genuinely incomplete reader-facing copy are publication blockers. Repetition, rhythm, partner overexposure and human-voice concerns are editorial issues, not technical failures.
+Internal/commercial leakage and genuinely incomplete reader-facing copy are publication blockers. A supporting block that falsely presents itself as factual news/listings when it contains no such material may also be a blocker. Repetition, semantic overlap, generic supporting copy, rhythm, theme concentration, duplicated reader prompts, localisation strength, partner overexposure and human-voice concerns are WARNING-level editorial issues, not hard FIXes. Never escalate those editorial concerns to FIX merely because they are widespread.
 
 Do not emit generic PASS findings; if there are no extra editorial problems return {"findings":[]}.
 
@@ -65,7 +65,22 @@ ${JSON.stringify(compact)}`;
       timeoutMs:65000
     });
     const parsed=parseJsonText(outputText(response));
-    const findings=Array.isArray(parsed?.findings)?parsed.findings.filter(f=>f&&['FIX','WARNING','PASS'].includes(f.severity)):[];
+    const raw=Array.isArray(parsed?.findings)?parsed.findings.filter(f=>f&&['FIX','WARNING','PASS'].includes(f.severity)):[];
+
+    // v3.17.3 hard-fix discipline: whole-issue editorial repetition/voice/balance concerns
+    // are warnings. Do not let the AI promote them into publish blockers and cause repair churn.
+    const permittedHardFix=f=>{
+      const blob=`${f?.code||''} ${f?.message||''}`.toLowerCase();
+      if(/internal|commercial|sponsor(?:ship)? (?:note|rate|amount)|pricing|editor-facing|production note/.test(blob))return true;
+      if(/mid[- ]?(?:sentence|word)|truncat|incomplete reader-facing|missing continuation/.test(blob))return true;
+      if(/partner tip/.test(blob)&&/(no named partner|no partner|unnamed partner)/.test(blob))return true;
+      if(/news brief|what.?s on|listing/.test(blob)&&/(generic advice|not a news item|no actual|does not fulfil|doesn't fulfil|falsely|promises factual)/.test(blob))return true;
+      return false;
+    };
+    const findings=raw.map(f=>{
+      if(f.severity==='FIX'&&!permittedHardFix(f))return {...f,severity:'WARNING'};
+      return f;
+    });
     return json(200,{ok:true,findings});
   }catch(error){
     console.error('final-qa-failed',{message:error?.message,status:error?.status,details:error?.details});
