@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.16.1<br><strong>Produced Geography Detection</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · scans all reader-visible Master package fields · visible geography-review reason</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.16.2<br><strong>Canonical Repair Brief</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · canonical clean repair brief · research-pack geography gate before writer</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -620,35 +620,65 @@ function stripStaleProductionStateV316(notes){
     .replace(/\n?MASTER ARTICLE TRACE v1[\s\S]*?END MASTER ARTICLE TRACE\s*/g,'')
     .trim();
 }
+function canonicalRepairNotesV3162(a){
+  const mode=resolvedWritingMode(a);
+  const place=currentPlaceName();
+  return [
+    `SMART PLAN APPROVED REPAIR — Article ${String(a.order||'').padStart(2,'0')}.`,
+    `Active publication: ${currentPublicationName()}`,
+    `Active geography: ${place}`,
+    `Approved title: ${a.title}`,
+    `Reader question: ${a.question}`,
+    `Real-life question: ${a.real_life_question||a.question||''}`,
+    `Writing mode: ${mode}`,
+    `Editorial stance: ${a.stance||'PRACTICAL'}`,
+    `Life lane: ${a.life_lane||'Open'}`,
+    `Why now: ${a.why_now||''}`,
+    a.source_signal?`Current signal: ${a.source_signal}`:'Current signal: Fresh research required from the active publication geography.',
+    `Repair rule: This canonical brief replaces every previous story identity, research pack, source set, example set, writer checkpoint and article package for this slot.`,
+    `Geography rule: Research and write only for ${currentPublicationName()}. Do not import examples, businesses, prices, roads, venues, services, reader scenarios or local claims from sibling publication geographies.`,
+    `Evidence rule: If the approved current signal is not sufficient for this exact ${place} question, research fresh authoritative/current sources or return a genuine research exception. Never substitute evidence from another publication area.`,
+    `Numbers rule: Do not force a number/list size unless current research earns it.`,
+    `Attribution rule: Reported evidence is publishable when clearly attributed; do not upgrade it into independently verified fact.`,
+    `END SMART PLAN APPROVED REPAIR`
+  ].filter(Boolean).join('\n');
+}
+
 async function invalidateMasterForFreshResearchV316(a,record,reason='Produced-content integrity repair'){
-  const f=record.fields||{};
-  const cleanNotes=stripStaleProductionStateV316(val(f,'Notes'));
-  const guard=`MASTER ARTICLE INTEGRITY RESET v1
-Reason: ${reason}
-Active publication: ${currentPublicationName()}
-Approved plan title: ${a.title}
-Approved plan question: ${a.question}
-Reset: ${new Date().toISOString()}
-Rule: Fresh research must use the approved plan identity and active publication geography. Do not reuse stale research, examples or copy from another publication.
-END MASTER ARTICLE INTEGRITY RESET`;
-  const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:record.id,fields:{
+  const place=currentPlaceName();
+  const fields={
     'Section Title':a.title,
     'Core Reader Question':a.question,
     'Universal Reader Problem':a.question,
-    'Section Final Copy':'',
-    'Section Status':'Researching',
+    'Reader Hook':a.title,
+    'Reader Type':`${place} readers affected by or interested in this question`,
+    'Reader Value':`A clear, locally grounded answer to: ${a.question}`,
+    'Local Proof Needed':`Named ${place} examples and current local proof directly relevant to this approved question. Do not use sibling-publication examples.`,
+    'Evidence Required':`Fresh current sources sufficient to answer this exact ${place} question. Reported evidence may be used with explicit attribution. Do not substitute evidence from another publication geography.`,
     'Evidence Status':'Needs Update',
     'Evidence Checked Date':'',
-    'Section QA Result':'Not Checked',
     'Source / Reference Link 1':'',
+    'Commercial Pathway':a.partner_path||'',
+    'Primary Next Action':a.cta_text||'',
+    'CTA Type':a.cta_type||'None',
+    'CTA Text':a.cta_text||'',
     'Action Destination URL':'',
+    'Social Question Shape':a.social||'',
+    'Archive Similarity Status':'Review',
+    'Archive Similarity Note':'',
+    'Reuse / Localisation Potential':'Review after publication',
+    'Section Final Copy':'',
+    'Section Status':'Researching',
+    'Section QA Result':'Not Checked',
     'Primary Hot Button':'',
-    'Notes':[cleanNotes,guard].filter(Boolean).join('\n\n')
-  }})});
+    'Notes':canonicalRepairNotesV3162(a)
+  };
+  const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:record.id,fields})});
   const i=S.sections.findIndex(x=>x.id===record.id);
   if(i>=0)S.sections[i]=d.record;
   return d.record;
 }
+
 async function repairProducedMasterIntegrityV316(){
   const plan=getSmartPlan();
   if(!plan?.articles?.length)return;
@@ -690,8 +720,17 @@ async function repairProducedMasterIntegrityV316(){
 
         record=await refreshProducedRecord(record.id);
         item.s=record;
+
+        const researchNotes=String(val(record.fields||{},'Notes')||'');
+        const researchBlocks=[...researchNotes.matchAll(/RESEARCH PACK v1\n([\s\S]*?)\nEND RESEARCH PACK/g)];
+        const researchPackText=researchBlocks.length?researchBlocks[researchBlocks.length-1][1]:'';
+        const researchLeak=forbiddenPublicationTermsV312i().filter(t=>publicationTermPresentV312o(researchPackText,t));
+        if(researchLeak.length){
+          throw new Error(`Fresh Research Pack still contains foreign geography: ${researchLeak.join(', ')}`);
+        }
+
         setWorkflowActionStatusV312(5,'Select',`Repair ${i+1}/${bad.length} — rewriting`,
-          `${a.title}\nUsing the new saved Research Pack. No stale research is reused.`);
+          `${a.title}\nFresh Research Pack passed the geography gate. Writing from that pack now.`);
 
         await produceOne(item,'generate');
         record=await refreshProducedRecord(record.id);
