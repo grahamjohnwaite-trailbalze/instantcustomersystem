@@ -303,7 +303,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
  body[data-workflow-step="8"] .canvas-layout {grid-template-columns:1fr!important}
 }
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.13.4<br><strong>Attributed Evidence Pass</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · ATTRIBUTED evidence passes Step 3 · writer carries attribution rule</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.14.0<br><strong>Step 5 Stabilisation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · Step 5 uses live production state · grade/ready shortlist · no Step 3 bounce</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -2764,22 +2764,106 @@ function getMasterSelectionV312(){try{return JSON.parse(localStorage.getItem(mas
 function saveMasterSelectionV312(arr){localStorage.setItem(masterSelectionKeyV312(),JSON.stringify([...new Set(arr.map(Number).filter(Boolean))].sort((a,b)=>a-b)))}
 function planArticleRecordV312(a){
   if(!a)return null;
+  const order=Number(a.order);
+  // v3.14: the active issue production queue is the source of truth for Step 5.
+  // Article Library can lag behind the just-completed Step 4 run.
+  const active=(S.sections||[]).find(s=>approvedPlanIdentity(s)&&Number(val(s.fields,'Section Order'))===order);
+  if(active)return active;
   if(String(a.mode||'').toUpperCase()==='REUSE')return (S.articleLibrary||[]).find(x=>x.id===a.existing_article_id)||null;
   return (S.articleLibrary||[]).find(x=>String(val(x.fields,'Section Title')||'').trim().toLowerCase()===String(a.title||'').trim().toLowerCase())||null;
 }
-function masterCandidateStateV312(a){const r=planArticleRecordV312(a);if(!r)return 'NOT PRODUCED';const st=masterArticleState(r);return st==='complete'?'READY':st==='blocked'?'BLOCKED':st==='research'?'RESEARCHED':'IN PROGRESS'}
+function masterCandidateStateV312(a){
+  const r=planArticleRecordV312(a);if(!r)return 'NOT PRODUCED';
+  const st=masterArticleState(r);
+  if(st==='complete')return 'READY';
+  if(st==='review')return 'WRITTEN REVIEW';
+  if(st==='blocked')return 'BLOCKED';
+  if(st==='failed')return 'FAILED';
+  if(st==='research')return 'RESEARCHED';
+  return 'IN PROGRESS';
+}
+function masterCandidateReadinessV314(a){
+  const r=planArticleRecordV312(a),p=r?masterArticlePackage(r.fields||{}):null;
+  const er=p?.editorial_readiness||{};
+  return {
+    record:r,
+    status:String(er.status||'').trim(),
+    grade:String(er.grade||'').trim().toUpperCase(),
+    rationale:String(er.rationale||'').trim()
+  };
+}
+async function refreshMasterSelectionDataV314(){
+  if(!S.issue)return;
+  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id)+'&_ts='+Date.now());
+  S.sections=r.records||[];
+  sortSections();
+  renderSections();
+}
+function recommendMasterSelectionV314(){
+  const plan=getSmartPlan(),profile=engineProfileForPublication();
+  if(!plan?.articles?.length)return [];
+  const min=profile.targetMasters?.[0]||8,max=profile.targetMasters?.[1]||10;
+  const target=Math.max(min,Math.min(max,Math.round((min+max)/2)));
+  const gradeRank={A:0,B:1,C:2};
+  const ready=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').map(a=>{
+    const rd=masterCandidateReadinessV314(a);
+    return {a,rd,rank:gradeRank[rd.grade]??3,lane:String(a.life_lane||'Open')};
+  }).sort((x,y)=>x.rank-y.rank||Number(x.a.order)-Number(y.a.order));
+  const picked=[],usedLanes=new Set();
+  // First pass rewards grade plus lane spread.
+  for(const x of ready){
+    if(picked.length>=target)break;
+    if(!usedLanes.has(x.lane)){picked.push(x);usedLanes.add(x.lane)}
+  }
+  // Fill remaining places by grade/order.
+  for(const x of ready){
+    if(picked.length>=target)break;
+    if(!picked.includes(x))picked.push(x);
+  }
+  const orders=picked.map(x=>Number(x.a.order));
+  saveMasterSelectionV312(orders);
+  return orders;
+}
 function renderMasterSelectionV312(){
   const panel=E('master-selection-panel-v312'),grid=E('master-selection-grid-v312');if(!panel||!grid)return;
   const plan=getSmartPlan(),profile=engineProfileForPublication();
   if(!plan?.articles?.length){panel.style.display='none';return}
   panel.style.display='block';
-  let selected=getMasterSelectionV312();
-  if(!selected.length){const midpoint=Math.round(((profile.targetMasters?.[0]||5)+(profile.targetMasters?.[1]||7))/2);selected=(plan.articles||[]).slice(0,midpoint).map(a=>Number(a.order));saveMasterSelectionV312(selected)}
-  const min=profile.targetMasters?.[0]||5,max=profile.targetMasters?.[1]||7;
+  const min=profile.targetMasters?.[0]||8,max=profile.targetMasters?.[1]||10;
   const ready=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').length;
-  E('master-selection-summary-v312').textContent=`${ready}/${plan.articles.length} candidates currently READY · select ${min}–${max} for this issue. Unselected READY candidates remain bankable.`;
-  grid.innerHTML=(plan.articles||[]).map(a=>{const state=masterCandidateStateV312(a),checked=selected.includes(Number(a.order));return `<label class="master-selection-row-v312"><input type="checkbox" data-master-select-v312="${a.order}" ${checked?'checked':''}><span class="order">${String(a.order).padStart(2,'0')}</span><span><strong>${esc(a.title)}</strong><small>${esc(a.life_lane||'Open')} · ${esc(a.mode||'CREATE NEW')}</small></span><span class="selection-status-v312">${esc(state)}</span></label>`}).join('');
-  document.querySelectorAll('[data-master-select-v312]').forEach(x=>x.onchange=()=>{const vals=[...document.querySelectorAll('[data-master-select-v312]:checked')].map(y=>Number(y.dataset.masterSelectV312));saveMasterSelectionV312(vals);updateWorkflowShellV312()});
+  const review=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='WRITTEN REVIEW').length;
+  let selected=getMasterSelectionV312();
+
+  // Old pre-production default selections are not trusted once Step 4 has produced real states.
+  const selectedReady=selected.filter(o=>{
+    const a=(plan.articles||[]).find(x=>Number(x.order)===Number(o));
+    return a&&masterCandidateStateV312(a)==='READY';
+  });
+  if(selectedReady.length<min && ready>=min){
+    selected=recommendMasterSelectionV314();
+  }
+
+  E('master-selection-summary-v312').textContent=`${ready}/${plan.articles.length} READY · ${review} WRITTEN REVIEW · choose ${min}–${max} READY Masters. ICS recommends a grade-first, lane-spread shortlist; unselected READY candidates remain bankable.`;
+
+  grid.innerHTML=(plan.articles||[]).map(a=>{
+    const state=masterCandidateStateV312(a),checked=selected.includes(Number(a.order)),rd=masterCandidateReadinessV314(a);
+    const grade=rd.grade?` · Grade ${rd.grade}`:'';
+    const readiness=rd.status?`${rd.status}${grade}`:(state==='READY'?`READY${grade}`:state);
+    const rationale=rd.rationale?`<small>${esc(rd.rationale.slice(0,140))}</small>`:'';
+    const disabled=state!=='READY'?'disabled':'';
+    return `<label class="master-selection-row-v312">
+      <input type="checkbox" data-master-select-v312="${a.order}" ${checked&&state==='READY'?'checked':''} ${disabled}>
+      <span class="order">${String(a.order).padStart(2,'0')}</span>
+      <span><strong>${esc(a.title)}</strong><small>${esc(a.life_lane||'Open')} · ${esc(a.mode||'CREATE NEW')}</small>${rationale}</span>
+      <span class="selection-status-v312">${esc(readiness)}</span>
+    </label>`;
+  }).join('');
+
+  document.querySelectorAll('[data-master-select-v312]').forEach(x=>x.onchange=()=>{
+    const vals=[...document.querySelectorAll('[data-master-select-v312]:checked')].map(y=>Number(y.dataset.masterSelectV312));
+    saveMasterSelectionV312(vals);
+    updateWorkflowShellV312(5);
+  });
 }
 
 function workflowContextLabelV312(step,name){
@@ -2978,7 +3062,7 @@ function workflowStepInfoV312(step){
  2:['Approve',!plan?.articles?.length?'Finish Step 1 first.':(!locked?'Review the 15-candidate slate. Locking will name only genuine production blockers; candidate balance remains advisory.':'Plan locked. Create or update all 15 Master briefs.'),!locked?'Lock Approved Plan':'Create / Update 15 Briefs'],
  3:['Research','Open the approved research queue. ICS will create/update the 15 locked Master briefs automatically if needed; no manual article entry.','Open Research Workspace'],
  4:['Produce','Use the existing production pipeline to research/write the 15 Master candidates. Production is resumable and completed work is preserved.','Produce All Approved Masters'],
- 5:['Select',`Choose ${min}–${max} strongest READY Masters for this issue. The remaining READY candidates stay bankable rather than being forced into the newsletter.`,`Review Master Selection`],
+ 5:['Select',`Choose ${min}–${max} strongest READY Masters for this issue. ICS recommends from the actual Step 4 production states and editorial grades; remaining READY candidates stay bankable.`,`Review Master Selection`],
  6:['Components',canvas.length?`Produce the supporting components already created for this issue. Partner/profile automation will progressively replace manual component entry.`:`Create the selected Masters plus the publication-profile support recipe on the Canvas. This builds the support plan before copy is produced.`,canvas.length?'Produce Supporting Components':'Build Support Plan'],
  7:['Assemble','Assemble only the Masters selected in Step 5, then mix in support/partner blocks to create the running order.','Assemble Selected Issue'],
  8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.','Run Final QA'],
@@ -3033,7 +3117,22 @@ function runWorkflowPrimaryV312(){
    return
  }
  if(step===4){show('build');setTimeout(()=>E('run-production')?.click(),80);return}
- if(step===5){show('assemble');E('master-selection-panel-v312')?.scrollIntoView({behavior:'smooth',block:'start'});return}
+ if(step===5){
+   show('assemble');
+   refreshMasterSelectionDataV314().then(()=>{
+     workflowSelectedStepV312=5;
+     updateWorkflowShellV312(5);
+     renderMasterSelectionV312();
+     E('master-selection-panel-v312')?.scrollIntoView({behavior:'smooth',block:'start'});
+     const planNow=getSmartPlan(),pr=engineProfileForPublication(),min=pr.targetMasters?.[0]||8;
+     const ready=(planNow?.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').length;
+     const review=(planNow?.articles||[]).filter(a=>masterCandidateStateV312(a)==='WRITTEN REVIEW').length;
+     setWorkflowActionStatusV312(5,'Select',`${ready}/15 READY · ${review} Written Review.`,`ICS has recommended the strongest READY shortlist using editorial grade first and lane spread second. Review it, then Save Selection. Written Review candidates are not forced into this issue while enough READY Masters exist.`);
+   }).catch(e=>{
+     setWorkflowActionStatusV312(5,'Select','Could not refresh Master selection.','Step 4 work is preserved. '+String(e.message||e));
+   });
+   return
+ }
  if(step===6){show('assemble');if(getCanvas().length)E('assembly-produce').click();else E('assembly-smart-assemble').click();return}
  if(step===7){show('assemble');document.querySelector('.canvas-layout')?.scrollIntoView({behavior:'smooth',block:'start'});return}
  if(step===8){show('assemble');E('assembly-qa').click();return}
@@ -3965,7 +4064,11 @@ function applyWorkflowLayoutV312C(step){
   if(canvas){
     canvas.classList.remove('library-open-v312c','inspector-open-v312c');
   }
-  if(step===5)renderMasterSelectionV312();
+  if(step===5){
+    refreshMasterSelectionDataV314().then(()=>{
+      workflowSelectedStepV312=5;updateWorkflowShellV312(5);renderMasterSelectionV312();
+    }).catch(()=>renderMasterSelectionV312());
+  }
   if(step===8){
     const qa=E('qa-report-panel'); if(qa)qa.style.display='block';
   }
@@ -3989,7 +4092,16 @@ focusWorkflowStepV312B=function(step,opt={}){
 
 if(E('workflow-primary-v312'))E('workflow-primary-v312').onclick=runWorkflowPrimaryV312;
 document.querySelectorAll('[data-flow-step]').forEach(b=>b.onclick=()=>focusWorkflowStepV312B(Number(b.dataset.flowStep)));
-if(E('master-selection-save-v312'))E('master-selection-save-v312').onclick=()=>{renderMasterSelectionV312();const n=getMasterSelectionV312().length,pr=engineProfileForPublication(),min=pr.targetMasters?.[0]||5,max=pr.targetMasters?.[1]||7;if(n<min||n>max)alert(`Select ${min}–${max} Masters. Current selection: ${n}.`);else alert(`${n} Masters selected for this issue. Unselected READY candidates remain available for later.`);updateWorkflowShellV312(5)};
+if(E('master-selection-save-v312'))E('master-selection-save-v312').onclick=()=>{
+  renderMasterSelectionV312();
+  const n=getMasterSelectionV312().length,pr=engineProfileForPublication(),min=pr.targetMasters?.[0]||8,max=pr.targetMasters?.[1]||10;
+  if(n<min||n>max){
+    setWorkflowActionStatusV312(5,'Select','Selection needs adjustment.',`Select ${min}–${max} READY Masters. Current selection: ${n}.`);
+    return;
+  }
+  setWorkflowActionStatusV312(5,'Select',`${n} Masters selected for this issue.`,`Selection saved. Unselected READY candidates remain bankable. Next: Step 6 — Components.`);
+  workflowSelectedStepV312=5;updateWorkflowShellV312(5);
+};
 if(E('toggle-canvas-library'))E('toggle-canvas-library').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('library-open-v312c');E('toggle-canvas-library').textContent=l.classList.contains('library-open-v312c')?'Hide Content Library':'Show Content Library'}else{l.classList.toggle('library-hidden');E('toggle-canvas-library').textContent=l.classList.contains('library-hidden')?'Show Content Library':'Hide Content Library'}};
 if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('inspector-open-v312c');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-open-v312c')?'Hide Selected Section':'Show Selected Section'}else{l.classList.toggle('inspector-hidden');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-hidden')?'Show Selected Section':'Hide Selected Section'}};if(E('pr-generate-v312c'))E('pr-generate-v312c').onclick=generateAssembly;
 if(E('pr-copy-v312c'))E('pr-copy-v312c').onclick=generateAssembly;
