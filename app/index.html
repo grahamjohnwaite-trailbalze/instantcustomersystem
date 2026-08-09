@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.17.3<br><strong>Step 8 Repair Convergence</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · persistent support repairs · convergence gate · hard-fix severity discipline</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.17.3.2<br><strong>Step 8 Format Convergence</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · persistent support repairs · convergence gate · hard-fix severity discipline</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -456,7 +456,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
   <h2>Final QA Results</h2>
   <div class="small muted" id="qa-report-summary">Run Final QA to review the complete issue.</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
-    <button class="btn" id="qa-fix-v317">Fix QA Exceptions</button>
+    <button class="btn" id="qa-fix-v317" disabled>Fix QA Exceptions</button>
     <button class="btn secondary" id="qa-copy">Copy QA Report</button>
     <button class="btn secondary" id="qa-hide">Hide Report</button>
   </div>
@@ -3731,7 +3731,7 @@ function workflowStepInfoV312(step){
  5:['Select',`Choose ${min}–${max} strongest READY Masters for this issue. ICS recommends from the actual Step 4 production states and editorial grades; remaining READY candidates stay bankable.`,`Review Master Selection`],
  6:['Components',`Build the supporting and partner components needed to complete this issue. ICS calculates the missing count from the saved Step 5 selection and publication target.`,`Build / Resume Supporting Components`],
  7:['Assemble','Rebuild the running order from the current saved Step 5 Masters and persistent Step 6 support/partner blocks. The old browser assembly is discarded.','Assemble Selected Issue'],
- 8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.',(()=>{try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');return q?.qaVersion==='3.17.3'&&q?.summary?.fix>0?'Fix QA Exceptions':'Run Final QA'}catch{return 'Run Final QA'}})()],
+ 8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.',(()=>{try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');return q?.qaVersion==='3.17.3.2'&&q?.summary?.fix>0?'Fix QA Exceptions':'Run Final QA'}catch{return 'Run Final QA'}})()],
  9:['Production Ready','Generate the ordered production package after QA. It can then be sent to Letterman or any other publishing platform.','Generate Production Package']
  };return info[step]||info[1]
 }
@@ -4656,20 +4656,33 @@ function renderQAReport(report){
   return lines.join('\n');
 }
 
+function setQAFixButtonState(report){
+  const b=E('qa-fix-v317'); if(!b)return;
+  const fresh=!!(report&&report.qaVersion==='3.17.3.2'&&report.summary);
+  const fixes=fresh?Number(report.summary.fix||0):0;
+  b.disabled=!(fresh&&fixes>0);
+  b.textContent=fixes>0?`Fix QA Exceptions (${fixes})`:'Fix QA Exceptions';
+}
 function showQAReport(report,scroll=true){
   const panel=E('qa-report-panel'),text=E('qa-report-text'),summary=E('qa-report-summary');
   if(!panel||!text||!summary)return;
   panel.style.display='block';
   text.value=renderQAReport(report);
-  const blockers=(report.findings||[]).filter(f=>f.level==='FIX' && ['INTERNAL_COPY','INCOMPLETE_COPY','PARTNER_INTERNAL'].includes(f.code)).length;
-  summary.textContent=`${blockers?'HOLD':'PUBLISH GATE'} · ${report.summary.fix} Fix · ${report.summary.warning} Warning · ${report.summary.pass} Pass · saved in this browser`;
+  const blockers=(report.findings||[]).filter(f=>f.severity==='FIX' && ['INTERNAL_COPY','INCOMPLETE_COPY','PARTNER_INTERNAL','INTERNAL_NOTE_LEAK'].includes(f.code)).length;
+  summary.textContent=`${blockers?'HOLD':'PUBLISH GATE'} · ${report.summary.fix} Fix · ${report.summary.warning} Warning · ${report.summary.pass} Pass · fresh QA saved in this browser`;
+  setQAFixButtonState(report);
   if(scroll)setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+function clearQAReportView(message='Run Final QA to review the complete issue.'){
+  const panel=E('qa-report-panel'),text=E('qa-report-text'),summary=E('qa-report-summary');
+  if(panel)panel.style.display='block'; if(text)text.value=''; if(summary)summary.textContent=message; setQAFixButtonState(null);
 }
 function loadSavedQAReport(){
   try{
     const report=JSON.parse(localStorage.getItem(qaKey())||'null');
-    if(report?.qaVersion==='3.17.3')showQAReport(report,false);
-  }catch{}
+    if(report?.qaVersion==='3.17.3.1')showQAReport(report,false);
+    else clearQAReportView('Fresh QA required in v3.17.3.1. Run Final QA before fixing exceptions.');
+  }catch{clearQAReportView('Fresh QA required in v3.17.3.1. Run Final QA before fixing exceptions.');}
 }
 async function copyQAReport(){
   const text=E('qa-report-text')?.value||'';
@@ -4713,13 +4726,18 @@ async function runFinalQA(){
       warning:findings.filter(f=>f.severity==='WARNING').length,
       pass:findings.filter(f=>f.severity==='PASS').length
     };
-    const report={qaVersion:'3.17.3',createdAt:new Date().toISOString(),summary,findings};
+    const report={qaVersion:'3.17.3.2',createdAt:new Date().toISOString(),summary,findings};
     localStorage.setItem(qaKey(),JSON.stringify(report));
     showQAReport(report,true);
     setWorkflowActionStatusV312(8,'QA',`Final QA complete · ${summary.fix} Fix · ${summary.warning} Warning · ${summary.pass} Pass`,
       summary.fix?'Hard fixes remain. Use Fix QA Exceptions, then rerun Final QA.':'No hard QA fixes remain. Review warnings, then move to Step 9 Production Ready.');
     updateWorkflowShellV312(8);
 
+  }catch(error){
+    const message=`Final QA did not complete: ${String(error?.message||error)}`;
+    clearQAReportView(message);
+    setWorkflowActionStatusV312(8,'QA','Final QA failed.',message);
+    updateWorkflowShellV312(8);
   }finally{
     btn.disabled=false;btn.textContent=original;
   }
@@ -4819,7 +4837,7 @@ async function evaluateIssueQAV3173(items){
     findings.push({severity:'WARNING',code:'AI_QA_UNAVAILABLE',message:`Editorial AI review was unavailable, so deterministic QA only was used: ${error.message}`,blocks:[],safeFix:false});
   }
   return {
-    qaVersion:'3.17.3',createdAt:new Date().toISOString(),
+    qaVersion:'3.17.3.2',createdAt:new Date().toISOString(),
     summary:{
       fix:findings.filter(f=>f.severity==='FIX').length,
       warning:findings.filter(f=>f.severity==='WARNING').length,
@@ -4862,8 +4880,8 @@ async function fixQAExceptionsV317(){
   if(!originalItems.length)return;
 
   const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
-  if(!saved||saved.qaVersion!=='3.17.3'){
-    setWorkflowActionStatusV312(8,'QA','Fresh QA required.','This QA report came from an older Step 8 build. Run Final QA in v3.17.3 before fixing exceptions.');
+  if(!saved||saved.qaVersion!=='3.17.3.2'){
+    setWorkflowActionStatusV312(8,'QA','Fresh QA required.','This QA report came from an older Step 8 build. Run Final QA in v3.17.3.2 before fixing exceptions.');
     localStorage.removeItem(qaKey());
     updateWorkflowShellV312(8);
     return;
@@ -4924,16 +4942,34 @@ async function fixQAExceptionsV317(){
       }catch(e){failed.push(`${block.title}: ${String(e.message||e)}`)}
     }
 
-    const aiSafeFixes=(saved.findings||[]).filter(f=>f.severity==='FIX'&&f.safeFix===true);
+    // v3.17.3.2: format mismatch must converge as a family. A News Brief, Quick Update or What's On
+    // block with no actual news/listings can drift between WARNING and FIX across AI passes. If the saved
+    // report identifies that mismatch, safely reframe the support block at the same time as hard fixes.
+    // We never invent facts: the new identity becomes opinion/reader-input editorial instead.
+    const formatMismatch=f=>/news brief|quick update|what.?s on|listing|actual local|generic advice|no events|no venues|no activities/i.test(String(f?.message||''));
+    const aiSafeFixes=(saved.findings||[]).filter(f=>
+      f.safeFix===true && (f.severity==='FIX' || (f.severity==='WARNING'&&formatMismatch(f)))
+    );
     for(const finding of aiSafeFixes){
       for(const block of working.filter(b=>(finding.blocks||[]).includes(b.uid)&&b.kind!=='article'&&!handledIds.has(b.uid))){
         try{
-          const formatProblem=/news brief|what.?s on|listing|actual local|generic advice/i.test(String(finding.message||''));
+          const formatProblem=formatMismatch(finding);
           if(formatProblem&&!String(block.partner||'').trim()){
-            block.type='EXPERT QUICK CHECK';block.title='Quick Local Check';block.productionTemplate='SHORT COMPONENT';
+            const originalType=String(block.type||'').toUpperCase();
+            if(originalType.includes("WHAT'S ON")||originalType.includes('WHATS ON')){
+              block.type='READER RECOMMENDATION';block.title='Your Local Pick';
+              block.purpose='Ask for one specific local recommendation without pretending to supply verified listings.';
+            }else if(originalType.includes('NEWS BRIEF')){
+              block.type='LOCAL DEBATE';block.title='Local Debate';
+              block.purpose='Put one clear local choice or tension to readers without presenting generic guidance as news.';
+            }else{
+              block.type='READER VOICE';block.title='Reader Voice';
+              block.purpose='Ask for one concrete reader observation or experience without presenting generic guidance as a factual update.';
+            }
+            block.productionTemplate='SHORT COMPONENT';
             block.commercialRole='EDITORIAL';block.partner='';block.partnerAttached=false;
           }
-          await rewriteSupportBlockV317(block,`${finding.message}\n\nRepair the actual reader-facing block, not the QA label. It must have a genuinely different reader job from the adjacent Master and from every other support block. Do not use the stock formula of checking dates, costs, routes, opening times or provider information unless that is uniquely the purpose of this block. If factual evidence is absent, use a distinct opinion, decision, observation or single reader action rather than inventing facts.`,working);
+          await rewriteSupportBlockV317(block,`${finding.message}\n\nRepair the actual reader-facing block, not the QA label. ${formatProblem?'The old format promised factual news, an update or listings without evidence. The format has now been changed: write to the NEW title/purpose and do not call it news, an update or What\'s On. Do not invent events, dates, venues or claims.':''} It must have a genuinely different reader job from the adjacent Master and from every other support block. Do not use the stock formula of checking dates, costs, routes, opening times or provider information unless that is uniquely the purpose of this block. If factual evidence is absent, use a distinct opinion, decision, observation or single reader action rather than inventing facts.`,working);
           handledIds.add(block.uid);supportPrepared++;
         }catch(e){failed.push(`${block.title}: ${String(e.message||e)}`)}
       }
