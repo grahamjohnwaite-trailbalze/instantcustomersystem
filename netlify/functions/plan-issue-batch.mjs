@@ -1,6 +1,7 @@
 import {createResponse,outputText,parseJsonText} from './_openai.mjs';
 const json=(status,body)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8'}});
 const normalizeMode=v=>['REUSE','LOCALISE','REFRESH','CREATE NEW'].includes(String(v||'').toUpperCase())?String(v).toUpperCase():'CREATE NEW';
+const titleCaseAllWords=text=>String(text||'').replace(/(^|[\s—–:/([{])([a-z])/g,(m,p,c)=>p+c.toUpperCase());
 const guardWords=text=>[...new Set(String(text||'').toLowerCase().replace(/£/g,' ').replace(/20,?000/g,'20000').replace(/[^a-z0-9]+/g,' ').split(/\s+/).filter(w=>w.length>2&&!new Set('the a an and or but to of in on at for from with by is are was were be been this that what which who will would should could can do does did have has had your our norfolk peterborough cambridgeshire spotlight guide explained actually new best how when why'.split(/\s+/)).has(w)))];
 const guardSimilarity=(a,b)=>{const A=guardWords(a),B=guardWords(b);if(!A.length||!B.length)return 0;const bs=new Set(B),hit=A.filter(x=>bs.has(x)).length;return hit/Math.min(A.length,B.length)};
 const recentDuplicate=(article,blocked)=>{let best=null;const text=[article?.title,article?.question,article?.problem].filter(Boolean).join(' ');for(const title of blocked){const score=guardSimilarity(text,title);if(!best||score>best.score)best={title,score}}return best&&best.score>=0.45?best:null};
@@ -20,7 +21,7 @@ export default async(request)=>{
     const usableExisting=existing.filter(x=>!rejectedCandidates.some(t=>guardSimilarity(x.title,t)>=0.38));
     const rankedExisting=[...usableExisting].sort((a,b)=>{const rank=x=>String(x.history_status||'').startsWith('LOCALISE')?0:String(x.history_status||'').startsWith('AVAILABLE')?1:2;return rank(a)-rank(b)}).slice(0,36);
     const inventory=rankedExisting.map((x,i)=>`${i+1}. ${x.id} | ${x.title} | ${x.topic||x.purpose} | ${x.freshness} | ${x.history_status||'UNKNOWN'}${x.history_publication?` | from ${x.history_publication}`:''}`).join('\n');
-    const prior=(Array.isArray(d.priorArticles)?d.priorArticles:[]).slice(0,10).map((x,i)=>`${i+1}. ${x.title} — ${x.question} | mode=${x.mode||''} | life_lane=${x.life_lane||''} | commercial=${x.lane||''} | source=${x.source_signal||''}`).join('\n');
+    const prior=(Array.isArray(d.priorArticles)?d.priorArticles:[]).slice(0,20).map((x,i)=>`${i+1}. ${x.title} — ${x.question} | mode=${x.mode||''} | life_lane=${x.life_lane||''} | commercial=${x.lane||''} | source=${x.source_signal||''}`).join('\n');
     const prompt=`You are the senior editor for Trail Blaze ${publication}. Choose ONE Master Article for decision ${batch}/${totalBatches}. Return JSON only. Do not browse.
 
 ISSUE: ${publication} #${issueNumber||'—'} | send ${String(d.sendDate||'')}
@@ -62,7 +63,7 @@ STRICT JSON ONLY:
     const articles=(Array.isArray(result.articles)?result.articles:[]).slice(0,requestedCount).map(a=>{
       let mode=normalizeMode(a.mode),id=String(a.existing_article_id||'').trim();
       if((mode==='REUSE'||mode==='LOCALISE'||mode==='REFRESH')&&!validIds.has(id)){mode='CREATE NEW';id='';}
-      return {mode,existing_article_id:id,title:String(a.title||'').trim(),question:String(a.question||'').trim(),problem:String(a.problem||'').trim(),hook:String(a.hook||'').trim(),reader:String(a.reader||'').trim(),value:String(a.value||'').trim(),local_proof:String(a.local_proof||'').trim(),evidence:String(a.evidence||'').trim(),life_lane:String(a.life_lane||'Open').trim(),lane:String(a.lane||'Editorial').trim(),partner_path:String(a.partner_path||'Open').trim(),cta_type:String(a.cta_type||'None').trim(),cta_text:String(a.cta_text||'').trim(),stance:String(a.stance||'PRACTICAL').trim(),why_now:String(a.why_now||'').trim(),countercase:String(a.countercase||'').trim(),source_signal:String(a.source_signal||'').trim()};
+      return {mode,existing_article_id:id,title:titleCaseAllWords(String(a.title||'').trim()),question:String(a.question||'').trim(),problem:String(a.problem||'').trim(),hook:String(a.hook||'').trim(),reader:String(a.reader||'').trim(),value:String(a.value||'').trim(),local_proof:String(a.local_proof||'').trim(),evidence:String(a.evidence||'').trim(),life_lane:String(a.life_lane||'Open').trim(),lane:String(a.lane||'Editorial').trim(),partner_path:String(a.partner_path||'Open').trim(),cta_type:String(a.cta_type||'None').trim(),cta_text:String(a.cta_text||'').trim(),stance:String(a.stance||'PRACTICAL').trim(),why_now:String(a.why_now||'').trim(),countercase:String(a.countercase||'').trim(),source_signal:String(a.source_signal||'').trim()};
     }).filter(a=>a.title&&a.question);
     const dupHits=articles.map(a=>recentDuplicate(a,blockedRecentHistory)).filter(Boolean);
     const rejectedHits=articles.map(a=>rejectedDuplicate(a,rejectedCandidates)).filter(Boolean);

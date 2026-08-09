@@ -1,4 +1,5 @@
 import {TABLES,airtableRequest,cleanRecord,json,publicError,readJson} from './_airtable.mjs';
+const titleCaseAllWords=v=>String(v||'').trim().replace(/(^|[\s—–:/([{])([a-z])/g,(m,p,c)=>p+c.toUpperCase());
 import {cleanUrl,createResponse,outputText,parseJsonText} from './_openai.mjs';
 
 const ALLOWED_CLASSES=new Set(['A — Question Only','B — Light Proof','C — Evidence Heavy']);
@@ -1332,10 +1333,10 @@ function packageBlock(result,sources,model){
     editorial_strategy:(result.editorial_strategy&&typeof result.editorial_strategy==='object')?result.editorial_strategy:{},
     quality_scores:(result.quality_scores&&typeof result.quality_scores==='object')?result.quality_scores:{},
     related_questions:Array.isArray(result.related_questions)?result.related_questions.map(x=>String(x||'').trim()).filter(Boolean).slice(0,12):[],
-    summary_title:String(result.summary_title||'').trim(),summary_subhead:String(result.summary_subhead||'').trim(),summary_content:String(result.summary_content||'').trim(),
-    seo_title:String(result.seo_title||'').trim(),seo_description:String(result.seo_description||'').trim(),url_path:String(result.url_path||'').trim().replace(/^\/+/,''),keywords:String(result.keywords||'').trim(),
+    summary_title:titleCaseAllWords(result.summary_title),summary_subhead:String(result.summary_subhead||'').trim(),summary_content:String(result.summary_content||'').trim(),
+    seo_title:titleCaseAllWords(result.seo_title),seo_description:String(result.seo_description||'').trim(),url_path:String(result.url_path||'').trim().replace(/^\/+/,''),keywords:String(result.keywords||'').trim(),
     featured_image_brief:String(result.featured_image_brief||'').trim(),featured_image_alt:String(result.featured_image_alt||'').trim(),
-    newsletter_headline:String(result.newsletter_headline||'').trim(),newsletter_teaser:String(result.newsletter_teaser||'').trim(),
+    newsletter_headline:titleCaseAllWords(result.newsletter_headline),newsletter_teaser:String(result.newsletter_teaser||'').trim(),
     cta_text:String(result.cta_text||'').trim(),
     social_facebook:String(result.social_facebook||'').trim(),social_linkedin:String(result.social_linkedin||'').trim(),social_x:String(result.social_x||'').trim(),
     letterman_status:'Ready for Letterman',letterman_article_id:'',published_url:'',newsletter_queue_status:'Not queued',sync_status:'Manual',
@@ -1761,7 +1762,7 @@ export default async(request)=>{
     const block=packageBlock(result,sources,response._model_used);
     const serviceNotes=[block,'',`PRODUCTION SERVICE v3.8.0`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
-      'Section Title':String(result.article_title||value(fields,'Section Title')).trim(),
+      'Section Title':titleCaseAllWords(result.article_title||value(fields,'Section Title')),
       'Section Final Copy':String(result.article_body||'').trim(),
       'CTA Text':String(result.cta_text||value(fields,'CTA Text')||'').trim(),
       'Source / Reference Link 1':sources[0]?.url||value(fields,'Source / Reference Link 1')||'',
