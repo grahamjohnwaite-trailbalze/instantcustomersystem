@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.15.5<br><strong>Step 6 Single Action</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · one Step 6 action button · completion advances cleanly to Step 7</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.16.0<br><strong>Produced Master Integrity</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · produced-copy geography gate · targeted fresh-research repair · stale-state invalidation</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -410,7 +410,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 </div><div class="toolbar"><button class="btn" id="smart-edit-save">Save this change</button><button class="btn secondary" id="smart-edit-cancel">Cancel</button></div></div>
 <div id="smart-plan-list" class="checklist"></div>
 </section>
-<section class="master-selection-panel-v312" id="master-selection-panel-v312" style="display:none"><div class="section-head" style="margin:0"><div><h2 style="margin:0">Step 5 — Select Masters For This Issue</h2><div class="muted" id="master-selection-summary-v312">Produce the 15 candidates first, then choose the strongest publication-fit set for this issue. Unselected READY articles stay available for later.</div></div><button class="btn secondary" id="master-selection-save-v312" type="button">Save Selection</button></div><div id="master-selection-grid-v312" class="master-selection-grid-v312"></div></section>
+<section class="master-selection-panel-v312" id="master-selection-panel-v312" style="display:none"><div class="section-head" style="margin:0"><div><h2 style="margin:0">Step 5 — Select Masters For This Issue</h2><div class="muted" id="master-selection-summary-v312">Produce the 15 candidates first, then choose the strongest publication-fit set for this issue. Unselected READY articles stay available for later.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn secondary" id="repair-master-integrity-v316" type="button">Repair Produced Masters</button><button class="btn secondary" id="master-selection-save-v312" type="button">Save Selection</button></div></div><div id="master-selection-grid-v312" class="master-selection-grid-v312"></div></section>
 <section id="production-ready-panel-v312c"><div class="eyebrow">Step 9 — Production Ready</div><h2 style="margin:5px 0 6px">Production Package</h2><div class="muted">The issue is assembled and QA checked. Create the finished package for your publishing platform.</div><div class="production-ready-grid"><div><strong id="pr-sections-v312c">—</strong><span>Sections</span></div><div><strong id="pr-masters-v312c">—</strong><span>Master Articles</span></div><div><strong id="pr-status-v312c">CHECK</strong><span>Issue Status</span></div></div><div class="toolbar"><button class="btn" id="pr-generate-v312c" type="button">Prepare Production Package</button><button class="btn secondary" id="pr-copy-v312c" type="button">Open / Copy Package</button></div><div class="warning" style="margin-top:14px"><strong>Universal output:</strong> Letterman is one destination. The production package is designed to work with any newsletter, CMS or publishing platform.</div></section>
 <section id="step6-status-panel-v3151" class="panel" style="display:none;margin-bottom:14px">
   <div class="section-head" style="margin:0 0 8px">
@@ -563,6 +563,139 @@ function publicationLeakageAuditV312i(plan){
   return {hits,summaryHits:[],blocked:hits.length>0};
 }
 
+
+function producedMasterTextV316(record){
+  const f=record?.fields||{};
+  const pkg=masterArticlePackage(f)||{};
+  return [
+    val(f,'Section Title'),
+    val(f,'Section Final Copy'),
+    pkg.article_subhead,pkg.summary_title,pkg.summary_subhead,pkg.summary_content,
+    pkg.seo_title,pkg.seo_description,pkg.newsletter_headline,pkg.newsletter_teaser,
+    pkg.featured_image_brief,pkg.featured_image_alt
+  ].filter(Boolean).join(' ');
+}
+function producedMasterLeakageV316(record){
+  const hay=producedMasterTextV316(record);
+  const hits=forbiddenPublicationTermsV312i().filter(t=>publicationTermPresentV312o(hay,t));
+  return hits.length?{hits}:null;
+}
+function producedMasterIntegrityV316(a){
+  const record=planArticleRecordV312(a);
+  if(!record)return {ok:false,state:'MISSING',reason:'Current issue Master record not found.'};
+  const leak=producedMasterLeakageV316(record);
+  if(leak)return {ok:false,state:'GEOGRAPHY REVIEW',reason:`Wrong-publication geography in produced copy: ${leak.hits.join(', ')}`,record,leak};
+  const state=masterArticleState(record);
+  return {ok:state==='complete',state:state==='complete'?'READY':state.toUpperCase(),reason:state==='complete'?'':`Master state is ${state}.`,record};
+}
+function stripStaleProductionStateV316(notes){
+  return String(notes||'')
+    .replace(/\n?MASTER ARTICLE RESEARCH CHECKPOINT v1[\s\S]*?END MASTER ARTICLE RESEARCH CHECKPOINT\s*/g,'')
+    .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v(?:1|2)[\s\S]*?END MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
+    .replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'')
+    .replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'')
+    .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*?(?=\n\n[A-Z][A-Z ]+ v|$)/g,'')
+    .replace(/\n?MASTER ARTICLE RUNNING v[\d.]+[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'')
+    .replace(/\n?MASTER ARTICLE FAILED v[\d.]+[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'')
+    .replace(/\n?MASTER ARTICLE TRACE v1[\s\S]*?END MASTER ARTICLE TRACE\s*/g,'')
+    .trim();
+}
+async function invalidateMasterForFreshResearchV316(a,record,reason='Produced-content integrity repair'){
+  const f=record.fields||{};
+  const cleanNotes=stripStaleProductionStateV316(val(f,'Notes'));
+  const guard=`MASTER ARTICLE INTEGRITY RESET v1
+Reason: ${reason}
+Active publication: ${currentPublicationName()}
+Approved plan title: ${a.title}
+Approved plan question: ${a.question}
+Reset: ${new Date().toISOString()}
+Rule: Fresh research must use the approved plan identity and active publication geography. Do not reuse stale research, examples or copy from another publication.
+END MASTER ARTICLE INTEGRITY RESET`;
+  const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:record.id,fields:{
+    'Section Title':a.title,
+    'Core Reader Question':a.question,
+    'Universal Reader Problem':a.question,
+    'Section Final Copy':'',
+    'Section Status':'Researching',
+    'Evidence Status':'Needs Update',
+    'Evidence Checked Date':'',
+    'Section QA Result':'Not Checked',
+    'Source / Reference Link 1':'',
+    'Action Destination URL':'',
+    'Primary Hot Button':'',
+    'Notes':[cleanNotes,guard].filter(Boolean).join('\n\n')
+  }})});
+  const i=S.sections.findIndex(x=>x.id===record.id);
+  if(i>=0)S.sections[i]=d.record;
+  return d.record;
+}
+async function repairProducedMasterIntegrityV316(){
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length)return;
+  try{await refreshMasterSelectionDataV314()}catch{}
+  const bad=(plan.articles||[]).map(a=>({a,check:producedMasterIntegrityV316(a)}))
+    .filter(x=>x.check.state==='GEOGRAPHY REVIEW');
+
+  if(!bad.length){
+    setWorkflowActionStatusV312(5,'Select','No produced-content geography repairs needed.','All produced Masters pass the active-publication geography gate.');
+    renderMasterSelectionV312();
+    return;
+  }
+
+  const btn=E('repair-master-integrity-v316');
+  const old=btn?.textContent||'Repair Produced Masters';
+  if(btn){btn.disabled=true;btn.textContent='Repairing…';}
+  let repaired=0,failed=[];
+  try{
+    setWorkflowActionStatusV312(5,'Select',`Repairing ${bad.length} contaminated Master${bad.length===1?'':'s'}…`,
+      `Fresh research + rewrite will run only for:\n- ${bad.map(x=>`${x.a.order}. ${x.a.title}`).join('\n- ')}\nAll other Masters and all 18 supporting components are preserved.`);
+
+    for(let i=0;i<bad.length;i++){
+      const {a,check}=bad[i];
+      try{
+        let record=await invalidateMasterForFreshResearchV316(a,check.record,check.reason);
+        const item={s:record,run:900+i};
+
+        setWorkflowActionStatusV312(5,'Select',`Repair ${i+1}/${bad.length} — fresh research`,
+          `${a.title}\nOld research/package cleared. Rebuilding from the approved Cambridgeshire brief.`);
+
+        const research=await produceOne(item,'research');
+        const outcome=String(research?.outcome||'');
+        if(['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(outcome)){
+          throw new Error(`Fresh research did not reach a publishable state: ${outcome}`);
+        }
+
+        record=await refreshProducedRecord(record.id);
+        item.s=record;
+        setWorkflowActionStatusV312(5,'Select',`Repair ${i+1}/${bad.length} — rewriting`,
+          `${a.title}\nUsing the new saved Research Pack. No stale research is reused.`);
+
+        await produceOne(item,'generate');
+        record=await refreshProducedRecord(record.id);
+        const leak=producedMasterLeakageV316(record);
+        if(leak){
+          await api('sections',{method:'PATCH',body:JSON.stringify({id:record.id,fields:{
+            'Section Status':'Needs Review',
+            'Section QA Result':'Fix Required'
+          }})});
+          throw new Error(`Rewritten copy still contains foreign geography: ${leak.hits.join(', ')}`);
+        }
+        repaired++;
+      }catch(e){
+        failed.push(`${a.order}. ${a.title} — ${String(e.message||e)}`);
+      }
+    }
+
+    await refreshMasterSelectionDataV314();
+    renderMasterSelectionV312();
+    const detail=failed.length
+      ? `${repaired} repaired · ${failed.length} still needs attention:\n- ${failed.join('\n- ')}`
+      : `${repaired}/${bad.length} contaminated Masters repaired with fresh research and fresh writing. Review the Step 5 READY shortlist, then Save Selection.`;
+    setWorkflowActionStatusV312(5,'Select','Produced Master integrity repair finished.',detail);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=old;}
+  }
+}
 function candidateSlateAuditV312i(plan){
   const profile=engineProfileForPublication();
   const arts=plan?.articles||[];
@@ -1092,7 +1225,21 @@ async function applyEditorialPlan(){
        const x=CAMBRIDGESHIRE_EDITORIAL_PLAN[i],marker=`PUBLISH NOW — Final Running Order ${String(i+1).padStart(2,'0')}.`;
        const fields={Issues:[S.issue.id],'Section Title':x.title,'Section Order':i+1,'Section Type':'Anchor','Section Status':'Planned','Reader Hook':x.hook,'Core Reader Question':x.question,'Universal Reader Problem':x.problem,'Reader Type':x.reader,'Emotional Outcome':'Curious','Reader Value':x.value,'Local Proof Needed':x.proof,'Evidence Required':x.evidence,'Evidence Status':'Needs Update','Commercial Lane':x.lane,'Commercial Pathway':x.path,'Primary Next Action':x.action,'CTA Type':x.cta,'CTA Text':x.ctaText,'Social Question Shape':x.social,'Archive Similarity Status':'Review','Reuse / Localisation Potential':x.reuse,'Notes':marker,'Section QA Result':'Not Checked'};
        const existing=S.sections.find(s=>String(val(s.fields,'Section Title')||'').trim().toLowerCase()===x.title.trim().toLowerCase());
-       if(existing){const patch={...fields};delete patch.Issues;const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:existing.id,fields:patch})});existing.fields=d.record.fields;updated++;}
+       if(existing){
+        const patch={...fields};delete patch.Issues;
+        // v3.16: an approved-plan brief update invalidates every previous research/writer state.
+        // The new title/question/brief are controlling; stale production cannot survive a changed plan slot.
+        patch['Section Final Copy']='';
+        patch['Evidence Status']='Needs Update';
+        patch['Evidence Checked Date']='';
+        patch['Section QA Result']='Not Checked';
+        patch['Section Status']='Planned';
+        patch['Source / Reference Link 1']='';
+        patch['Action Destination URL']='';
+        patch['Primary Hot Button']='';
+        patch['Notes']=stripStaleProductionStateV316(patch['Notes']||'');
+        const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:existing.id,fields:patch})});existing.fields=d.record.fields;updated++;
+      }
        else{const d=await api('sections',{method:'POST',body:JSON.stringify({fields})});S.sections.push(d.record);created++;}
      }
      const issueFields={'Main Theme':'Cambridgeshire questions with named local proof: what is changing, what it costs and what is genuinely worth knowing.','Issue Status':'BUILDING'};
@@ -2810,6 +2957,8 @@ function planArticleRecordV312(a){
 }
 function masterCandidateStateV312(a){
   const r=planArticleRecordV312(a);if(!r)return 'NOT PRODUCED';
+  const leak=producedMasterLeakageV316(r);
+  if(leak)return 'GEOGRAPHY REVIEW';
   const st=masterArticleState(r);
   if(st==='complete')return 'READY';
   if(st==='review')return 'WRITTEN REVIEW';
@@ -3856,14 +4005,17 @@ async function smartAssembleIssue(){
     // Active issue records are the source of truth. Article Library can lag behind Step 4.
     let src=planArticleRecordV312(a);
     if(!src&&a.mode==='REUSE')src=(S.articleLibrary||[]).find(x=>x.id===a.existing_article_id)||null;
-    if(!src||masterArticleState(src)!=='complete'){
+    const leak=src?producedMasterLeakageV316(src):null;
+    if(leak){
+      missing.push(`${a.order}. ${a.title} [${a.mode}] — WRONG PUBLICATION / GEOGRAPHY in produced copy: ${leak.hits.join(', ')}`);
+    }else if(!src||masterArticleState(src)!=='complete'){
       missing.push(`${a.order}. ${a.title} [${a.mode}] — ${src?masterArticleState(src):'record not found'}`);
     }else{
       const b=makeArticleBlock(src);b.planMode=a.mode;b.editorialStance=a.stance;b.relatedPlanQuestion=a.question;chosen.push(b)
     }
   }
   if(missing.length){
-    const msg=`APPROVED PLAN NOT READY TO ASSEMBLE\n\n${missing.join('\n')}\n\nThe current issue production records are checked first. REUSE items must exist in the library; selected CREATE NEW / REFRESH Masters must be READY.`;
+    const msg=`APPROVED PLAN NOT READY TO ASSEMBLE\n\n${missing.join('\n')}\n\nThe current issue production records are checked first. READY cannot override wrong-publication geography in produced copy. Repair contaminated Masters in Step 5, then re-save the selection.`;
     if(E('smart-scan-progress'))E('smart-scan-progress').textContent=msg;
     setWorkflowActionStatusV312(7,'Assemble','Approved plan is not ready to assemble.',msg);
     return;
@@ -4594,6 +4746,7 @@ if(E('toggle-step6-advanced-v315'))E('toggle-step6-advanced-v315').onclick=()=>{
   const ed=E('component-editor');
   if(ed)ed.style.display=ed.style.display==='none'?'block':'none';
 };
+if(E('repair-master-integrity-v316'))E('repair-master-integrity-v316').onclick=repairProducedMasterIntegrityV316;
 if(E('master-selection-save-v312'))E('master-selection-save-v312').onclick=()=>{
   renderMasterSelectionV312();
   const n=getMasterSelectionV312().length,pr=engineProfileForPublication(),min=pr.targetMasters?.[0]||8,max=pr.targetMasters?.[1]||10;
