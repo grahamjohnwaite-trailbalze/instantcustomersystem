@@ -54,6 +54,49 @@ const deterministicArticleFromCandidate=(c,publication)=>{
     source_signal:'Archive/idea-bank fallback — research before production'
   };
 };
+
+const signalDuplicate=(signal,{blocked=[],rejected=[],prior=[]}={})=>{
+  const probe={title:signal.signal,question:signal.signal,problem:signal.source_title||''};
+  if(recentDuplicate(probe,blocked))return true;
+  if(rejectedDuplicate(probe,rejected))return true;
+  const pseudo={title:signal.signal,purpose:signal.signal,topic:signal.source_title||''};
+  if(priorDuplicate(pseudo,prior))return true;
+  return false;
+};
+const safeSignalCandidate=(signals,opts={})=>{
+  for(let i=0;i<signals.length;i++){
+    const s=signals[i];
+    if(!s||!String(s.signal||'').trim())continue;
+    if(signalDuplicate(s,opts))continue;
+    return {...s,_signal_index:i+1};
+  }
+  return null;
+};
+const deterministicArticleFromSignal=(s,publication)=>{
+  const q=String(s.signal||'').trim();
+  const sourceTitle=String(s.source_title||'').trim();
+  return {
+    mode:'CREATE NEW',
+    existing_article_id:'',
+    title:titleCaseAllWords(q),
+    question:q,
+    problem:q,
+    hook:`A distinct unused ${publication} question selected from the saved planning signal pool after the normal planner route was blocked.`,
+    reader:`Readers of ${publication}.`,
+    value:'Research this question and turn it into a current, locally specific Master Article.',
+    local_proof:`Research and localise this question specifically for ${publication}. Do not treat the planning seed as evidence.`,
+    evidence:'Fresh research required before production. The saved signal/question-bank item is an idea unless independently verified.',
+    life_lane:'Open',
+    lane:'Editorial',
+    partner_path:'Open',
+    cta_type:'None',
+    cta_text:'',
+    stance:'PRACTICAL',
+    why_now:'Deterministic saved-signal fallback used so a duplicate cannot stop the 15-candidate plan.',
+    countercase:'',
+    source_signal:`Lead ${s._signal_index}${sourceTitle?` — ${sourceTitle}`:''}`
+  };
+};
 export default async(request)=>{
   try{
     if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
@@ -61,7 +104,13 @@ export default async(request)=>{
     const publication=String(d.publication||'').trim(),issueNumber=String(d.issueNumber||'').trim(),issuePromise=String(d.issuePromise||'').trim();
     if(!publication||!issuePromise)return json(400,{ok:false,error:'publication and issuePromise are required'});
     const batch=Number(d.batch||1),totalBatches=Math.max(1,Number(d.totalBatches)||9),label=String(d.batchLabel||`Decision ${batch}`),requestedCount=Math.max(1,Math.min(2,Number(d.targetCount)||1)),brief=String(d.batchBrief||`Produce ${requestedCount} distinct article decision.`);
-    const signals=(Array.isArray(d.signals)?d.signals:[]).slice(0,14).map((x,i)=>`${i+1}. ${String(x.signal||'').slice(0,150)} | ${String(x.source_title||'').slice(0,60)}`).join('\n');
+    const rawSignals=(Array.isArray(d.signals)?d.signals:[]).slice(0,60).map(x=>({
+      signal:String(x?.signal||'').trim(),
+      source_title:String(x?.source_title||'').trim(),
+      url:String(x?.url||'').trim(),
+      kind:String(x?.kind||x?.type||'').trim()
+    })).filter(x=>x.signal);
+    const signals=rawSignals.slice(0,18).map((x,i)=>`${i+1}. ${String(x.signal||'').slice(0,150)} | ${String(x.source_title||'').slice(0,60)}`).join('\n');
     const blockedRecentHistory=(Array.isArray(d.blockedRecentHistory)?d.blockedRecentHistory:[]).slice(0,50).map(x=>String(x||'').trim()).filter(Boolean);
     const blockedPack=blockedRecentHistory.map((x,i)=>`${i+1}. ${x}`).join('\n');
     const rejectedCandidates=(Array.isArray(d.rejectedCandidates)?d.rejectedCandidates:[]).slice(0,30).map(String).filter(Boolean);
@@ -155,27 +204,34 @@ JSON ONLY:
     const rejectedHits=articles.map(a=>rejectedDuplicate(a,rejectedCandidates)).filter(Boolean);
     if(articles.length!==requestedCount)return json(502,{ok:false,error:`Planner batch returned ${articles.length} usable articles; expected ${requestedCount}.`});
     if(dupHits.length||rejectedHits.length){
-      const safe=safeDeterministicCandidate(rankedExisting,{
-        blocked:blockedRecentHistory,
-        rejected:rejectedCandidates,
-        prior:priorArticlesRaw
-      });
+      const fallbackOpts={blocked:blockedRecentHistory,rejected:rejectedCandidates,prior:priorArticlesRaw};
+      const safe=safeDeterministicCandidate(rankedExisting,fallbackOpts);
       if(safe){
         const fallbackArticle=deterministicArticleFromCandidate(safe,publication);
         return json(200,{
-          ok:true,
-          batch,
-          label,
-          issue_summary:String(result.issue_summary||'').trim(),
-          articles:[fallbackArticle],
-          modelUsed:response._model_used||model,
-          fallbackUsed:true,
-          deterministicFallback:true,
+          ok:true,batch,label,issue_summary:String(result.issue_summary||'').trim(),
+          articles:[fallbackArticle],modelUsed:response._model_used||model,
+          fallbackUsed:true,deterministicFallback:true,fallbackSource:'article-library',
           rejectedModelCandidate:articles[0]?.title||'',
           fallbackReason:dupHits.length?'recent-history duplicate':'planning-run duplicate'
         });
       }
-      return json(409,{ok:false,error:`Planner rejected a duplicate and no unused safe candidate remained for decision ${batch}/${totalBatches}.`});
+
+      // v3.12h: if the reusable article pool is exhausted, use one distinct saved
+      // current/evergreen planning signal as a CREATE NEW brief. The signal is
+      // explicitly an idea, not evidence, and must be researched in Step 3.
+      const safeSignal=safeSignalCandidate(rawSignals,fallbackOpts);
+      if(safeSignal){
+        const fallbackArticle=deterministicArticleFromSignal(safeSignal,publication);
+        return json(200,{
+          ok:true,batch,label,issue_summary:String(result.issue_summary||'').trim(),
+          articles:[fallbackArticle],modelUsed:response._model_used||model,
+          fallbackUsed:true,deterministicFallback:true,fallbackSource:'saved-signal',
+          rejectedModelCandidate:articles[0]?.title||'',
+          fallbackReason:dupHits.length?'recent-history duplicate':'planning-run duplicate'
+        });
+      }
+      return json(409,{ok:false,error:`Planner rejected a duplicate and no distinct unused article or saved-signal candidate remained for decision ${batch}/${totalBatches}.`});
     }
     return json(200,{ok:true,batch,label,issue_summary:String(result.issue_summary||'').trim(),articles,modelUsed:response._model_used||model,fallbackUsed:!!response._planner_fallback_used,deterministicFallback:false});
   }catch(error){
