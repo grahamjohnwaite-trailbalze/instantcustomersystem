@@ -208,6 +208,9 @@ JSON ONLY:
     }).filter(a=>a.title&&a.question);
     const dupHits=articles.map(a=>recentDuplicate(a,blockedRecentHistory)).filter(Boolean);
     const rejectedHits=articles.map(a=>rejectedDuplicate(a,rejectedCandidates)).filter(Boolean);
+    const publicationHits=articles
+      .map(a=>({title:a.title,hits:wrongPublicationHit(a,forbiddenPublicationTerms)}))
+      .filter(x=>x.hits.length);
     if(articles.length!==requestedCount)return json(502,{ok:false,error:`Planner batch returned ${articles.length} usable articles; expected ${requestedCount}.`});
     if(dupHits.length||rejectedHits.length||publicationHits.length){
       const fallbackOpts={blocked:blockedRecentHistory,rejected:rejectedCandidates,prior:priorArticlesRaw};
