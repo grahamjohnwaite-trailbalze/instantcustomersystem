@@ -303,7 +303,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
  body[data-workflow-step="8"] .canvas-layout {grid-template-columns:1fr!important}
 }
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12o<br><strong>Publication Guard Word Boundary</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · publication guard exact-word matching · manual edit fix preserved</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.13.0<br><strong>Step 2 Stabilisation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · Step 2 contract stabilised · candidate slate preserved</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -464,42 +464,69 @@ async function api(path,opt={}){const r=await fetch('/.netlify/functions/'+path,
 function pubName(ids){return S.publications.find(p=>p.id===(ids||[])[0])?.fields['Publication Name']||'Unlinked'}function pill(v){return `<span class="pill ${/ready|published|complete/i.test(v)?'good':/warning|blocked|late/i.test(v)?'warn':''}">${esc(v||'Not set')}</span>`}
 function currentPublicationName(){return S.issue?pubName(S.issue.fields.Publication):''}
 
-function publicationSpecificTermsV312i(name=''){
-  const generic=new Set(['spotlight','taste','trail','local','pet','insider','business','pulse','smart','money','property','news','newsletter','the']);
+
+function publicationSpecificTermsV313(name=''){
+  const generic=new Set(['spotlight','taste','trail','local','pet','insider','business','pulse','smart','money','property','news','newsletter','the','media']);
   return String(name||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').split(/\s+/).filter(x=>x.length>3&&!generic.has(x));
+}
+function publicationFamilyV313(name=''){
+  const n=String(name||'').toLowerCase();
+  if(/\bspotlight\b/.test(n))return 'SPOTLIGHT';
+  if(/\btaste\s+trail\b/.test(n))return 'TASTE TRAIL';
+  if(/\bpet\s+insider\b/.test(n))return 'PET INSIDER';
+  if(/\bbusiness\s+pulse\b/.test(n))return 'BUSINESS PULSE';
+  if(/\bproperty\b/.test(n))return 'PROPERTY';
+  return n.replace(/[^a-z0-9]+/g,' ').trim().split(' ').slice(-2).join(' ').toUpperCase()||'GENERAL';
+}
+function relatedGeographyTermV313(a,b){
+  a=String(a||'').toLowerCase();b=String(b||'').toLowerCase();
+  if(!a||!b)return false;
+  if(a===b)return true;
+  // County/city family names such as Cambridge / Cambridgeshire are legitimate
+  // in the same coverage area and must not be treated as contamination.
+  const min=Math.min(a.length,b.length);
+  return min>=6&&(a.startsWith(b)||b.startsWith(a));
 }
 function forbiddenPublicationTermsV312i(){
   const current=currentPublicationName();
-  const currentTerms=new Set(publicationSpecificTermsV312i(current));
+  const family=publicationFamilyV313(current);
+  const currentTerms=publicationSpecificTermsV313(current);
   const out=new Set();
+
   for(const p of S.publications||[]){
     const name=String(val(p.fields,'Publication Name')||'').trim();
     if(!name||name===current)continue;
-    out.add(name.toLowerCase());
-    publicationSpecificTermsV312i(name).forEach(t=>{if(!currentTerms.has(t))out.add(t)});
+
+    // Only sibling publications in the SAME editorial family can define
+    // foreign geography. Cambridge Business Pulse must not contaminate
+    // Cambridgeshire Spotlight, for example.
+    if(publicationFamilyV313(name)!==family)continue;
+
+    const otherTerms=publicationSpecificTermsV313(name);
+    for(const term of otherTerms){
+      if(currentTerms.some(cur=>relatedGeographyTermV313(cur,term)))continue;
+      out.add(term);
+    }
   }
   return [...out].filter(Boolean);
 }
 function publicationTermPresentV312o(text,term){
-  // Exact token / phrase matching only.
-  // Example: "cambridge" must NOT match "cambridgeshire".
   const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   const hay=` ${norm(text)} `;
   const needle=norm(term);
-  if(!needle)return false;
-  return hay.includes(` ${needle} `);
+  return !!needle&&hay.includes(` ${needle} `);
 }
 function publicationLeakageForArticleV312i(a){
-  const hay=[a?.title,a?.question,a?.problem,a?.hook,a?.reader,a?.value,a?.local_proof,a?.why_now].filter(Boolean).join(' ');
+  // Guard editorial content, not hidden planner metadata.
+  const hay=[a?.title,a?.question,a?.real_life_question,a?.problem,a?.hook,a?.reader,a?.value,a?.local_proof].filter(Boolean).join(' ');
   const hits=forbiddenPublicationTermsV312i().filter(t=>publicationTermPresentV312o(hay,t));
-  return hits.length?{title:a?.title||a?.question||'Untitled',hits}:null;
+  return hits.length?{order:+a?.order||0,title:a?.title||a?.question||'Untitled',hits}:null;
 }
 function publicationLeakageAuditV312i(plan){
   const hits=(plan?.articles||[]).map(publicationLeakageForArticleV312i).filter(Boolean);
-  const summary=String(plan?.issue_summary||'');
-  const summaryHits=forbiddenPublicationTermsV312i().filter(t=>publicationTermPresentV312o(summary,t));
-  return {hits,summaryHits,blocked:hits.length>0||summaryHits.length>0};
+  return {hits,summaryHits:[],blocked:hits.length>0};
 }
+
 function candidateSlateAuditV312i(plan){
   const profile=engineProfileForPublication();
   const arts=plan?.articles||[];
@@ -2062,13 +2089,25 @@ function saveSmartArticleEdit(){
     editorDecision:'EDITED'
   });
   if(conceptChanged && String(a.mode||'').toUpperCase()==='CREATE NEW'){
-    a.source_signal='Manual editorial replacement — fresh research required';
     a.problem=q;
-    a.local_proof='Research and localise this edited concept for the active publication. Do not reuse the previous planning lead as evidence.';
-    a.evidence='Fresh research required before production.';
+  }
+  // Reconcile provenance AFTER the new concept is applied. If an edited
+  // CREATE NEW item still points to an old Lead but no longer aligns with it,
+  // detach that lead and require fresh research. Minor edits that still align
+  // keep their original source.
+  let detached=false;
+  if(String(a.mode||'').toUpperCase()==='CREATE NEW' && normaliseLeadRef(a)){
+    const pa=provenanceAlignment(a,plan);
+    if(pa.level==='WEAK'||pa.level==='MISMATCH'){
+      a.source_signal='Manual editorial replacement — fresh research required';
+      a.problem=q;
+      a.local_proof='Research and localise this edited concept for the active publication. Do not reuse the previous planning lead as evidence.';
+      a.evidence='Fresh research required before production.';
+      detached=true;
+    }
   }
   unlockSmartPlan(plan);recalcSmartCounts(plan);saveSmartPlan(plan);E('smart-edit-panel').style.display='none';renderSmartPlan();
-  const m=conceptChanged?`Article ${a.order} updated. Old planning lead detached; fresh research will be required.`:`Article ${a.order} updated.`;
+  const m=detached?`Article ${a.order} updated. Stale planning lead detached; fresh research required.`:(conceptChanged?`Article ${a.order} updated.`:`Article ${a.order} updated.`);
   E('smart-scan-progress').textContent=m;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Manual edit saved.',m);
 }
 async function replaceSmartArticle(order){
@@ -2088,24 +2127,34 @@ async function replaceSmartArticle(order){
     for(let attempt=1;attempt<=2;attempt++){
       if(btn)btn.textContent=attempt===1?'Replacing…':'Trying another…';
       const retryContext=lastCollision?` Previous candidate was rejected because ${lastCollision}. Choose a genuinely different source lead and subject.`:'';
-      const data=await api('plan-issue-batch',{
-        method:'POST',
-        body:JSON.stringify({
-          publication:currentPublicationName(),
-          forbiddenPublicationTerms:forbiddenPublicationTermsV312i(),
-          issuePromise:plan.issuePromise||E('assembly-theme').value,
-          sendDate:val(S.issue.fields,'Send Date'),
-          signals:getSmartSignals(),
-          existingArticles:inventory,
-          batch:99,
-          batchLabel:'SINGLE REPLACEMENT',
-          batchBrief:`Return one replacement for rejected slot ${order}: "${current.title}". It must be materially different and must not duplicate priorArticles. USED SOURCE LEADS — DO NOT USE: ${usedLeads.length?usedLeads.map(x=>x.replace(':',' ')).join(', '):'none identified'}. Do not reuse the same underlying event, source lead, reader problem or substantially similar question already represented in this issue. REAL-LIFE QUESTION RULE: prefer a recognisable human situation and a question someone would naturally ask at the pub, dinner table, school gate, work or on WhatsApp. The answer should have a natural expert/partner pathway where appropriate, but editorial usefulness comes first. Do not invent personal facts; use supplied details or a clearly representative scenario.${retryContext}`,
-          priorArticles:prior,
-          targetCount:1,
-          blockedRecentHistory:recentHistoryForPublication(currentPublicationName()),
-          freshnessPolicy:{minimumCreateNew:6,maximumDirectReuse:2,rule:'Do not return a same-publication published question. Prefer CREATE NEW.'}
-        })
-      });
+      let data;
+      try{
+        data=await api('plan-issue-batch',{
+          method:'POST',
+          body:JSON.stringify({
+            publication:currentPublicationName(),
+            forbiddenPublicationTerms:forbiddenPublicationTermsV312i(),
+            issuePromise:plan.issuePromise||E('assembly-theme').value,
+            sendDate:val(S.issue.fields,'Send Date'),
+            signals:getSmartSignals(),
+            existingArticles:inventory,
+            batch:99,
+            batchLabel:'SINGLE REPLACEMENT',
+            batchBrief:`Return one replacement for rejected slot ${order}: "${current.title}". It must be materially different and must not duplicate priorArticles. USED SOURCE LEADS — DO NOT USE: ${usedLeads.length?usedLeads.map(x=>x.replace(':',' ')).join(', '):'none identified'}. Do not reuse the same underlying event, source lead, reader problem or substantially similar question already represented in this issue. REAL-LIFE QUESTION RULE: prefer a recognisable human situation and a question someone would naturally ask at the pub, dinner table, school gate, work or on WhatsApp. The answer should have a natural expert/partner pathway where appropriate, but editorial usefulness comes first. Do not invent personal facts; use supplied details or a clearly representative scenario.${retryContext}`,
+            priorArticles:prior,
+            targetCount:1,
+            blockedRecentHistory:recentHistoryForPublication(currentPublicationName()),
+            freshnessPolicy:{minimumCreateNew:6,maximumDirectReuse:2,rule:'Do not return a same-publication published question. Prefer CREATE NEW.'}
+          })
+        });
+      }catch(err){
+        const parseFailure=/json|non-whitespace|parse|invalid server response/i.test(String(err?.message||''));
+        if(parseFailure&&attempt<2){
+          lastCollision='the replacement response was malformed and could not be parsed';
+          continue;
+        }
+        throw err;
+      }
       const r=(data.articles||[])[0];
       if(!r)throw new Error('No replacement returned.');
       const candidate={...r,order:+order};
@@ -2123,43 +2172,125 @@ async function replaceSmartArticle(order){
       return;
     }
   }catch(e){
-    alert('Could not replace this article: '+e.message);
+    const m=`Could not replace Article ${order}: ${e.message}`;
+    E('smart-scan-progress').textContent=m;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Replacement failed.',m);
   }finally{
     if(btn){btn.disabled=false;btn.textContent='Replace'}
   }
 }
+
+function repairEditedCandidateProvenanceV313(plan){
+  const repaired=[];
+  for(const a of (plan?.articles||[])){
+    if(String(a.editorDecision||'').toUpperCase()!=='EDITED')continue;
+    if(String(a.mode||'').toUpperCase()!=='CREATE NEW')continue;
+    if(!normaliseLeadRef(a))continue;
+    const pa=provenanceAlignment(a,plan);
+    if(pa.level==='WEAK'||pa.level==='MISMATCH'){
+      a.source_signal='Manual editorial replacement — fresh research required';
+      a.problem=a.question||a.title||'';
+      a.local_proof='Research and localise this edited concept for the active publication. Do not reuse the previous planning lead as evidence.';
+      a.evidence='Fresh research required before production.';
+      repaired.push(+a.order||0);
+    }
+  }
+  if(repaired.length){
+    recalcSmartCounts(plan);saveSmartPlan(plan);
+  }
+  return repaired;
+}
+function step2BlockerSummaryV313(plan){
+  const blockers=[];
+  const profile=engineProfileForPublication();
+  const target=profile.defaultMasters||15;
+  const arts=plan?.articles||[];
+
+  if(arts.length!==target){
+    blockers.push({type:'BROKEN CANDIDATE SET',items:[`Expected ${target} candidates; found ${arts.length}.`]});
+  }
+
+  const broken=arts.filter(a=>!String(a.title||'').trim()||!String(a.question||'').trim());
+  if(broken.length){
+    blockers.push({type:'BROKEN CANDIDATE',items:broken.map(a=>`Article ${a.order||'?'} — title and core question are required.`)});
+  }
+
+  const leakage=publicationLeakageAuditV312i(plan);
+  if(leakage.blocked){
+    blockers.push({type:'WRONG PUBLICATION / GEOGRAPHY',items:leakage.hits.map(x=>`Article ${x.order}: ${x.title} — foreign term: ${x.hits.join(', ')}`)});
+  }
+
+  const dup=sameIssueDuplicationSummary(plan);
+  if(dup.duplicate){
+    const seen=new Set(),items=[];
+    for(const x of dup.pairs.filter(x=>x.level==='DUPLICATE')){
+      const key=[x.a.order,x.b.order].sort((m,n)=>m-n).join('-');
+      if(seen.has(key))continue;seen.add(key);
+      items.push(`Articles ${x.a.order} & ${x.b.order} — ${x.reason}`);
+    }
+    blockers.push({type:'TRUE DUPLICATE',items});
+  }
+
+  const align=smartPlanAlignmentSummary(plan);
+  const mismatch=align.results.filter(x=>x.r.level==='MISMATCH');
+  if(mismatch.length){
+    blockers.push({type:'SOURCE MISMATCH',items:mismatch.map(x=>`Article ${x.a.order}: ${x.a.title} — ${x.r.reason}`)});
+  }
+
+  const refresh=refreshGateSummary(plan);
+  if(refresh.replace){
+    blockers.push({type:'WEAK REFRESH',items:refresh.rows.filter(x=>x.r.level==='REPLACE').map(x=>`Article ${x.a.order}: ${x.a.title} — ${x.r.reason}`)});
+  }
+
+  const history=reuseGuardSummary(plan);
+  if(history.blocked){
+    blockers.push({type:'RECENT HISTORY DUPLICATE',items:history.rows.filter(x=>x.guard?.status==='BLOCKED RECENT DUPLICATE').map(x=>`Article ${x.a.order}: ${x.a.title}`)});
+  }
+
+  const fresh=freshnessGuardSummary(plan);
+  if(!fresh.ok){
+    blockers.push({type:'FRESHNESS',items:fresh.findings||['Freshness requirements are not met.']});
+  }
+
+  return {ok:blockers.length===0,blockers};
+}
+function step2BlockerTextV313(summary){
+  if(summary.ok)return 'STEP 2 READY — No hard blockers remain. Candidate-stage balance and overlap notes are advisory and will be resolved when Step 5 selects the final Masters.';
+  const lines=['STEP 2 BLOCKED — Fix only these production blockers:',''];
+  for(const b of summary.blockers){
+    lines.push(`${b.type}:`);
+    (b.items||[]).forEach(x=>lines.push(`- ${x}`));
+    lines.push('');
+  }
+  lines.push('Do not reset the candidate slate. Edit or replace only the named candidates.');
+  return lines.join('\\n');
+}
+
 function lockSmartPlan(){
  const plan=getSmartPlan(),profile=engineProfileForPublication();
- const target=profile.defaultMasters||15;
- if(!plan?.articles?.length||plan.articles.length!==target){alert(`Complete all ${target} Master Article decisions first for the ${profile.name} profile.`);return}
- const h=reuseGuardSummary(plan);if(h.blocked){alert(`${h.blocked} REUSE/REFRESH item${h.blocked===1?' is':'s are'} blocked by live same-publication history. Replace or change the angle before locking.`);return}
- const fresh=freshnessGuardSummary(plan);if(!fresh.ok){alert(`FRESHNESS GATE BLOCKED — ${profile.name}\n\n${fresh.findings.join('\n- ')}\n\nRecent published articles are history, not the default content pool.`);return}
- const a=smartPlanAlignmentSummary(plan),r=refreshGateSummary(plan),d=sameIssueDuplicationSummary(plan);
- if(a.bad){
-   const m=`${a.bad} SOURCE MISMATCH item${a.bad===1?'':'s'} must be edited or replaced before the candidate slate can be locked.`;
-   E('smart-scan-progress').textContent=m;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Candidate plan blocked — source mismatch.',m);return;
+ if(!plan?.articles?.length){
+   const m='STEP 2 BLOCKED — No candidate plan is loaded.';
+   E('smart-scan-progress').textContent=m;setWorkflowActionStatusV312(2,'Approve','Candidate plan blocked.',m);return;
  }
- if(r.replace){
-   const m=`${r.replace} REFRESH item${r.replace===1?'':'s'} do not identify a material change and should be replaced or edited before the candidate slate can be locked.`;
-   E('smart-scan-progress').textContent=m;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Candidate plan blocked — weak refresh.',m);return;
- }
- if(d.duplicate){
-   const m=`${d.duplicate} true same-issue duplicate pair${d.duplicate===1?'':'s'} remain (same source lead or effectively identical question). Replace one before locking. Fuzzy overlap warnings do not block the 15-candidate pool.`;
-   E('smart-scan-progress').textContent=m;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Candidate plan blocked — true duplicate.',m);return;
- }
- const slate=candidateSlateAuditV312i(plan);
- if(slate.leakage.blocked){
-   const offenders=slate.leakage.hits.slice(0,6).map(x=>`${x.title} [${x.hits.join(', ')}]`);
-   if(slate.leakage.summaryHits.length)offenders.push(`Editorial shape / plan summary [${slate.leakage.summaryHits.join(', ')}]`);
-   const m=`CANDIDATE PLAN BLOCKED — Wrong-publication references detected in ${currentPublicationName()}.
 
-${offenders.map(x=>'- '+x).join('\n')}
+ const repaired=repairEditedCandidateProvenanceV313(plan);
+ const gate=step2BlockerSummaryV313(plan);
 
-Do not approve this slate. Rebuild the 15 candidates after the publication guard is active.`;
-   E('smart-scan-progress').textContent=m;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Candidate plan blocked — publication contamination detected.',m);return;
+ if(!gate.ok){
+   const m=step2BlockerTextV313(gate);
+   E('smart-scan-progress').textContent=m;
+   updateWorkflowGuide();
+   setWorkflowActionStatusV312(2,'Approve','Candidate plan blocked — named fixes required.',m);
+   renderSmartPlan();
+   return;
  }
- plan.engineProfile=profile.key;plan.projectedSupportRecipe=profile.supportRecipe;plan.lockedAt=new Date().toISOString();recalcSmartCounts(plan);saveSmartPlan(plan);renderSmartPlan();renderEngineProfile();
- const note=`15-candidate slate approved. Final issue balance is not judged here. Step 5 will select the strongest ${profile.targetMasters[0]}–${profile.targetMasters[1]} Masters; Step 6 then builds support to the publication target.`;
+
+ plan.engineProfile=profile.key;
+ plan.projectedSupportRecipe=profile.supportRecipe;
+ plan.lockedAt=new Date().toISOString();
+ recalcSmartCounts(plan);saveSmartPlan(plan);renderSmartPlan();renderEngineProfile();
+
+ const repairNote=repaired.length?` Auto-repaired stale source provenance on Article${repaired.length===1?'':'s'} ${repaired.join(', ')}.`:'';
+ const note=`15-candidate slate approved.${repairNote} Final issue balance is not judged here. Step 5 will select the strongest ${profile.targetMasters[0]}–${profile.targetMasters[1]} Masters; Step 6 then builds support to the publication target.`;
  E('smart-scan-progress').textContent=note;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Candidate slate locked.',note);
 }
 function signalWords(text=''){
@@ -2495,34 +2626,50 @@ async function copyCommercialCompletion(){
   catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}
 }
 function issueBalanceAuditText(plan){
-  const a=issueBalanceAudit(plan),p=engineProfileForPublication();
-  const laneLine=Object.entries(a.laneCounts).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
-  const moodLine=Object.entries(a.moodCounts).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
-  return [`ISSUE BALANCE — ${a.status}`,`Engine profile: ${p.name}`,`Projected full issue: ${a.projectedSections} sections · ${plan.articles?.length||0} Master Articles · ${a.projectedSupport} planned life/support blocks`,`Lane mix: ${laneLine||'None'}`,`Mood mix: ${moodLine||'None'}`,`Heavy problem/admin share: ${Math.round(a.heavyMoodShare*100)}% / max ${Math.round(p.maxHeavyMoodShare*100)}%`,`Authority / expert opportunities: ${a.expert.length}`,`Feature / activation opportunities: ${a.partner.length}`,`Master Articles with natural commercial pathways: ${a.commercialArticles}/${(plan.articles||[]).length}`,`Distinct commercial categories: ${new Set([...a.expert,...a.partner]).size} · expert ${a.expert.length} · activation ${a.partner.length}`,`Freshness: ${a.freshness.createNew} fresh new · ${a.freshness.freshAngle} fresh angle · ${a.freshness.reuse} direct reuse`,'',a.findings.length?'Needs attention:':'Balanced enough to move forward.',...a.findings.map(x=>`- ${x}`)].join('\n');
+  const p=engineProfileForPublication(),slate=candidateSlateAuditV312i(plan),gate=step2BlockerSummaryV313(plan);
+  const laneLine=Object.entries(slate.laneCounts||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
+  const lines=[
+    `STEP 2 CANDIDATE SLATE — ${gate.ok?'READY':'BLOCKED'}`,
+    `Publication: ${currentPublicationName()}`,
+    `Master candidates: ${(plan.articles||[]).length}/${p.defaultMasters||15}`,
+    `Candidate lanes: ${slate.uniqueLanes}`,
+    `Lane mix: ${laneLine||'None'}`,
+    '',
+    'Hard blockers:',
+  ];
+  if(gate.ok)lines.push('- None');
+  else gate.blockers.forEach(b=>(b.items||[]).forEach(x=>lines.push(`- ${b.type}: ${x}`)));
+  lines.push('','Advisory selection notes:');
+  if(!(slate.notes||[]).length)lines.push('- None');
+  else slate.notes.forEach(x=>lines.push(`- ${x}`));
+  lines.push('','Rule: Step 2 approves a 15-candidate production pool. Final 8–10 Master balance and full issue size are judged later.');
+  return lines.join('\\n');
 }
 async function copyIssueBalanceAudit(){
   const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the Issue Plan first.');return}
-  const text=issueBalanceAuditText(plan)+'\n\n'+commercialCompletionText(plan);
+  const text=issueBalanceAuditText(plan);
   try{await navigator.clipboard.writeText(text);const b=E('copy-smart-audit');if(b){const old=b.textContent;b.textContent='Copied ✓';setTimeout(()=>b.textContent=old,1200)}}
   catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Audit copied.')}
 }
 function commercialAuditHtml(plan){
-  const a=issueBalanceAudit(plan),p=engineProfileForPublication(),slate=candidateSlateAuditV312i(plan);
-  const laneLine=Object.entries(a.laneCounts).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
-  const moodLine=Object.entries(a.moodCounts).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
+  const p=engineProfileForPublication(),slate=candidateSlateAuditV312i(plan),gate=step2BlockerSummaryV313(plan);
+  const laneLine=Object.entries(slate.laneCounts||{}).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
+  const blockerHtml=gate.ok
+    ? '<strong>Hard blockers:</strong> None'
+    : `<strong>Hard blockers:</strong><br>${gate.blockers.map(b=>`<strong>${esc(b.type)}</strong><br>${(b.items||[]).map(x=>`• ${esc(x)}`).join('<br>')}`).join('<br>')}`;
+  const advisory=(slate.notes||[]).length?slate.notes.map(x=>`• ${esc(x)}`).join('<br>'):'None';
   return `<div class="check smart-audit-panel" style="margin-bottom:10px">
-    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><strong>${esc(p.name.toUpperCase())} CANDIDATE SLATE — ${esc(slate.status)}</strong><button class="btn secondary" id="copy-smart-audit" type="button">Copy Audit</button></div>
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><strong>STEP 2 CANDIDATE SLATE — ${gate.ok?'READY':'BLOCKED'}</strong><button class="btn secondary" id="copy-smart-audit" type="button">Copy Step 2 Check</button></div>
     <div class="audit-grid" style="margin-top:8px">
-      <div><strong>Master candidates:</strong> ${(plan.articles||[]).length} / ${p.defaultMasters||15}</div><div><strong>Final Masters later:</strong> ${p.targetMasters[0]}–${p.targetMasters[1]} selected in Step 5</div>
-      <div><strong>Candidate lanes:</strong> ${slate.uniqueLanes}</div><div><strong>Final issue target:</strong> ${p.targetSections[0]}–${p.targetSections[1]} sections after support is built</div>
+      <div><strong>Master candidates:</strong> ${(plan.articles||[]).length} / ${p.defaultMasters||15}</div>
+      <div><strong>Final Masters later:</strong> ${p.targetMasters[0]}–${p.targetMasters[1]} selected in Step 5</div>
+      <div><strong>Candidate lanes:</strong> ${slate.uniqueLanes}</div>
+      <div><strong>Final issue target:</strong> ${p.targetSections[0]}–${p.targetSections[1]} after Step 6</div>
     </div>
-    <div class="muted" style="margin-top:8px"><strong>Important:</strong> the 15 candidates are a production pool, not 15 final Master Articles. Food, Reader Voice and mood concentration are selection warnings at this stage, not reasons to block the plan.</div>
-    <div style="margin-top:8px"><strong>Freshness:</strong> ${a.freshness.createNew} fresh new · ${a.freshness.freshAngle} fresh angle · ${a.freshness.reuse} direct reuse · ${a.freshness.minCreateNew} fresh-new minimum</div>
-    <div style="margin-top:8px"><strong>Projected lane mix:</strong><br><span class="muted">${esc(laneLine||'No lanes detected')}</span></div>
-    <div style="margin-top:8px"><strong>Projected mood mix:</strong><br><span class="muted">${esc(moodLine||'No moods detected')}</span></div>
-    <div style="margin-top:8px"><strong>Core sponsor opportunity matrix:</strong><br><span class="muted">${(a.sponsorCoverage?.rows||[]).map(x=>`${esc(x.label)}: ${esc(x.treatment)}${x.masters?` · ${x.masters} Master`:''}`).join(' · ')}</span><br><small>Coverage rule: the 8–10 Master Articles do not need to carry every commercial lane. Every core sponsor lane should be visible somewhere in the full issue through a Master, short component or implied editorial opportunity; each category should receive a substantial feature about ${esc(p.sponsorFeatureTargetPerMonth||'1–2')} times per month. Unsold lanes stay editorial-first.</small></div>
-    ${a.findings.length?`<div style="margin-top:8px"><strong>Needs attention before production</strong><br>${a.findings.map(x=>`• ${esc(x)}`).join('<br>')}</div>`:`<div style="margin-top:8px"><strong>Balanced enough to move forward.</strong></div>`}
-    <div style="margin-top:8px" class="muted"><strong>Rule:</strong> editorial balance is checked before production. Commercial opportunity sits underneath reader value; it cannot rescue a flat issue.</div>
+    <div style="margin-top:8px">${blockerHtml}</div>
+    <div style="margin-top:8px"><strong>Advisory selection notes:</strong><br><span class="muted">${advisory}</span></div>
+    <div style="margin-top:8px"><strong>Candidate lane mix:</strong><br><span class="muted">${esc(laneLine||'No lanes detected')}</span></div>
+    <div class="muted" style="margin-top:8px"><strong>Step 2 rule:</strong> approve a sensible, distinct 15-candidate production pool. Final issue size, final Master count, food concentration, mood mix and commercial balance are not lock blockers here.</div>
   </div>`;
 }
 
@@ -2651,7 +2798,7 @@ function workflowStepInfoV312(step){
  const target=profile.defaultMasters||15,min=profile.targetMasters?.[0]||5,max=profile.targetMasters?.[1]||7;
  const info={
  1:['Plan',sig.length<24?`Collect source signals first. ICS needs at least 24 distinct signals to build the ${target}-candidate plan.`:(!plan?.articles?.length?`Build the ${target}-candidate Master plan from current signals, archive memory and publication rules.`:`The ${target}-candidate plan exists. Review it before approval.`),sig.length<24?'Collect Signals':'Build / Resume 15-Candidate Plan'],
- 2:['Approve',!plan?.articles?.length?'Finish Step 1 first.':(publicationLeakageAuditV312i(plan).blocked?'Wrong-publication references are present in this saved candidate slate. Reset the 15-candidate plan and rebuild it under the publication guard.':(!locked?'Review the 15-candidate slate, then lock it.':'Plan locked. Create or update all 15 Master briefs.')),publicationLeakageAuditV312i(plan).blocked?'Reset 15-Candidate Plan':(!locked?'Lock Approved Plan':'Create / Update 15 Briefs')],
+ 2:['Approve',!plan?.articles?.length?'Finish Step 1 first.':(!locked?'Review the 15-candidate slate. Locking will name only genuine production blockers; candidate balance remains advisory.':'Plan locked. Create or update all 15 Master briefs.'),!locked?'Lock Approved Plan':'Create / Update 15 Briefs'],
  3:['Research','Research the approved Master briefs. Select a Master from the list, then use the research action. Batch research is the next automation layer.','Open Research Workspace'],
  4:['Produce','Use the existing production pipeline to research/write the 15 Master candidates. Production is resumable and completed work is preserved.','Produce All Approved Masters'],
  5:['Select',`Choose ${min}–${max} strongest READY Masters for this issue. The remaining READY candidates stay bankable rather than being forced into the newsletter.`,`Review Master Selection`],
@@ -2686,7 +2833,6 @@ function runWorkflowPrimaryV312(){
  if(step===1){if(getSmartSignals().length<24)E('assembly-auto').click();else E('assembly-build-plan').click();return}
  if(step===2){
   if(!plan?.articles?.length){updateWorkflowShellV312(1);return}
-  if(publicationLeakageAuditV312i(plan).blocked){resetSmartCandidatePlanV312j();return}
   if(!smartPlanLocked(plan))E('smart-plan-lock').click();else E('smart-plan-apply').click();return
  }
  if(step===3){show('build');setTimeout(()=>E('run-next-production')?.scrollIntoView({behavior:'smooth',block:'center'}),80);return}
