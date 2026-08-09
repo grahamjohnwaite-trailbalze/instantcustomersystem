@@ -303,7 +303,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
  body[data-workflow-step="8"] .canvas-layout {grid-template-columns:1fr!important}
 }
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12m<br><strong>Duplicate Gate Recalibration</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · false duplicate fix · candidate overlap advisory · title review preserved</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12n<br><strong>Manual Edit Source Detach</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · edited concept detaches old lead · Life Lane editable</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -380,7 +380,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
   <div id="smart-plan-signals-list" class="checklist"></div>
   <div id="smart-edit-panel" class="panel" style="display:none;margin:10px 0">
 <strong id="smart-edit-head">Edit plan article</strong>
-<div class="muted">Edit only this decision. Nothing is written to Airtable until the plan is locked and briefs are created.</div>
+<div class="muted">Edit only this decision. Nothing is written to Airtable until the plan is locked and briefs are created. If you materially change the title or core question, ICS will detach the old planning lead and mark the new concept for fresh research.</div>
 <div class="form-grid" style="margin-top:8px">
 <div class="field"><label>Decision</label><select id="smart-edit-mode"><option>REUSE</option><option>LOCALISE</option><option>REFRESH</option><option>CREATE NEW</option></select></div>
 <div class="field"><label>Stance</label><select id="smart-edit-stance"><option>PRACTICAL</option><option>NEUTRAL</option><option>CHALLENGE</option><option>DEBATE</option><option>UNFILTERED</option></select></div><div class="field"><label>Writing mode</label><select id="smart-edit-writing-style"><option value="AUTO">AUTO — choose from the question</option><option>CONVERSATION ADVICE</option><option>NEWS EXPLAINER</option><option>DEBATE / CONTROVERSY</option><option>RECOMMENDATION / DISCOVERY</option><option>PRACTICAL SERVICE</option><option>COMPARISON / VALUE</option><option>HUMAN / COMMUNITY</option><option>BREAKING UPDATE</option></select></div>
@@ -388,6 +388,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
 <div class="field span2"><label>Core question</label><textarea id="smart-edit-question"></textarea></div>
 <div class="field span2"><label>Real-life question / conversation test</label><textarea id="smart-edit-real-life" placeholder="For advice/service pieces: how would a real person ask this on Zoom, at dinner, in the pub, school gate, work or WhatsApp? News/debate pieces can keep a news-led question."></textarea></div>
 <div class="field span2"><label>Why now</label><textarea id="smart-edit-why"></textarea></div>
+<div class="field"><label>Life Lane</label><select id="smart-edit-life-lane"><option>Open</option><option>Local Life</option><option>Food & Hospitality</option><option>What's On</option><option>Places & Discovery</option><option>Money & Consumer</option><option>Home & Property</option><option>Family & Community</option><option>Motoring & Travel</option><option>Fun & Curiosity</option><option>Reader Voice</option><option>Business & People</option><option>Topical / Breaking</option></select></div>
 <div class="field"><label>Commercial lane</label><input id="smart-edit-lane"></div>
 <div class="field"><label>Existing article ID</label><input id="smart-edit-existing"></div>
 </div><div class="toolbar"><button class="btn" id="smart-edit-save">Save this change</button><button class="btn secondary" id="smart-edit-cancel">Cancel</button></div></div>
@@ -2030,8 +2031,37 @@ function resolvedWritingMode(a){
   if(/check|what can i do|how do i|what should i|should i|my |our |save for|mortgage|boiler|dog |car |health|money/.test(text))return 'CONVERSATION ADVICE';
   return 'PRACTICAL SERVICE';
 }
-function openSmartArticleEdit(order){const plan=getSmartPlan(),a=(plan?.articles||[]).find(x=>+x.order===+order);if(!a)return;smartEditOrder=+order;E('smart-edit-head').textContent=`Edit article ${order}`;E('smart-edit-mode').value=a.mode||'CREATE NEW';E('smart-edit-stance').value=a.stance||'PRACTICAL';E('smart-edit-writing-style').value=a.writing_mode||'AUTO';E('smart-edit-title').value=a.title||'';E('smart-edit-question').value=a.question||'';E('smart-edit-real-life').value=a.real_life_question||a.question||'';E('smart-edit-why').value=a.why_now||'';E('smart-edit-lane').value=a.lane||'Editorial';E('smart-edit-existing').value=a.existing_article_id||'';E('smart-edit-panel').style.display='block';E('smart-edit-panel').scrollIntoView({behavior:'smooth',block:'nearest'})}
-function saveSmartArticleEdit(){const plan=getSmartPlan(),a=(plan?.articles||[]).find(x=>+x.order===+smartEditOrder);if(!a)return;const title=E('smart-edit-title').value.trim(),q=E('smart-edit-question').value.trim();if(!title||!q){alert('Title and core question are required.');return}Object.assign(a,{mode:E('smart-edit-mode').value,stance:E('smart-edit-stance').value,writing_mode:E('smart-edit-writing-style').value,title,question:q,real_life_question:E('smart-edit-real-life').value.trim()||q,why_now:E('smart-edit-why').value.trim(),lane:E('smart-edit-lane').value.trim()||'Editorial',existing_article_id:E('smart-edit-existing').value.trim(),editorDecision:'EDITED'});unlockSmartPlan(plan);recalcSmartCounts(plan);saveSmartPlan(plan);E('smart-edit-panel').style.display='none';renderSmartPlan()}
+function openSmartArticleEdit(order){const plan=getSmartPlan(),a=(plan?.articles||[]).find(x=>+x.order===+order);if(!a)return;smartEditOrder=+order;E('smart-edit-head').textContent=`Edit article ${order}`;E('smart-edit-mode').value=a.mode||'CREATE NEW';E('smart-edit-stance').value=a.stance||'PRACTICAL';E('smart-edit-writing-style').value=a.writing_mode||'AUTO';E('smart-edit-title').value=a.title||'';E('smart-edit-question').value=a.question||'';E('smart-edit-real-life').value=a.real_life_question||a.question||'';E('smart-edit-why').value=a.why_now||'';E('smart-edit-life-lane').value=a.life_lane||'Open';E('smart-edit-lane').value=a.lane||'Editorial';E('smart-edit-existing').value=a.existing_article_id||'';E('smart-edit-panel').style.display='block';E('smart-edit-panel').scrollIntoView({behavior:'smooth',block:'nearest'})}
+function saveSmartArticleEdit(){
+  const plan=getSmartPlan(),a=(plan?.articles||[]).find(x=>+x.order===+smartEditOrder);if(!a)return;
+  const oldTitle=String(a.title||'').trim(),oldQuestion=String(a.question||'').trim();
+  const title=E('smart-edit-title').value.trim(),q=E('smart-edit-question').value.trim();
+  if(!title||!q){alert('Title and core question are required.');return}
+  const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const conceptChanged=norm(title)!==norm(oldTitle)||norm(q)!==norm(oldQuestion);
+  Object.assign(a,{
+    mode:E('smart-edit-mode').value,
+    stance:E('smart-edit-stance').value,
+    writing_mode:E('smart-edit-writing-style').value,
+    title,
+    question:q,
+    real_life_question:E('smart-edit-real-life').value.trim()||q,
+    why_now:E('smart-edit-why').value.trim(),
+    life_lane:E('smart-edit-life-lane').value||'Open',
+    lane:E('smart-edit-lane').value.trim()||'Editorial',
+    existing_article_id:E('smart-edit-existing').value.trim(),
+    editorDecision:'EDITED'
+  });
+  if(conceptChanged && String(a.mode||'').toUpperCase()==='CREATE NEW'){
+    a.source_signal='Manual editorial replacement — fresh research required';
+    a.problem=q;
+    a.local_proof='Research and localise this edited concept for the active publication. Do not reuse the previous planning lead as evidence.';
+    a.evidence='Fresh research required before production.';
+  }
+  unlockSmartPlan(plan);recalcSmartCounts(plan);saveSmartPlan(plan);E('smart-edit-panel').style.display='none';renderSmartPlan();
+  const m=conceptChanged?`Article ${a.order} updated. Old planning lead detached; fresh research will be required.`:`Article ${a.order} updated.`;
+  E('smart-scan-progress').textContent=m;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Manual edit saved.',m);
+}
 async function replaceSmartArticle(order){
   const plan=getSmartPlan(),current=(plan?.articles||[]).find(x=>+x.order===+order);
   if(!current)return;
