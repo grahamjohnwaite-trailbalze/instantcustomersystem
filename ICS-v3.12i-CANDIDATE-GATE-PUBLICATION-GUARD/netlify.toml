@@ -1,0 +1,12 @@
+[build]
+  base = "/"
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+[[redirects]]
+  from = "/ics"
+  to = "/app/"
+  status = 302
