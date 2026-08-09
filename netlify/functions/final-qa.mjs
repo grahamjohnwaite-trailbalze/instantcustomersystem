@@ -14,7 +14,7 @@ export default async(request)=>{
 
     const compact=blocks.map(b=>({
       order:b.order,uid:b.uid,kind:b.kind,type:b.type,title:b.title,purpose:b.purpose,
-      content:String(b.content||'').slice(0,1800),partner:b.partner,cta:b.cta,button:b.button,url:b.url
+      content:String(b.content||''),partner:b.partner,cta:b.cta,button:b.button,url:b.url
     }));
 
     const prompt=`You are the final whole-issue editorial QA editor for a UK local newsletter.

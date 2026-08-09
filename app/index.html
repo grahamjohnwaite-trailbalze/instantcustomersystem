@@ -4497,6 +4497,7 @@ RULES:
 
 function qaKey(){return `${assemblyKey()}:finalqa`}
 function qaText(b){return [b.title,b.purpose,b.content,b.cta,b.button,b.url,b.partner,b.category,b.proof].filter(Boolean).join(' ')}
+function qaReaderText(b){return [b.title,b.content,b.cta,b.button].filter(Boolean).join(' ')}
 function qaWords(text){
   const stop=new Set(['this','that','with','from','have','your','what','when','where','which','about','into','they','their','there','will','would','could','should','peterborough','spotlight','local','reader','article','question','support','partner','before','answer','around','rather','first','issue','place','practical','useful','really','quite','also','just','more','most','some','than','then','them','over','under','after','because','while','whereas','important','matter','matters','straightforward','clear','help','helps','helpful','worth','knowing']);
   return [...new Set(String(text||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>4&&!stop.has(w)))];
@@ -4573,8 +4574,8 @@ function deterministicQA(items){
     else add('PASS','PARTNERS_PRESENT',`${partnerBlocks.length}/${partnerBlocks.length} partner blocks have real assignments.`);
   }
 
-  const leakRx=/(discounted arrangement|reviewed later|internal note|for now|commercial arrangement|sponsorship amount|sponsor rate|pricing tier|discount rate|our deal|our agreement)/i;
-  const leaks=items.filter(b=>leakRx.test(qaText(b)));
+  const leakRx=/(discounted arrangement|internal note|commercial arrangement|sponsorship amount|sponsor rate|pricing tier|discount rate|our deal|our agreement|editor note|production note|sponsor note)/i;
+  const leaks=items.filter(b=>leakRx.test(qaReaderText(b)));
   if(leaks.length)add('FIX','INTERNAL_NOTE_LEAK',`Possible internal/commercial wording appears in ${leaks.length} reader-facing block${leaks.length===1?'':'s'}.`,leaks.map(b=>b.uid),true);
   else add('PASS','NO_INTERNAL_LEAK','No obvious internal commercial notes detected in reader-facing copy.');
 
@@ -4862,6 +4863,31 @@ async function fixQAExceptionsV317(){
         await rewriteSupportBlockV317(block,'Remove all internal, production, sponsorship, pricing, commercial-arrangement or editor-facing wording. Keep only reader-facing copy.');
         supportFixed++;
       }catch(e){failed.push(`${block.title}: ${String(e.message||e)}`)}
+    }
+
+    // 4. New AI hard fixes that explicitly permit a safe supporting-copy repair.
+    //    These must change persisted reader-facing copy, not merely clear QA state.
+    const handledIds=new Set([...orphan.map(b=>b.uid),...(closing?[closing.uid]:[]),...leakIds]);
+    const aiSafeFixes=(saved?.findings||[]).filter(f=>f.severity==='FIX'&&f.safeFix===true);
+    for(const finding of aiSafeFixes){
+      for(const block of items.filter(b=>(finding.blocks||[]).includes(b.uid)&&b.kind!=='article'&&!handledIds.has(b.uid))){
+        try{
+          const formatProblem=/news brief|what.?s on|listing|actual local|generic advice/i.test(String(finding.message||''));
+          if(formatProblem){
+            // If the existing block has no evidence to support its claimed format, stop pretending it is news/listings.
+            // Reclassify it as an editorial support block and rewrite it to one distinct reader job.
+            block.type='EXPERT QUICK CHECK';
+            block.title='Quick Local Check';
+            block.productionTemplate='SHORT COMPONENT';
+            block.commercialRole='EDITORIAL';
+            block.partner='';
+            block.partnerAttached=false;
+          }
+          await rewriteSupportBlockV317(block,`${finding.message} Repair the actual reader-facing block. If the current format promises factual news/listings that are not present in the supplied copy or proof, do not invent them: convert the block into one distinct editorial local check or reader action that truthfully matches the available material.`);
+          handledIds.add(block.uid);
+          supportFixed++;
+        }catch(e){failed.push(`${block.title}: ${String(e.message||e)}`)}
+      }
     }
 
     localStorage.setItem(assemblyKey(),JSON.stringify(items));
