@@ -55,6 +55,7 @@
 .workflow-guide-v312{display:grid;grid-template-columns:1.1fr 2fr auto;gap:12px;align-items:center;margin-top:10px;padding:10px 12px;border-radius:10px;background:#f7f9fc;border:1px solid #e1e6ef}
 .workflow-guide-v312 .eyebrow2{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#667085;font-weight:800}.workflow-guide-v312 strong{display:block;margin-top:2px}
 .workflow-guide-v312 .guide-copy{font-size:12px;color:#475467;line-height:1.4}.workflow-primary-v312{white-space:nowrap}
+.workflow-actions-v312e{display:flex;gap:8px;align-items:center;justify-content:flex-end}.workflow-actions-v312e .secondary{white-space:nowrap}
 .canvas-top-actions-v312{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.canvas-top-actions-v312 details{position:relative}.canvas-top-actions-v312 summary{cursor:pointer;font-size:12px;font-weight:750;color:#475467}.canvas-top-actions-v312 details[open]{padding-bottom:8px}
 .canvas-layout.library-hidden{grid-template-columns:minmax(520px,1fr) 340px}.canvas-layout.library-hidden>section:first-child{display:none}
 .canvas-layout.inspector-hidden{grid-template-columns:300px minmax(520px,1fr)}.canvas-layout.inspector-hidden>.canvas-inspector{display:none}
@@ -329,7 +330,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
 <button class="workflow-step-v312" data-flow-step="7"><strong>7 Assemble</strong><span>Running Order</span></button>
 <button class="workflow-step-v312" data-flow-step="8"><strong>8 QA</strong><span>Exceptions</span></button>
 <button class="workflow-step-v312" data-flow-step="9"><strong>9 Production Ready</strong><span>Build Package</span></button>
-</div><div class="workflow-guide-v312"><div><div class="eyebrow2">You Are Here</div><strong id="workflow-current-v312">Step 1 — Plan</strong></div><div class="guide-copy" id="workflow-instruction-v312">Open an issue, collect source signals and build the 15-candidate Master plan.</div><button class="btn workflow-primary-v312" id="workflow-primary-v312" type="button">Start Planning</button></div></div>
+</div><div class="workflow-guide-v312"><div><div class="eyebrow2">You Are Here</div><strong id="workflow-current-v312">Step 1 — Plan</strong></div><div class="guide-copy" id="workflow-instruction-v312">Open an issue, collect source signals and build the 15-candidate Master plan.</div><div class="workflow-actions-v312e"><button class="btn secondary" id="workflow-copy-status-v312e" type="button">Copy Status</button><button class="btn workflow-primary-v312" id="workflow-primary-v312" type="button">Start Planning</button></div></div></div>
 <div style="display:none"><button id="assembly-auto">Collect Signals</button><button id="assembly-build-plan">Build / Resume Issue Plan</button><button id="assembly-smart-assemble">Assemble Approved Plan</button><button id="assembly-produce">Produce Supporting Components</button><button id="assembly-partners">Assign Active Partners</button><button id="assembly-qa">Run Final QA</button><button id="assembly-generate">Generate Production Package</button></div>
 <div id="canvas-recovery-banner" class="warning" style="display:none;margin:0 0 12px 0"><strong>Recovery Mode</strong><br>This historical Canvas was restored from browser storage even though the issue is not in the active Issues list. Export a backup before making changes.</div>
 <div class="command-centre" id="component-command-centre">
@@ -2401,6 +2402,35 @@ function renderMasterSelectionV312(){
   grid.innerHTML=(plan.articles||[]).map(a=>{const state=masterCandidateStateV312(a),checked=selected.includes(Number(a.order));return `<label class="master-selection-row-v312"><input type="checkbox" data-master-select-v312="${a.order}" ${checked?'checked':''}><span class="order">${String(a.order).padStart(2,'0')}</span><span><strong>${esc(a.title)}</strong><small>${esc(a.life_lane||'Open')} · ${esc(a.mode||'CREATE NEW')}</small></span><span class="selection-status-v312">${esc(state)}</span></label>`}).join('');
   document.querySelectorAll('[data-master-select-v312]').forEach(x=>x.onchange=()=>{const vals=[...document.querySelectorAll('[data-master-select-v312]:checked')].map(y=>Number(y.dataset.masterSelectV312));saveMasterSelectionV312(vals);updateWorkflowShellV312()});
 }
+
+function workflowContextLabelV312(step,name){
+  const pub=currentPublicationName()||'Publication';
+  const num=String(val(S.issue?.fields,'Issue Number')||'').trim();
+  return `${pub}${num?` · Issue #${num}`:''} · Step ${step} — ${name}`;
+}
+function setWorkflowActionStatusV312(step,name,status,detail=''){
+  if(E('workflow-current-v312'))E('workflow-current-v312').textContent=workflowContextLabelV312(step,name);
+  if(E('workflow-instruction-v312'))E('workflow-instruction-v312').textContent=[status,detail].filter(Boolean).join(' · ');
+}
+async function copyWorkflowStatusV312E(){
+  const a=E('workflow-current-v312')?.textContent||'';
+  const b=E('workflow-instruction-v312')?.textContent||'';
+  const c=E('smart-scan-progress')?.textContent||'';
+  await copyText([a,b,c].filter(Boolean).join('\n'));
+}
+function plannerRejectedTitlesFromMessageV312E(msg){
+  const out=[];
+  const patterns=[
+    /Recent-history guard rejected[^:]*:\s*(.+?)\.\s*Click Build/i,
+    /Planning-run guard rejected a previously rejected concept again:\s*(.+?)\.\s*Click Build/i
+  ];
+  for(const re of patterns){
+    const m=String(msg||'').match(re);
+    if(m)out.push(...m[1].split(' | ').map(x=>x.trim()).filter(Boolean));
+  }
+  return [...new Set(out)];
+}
+
 function workflowStepInfoV312(step){
  const sig=getSmartSignals(),plan=getSmartPlan(),locked=smartPlanLocked(plan),profile=engineProfileForPublication(),selected=getMasterSelectionV312(),canvas=getCanvas();
  const target=profile.defaultMasters||15,min=profile.targetMasters?.[0]||5,max=profile.targetMasters?.[1]||7;
@@ -2428,7 +2458,7 @@ function updateWorkflowShellV312(forcedStep){
  // async issue loading / renderAssembly / updateWorkflowGuide calls.
  document.body.dataset.workflowStep=String(workflowSelectedStepV312);
  document.querySelectorAll('[data-flow-step]').forEach(b=>{const n=Number(b.dataset.flowStep);b.classList.toggle('active',n===workflowSelectedStepV312);b.classList.toggle('done',n<auto)});
- const [name,copy,label]=workflowStepInfoV312(workflowSelectedStepV312);E('workflow-current-v312').textContent=`Step ${workflowSelectedStepV312} — ${name}`;E('workflow-instruction-v312').textContent=copy;const btn=E('workflow-primary-v312');btn.textContent=label;btn.dataset.step=String(workflowSelectedStepV312);
+ const [name,copy,label]=workflowStepInfoV312(workflowSelectedStepV312);E('workflow-current-v312').textContent=workflowContextLabelV312(workflowSelectedStepV312,name);E('workflow-instruction-v312').textContent=copy;const btn=E('workflow-primary-v312');btn.textContent=label;btn.dataset.step=String(workflowSelectedStepV312);
  renderMasterSelectionV312();
 }
 function runWorkflowPrimaryV312(){
@@ -2594,8 +2624,28 @@ async function buildSmartPlanFromSavedSignals(){
       if(batches.some(b=>b.batch===spec.batch&&Array.isArray(b.articles)&&b.articles.length===1))continue;
       const prior=batches.flatMap(b=>b.articles||[]).map(a=>({title:a.title,question:a.question,real_life_question:a.real_life_question||a.question||'',writing_mode:a.writing_mode||'AUTO',mode:a.mode,life_lane:a.life_lane||'',lane:a.lane||'',existing_article_id:a.existing_article_id||'',source_signal:a.source_signal||''}));
       btn.textContent=`Building plan ${spec.batch}/${targetMasters}…`;
-      E('smart-scan-progress').textContent=`Planning ${spec.batch}/${targetMasters} ${spec.label}. Each article decision is saved immediately.`;
-      const data=await api('plan-issue-batch',{method:'POST',body:JSON.stringify({...base,existingArticles:inventory,batch:spec.batch,batchLabel:spec.label,batchBrief:spec.brief,targetCount:1,totalBatches:targetMasters,priorArticles:prior,engineProfile:profile.key,editorialLanes:profile.lanes,minimumGroups:profile.minimumGroups,maxHeavyMoodShare:profile.maxHeavyMoodShare})});
+      let data=null,attempt=0;
+      while(!data && attempt<8){
+        attempt++;
+        const progress=`Planning ${spec.batch}/${targetMasters} ${spec.label}${attempt>1?` · replacement attempt ${attempt}`:''}.`;
+        E('smart-scan-progress').textContent=`${progress} Each article decision is saved immediately.`;
+        setWorkflowActionStatusV312(1,'Plan',progress,attempt>1?'A rejected duplicate was skipped automatically; choosing a replacement.':'ICS is choosing and saving the next Master candidate.');
+        try{
+          data=await api('plan-issue-batch',{method:'POST',body:JSON.stringify({...base,rejectedCandidates:getSmartRejected(),existingArticles:inventory,batch:spec.batch,batchLabel:spec.label,batchBrief:spec.brief,targetCount:1,totalBatches:targetMasters,priorArticles:prior,engineProfile:profile.key,editorialLanes:profile.lanes,minimumGroups:profile.minimumGroups,maxHeavyMoodShare:profile.maxHeavyMoodShare})});
+        }catch(err){
+          const msg=String(err?.message||'');
+          const rejectedNow=plannerRejectedTitlesFromMessageV312E(msg);
+          if(rejectedNow.length){
+            rejectedNow.forEach(addSmartRejected);
+            const note=`Rejected duplicate: ${rejectedNow.join(' | ')}. Automatically choosing a replacement for decision ${spec.batch}/${targetMasters}.`;
+            E('smart-scan-progress').textContent=note;
+            setWorkflowActionStatusV312(1,'Plan',`Planning ${spec.batch}/${targetMasters} ${spec.label}`,note);
+            continue;
+          }
+          throw err;
+        }
+      }
+      if(!data)throw new Error(`Planner could not find a valid replacement for decision ${spec.batch}/${targetMasters} after 8 attempts.`);
       const saved={batch:spec.batch,label:spec.label,articles:data.articles||[],issue_summary:data.issue_summary||''};
       batches=batches.filter(b=>b.batch!==spec.batch).concat(saved).sort((a,b)=>a.batch-b.batch);saveSmartPlanBatches(batches);renderSmartPlan();
     }
@@ -2604,16 +2654,18 @@ async function buildSmartPlanFromSavedSignals(){
     const counts=articles.reduce((o,a)=>(o[a.mode]=(o[a.mode]||0)+1,o),{});
     const plan={createdAt:new Date().toISOString(),publication:base.publication,sendDate:base.sendDate,issuePromise:promise,issue_summary:batches.map(b=>b.issue_summary).filter(Boolean).join(' '),signals,articles,counts,engineProfile:profile.key,projectedSupportRecipe:profile.supportRecipe};
     localStorage.setItem(smartPlanKey(),JSON.stringify(plan));renderSmartPlan();updateWorkflowGuide();
+    setWorkflowActionStatusV312(1,'Plan',`${targetMasters}/${targetMasters} complete — plan ready for review.`,'Next: Step 2 — Approve.');
     alert(`${profile.name} ${targetMasters}-article plan ready: ${counts.REUSE||0} REUSE · ${counts.LOCALISE||0} LOCALISE · ${counts.REFRESH||0} REFRESH · ${counts['CREATE NEW']||0} CREATE NEW. Review it before creating briefs.`);
   }catch(e){
     const msg=String(e.message||'');
-    const mDup=msg.match(/Recent-history guard rejected[^:]*:\s*(.+?)\.\s*Click Build/i);
-    if(mDup){mDup[1].split(' | ').map(x=>x.trim()).filter(Boolean).forEach(addSmartRejected)}
+    plannerRejectedTitlesFromMessageV312E(msg).forEach(addSmartRejected);
     renderSmartPlan();
     const rejected=getSmartRejected();
-    const extra=rejected.length?`\n\nRejected this planning run (${rejected.length}) are now hard-banned from being proposed again: ${rejected.join(' | ')}`:'';
-    const m='Planning paused: '+msg+'\n\nEvery completed article decision has been kept. Click Build / Resume Issue Plan again to resume from the next missing decision.'+extra;
-    E('smart-scan-progress').textContent=m;updateWorkflowGuide();alert(m);
+    const extra=rejected.length?`\n\nRejected this planning run (${rejected.length}) remain excluded: ${rejected.join(' | ')}`:'';
+    const m='Planning stopped: '+msg+'\n\nEvery completed article decision has been kept. Resume only after this genuine blocker is resolved.'+extra;
+    E('smart-scan-progress').textContent=m;
+    setWorkflowActionStatusV312(1,'Plan','Planning stopped — attention required.',msg);
+    updateWorkflowGuide();alert(m);
   }
   finally{btn.disabled=false;btn.textContent=old}
 }
@@ -3309,6 +3361,7 @@ E('jump-next-component').onclick=jumpToNextIncompleteComponent;
 E('command-open-build').onclick=()=>show('build');
 
 E('assembly-export').onclick=exportCanvasBackup;if(E('smart-copy-status'))E('smart-copy-status').onclick=copyPlannerStatus;
+if(E('workflow-copy-status-v312e'))E('workflow-copy-status-v312e').onclick=copyWorkflowStatusV312E;
 
 // v3.12b: keep the nine-step workflow visible globally and show one job at a time.
 function installCleanWorkflowV312B(){
@@ -3326,7 +3379,7 @@ function focusWorkflowStepV312B(step,{scroll=true}={}){
   workflowSelectedStepV312=step;
   document.querySelectorAll('[data-flow-step]').forEach(b=>b.classList.toggle('active',Number(b.dataset.flowStep)===step));
   const [name,copy,label]=workflowStepInfoV312(step);
-  if(E('workflow-current-v312'))E('workflow-current-v312').textContent=`Step ${step} — ${name}`;
+  if(E('workflow-current-v312'))E('workflow-current-v312').textContent=workflowContextLabelV312(step,name);
   if(E('workflow-instruction-v312'))E('workflow-instruction-v312').textContent=copy;
   if(E('workflow-primary-v312')){E('workflow-primary-v312').textContent=label;E('workflow-primary-v312').dataset.step=String(step)}
   if(step===6){const l=document.querySelector('.canvas-layout');l?.classList.remove('library-hidden');l?.classList.remove('inspector-hidden')}
