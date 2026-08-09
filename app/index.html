@@ -305,7 +305,13 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
  body[data-workflow-step="8"] .canvas-layout {grid-template-columns:1fr!important}
 }
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.14.2<br><strong>Assembly Source + Copy Status</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · assembly uses live issue records · all blocker/status text copyable</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+
+#step6-summary-v315{user-select:text}
+body.step6-simple #component-editor,
+body.step6-simple .component-form,
+body.step6-simple .selected-component-editor{display:none!important}
+
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.15.0<br><strong>Step 6 Component Automation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · Step 6 batch support generation · manual component editor moved to Advanced</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -3060,6 +3066,139 @@ async function hydrateStep3StateV3133(){
   }
 }
 
+
+function selectedMasterCountV315(){
+  return getMasterSelectionV312().length;
+}
+function activePartnerCountV315(){
+  const pub=currentPublicationName();
+  return (S.partners||[]).filter(p=>{
+    const active=String(val(p.fields,'Active')||'').toLowerCase();
+    const pubs=String(val(p.fields,'Publications')||val(p.fields,'Publication')||'').toLowerCase();
+    return (!active||['true','yes','active','1'].includes(active)) && (!pub||!pubs||pubs.includes(pub.toLowerCase()));
+  }).length;
+}
+function supportTargetV315(){
+  const profile=engineProfileForPublication();
+  const selected=selectedMasterCountV315();
+  const issueTarget=Math.round(((profile.targetSections?.[0]||24)+(profile.targetSections?.[1]||30))/2);
+  const existingMasters=selected;
+  return {
+    issueTarget,
+    selectedMasters:selected,
+    supportNeeded:Math.max(0,issueTarget-existingMasters)
+  };
+}
+function currentSupportComponentsV315(){
+  return (S.canvas||[]).filter(b=>b.kind==='component');
+}
+async function buildSupportBatchV315(){
+  const t=supportTargetV315();
+  if(!t.selectedMasters){
+    const m='STEP 6 BLOCKED — Save the Step 5 Master selection first.';
+    setWorkflowActionStatusV312(6,'Components','Cannot build support yet.',m);return;
+  }
+
+  const btn=E('workflow-primary-v312');
+  const old=btn?.textContent||'Build Supporting Components';
+  if(btn){btn.disabled=true;btn.textContent='Building Supporting Components…';}
+
+  try{
+    const existing=currentSupportComponentsV315();
+    if(existing.length>=t.supportNeeded){
+      const m=`${existing.length} supporting/partner components already exist for ${t.selectedMasters} selected Masters. Step 6 is ready for review.`;
+      setWorkflowActionStatusV312(6,'Components','Supporting component target met.',m);
+      return;
+    }
+
+    const need=t.supportNeeded-existing.length;
+    setWorkflowActionStatusV312(6,'Components',`Building ${need} supporting components…`,`Target issue size: ${t.issueTarget} · Selected Masters: ${t.selectedMasters} · Support/partner components needed: ${t.supportNeeded}. ICS will create the missing components automatically.`);
+
+    // Reuse the existing component engine one component at a time, but orchestrate it as a single batch.
+    // We deliberately create a balanced reusable sequence instead of asking the operator to pick templates.
+    const recipe=[
+      'OPENING NOTE','NEWS BRIEF','QUICK UPDATE','THREE-POINT TIPS',
+      'WHAT’S ON','READER POLL','THIS OR THAT','QUICK QUIZ',
+      'SALLY SAVERS','FOOD FIND','WORTH THE DRIVE?','FAMILY ACTIVITY',
+      'MOTORING QUICK CHECKLIST','HOME QUICK CHECKLIST','EXPERT QUICK CHECK',
+      'PARTNER TIP','LOCAL DEBATE','READER QUESTION','BEFORE YOU GO'
+    ];
+    const created=[];
+    for(let i=0;i<need;i++){
+      const type=recipe[(existing.length+i)%recipe.length];
+      const component={
+        id:'AUTO-'+Date.now()+'-'+i,
+        kind:'component',
+        componentType:type,
+        title:type.replace(/\b\w/g,c=>c.toUpperCase()),
+        status:'PLANNED',
+        productionStatus:'NOT STARTED',
+        lifeLane:'OPEN',
+        commercialRole:'EDITORIAL',
+        productionTemplate:'SHORT COMPONENT',
+        productionPoints:1,
+        legacyStatus:'NEEDS PRODUCTION',
+        autoGenerated:true
+      };
+      S.canvas=S.canvas||[];
+      S.canvas.push(component);
+      created.push(component);
+    }
+    saveCanvas?.();
+    renderCanvas?.();
+    renderComponentLibrary?.();
+
+    // Try to attach known partners to a small number of appropriate auto components.
+    const partnerSlots=(S.canvas||[]).filter(b=>b.kind==='component'&&/PARTNER TIP|EXPERT QUICK CHECK/.test(String(b.componentType||'')));
+    const activePartners=(S.partners||[]).filter(p=>{
+      const active=String(val(p.fields,'Active')||'').toLowerCase();
+      return !active||['true','yes','active','1'].includes(active);
+    });
+    partnerSlots.forEach((slot,i)=>{
+      const p=activePartners[i];
+      if(p){
+        slot.partnerId=p.id;
+        slot.partnerName=String(val(p.fields,'Partner Name')||val(p.fields,'Name')||'').trim();
+        slot.commercialRole='PARTNER';
+      }
+    });
+    saveCanvas?.();
+
+    // Produce auto-created components in batch using the existing producer when available.
+    let produced=0,failed=[];
+    for(const c of created){
+      try{
+        S.selectedCanvasId=c.id;
+        if(typeof produceSelectedComponent==='function'){
+          await produceSelectedComponent({quiet:true});
+          produced++;
+        }
+      }catch(e){
+        failed.push(`${c.title}: ${String(e.message||e)}`);
+      }
+    }
+    renderCanvas?.();
+    renderComponentLibrary?.();
+
+    const total=currentSupportComponentsV315().length;
+    const ready=currentSupportComponentsV315().filter(x=>String(x.status||x.contentStatus||'').toUpperCase()==='READY'||String(x.productionStatus||'').toUpperCase()==='READY').length;
+    const detail=`${total}/${t.supportNeeded} support/partner components created for ${t.selectedMasters} selected Masters.${failed.length?` ${failed.length} production exception${failed.length===1?'':'s'} remain:\n- ${failed.join('\n- ')}`:' Batch generation completed.'}`;
+    setWorkflowActionStatusV312(6,'Components',`${total}/${t.supportNeeded} support components built · ${ready} ready`,detail);
+  }catch(e){
+    setWorkflowActionStatusV312(6,'Components','Component batch failed.','Existing Masters are preserved. '+String(e.message||e));
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Build / Resume Supporting Components';}
+  }
+}
+function renderStep6SummaryV315(){
+  const panel=E('step6-summary-v315');if(!panel)return;
+  const t=supportTargetV315(),items=currentSupportComponentsV315();
+  const ready=items.filter(x=>String(x.status||x.contentStatus||'').toUpperCase()==='READY'||String(x.productionStatus||'').toUpperCase()==='READY').length;
+  panel.innerHTML=`<strong>Step 6 — Components</strong>
+  <div class="muted" style="margin-top:6px">Selected Masters: ${t.selectedMasters} · Target issue size: ${t.issueTarget} · Support/partner components required: ${t.supportNeeded}</div>
+  <div style="margin-top:8px"><strong>${items.length}/${t.supportNeeded}</strong> built · <strong>${ready}</strong> ready</div>
+  <div class="muted" style="margin-top:6px">ICS should create the missing support automatically. Manual component controls are Advanced only.</div>`;
+}
 function workflowStepInfoV312(step){
  const sig=getSmartSignals(),plan=getSmartPlan(),locked=smartPlanLocked(plan),profile=engineProfileForPublication(),selected=getMasterSelectionV312(),canvas=getCanvas();
  const target=profile.defaultMasters||15,min=profile.targetMasters?.[0]||5,max=profile.targetMasters?.[1]||7;
@@ -3094,7 +3233,10 @@ function updateWorkflowShellV312(forcedStep){
 
  // Correct sequence: Step 5 -> Step 6 -> Step 7.
  if(selectionReady)auto=6;
- if(selectionReady&&hasReadySupport)auto=7;
+ const targetV315=supportTargetV315();
+ const supportCountV315=currentSupportComponentsV315().length;
+ const supportReadyV315=currentSupportComponentsV315().filter(b=>String(b.status||b.productionStatus||'').toUpperCase()==='READY').length;
+ if(selectionReady&&supportCountV315>=targetV315.supportNeeded&&supportReadyV315>=Math.min(targetV315.supportNeeded,supportCountV315))auto=7;
 
  workflowSelectedStepV312=forcedStep||auto;
  // v3.12d: one source of truth. The visible active step and the CSS-isolated
@@ -4129,6 +4271,11 @@ focusWorkflowStepV312B=function(step,opt={}){
 
 if(E('workflow-primary-v312'))E('workflow-primary-v312').onclick=runWorkflowPrimaryV312;
 document.querySelectorAll('[data-flow-step]').forEach(b=>b.onclick=()=>focusWorkflowStepV312B(Number(b.dataset.flowStep)));
+
+if(E('toggle-step6-advanced-v315'))E('toggle-step6-advanced-v315').onclick=()=>{
+  const ed=E('component-editor');
+  if(ed)ed.style.display=ed.style.display==='none'?'block':'none';
+};
 if(E('master-selection-save-v312'))E('master-selection-save-v312').onclick=()=>{
   renderMasterSelectionV312();
   const n=getMasterSelectionV312().length,pr=engineProfileForPublication(),min=pr.targetMasters?.[0]||8,max=pr.targetMasters?.[1]||10;
