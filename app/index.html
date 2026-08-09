@@ -295,7 +295,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
  body[data-workflow-step="8"] .canvas-layout {grid-template-columns:1fr!important}
 }
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12h<br><strong>Signal Fallback + Status Fix</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · saved-signal fallback · blockers stay visible in top panel</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.12j<br><strong>Reset Plan Control</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · explicit candidate reset · source signals preserved</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -331,7 +331,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
 <button class="workflow-step-v312" data-flow-step="7"><strong>7 Assemble</strong><span>Running Order</span></button>
 <button class="workflow-step-v312" data-flow-step="8"><strong>8 QA</strong><span>Exceptions</span></button>
 <button class="workflow-step-v312" data-flow-step="9"><strong>9 Production Ready</strong><span>Build Package</span></button>
-</div><div class="workflow-guide-v312"><div><div class="eyebrow2">You Are Here</div><strong id="workflow-current-v312">Step 1 — Plan</strong></div><div class="guide-copy" id="workflow-instruction-v312">Open an issue, collect source signals and build the 15-candidate Master plan.</div><div class="workflow-actions-v312e"><button class="btn secondary" id="workflow-copy-status-v312e" type="button">Copy Status</button><button class="btn workflow-primary-v312" id="workflow-primary-v312" type="button">Start Planning</button></div></div></div>
+</div><div class="workflow-guide-v312"><div><div class="eyebrow2">You Are Here</div><strong id="workflow-current-v312">Step 1 — Plan</strong></div><div class="guide-copy" id="workflow-instruction-v312">Open an issue, collect source signals and build the 15-candidate Master plan.</div><div class="workflow-actions-v312e"><button class="btn secondary" id="workflow-copy-status-v312e" type="button">Copy Status</button><button class="btn secondary" id="workflow-reset-plan-v312j" type="button" style="display:none">Reset 15-Candidate Plan</button><button class="btn workflow-primary-v312" id="workflow-primary-v312" type="button">Start Planning</button></div></div></div>
 <div style="display:none"><button id="assembly-auto">Collect Signals</button><button id="assembly-build-plan">Build / Resume Issue Plan</button><button id="assembly-smart-assemble">Assemble Approved Plan</button><button id="assembly-produce">Produce Supporting Components</button><button id="assembly-partners">Assign Active Partners</button><button id="assembly-qa">Run Final QA</button><button id="assembly-generate">Generate Production Package</button></div>
 <div id="canvas-recovery-banner" class="warning" style="display:none;margin:0 0 12px 0"><strong>Recovery Mode</strong><br>This historical Canvas was restored from browser storage even though the issue is not in the active Issues list. Export a backup before making changes.</div>
 <div class="command-centre" id="component-command-centre">
@@ -443,6 +443,54 @@ const S={publications:[],issues:[],sections:[],articleLibrary:[],issue:null,sect
 async function api(path,opt={}){const r=await fetch('/.netlify/functions/'+path,{headers:{'content-type':'application/json',accept:'application/json'},...opt});const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={ok:false,error:`Invalid server response (${r.status}). ${raw.slice(0,300)||'No response body.'}`}}if(!r.ok||!d.ok){const err=new Error(d.error||`Request failed (${r.status})`);err.details=d.details;throw err}return d}function conn(ok,msg){E('dot').className='dot '+(ok?'ok':'bad');E('connection').textContent=msg}function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));E('view-'+v).classList.add('active');document.querySelector(`[data-view="${v}"]`).classList.add('active');E('page-title').textContent={dashboard:'Dashboard',publications:'Publications',issues:'Issues',build:'Issue Command Centre',assemble:'Issue Workflow'}[v];E('page-sub').textContent=v==='build'?'Plan, write and export one real issue.':v==='assemble'?'One clear production step at a time, from planning to production ready.':(S.issue?`${pubName(S.issue.fields.Publication)} production workspace.`:'Publication-aware production workspace.');if(v==='assemble'){renderAssembly();updateWorkflowGuide()}}
 function pubName(ids){return S.publications.find(p=>p.id===(ids||[])[0])?.fields['Publication Name']||'Unlinked'}function pill(v){return `<span class="pill ${/ready|published|complete/i.test(v)?'good':/warning|blocked|late/i.test(v)?'warn':''}">${esc(v||'Not set')}</span>`}
 function currentPublicationName(){return S.issue?pubName(S.issue.fields.Publication):''}
+
+function publicationSpecificTermsV312i(name=''){
+  const generic=new Set(['spotlight','taste','trail','local','pet','insider','business','pulse','smart','money','property','news','newsletter','the']);
+  return String(name||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').split(/\s+/).filter(x=>x.length>3&&!generic.has(x));
+}
+function forbiddenPublicationTermsV312i(){
+  const current=currentPublicationName();
+  const currentTerms=new Set(publicationSpecificTermsV312i(current));
+  const out=new Set();
+  for(const p of S.publications||[]){
+    const name=String(val(p.fields,'Publication Name')||'').trim();
+    if(!name||name===current)continue;
+    out.add(name.toLowerCase());
+    publicationSpecificTermsV312i(name).forEach(t=>{if(!currentTerms.has(t))out.add(t)});
+  }
+  return [...out].filter(Boolean);
+}
+function publicationLeakageForArticleV312i(a){
+  const hay=[a?.title,a?.question,a?.problem,a?.hook,a?.reader,a?.value,a?.local_proof,a?.why_now].filter(Boolean).join(' ').toLowerCase();
+  const hits=forbiddenPublicationTermsV312i().filter(t=>hay.includes(t));
+  return hits.length?{title:a?.title||a?.question||'Untitled',hits}:null;
+}
+function publicationLeakageAuditV312i(plan){
+  const hits=(plan?.articles||[]).map(publicationLeakageForArticleV312i).filter(Boolean);
+  const summary=String(plan?.issue_summary||'').toLowerCase();
+  const summaryHits=forbiddenPublicationTermsV312i().filter(t=>summary.includes(t));
+  return {hits,summaryHits,blocked:hits.length>0||summaryHits.length>0};
+}
+function candidateSlateAuditV312i(plan){
+  const profile=engineProfileForPublication();
+  const arts=plan?.articles||[];
+  const laneCounts={},tones={};
+  for(const a of arts){
+    const lane=editorialLaneFor(a,profile)||'OPEN';
+    laneCounts[lane]=(laneCounts[lane]||0)+1;
+    const tone=toneBucket(a);tones[tone]=(tones[tone]||0)+1;
+  }
+  const notes=[];
+  const uniqueLanes=Object.keys(laneCounts).length;
+  if(uniqueLanes<5)notes.push(`Candidate slate spans ${uniqueLanes} editorial lanes; Step 5 should favour a broader final mix.`);
+  const food=laneCounts['FOOD & HOSPITALITY']||0;
+  if(food>4)notes.push(`Food & Hospitality is strong in the 15-candidate pool (${food}/15). Selection warning only.`);
+  const reader=laneCounts['READER VOICE']||0;
+  if(reader>5)notes.push(`Reader Voice is strong in the 15-candidate pool (${reader}/15). Select fewer reader-prompt Masters in Step 5.`);
+  const leakage=publicationLeakageAuditV312i(plan);
+  return {status:leakage.blocked?'BLOCKED':notes.length?'REVIEW':'READY',count:arts.length,target:profile.defaultMasters||15,uniqueLanes,laneCounts,tones,notes,leakage};
+}
+
 function currentPlaceName(){const n=currentPublicationName();return n.replace(/\s+Spotlight\s*$/i,'').trim()||'local area'}
 function publicationKey(name){return String(name||'').trim().toLowerCase()}
 function render(){E('m-pubs').textContent=S.publications.length;E('m-open').textContent=S.issues.filter(i=>!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase())).length;if(E('production-publication')){const current=(S.issue?.fields?.Publication||[])[0]||'';E('production-publication').innerHTML=S.publications.filter(p=>String(val(p.fields,'Status')||'').toLowerCase()!=='inactive').map(p=>`<option value="${p.id}" ${p.id===current?'selected':''}>${esc(val(p.fields,'Publication Name'))}</option>`).join('');}if(E('m-current-production'))E('m-current-production').textContent=S.issue?pubName(S.issue.fields.Publication):'Choose below';E('issue-filter').innerHTML='<option value="">All publications</option>'+S.publications.map(p=>`<option value="${p.id}">${esc(val(p.fields,'Publication Name'))}</option>`).join('');E('new-publication').innerHTML=S.publications.map(p=>`<option value="${p.id}">${esc(val(p.fields,'Publication Name'))}</option>`).join('');E('pub-table').innerHTML=`<table><thead><tr><th>Publication</th><th>Code</th><th>Status</th><th>Weekly target</th></tr></thead><tbody>${S.publications.map(p=>`<tr><td><strong>${esc(val(p.fields,'Publication Name'))}</strong></td><td>${esc(val(p.fields,'Short Code'))}</td><td>${pill(val(p.fields,'Status'))}</td><td>${esc(val(p.fields,'Weekly Send Target')||'—')}</td></tr>`).join('')}</tbody></table>`;renderIssues();const att=S.issues.filter(i=>!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase())).slice(0,8);E('attention').innerHTML=issueTable(att)}
@@ -1660,10 +1708,11 @@ function renderEngineProfile(){
  E('engine-profile-name').textContent=p.name+' Engine Profile';E('engine-profile-desc').textContent=p.description;
  E('engine-target-sections').textContent=p.targetSections.join('–');E('engine-target-masters').textContent=p.targetMasters.join('–');E('engine-target-support').textContent=p.targetSupport.join('–');E('engine-profile-mode').textContent='AUTO · '+p.key;
  E('engine-profile-lanes').innerHTML=p.lanes.map(x=>`<span class="lane-chip">${esc(x)}</span>`).join('');
- const plan=getSmartPlan?.();const h=plan?.articles?.length?issueBalanceAudit(plan):null;const box=E('engine-health');
- if(!h){box.className='engine-health';box.innerHTML='<strong>Planning gate:</strong> Build a plan to test lane spread, mood and rhythm before production.';return}
- box.className='engine-health '+(h.status==='READY'?'ready':h.status==='NEEDS ATTENTION'?'blocked':'review');
- box.innerHTML=`<strong>Planning gate: ${esc(h.status)}</strong> · projected ${h.projectedSections} sections · ${h.lifeLanes.length} lanes · heavy mood ${Math.round(h.heavyMoodShare*100)}%${h.findings.length?`<br>${h.findings.slice(0,3).map(x=>'• '+esc(x)).join('<br>')}`:' · balanced enough to proceed.'}`;
+ const plan=getSmartPlan?.();const h=plan?.articles?.length?candidateSlateAuditV312i(plan):null;const box=E('engine-health');
+ if(!h){box.className='engine-health';box.innerHTML='<strong>Candidate gate:</strong> Build 15 Master candidates. Final issue balance is checked after Step 5 selection.';return}
+ box.className='engine-health '+(h.status==='READY'?'ready':h.status==='BLOCKED'?'blocked':'review');
+ const leak=h.leakage.blocked?`<br>• Wrong-publication references detected — rebuild before approval.`:'';
+ box.innerHTML=`<strong>Candidate gate: ${esc(h.status)}</strong> · ${h.count}/${h.target} candidates · ${h.uniqueLanes} lanes${h.notes.length?`<br>${h.notes.slice(0,3).map(x=>'• '+esc(x)).join('<br>')}`:' · candidate pool ready for editorial review.'}${leak}`;
 }
 
 const COMPONENT_DEFS=[
@@ -1925,6 +1974,25 @@ function saveSmartPlanBatches(v){localStorage.setItem(smartPlanBatchesKey(),JSON
 function planModeClass(m){return ['REUSE','LOCALISE'].includes(m)?'ready':'needs'}
 let smartEditOrder=null;
 function saveSmartPlan(plan){localStorage.setItem(smartPlanKey(),JSON.stringify(plan))}
+
+function resetSmartCandidatePlanV312j(){
+  const plan=getSmartPlan(),batches=getSmartPlanBatches();
+  const count=(plan?.articles||[]).length||batches.flatMap(b=>b.articles||[]).length;
+  if(!count){
+    const m='No saved candidate plan to reset. Collected source signals are still available.';
+    E('smart-scan-progress').textContent=m;updateWorkflowShellV312(1);setWorkflowActionStatusV312(1,'Plan','Nothing to reset.',m);return;
+  }
+  const ok=confirm(`Reset the saved ${count}-candidate plan for ${currentPublicationName()}?\n\nThis clears only the candidate decisions and current-run rejected list. It keeps the collected source signals so the 15 candidates can be rebuilt immediately.`);
+  if(!ok)return;
+  localStorage.removeItem(smartPlanKey());
+  saveSmartPlanBatches([]);
+  clearSmartRejected();
+  const m=`15-candidate plan reset for ${currentPublicationName()}. Collected source signals were kept. Next: Build / Resume 15-Candidate Plan.`;
+  E('smart-scan-progress').textContent=m;
+  renderSmartPlan();renderEngineProfile();updateWorkflowShellV312(1);
+  setWorkflowActionStatusV312(1,'Plan','Candidate plan reset.',m);
+}
+
 function smartPlanLocked(plan=getSmartPlan()){return !!plan?.lockedAt}
 function recalcSmartCounts(plan){plan.counts=(plan.articles||[]).reduce((o,a)=>(o[a.mode]=(o[a.mode]||0)+1,o),{});return plan}
 function unlockSmartPlan(plan){if(plan?.lockedAt)delete plan.lockedAt}
@@ -1966,6 +2034,7 @@ async function replaceSmartArticle(order){
         method:'POST',
         body:JSON.stringify({
           publication:currentPublicationName(),
+          forbiddenPublicationTerms:forbiddenPublicationTermsV312i(),
           issuePromise:plan.issuePromise||E('assembly-theme').value,
           sendDate:val(S.issue.fields,'Send Date'),
           signals:getSmartSignals(),
@@ -2008,8 +2077,20 @@ function lockSmartPlan(){
  const h=reuseGuardSummary(plan);if(h.blocked){alert(`${h.blocked} REUSE/REFRESH item${h.blocked===1?' is':'s are'} blocked by live same-publication history. Replace or change the angle before locking.`);return}
  const fresh=freshnessGuardSummary(plan);if(!fresh.ok){alert(`FRESHNESS GATE BLOCKED — ${profile.name}\n\n${fresh.findings.join('\n- ')}\n\nRecent published articles are history, not the default content pool.`);return}
  const a=smartPlanAlignmentSummary(plan),r=refreshGateSummary(plan),d=sameIssueDuplicationSummary(plan);if(a.bad){alert(`${a.bad} SOURCE MISMATCH item${a.bad===1?'':'s'} must be edited or replaced before the plan can be locked.`);return}if(r.replace){alert(`${r.replace} REFRESH item${r.replace===1?'':'s'} do not identify a material change and should be replaced or edited before the plan can be locked.`);return}if(d.duplicate){alert(`${d.duplicate} same-issue duplicate pair${d.duplicate===1?'':'s'} must be replaced or edited before the plan can be locked.`);return}
- const balance=issueBalanceAudit(plan);if(balance.status==='NEEDS ATTENTION'){alert(`PLANNING GATE BLOCKED — ${profile.name}\n\n${balance.findings.join('\n- ')}\n\nReplace/rebalance the plan before production. No Airtable briefs have been created.`);return}
- plan.engineProfile=profile.key;plan.projectedSupportRecipe=profile.supportRecipe;plan.lockedAt=new Date().toISOString();recalcSmartCounts(plan);saveSmartPlan(plan);renderSmartPlan();renderEngineProfile();alert(`Approved ${profile.name} plan locked. Projected full issue: ${balance.projectedSections} sections. Source, duplication and editorial-balance gates passed. Create Missing Article Briefs is now enabled.`)
+ const slate=candidateSlateAuditV312i(plan);
+ if(slate.leakage.blocked){
+   const offenders=slate.leakage.hits.slice(0,6).map(x=>`${x.title} [${x.hits.join(', ')}]`);
+   if(slate.leakage.summaryHits.length)offenders.push(`Editorial shape / plan summary [${slate.leakage.summaryHits.join(', ')}]`);
+   const m=`CANDIDATE PLAN BLOCKED — Wrong-publication references detected in ${currentPublicationName()}.
+
+${offenders.map(x=>'- '+x).join('\n')}
+
+Do not approve this slate. Rebuild the 15 candidates after the publication guard is active.`;
+   E('smart-scan-progress').textContent=m;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Candidate plan blocked — publication contamination detected.',m);return;
+ }
+ plan.engineProfile=profile.key;plan.projectedSupportRecipe=profile.supportRecipe;plan.lockedAt=new Date().toISOString();recalcSmartCounts(plan);saveSmartPlan(plan);renderSmartPlan();renderEngineProfile();
+ const note=`15-candidate slate approved. Final issue balance is not judged here. Step 5 will select the strongest ${profile.targetMasters[0]}–${profile.targetMasters[1]} Masters; Step 6 then builds support to the publication target.`;
+ E('smart-scan-progress').textContent=note;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Candidate slate locked.',note);
 }
 function signalWords(text=''){
   const stop=new Set('the a an and or but to of in on at for from with by is are was were be been this that what which who will would should could can do does did have has had new local norfolk current reported report reports why now'.split(/\s+/));
@@ -2350,15 +2431,16 @@ async function copyIssueBalanceAudit(){
   catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Audit copied.')}
 }
 function commercialAuditHtml(plan){
-  const a=issueBalanceAudit(plan),p=engineProfileForPublication();
+  const a=issueBalanceAudit(plan),p=engineProfileForPublication(),slate=candidateSlateAuditV312i(plan);
   const laneLine=Object.entries(a.laneCounts).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
   const moodLine=Object.entries(a.moodCounts).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
   return `<div class="check smart-audit-panel" style="margin-bottom:10px">
-    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><strong>${esc(p.name.toUpperCase())} PLANNING GATE — ${esc(a.status)}</strong><button class="btn secondary" id="copy-smart-audit" type="button">Copy Audit</button></div>
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><strong>${esc(p.name.toUpperCase())} CANDIDATE SLATE — ${esc(slate.status)}</strong><button class="btn secondary" id="copy-smart-audit" type="button">Copy Audit</button></div>
     <div class="audit-grid" style="margin-top:8px">
-      <div><strong>Projected issue:</strong> ${a.projectedSections} sections</div><div><strong>Master / support:</strong> ${(plan.articles||[]).length} / ${a.projectedSupport}</div>
-      <div><strong>Heavy problem/admin mood:</strong> ${Math.round(a.heavyMoodShare*100)}% / max ${Math.round(p.maxHeavyMoodShare*100)}%</div><div><strong>Core sponsor lanes:</strong> ${a.sponsorCoverage?.visible||0}/${CORE_SPONSOR_LANES.length} visible · ${a.sponsorCoverage?.masterVisible||0} via Master · ${a.sponsorCoverage?.supportOnly||0} via short/implied</div>
+      <div><strong>Master candidates:</strong> ${(plan.articles||[]).length} / ${p.defaultMasters||15}</div><div><strong>Final Masters later:</strong> ${p.targetMasters[0]}–${p.targetMasters[1]} selected in Step 5</div>
+      <div><strong>Candidate lanes:</strong> ${slate.uniqueLanes}</div><div><strong>Final issue target:</strong> ${p.targetSections[0]}–${p.targetSections[1]} sections after support is built</div>
     </div>
+    <div class="muted" style="margin-top:8px"><strong>Important:</strong> the 15 candidates are a production pool, not 15 final Master Articles. Food, Reader Voice and mood concentration are selection warnings at this stage, not reasons to block the plan.</div>
     <div style="margin-top:8px"><strong>Freshness:</strong> ${a.freshness.createNew} fresh new · ${a.freshness.freshAngle} fresh angle · ${a.freshness.reuse} direct reuse · ${a.freshness.minCreateNew} fresh-new minimum</div>
     <div style="margin-top:8px"><strong>Projected lane mix:</strong><br><span class="muted">${esc(laneLine||'No lanes detected')}</span></div>
     <div style="margin-top:8px"><strong>Projected mood mix:</strong><br><span class="muted">${esc(moodLine||'No moods detected')}</span></div>
@@ -2452,7 +2534,7 @@ function workflowStepInfoV312(step){
  const target=profile.defaultMasters||15,min=profile.targetMasters?.[0]||5,max=profile.targetMasters?.[1]||7;
  const info={
  1:['Plan',sig.length<24?`Collect source signals first. ICS needs at least 24 distinct signals to build the ${target}-candidate plan.`:(!plan?.articles?.length?`Build the ${target}-candidate Master plan from current signals, archive memory and publication rules.`:`The ${target}-candidate plan exists. Review it before approval.`),sig.length<24?'Collect Signals':'Build / Resume 15-Candidate Plan'],
- 2:['Approve',!plan?.articles?.length?'Finish Step 1 first.':(!locked?'Review Keep / Edit / Replace choices, then lock the approved plan.':'Plan locked. Create or update all 15 Master briefs.'),!locked?'Lock Approved Plan':'Create / Update 15 Briefs'],
+ 2:['Approve',!plan?.articles?.length?'Finish Step 1 first.':(publicationLeakageAuditV312i(plan).blocked?'Wrong-publication references are present in this saved candidate slate. Reset the 15-candidate plan and rebuild it under the publication guard.':(!locked?'Review the 15-candidate slate, then lock it.':'Plan locked. Create or update all 15 Master briefs.')),publicationLeakageAuditV312i(plan).blocked?'Reset 15-Candidate Plan':(!locked?'Lock Approved Plan':'Create / Update 15 Briefs')],
  3:['Research','Research the approved Master briefs. Select a Master from the list, then use the research action. Batch research is the next automation layer.','Open Research Workspace'],
  4:['Produce','Use the existing production pipeline to research/write the 15 Master candidates. Production is resumable and completed work is preserved.','Produce All Approved Masters'],
  5:['Select',`Choose ${min}–${max} strongest READY Masters for this issue. The remaining READY candidates stay bankable rather than being forced into the newsletter.`,`Review Master Selection`],
@@ -2474,13 +2556,22 @@ function updateWorkflowShellV312(forcedStep){
  // async issue loading / renderAssembly / updateWorkflowGuide calls.
  document.body.dataset.workflowStep=String(workflowSelectedStepV312);
  document.querySelectorAll('[data-flow-step]').forEach(b=>{const n=Number(b.dataset.flowStep);b.classList.toggle('active',n===workflowSelectedStepV312);b.classList.toggle('done',n<auto)});
+ const resetBtn=E('workflow-reset-plan-v312j');
+ if(resetBtn){
+   const hasPlan=!!plan?.articles?.length||getSmartPlanBatches().flatMap(b=>b.articles||[]).length>0;
+   resetBtn.style.display=(hasPlan&&workflowSelectedStepV312<=2)?'inline-flex':'none';
+ }
  const [name,copy,label]=workflowStepInfoV312(workflowSelectedStepV312);E('workflow-current-v312').textContent=workflowContextLabelV312(workflowSelectedStepV312,name);E('workflow-instruction-v312').textContent=copy;const btn=E('workflow-primary-v312');btn.textContent=label;btn.dataset.step=String(workflowSelectedStepV312);
  renderMasterSelectionV312();
 }
 function runWorkflowPrimaryV312(){
  const step=Number(E('workflow-primary-v312')?.dataset.step||workflowSelectedStepV312||1),plan=getSmartPlan();
  if(step===1){if(getSmartSignals().length<24)E('assembly-auto').click();else E('assembly-build-plan').click();return}
- if(step===2){if(!plan?.articles?.length){updateWorkflowShellV312(1);return}if(!smartPlanLocked(plan))E('smart-plan-lock').click();else E('smart-plan-apply').click();return}
+ if(step===2){
+  if(!plan?.articles?.length){updateWorkflowShellV312(1);return}
+  if(publicationLeakageAuditV312i(plan).blocked){resetSmartCandidatePlanV312j();return}
+  if(!smartPlanLocked(plan))E('smart-plan-lock').click();else E('smart-plan-apply').click();return
+ }
  if(step===3){show('build');setTimeout(()=>E('run-next-production')?.scrollIntoView({behavior:'smooth',block:'center'}),80);return}
  if(step===4){show('build');setTimeout(()=>E('run-production')?.click(),80);return}
  if(step===5){show('assemble');E('master-selection-panel-v312')?.scrollIntoView({behavior:'smooth',block:'start'});return}
@@ -2643,7 +2734,7 @@ async function buildSmartPlanFromSavedSignals(){
       const progress=`Planning ${spec.batch}/${targetMasters} ${spec.label}.`;
       E('smart-scan-progress').textContent=`${progress} Each article decision is saved immediately.`;
       setWorkflowActionStatusV312(1,'Plan',progress,'ICS is choosing and saving the next Master candidate.');
-      const data=await api('plan-issue-batch',{method:'POST',body:JSON.stringify({...base,rejectedCandidates:getSmartRejected(),existingArticles:inventory,batch:spec.batch,batchLabel:spec.label,batchBrief:spec.brief,targetCount:1,totalBatches:targetMasters,priorArticles:prior,engineProfile:profile.key,editorialLanes:profile.lanes,minimumGroups:profile.minimumGroups,maxHeavyMoodShare:profile.maxHeavyMoodShare})});
+      const data=await api('plan-issue-batch',{method:'POST',body:JSON.stringify({...base,forbiddenPublicationTerms:forbiddenPublicationTermsV312i(),rejectedCandidates:getSmartRejected(),existingArticles:inventory,batch:spec.batch,batchLabel:spec.label,batchBrief:spec.brief,targetCount:1,totalBatches:targetMasters,priorArticles:prior,engineProfile:profile.key,editorialLanes:profile.lanes,minimumGroups:profile.minimumGroups,maxHeavyMoodShare:profile.maxHeavyMoodShare})});
       if(data.deterministicFallback){
         const source=data.fallbackSource==='saved-signal'?'saved signal/question-bank pool':'article library';
         const note=`Planning ${spec.batch}/${targetMasters} recovered automatically: duplicate rejected, safe unused candidate selected from ${source}.`;
@@ -3371,6 +3462,7 @@ E('command-open-build').onclick=()=>show('build');
 
 E('assembly-export').onclick=exportCanvasBackup;if(E('smart-copy-status'))E('smart-copy-status').onclick=copyPlannerStatus;
 if(E('workflow-copy-status-v312e'))E('workflow-copy-status-v312e').onclick=copyWorkflowStatusV312E;
+if(E('workflow-reset-plan-v312j'))E('workflow-reset-plan-v312j').onclick=resetSmartCandidatePlanV312j;
 
 // v3.12b: keep the nine-step workflow visible globally and show one job at a time.
 function installCleanWorkflowV312B(){

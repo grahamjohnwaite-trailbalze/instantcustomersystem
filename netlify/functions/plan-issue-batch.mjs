@@ -97,6 +97,11 @@ const deterministicArticleFromSignal=(s,publication)=>{
     source_signal:`Lead ${s._signal_index}${sourceTitle?` — ${sourceTitle}`:''}`
   };
 };
+const wrongPublicationHit=(article,terms=[])=>{
+  const hay=[article?.title,article?.question,article?.problem,article?.hook,article?.reader,article?.value,article?.local_proof,article?.why_now].filter(Boolean).join(' ').toLowerCase();
+  const hits=terms.filter(t=>t&&hay.includes(t));
+  return hits.length?hits:[];
+};
 export default async(request)=>{
   try{
     if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
@@ -114,6 +119,7 @@ export default async(request)=>{
     const blockedRecentHistory=(Array.isArray(d.blockedRecentHistory)?d.blockedRecentHistory:[]).slice(0,50).map(x=>String(x||'').trim()).filter(Boolean);
     const blockedPack=blockedRecentHistory.map((x,i)=>`${i+1}. ${x}`).join('\n');
     const rejectedCandidates=(Array.isArray(d.rejectedCandidates)?d.rejectedCandidates:[]).slice(0,30).map(String).filter(Boolean);
+    const forbiddenPublicationTerms=(Array.isArray(d.forbiddenPublicationTerms)?d.forbiddenPublicationTerms:[]).slice(0,30).map(x=>String(x||'').trim().toLowerCase()).filter(Boolean);
     const existing=(Array.isArray(d.existingArticles)?d.existingArticles:[]).slice(0,90).map(x=>({id:String(x.id||''),title:String(x.title||''),purpose:String(x.purpose||'').slice(0,100),freshness:String(x.freshness||''),topic:String(x.topic||''),history_status:String(x.history_status||''),history_match:String(x.history_match||''),history_publication:String(x.history_publication||''),history_score:Number(x.history_score||0)})).filter(x=>x.id&&x.title);
     const usableExisting=existing.filter(x=>!rejectedCandidates.some(t=>guardSimilarity(x.title,t)>=0.38));
     const rankedExisting=[...usableExisting].sort((a,b)=>{const rank=x=>String(x.history_status||'').startsWith('LOCALISE')?0:String(x.history_status||'').startsWith('AVAILABLE')?1:2;return rank(a)-rank(b)}).slice(0,36);
@@ -142,7 +148,7 @@ ALREADY CHOSEN:
 ${prior||'None'}
 
 RULES:
-- Never repeat a recent blocked, rejected, or already-chosen question/angle. Same concept under a new title is still a duplicate.
+- Never repeat a recent blocked, rejected, or already-chosen question/angle. Same concept under a new title is still a duplicate.\n- PUBLICATION GUARD: this is for ${publication}. Do not frame the story for, address readers of, or use local proof from these other publication/geography terms unless an explicit cross-border comparison is required: ${forbiddenPublicationTerms.join(', ')||'none'}.
 - Prefer LOCALISE from another publication when strong and not already used in ${publication}.
 - REUSE only when history does not show recent same-publication use. UNKNOWN HISTORY must be stated in why_now.
 - REFRESH requires a real changed fact/rule/figure/decision that materially changes the answer.
@@ -203,9 +209,9 @@ JSON ONLY:
     const dupHits=articles.map(a=>recentDuplicate(a,blockedRecentHistory)).filter(Boolean);
     const rejectedHits=articles.map(a=>rejectedDuplicate(a,rejectedCandidates)).filter(Boolean);
     if(articles.length!==requestedCount)return json(502,{ok:false,error:`Planner batch returned ${articles.length} usable articles; expected ${requestedCount}.`});
-    if(dupHits.length||rejectedHits.length){
+    if(dupHits.length||rejectedHits.length||publicationHits.length){
       const fallbackOpts={blocked:blockedRecentHistory,rejected:rejectedCandidates,prior:priorArticlesRaw};
-      const safe=safeDeterministicCandidate(rankedExisting,fallbackOpts);
+      const safe=safeDeterministicCandidate(rankedExisting.filter(c=>!wrongPublicationHit({title:c.title,question:c.purpose,problem:c.topic},forbiddenPublicationTerms).length),fallbackOpts);
       if(safe){
         const fallbackArticle=deterministicArticleFromCandidate(safe,publication);
         return json(200,{
@@ -213,14 +219,14 @@ JSON ONLY:
           articles:[fallbackArticle],modelUsed:response._model_used||model,
           fallbackUsed:true,deterministicFallback:true,fallbackSource:'article-library',
           rejectedModelCandidate:articles[0]?.title||'',
-          fallbackReason:dupHits.length?'recent-history duplicate':'planning-run duplicate'
+          fallbackReason:publicationHits.length?'wrong-publication leakage':dupHits.length?'recent-history duplicate':'planning-run duplicate'
         });
       }
 
       // v3.12h: if the reusable article pool is exhausted, use one distinct saved
       // current/evergreen planning signal as a CREATE NEW brief. The signal is
       // explicitly an idea, not evidence, and must be researched in Step 3.
-      const safeSignal=safeSignalCandidate(rawSignals,fallbackOpts);
+      const safeSignal=safeSignalCandidate(rawSignals.filter(s=>!wrongPublicationHit({title:s.signal,question:s.signal,problem:s.source_title},forbiddenPublicationTerms).length),fallbackOpts);
       if(safeSignal){
         const fallbackArticle=deterministicArticleFromSignal(safeSignal,publication);
         return json(200,{
@@ -228,7 +234,7 @@ JSON ONLY:
           articles:[fallbackArticle],modelUsed:response._model_used||model,
           fallbackUsed:true,deterministicFallback:true,fallbackSource:'saved-signal',
           rejectedModelCandidate:articles[0]?.title||'',
-          fallbackReason:dupHits.length?'recent-history duplicate':'planning-run duplicate'
+          fallbackReason:publicationHits.length?'wrong-publication leakage':dupHits.length?'recent-history duplicate':'planning-run duplicate'
         });
       }
       return json(409,{ok:false,error:`Planner rejected a duplicate and no distinct unused article or saved-signal candidate remained for decision ${batch}/${totalBatches}.`});
