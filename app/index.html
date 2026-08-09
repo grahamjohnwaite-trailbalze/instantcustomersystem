@@ -303,7 +303,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
  body[data-workflow-step="8"] .canvas-layout {grid-template-columns:1fr!important}
 }
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.13.3<br><strong>Step 3 State Hydration</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · Step 3 status derived from saved research state · no stale header</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.13.4<br><strong>Attributed Evidence Pass</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · ATTRIBUTED evidence passes Step 3 · writer carries attribution rule</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -323,7 +323,7 @@ body[data-workflow-step] #view-assemble > .section-head {display:none!important}
 <button class="btn secondary" id="view-research" type="button">View research</button>
 <button class="btn secondary" id="open-primary-source" type="button">Open source</button>
 <button class="btn secondary" id="add-authoritative-source" type="button" style="grid-column:1/-1">Add authoritative evidence</button>
-<button class="btn secondary" id="mark-evidence-verified" type="button" style="grid-column:1/-1">2. Mark evidence verified</button>
+<button class="btn secondary" id="mark-evidence-verified" type="button" style="grid-column:1/-1">2. Mark Evidence Verified</button>
 </div>
 <div id="production-progress" class="empty" style="margin-bottom:14px">Production service not run yet.</div>
 <div id="map-audit" class="empty" style="margin-bottom:14px">Audit not run yet.</div>
@@ -1491,7 +1491,29 @@ function researchPackPresent(f){
  const hasTerminalService=/PRODUCTION SERVICE v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?Stage:\s*RESEARCH[\s\S]*?State:\s*RESEARCH_COMPLETE/.test(notes);
  return hasPack||hasTerminalService;
 }
-function articleWorkflowState(s){const f=s?.fields||{},researched=researchPackPresent(f),verified=['Verified','Question Only','Illustrative Example'].includes(String(val(f,'Evidence Status')||'')),hasCopy=isProducedArticle(s),qa=String(val(f,'Section QA Result')||''),ready=hasCopy&&qa==='Pass';return{researched,verified,hasCopy,qa,ready,steps:[researched,verified,hasCopy,ready]}}
+
+
+function attributionInstructionV3134(fields){
+  const gate=evidencePublishabilityV3134(fields);
+  if(!gate.attributed)return '';
+  return 'ATTRIBUTION RULE V3.13.4: This Research Pack is publishable as ATTRIBUTED evidence, not independently VERIFIED evidence. Attribute material factual claims to the named source/report/organisation in the copy. Do not upgrade attributed claims into unqualified fact. Do not add “according to” mechanically to every sentence; attribute where it materially supports the claim.';
+}
+function evidencePublishabilityV3134(fields){
+  const status=String(val(fields,'Evidence Status')||'').trim().toLowerCase();
+  const verified=/verified|verification complete|verified evidence/.test(status);
+  const attributed=/reported\s*[—-]\s*attribution required|attribution required|reported/.test(status);
+  const blocked=/blocked|insufficient|unverified central claim|no reliable basis/.test(status);
+  return {
+    verified,
+    attributed:attributed&&!blocked,
+    publishable:(verified||attributed)&&!blocked,
+    blocked
+  };
+}
+function articleWorkflowState(s){
+  const evidenceGate=evidencePublishabilityV3134(s?.fields||s||{});const f=s?.fields||{},researched=researchPackPresent(f),verified=['Verified','Question Only','Illustrative Example'].includes(String(val(f,'Evidence Status')||'')),hasCopy=isProducedArticle(s),qa=String(val(f,'Section QA Result')||''),ready=hasCopy&&qa==='Pass';return{researched,verified:evidenceGate.verified,
+    publishableEvidence:evidenceGate.publishable,
+    attributedEvidence:evidenceGate.attributed,hasCopy,qa,ready,steps:[researched,verified,hasCopy,ready]}}
 function renderArticleWorkflow(){
  const box=E('article-workflow');if(!box)return;
  if(!S.section){box.className='workflow-card';box.innerHTML='<strong>Current article workflow</strong><div class="muted" style="margin-top:6px">Select an article to see the next required action.</div>';return}
@@ -2871,15 +2893,15 @@ async function researchAllApprovedMastersV3131(){
     const queue=await productionSections();
     const rows=queue.map(x=>({item:x,wf:articleWorkflowState(x.s),status:String(val(x.s.fields,'Evidence Status')||'').trim(),title:String(val(x.s.fields,'Section Title')||'Untitled'),order:Number(val(x.s.fields,'Section Order')||0)}));
     const researched=rows.filter(x=>x.wf.researched).length;
-    const verified=rows.filter(x=>x.wf.verified).length;
+    const verified=rows.filter(x=>x.wf.publishableEvidence||x.wf.verified).length;
     const total=rows.length;
-    const exceptions=rows.filter(x=>x.wf.researched&&!x.wf.verified);
+    const exceptions=rows.filter(x=>x.wf.researched&&!(x.wf.publishableEvidence||x.wf.verified));
     const exceptionLines=exceptions.map(x=>`Article ${x.order}: ${x.title} — ${x.status||'Evidence status not verified'}`);
     const headline=`${researched}/${total} researched · ${verified}/${total} verified`;
     const detail=researched===total
       ? (exceptions.length
           ? `Research is complete. ${exceptions.length} evidence exception${exceptions.length===1?'':'s'} remain:\n- ${exceptionLines.join('\n- ')}\nCompleted Research Packs are preserved. Resolve only these exceptions before Step 4 writes the affected Masters.`
-          : 'Step 3 complete — all Research Packs are saved and evidence is verified. Next: Step 4 — Produce.')
+          : 'Step 3 complete — all Research Packs are saved and evidence is publishable. Next: Step 4 — Produce.')
       : `Research stopped before all Masters completed. ${researched}/${total} Research Packs are saved. Completed research is preserved.`;
     setWorkflowActionStatusV312(3,'Research',headline,detail);
     E('save-state').textContent=`${headline}. ${exceptions.length?`${exceptions.length} evidence exceptions remain.`:'No evidence exceptions.'}`;
@@ -2919,8 +2941,8 @@ async function hydrateStep3StateV3133(){
     }));
     const total=rows.length;
     const researched=rows.filter(x=>x.wf.researched).length;
-    const verified=rows.filter(x=>x.wf.verified).length;
-    const exceptions=rows.filter(x=>x.wf.researched&&!x.wf.verified);
+    const verified=rows.filter(x=>x.wf.publishableEvidence||x.wf.verified).length;
+    const exceptions=rows.filter(x=>x.wf.researched&&!(x.wf.publishableEvidence||x.wf.verified));
 
     if(researched===0){
       setWorkflowActionStatusV312(3,'Research',`${st.active}/${st.expected} Master briefs ready.`,`Next: Research All ${st.expected} Masters. Research Packs are saved article by article; completed work is preserved if the run stops.`);
@@ -2936,12 +2958,12 @@ async function hydrateStep3StateV3133(){
 
     if(exceptions.length){
       const lines=exceptions.map(x=>`Article ${x.order}: ${x.title} — ${x.status||'Evidence not verified'}`);
-      setWorkflowActionStatusV312(3,'Research',`${researched}/${total} researched · ${verified}/${total} verified · ${exceptions.length} evidence exception${exceptions.length===1?'':'s'}`,`Research is complete. Resolve only these evidence exceptions before Step 4 writes the affected Masters:\n- ${lines.join('\n- ')}`);
+      setWorkflowActionStatusV312(3,'Research',`${researched}/${total} researched · ${verified}/${total} publishable · ${exceptions.length} evidence exception${exceptions.length===1?'':'s'}`,`Research is complete. Resolve only these evidence exceptions before Step 4 writes the affected Masters:\n- ${lines.join('\n- ')}`);
       if(b)b.textContent='Review Evidence Exceptions';
       return;
     }
 
-    setWorkflowActionStatusV312(3,'Research',`${researched}/${total} researched · ${verified}/${total} verified`,'Step 3 complete. All approved Masters have saved Research Packs and verified evidence. Next: Step 4 — Produce.');
+    setWorkflowActionStatusV312(3,'Research',`${researched}/${total} researched · ${verified}/${total} publishable`,'Step 3 complete. All approved Masters have saved Research Packs with publishable evidence. Verified and attributed evidence are both valid. Next: Step 4 — Produce.');
     if(b)b.textContent='Go To Step 4 — Produce';
   }catch(e){
     setWorkflowActionStatusV312(3,'Research','Step 3 state unavailable.','Could not refresh Step 3 state: '+String(e.message||e));
@@ -2996,14 +3018,14 @@ function runWorkflowPrimaryV312(){
      if(!st.clean){openResearchWorkspaceV3131();return}
      const rows=queue.map(x=>({s:x.s,wf:articleWorkflowState(x.s),status:String(val(x.s.fields,'Evidence Status')||'').trim()}));
      const researched=rows.filter(x=>x.wf.researched).length;
-     const exceptions=rows.filter(x=>x.wf.researched&&!x.wf.verified);
+     const exceptions=rows.filter(x=>x.wf.researched&&!(x.wf.publishableEvidence||x.wf.verified));
      if(researched<rows.length){researchAllApprovedMastersV3131();return}
      if(exceptions.length){
        sortSections();renderSections();
        const first=exceptions[0]?.s;
        if(first){S.section=first;renderForm();render();}
        const lines=exceptions.map(x=>`Article ${Number(val(x.s.fields,'Section Order')||0)}: ${String(val(x.s.fields,'Section Title')||'Untitled')} — ${x.status||'Evidence not verified'}`);
-       setWorkflowActionStatusV312(3,'Research',`${researched}/${rows.length} researched · ${rows.length-exceptions.length}/${rows.length} verified · ${exceptions.length} evidence exceptions`,`Resolve only these exceptions:\n- ${lines.join('\n- ')}`);
+       setWorkflowActionStatusV312(3,'Research',`${researched}/${rows.length} researched · ${rows.length-exceptions.length}/${rows.length} publishable · ${exceptions.length} evidence exceptions`,`Resolve only these exceptions:\n- ${lines.join('\n- ')}`);
        return;
      }
      updateWorkflowShellV312(4);
