@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.16.3<br><strong>Resume Incomplete Repairs</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · resumes reset-but-unproduced Masters · canonical repair preserved</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.16.4<br><strong>Step 7 Clean Reassembly</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · Step 7 deterministic rebuild · stale local running order discarded</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -446,6 +446,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 </section>
 
 <section class="canvas-panel">
+<div id="step7-status-v3164" class="check" style="display:none;margin:0 0 10px;white-space:pre-wrap;user-select:text"></div>
 <div class="canvas-toolbar"><div><h2 style="margin:0">Issue Running Order</h2><div class="muted">Drag to reorder. Masters, partner components and supporting components can be mixed freely.</div></div><span class="pill" id="assembly-count">0 blocks</span></div>
 <div id="assembly-order" class="issue-canvas"><div class="drop-hint">Drag a Master Article or another component here to start assembling the issue.</div></div>
 </section>
@@ -3823,7 +3824,14 @@ function runWorkflowPrimaryV312(){
    renderStep6StatusV3151();
    return
  }
- if(step===7){show('assemble');document.querySelector('.canvas-layout')?.scrollIntoView({behavior:'smooth',block:'start'});return}
+ if(step===7){
+   show('assemble');
+   workflowSelectedStepV312=7;
+   updateWorkflowShellV312(7);
+   setStep7StatusV3164('Step 7 — Ready To Rebuild','Click Assemble Selected Issue once. The running order will be rebuilt from the current Step 5 selection and persistent Step 6 components; old browser assembly is ignored.');
+   document.querySelector('.canvas-layout')?.scrollIntoView({behavior:'smooth',block:'start'});
+   return
+ }
  if(step===8){show('assemble');E('assembly-qa').click();return}
  if(step===9){show('assemble');E('assembly-generate').click();return}
 }
@@ -4065,51 +4073,118 @@ function buildSmartCanvas(articles,persistentSupports=null){
   const max=profile.targetSections[1];
   return items.slice(0,max);
 }
+
+function setStep7StatusV3164(head,detail=''){
+  const box=E('step7-status-v3164');
+  if(box){
+    box.style.display='block';
+    box.innerHTML=`<strong>${esc(head)}</strong>${detail?`<div class="muted" style="margin-top:5px;white-space:pre-wrap">${esc(detail)}</div>`:''}`;
+  }
+  setWorkflowActionStatusV312(7,'Assemble',head,detail);
+}
+function clearRunningOrderV3164(){
+  localStorage.removeItem(assemblyKey());
+  canvasSelectedUid=null;
+  renderAssembly();
+}
 async function smartAssembleIssue(){
-  if(!S.issue){alert('Open an issue first.');return}
-  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Create a Smart Issue Plan first.');return}
-  try{await Promise.all([loadSections(),loadArticleLibrary()])}catch(e){alert('Could not refresh article library: '+e.message);return}
-  const profile=engineProfileForPublication(),selectedOrders=getMasterSelectionV312();
-  const minMasters=profile.targetMasters?.[0]||5,maxMasters=profile.targetMasters?.[1]||7;
+  if(!S.issue){
+    setStep7StatusV3164('Step 7 blocked.','Open an issue first.');return;
+  }
+
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length){
+    setStep7StatusV3164('Step 7 blocked.','No approved candidate plan is loaded.');return;
+  }
+
+  setStep7StatusV3164('Checking Current Step 5 Selection…','Refreshing the current Master records before rebuilding the running order.');
+
+  try{
+    await Promise.all([loadSections(),loadArticleLibrary()]);
+  }catch(e){
+    setStep7StatusV3164('Step 7 blocked — refresh failed.',String(e.message||e));return;
+  }
+
+  const profile=engineProfileForPublication();
+  const selectedOrders=getMasterSelectionV312();
+  const minMasters=profile.targetMasters?.[0]||8,maxMasters=profile.targetMasters?.[1]||10;
+
   if(selectedOrders.length<minMasters||selectedOrders.length>maxMasters){
-    const msg=`Select ${minMasters}–${maxMasters} Master Articles in Step 5 before assembling. Current selection: ${selectedOrders.length}.`;
-    if(E('smart-scan-progress'))E('smart-scan-progress').textContent=msg;
-    setWorkflowActionStatusV312(7,'Assemble','Master selection is incomplete.',msg);
-    renderMasterSelectionV312();return
-  }
-  const selectedArticles=plan.articles.filter(a=>selectedOrders.includes(Number(a.order)));
-  const chosen=[],missing=[];
-  for(const a of selectedArticles){
-    // Active issue records are the source of truth. Article Library can lag behind Step 4.
-    let src=planArticleRecordV312(a);
-    if(!src&&a.mode==='REUSE')src=(S.articleLibrary||[]).find(x=>x.id===a.existing_article_id)||null;
-    const leak=src?producedMasterLeakageV316(src):null;
-    if(leak){
-      missing.push(`${a.order}. ${a.title} [${a.mode}] — WRONG PUBLICATION / GEOGRAPHY in produced copy: ${leak.hits.join(', ')}`);
-    }else if(!src||masterArticleState(src)!=='complete'){
-      missing.push(`${a.order}. ${a.title} [${a.mode}] — ${src?masterArticleState(src):'record not found'}`);
-    }else{
-      const b=makeArticleBlock(src);b.planMode=a.mode;b.editorialStance=a.stance;b.relatedPlanQuestion=a.question;chosen.push(b)
-    }
-  }
-  if(missing.length){
-    const msg=`APPROVED PLAN NOT READY TO ASSEMBLE\n\n${missing.join('\n')}\n\nThe current issue production records are checked first. READY cannot override wrong-publication geography in produced copy. Repair contaminated Masters in Step 5, then re-save the selection.`;
-    if(E('smart-scan-progress'))E('smart-scan-progress').textContent=msg;
-    setWorkflowActionStatusV312(7,'Assemble','Approved plan is not ready to assemble.',msg);
+    setStep7StatusV3164('Step 7 blocked — Master selection is incomplete.',
+      `Select ${minMasters}–${maxMasters} READY Masters in Step 5. Current selection: ${selectedOrders.length}.`);
     return;
   }
-  if(getCanvas().length&&!confirm('Replace the current Canvas with the approved Smart Issue Plan?'))return;
-  await refreshPersistentSupportV3153();
-  const persistedSupport=persistentSupportRecordsV3153().filter(supportReadyRecordV3153);
-  const requiredSupport=supportTargetV315().supportNeeded;
-  if(persistedSupport.length<requiredSupport){
-    const msg=`Step 6 is not persistently complete: ${persistedSupport.length}/${requiredSupport} supporting components are READY in Airtable. Complete Step 6 before assembling.`;
-    setWorkflowActionStatusV312(7,'Assemble','Supporting components are incomplete.',msg);return;
+
+  const selectedArticles=plan.articles.filter(a=>selectedOrders.includes(Number(a.order)));
+  const chosen=[],missing=[];
+
+  for(let i=0;i<selectedArticles.length;i++){
+    const a=selectedArticles[i];
+    setStep7StatusV3164(`Checking Master ${i+1}/${selectedArticles.length}…`,a.title);
+
+    let src=planArticleRecordV312(a);
+    if(!src&&a.mode==='REUSE')src=(S.articleLibrary||[]).find(x=>x.id===a.existing_article_id)||null;
+
+    const leak=src?producedMasterLeakageV316(src):null;
+    const state=src?masterArticleState(src):'missing';
+
+    if(leak){
+      missing.push(`${a.order}. ${a.title} — WRONG PUBLICATION / GEOGRAPHY: ${leak.hits.join(', ')}`);
+      continue;
+    }
+    if(!src||state!=='complete'){
+      missing.push(`${a.order}. ${a.title} — ${src?state:'record not found'}`);
+      continue;
+    }
+
+    const b=makeArticleBlock(src);
+    b.planMode=a.mode;
+    b.editorialStance=a.stance;
+    b.relatedPlanQuestion=a.question;
+    chosen.push(b);
   }
-  const items=buildSmartCanvas(chosen,persistedSupport);localStorage.setItem(assemblyKey(),JSON.stringify(items));canvasSelectedUid=items[0]?.uid||null;renderAssembly();
-  const msg=`Approved ${engineProfileForPublication().name} plan assembled: ${chosen.length} Master Articles · ${items.length-chosen.length} supporting/life components · ${items.length} total blocks.`;
-  if(E('smart-scan-progress'))E('smart-scan-progress').textContent=msg;
-  setWorkflowActionStatusV312(7,'Assemble','Selected issue assembled.',msg);
+
+  if(missing.length){
+    setStep7StatusV3164('Step 7 blocked — selected Masters are not clean/ready.',
+      `${missing.join('\n')}\n\nThe previous running order has NOT been accepted as current. Fix/save Step 5, then Assemble again.`);
+    return;
+  }
+
+  await refreshPersistentSupportV3153();
+  const requiredSupport=supportTargetV315().supportNeeded;
+  const persistedSupport=persistentSupportRecordsV3153().filter(supportReadyRecordV3153);
+
+  if(persistedSupport.length<requiredSupport){
+    setStep7StatusV3164('Step 7 blocked — supporting components incomplete.',
+      `${persistedSupport.length}/${requiredSupport} persistent support components are READY. Complete Step 6 first.`);
+    return;
+  }
+
+  setStep7StatusV3164('Rebuilding Running Order…',
+    `${chosen.length} clean READY Masters + ${requiredSupport} persistent support components. Discarding the old browser running order.`);
+
+  // Never ask whether to keep/replace stale localStorage. Step 7 is a deterministic rebuild
+  // from current Step 5 + Step 6 state.
+  clearRunningOrderV3164();
+
+  const items=buildSmartCanvas(chosen,persistedSupport.slice(0,requiredSupport));
+  localStorage.setItem(assemblyKey(),JSON.stringify(items));
+  canvasSelectedUid=items[0]?.uid||null;
+  renderAssembly();
+
+  // Final title-level geography sanity check after assembly.
+  const foreign=items.filter(x=>x.kind==='article').filter(x=>
+    forbiddenPublicationTermsV312i().some(term=>publicationTermPresentV312o(String(x.title||''),term))
+  );
+  if(foreign.length){
+    clearRunningOrderV3164();
+    setStep7StatusV3164('Step 7 failed integrity check.',
+      `Foreign geography appeared after assembly:\n- ${foreign.map(x=>x.title).join('\n- ')}\nThe running order was cleared rather than shown as valid.`);
+    return;
+  }
+
+  setStep7StatusV3164(`Running Order Ready — ${items.length}/${items.length}`,
+    `${chosen.length} Masters + ${items.length-chosen.length} support/partner components. Built fresh from the current saved Step 5 selection and persistent Step 6 records.`);
 }
 
 function autoAssembleIssue(){
