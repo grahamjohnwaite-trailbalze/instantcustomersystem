@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.16.2<br><strong>Canonical Repair Brief</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · canonical clean repair brief · research-pack geography gate before writer</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.16.3<br><strong>Resume Incomplete Repairs</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · resumes reset-but-unproduced Masters · canonical repair preserved</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -686,11 +686,20 @@ async function repairProducedMasterIntegrityV316(){
   const bad=(plan.articles||[]).map(a=>{
     const record=planArticleRecordV312(a);
     const leak=record?producedMasterLeakageV316(record):null;
-    return {a,check:leak?{state:'GEOGRAPHY REVIEW',reason:`Wrong-publication geography in produced copy: ${leak.hits.join(', ')}`,record,leak}:producedMasterIntegrityV316(a)};
-  }).filter(x=>x.check.leak);
+    const notes=String(val(record?.fields||{},'Notes')||'');
+    const resetPending=!!record &&
+      /SMART PLAN APPROVED REPAIR|MASTER ARTICLE INTEGRITY RESET v1/.test(notes) &&
+      masterArticleState(record)!=='complete';
+    const check=leak
+      ? {state:'GEOGRAPHY REVIEW',reason:`Wrong-publication geography in produced copy: ${leak.hits.join(', ')}`,record,leak}
+      : resetPending
+        ? {state:'REPAIR PENDING',reason:'Previous geography repair cleared the stale article but did not complete a clean replacement.',record,repairPending:true}
+        : producedMasterIntegrityV316(a);
+    return {a,check};
+  }).filter(x=>x.check.leak||x.check.repairPending);
 
   if(!bad.length){
-    setWorkflowActionStatusV312(5,'Select','No produced-content geography repairs needed.','All produced Masters pass the active-publication geography gate.');
+    setWorkflowActionStatusV312(5,'Select','No produced-content repairs needed.','All produced Masters pass the active-publication geography gate and there are no incomplete repair records.');
     renderMasterSelectionV312();
     return;
   }
@@ -700,8 +709,10 @@ async function repairProducedMasterIntegrityV316(){
   if(btn){btn.disabled=true;btn.textContent='Repairing…';}
   let repaired=0,failed=[];
   try{
-    setWorkflowActionStatusV312(5,'Select',`Repairing ${bad.length} contaminated Master${bad.length===1?'':'s'}…`,
-      `Fresh research + rewrite will run only for:\n- ${bad.map(x=>`${x.a.order}. ${x.a.title}`).join('\n- ')}\nAll other Masters and all 18 supporting components are preserved.`);
+    const contaminated=bad.filter(x=>x.check.leak).length;
+    const pendingRepair=bad.filter(x=>x.check.repairPending).length;
+    setWorkflowActionStatusV312(5,'Select',`Repairing ${bad.length} Master${bad.length===1?'':'s'}…`,
+      `${contaminated} geography-contaminated · ${pendingRepair} incomplete previous repair${pendingRepair===1?'':'s'}.\nFresh research + rewrite will run only for:\n- ${bad.map(x=>`${x.a.order}. ${x.a.title}`).join('\n- ')}\nAll other Masters and all 18 supporting components are preserved.`);
 
     for(let i=0;i<bad.length;i++){
       const {a,check}=bad[i];
@@ -3021,6 +3032,8 @@ function masterCandidateStateV312(a){
   const r=planArticleRecordV312(a);if(!r)return 'NOT PRODUCED';
   const leak=producedMasterLeakageV316(r);
   if(leak)return `GEOGRAPHY REVIEW — ${leak.hits.join(', ')}`;
+  const notes=String(val(r.fields||{},'Notes')||'');
+  if(/SMART PLAN APPROVED REPAIR|MASTER ARTICLE INTEGRITY RESET v1/.test(notes) && masterArticleState(r)!=='complete')return 'REPAIR PENDING';
   const st=masterArticleState(r);
   if(st==='complete')return 'READY';
   if(st==='review')return 'WRITTEN REVIEW';
