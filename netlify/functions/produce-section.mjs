@@ -136,6 +136,10 @@ function writerPublishabilityGate(fields,result,research){
   const mode=articleMode(fields);
   const reasons=[];
   if(body.length<700)reasons.push('Article body is blank or too short for a Master Article.');
+  // v3.17: a Master Article must end like a finished article, not like a clipped model response.
+  const terminal=body.slice(-1);
+  if(body.length>=700 && !/[.!?…"'’”\)\]]/.test(terminal))reasons.push(`Article body appears truncated or incomplete; it ends "${body.slice(-40)}".`);
+  if(/\b(?:and|or|but|because|with|from|the|a|an|to|of|for|in|on|at|by|could|would|should|can|will|what|which|who|when|where)\s*$/i.test(body))reasons.push('Article body appears to end mid-sentence.');
   if(/FIX REQUIRED BEFORE PUBLICATION|before this article can go live|the editorial team (?:also )?needs|we are holding publication|holding publication until|needs? (?:local )?reader examples before deciding|research (?:is|was) insufficient|records still need checking before readers/i.test(body+' '+String(result?.article_subhead||'')))reasons.push('Reader-facing copy contains internal research/production language.');
   if(/like-for-like evidence|unsafe to treat as fact|latest available evidence|established in the evidence|the fair test is|for now, the honest answer|in plain English/i.test(body+' '+String(result?.article_subhead||'')))reasons.push('Spotlight voice gate: research-room or defensive evidence language remains in reader-facing copy.');
   if(/RECOMMENDATION \/ DISCOVERY|LIST \/ ROUND-UP/.test(mode)){

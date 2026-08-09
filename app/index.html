@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.16.5<br><strong>Step 7 Action Wiring</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · Assemble Selected Issue now calls clean rebuild directly</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.17.0<br><strong>Step 8 QA Repair</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · Step 8 hard-fix automation · Master completeness gate · support structural fixes</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -456,6 +456,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
   <h2>Final QA Results</h2>
   <div class="small muted" id="qa-report-summary">Run Final QA to review the complete issue.</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+    <button class="btn" id="qa-fix-v317">Fix QA Exceptions</button>
     <button class="btn secondary" id="qa-copy">Copy QA Report</button>
     <button class="btn secondary" id="qa-hide">Hide Report</button>
   </div>
@@ -4506,6 +4507,36 @@ function qaSimilarity(a,b){
   let n=0; for(const w of A)if(B.has(w))n++;
   return n/Math.min(A.size,B.size);
 }
+
+function looksTruncatedMasterV317(block){
+  if(block?.kind!=='article')return false;
+  const body=String(block.content||'').trim();
+  if(body.length<200)return true;
+  const last=body.slice(-1);
+  if(!/[.!?…"'’”\)\]]/.test(last))return true;
+  if(/\b(?:and|or|but|because|with|from|the|a|an|to|of|for|in|on|at|by|could|would|should|can|will|what|which|who|when|where)\s*$/i.test(body))return true;
+  return false;
+}
+function orphanPartnerTipV317(block){
+  return block?.kind==='component' &&
+    /PARTNER TIP/i.test(String(block.type||block.title||'')) &&
+    !String(block.partner||'').trim();
+}
+function duplicateOpeningClosingV317(items){
+  if(items.length<2)return null;
+  const first=items[0],last=items[items.length-1];
+  const opening=x=>/OPENING NOTE/i.test(String(x?.type||x?.title||''));
+  return opening(first)&&opening(last)?last:null;
+}
+function clearWriterOnlyStateV317(notes){
+  return String(notes||'')
+    .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v(?:1|2)[\s\S]*?END MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
+    .replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'')
+    .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*?(?=\n\n[A-Z][A-Z ]+ v|$)/g,'')
+    .replace(/\n?MASTER ARTICLE RUNNING v[\d.]+[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'')
+    .replace(/\n?MASTER ARTICLE FAILED v[\d.]+[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'')
+    .trim();
+}
 function deterministicQA(items){
   const findings=[];
   const add=(severity,code,message,blocks=[],safeFix=false)=>findings.push({severity,code,message,blocks,safeFix});
@@ -4522,6 +4553,18 @@ function deterministicQA(items){
   const longArticles=items.filter(b=>b.kind==='article'&&String(b.content||'').trim().split(/\s+/).filter(Boolean).length>650);
   if(longArticles.length)add('WARNING','MEGA_ARTICLE',`${longArticles.length} Master Article${longArticles.length===1?' is':'s are'} over about 650 words. Run the Split Test: does each contain two or more questions that deserve separate 250-600 word answers?`,longArticles.map(b=>b.uid));
   else add('PASS','ARTICLE_LENGTH',`No obvious mega-articles over about 650 words.`);
+
+
+  const truncatedMasters=items.filter(looksTruncatedMasterV317);
+  if(truncatedMasters.length){
+    add('FIX','TRUNCATED_MASTER',`${truncatedMasters.length} selected Master Article${truncatedMasters.length===1?' appears':'s appear'} to end mid-sentence or mid-word.`,truncatedMasters.map(b=>b.uid),false);
+  } else add('PASS','MASTER_COMPLETENESS','Selected Master Articles appear to end cleanly.');
+
+  const orphanTips=items.filter(orphanPartnerTipV317);
+  if(orphanTips.length)add('FIX','ORPHAN_PARTNER_TIP',`${orphanTips.length} reader-facing Partner Tip${orphanTips.length===1?' has':'s have'} no named partner. Convert to editorial copy or attach a real partner.`,orphanTips.map(b=>b.uid),true);
+
+  const duplicateClosing=duplicateOpeningClosingV317(items);
+  if(duplicateClosing)add('FIX','DUPLICATE_OPENING_CLOSE','The issue ends with another Opening Note. Replace it with a distinct closing/sign-off job.',[duplicateClosing.uid],true);
 
   const partnerBlocks=items.filter(b=>b.kind==='partner');
   if(partnerBlocks.length){
@@ -4672,9 +4715,165 @@ async function runFinalQA(){
     const report={createdAt:new Date().toISOString(),summary,findings};
     localStorage.setItem(qaKey(),JSON.stringify(report));
     showQAReport(report,true);
-    alert(`Final QA complete. ${summary.fix} Fix · ${summary.warning} Warning · ${summary.pass} Pass. The full report is saved in the Final QA Results panel.`);
+    setWorkflowActionStatusV312(8,'QA',`Final QA complete · ${summary.fix} Fix · ${summary.warning} Warning · ${summary.pass} Pass`,
+      summary.fix?'Hard fixes remain. Use Fix QA Exceptions, then rerun Final QA.':'No hard QA fixes remain. Review warnings, then move to Step 9 Production Ready.');
+
   }finally{
     btn.disabled=false;btn.textContent=original;
+  }
+}
+
+async function rewriteSupportBlockV317(block,problems){
+  const items=getCanvas();
+  const context=partnerContext(items,items.findIndex(x=>x.uid===block.uid));
+  const issueMap=items.map((x,i)=>`${i+1}. ${x.title} — ${String(x.content||x.purpose||'').slice(0,220)}`).join('\n');
+  const prompt=`Rewrite ONE newsletter supporting block for ${currentPublicationName()}.
+
+TYPE: ${block.type||''}
+TITLE: ${block.title||''}
+CURRENT COPY:
+${block.content||''}
+
+QA PROBLEMS:
+${problems||'Make the block distinct, reader-facing and publication-ready.'}
+
+NEARBY CONTEXT:
+${context||'None'}
+
+ISSUE MAP:
+${issueMap}
+
+RULES:
+- Return only finished reader-facing copy.
+- 35-100 words unless the format clearly needs less.
+- One clear job and one CTA maximum.
+- Do not invent facts, prices, businesses, dates, offers, quotes or local claims.
+- If evidence is not supplied, use a question, opinion prompt, checklist or closing action instead of fabrication.
+- Natural UK English; avoid formulaic AI phrasing.
+- Do not use internal production/commercial language.
+- Do not repeat another Master or support block.
+- Capitalise Every Word In Headings when a heading is included.`;
+  const generated=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
+  const replacement=String(generated.text||'').trim();
+  if(!replacement)throw new Error('No replacement component copy returned.');
+  block.content=replacement;
+  block.status='READY';
+  block.contentStatus='APPROVED';
+  block.productionStatus='READY FOR LETTERMAN';
+}
+
+async function repairTruncatedMasterV317(block,index,total){
+  const record=(S.sections||[]).find(x=>x.id===block.refId);
+  if(!record)throw new Error(`Master record not found for ${block.title}`);
+  const notes=String(val(record.fields||{},'Notes')||'');
+  const clean=clearWriterOnlyStateV317(notes);
+  const patched=await api('sections',{method:'PATCH',body:JSON.stringify({id:record.id,fields:{
+    'Section Final Copy':'',
+    'Section Status':'Drafting',
+    'Section QA Result':'Not Checked',
+    'Notes':clean
+  }})});
+  let fresh=patched.record;
+  const i=S.sections.findIndex(x=>x.id===fresh.id);if(i>=0)S.sections[i]=fresh;
+
+  setWorkflowActionStatusV312(8,'QA',`Repairing Master ${index}/${total}…`,
+    `${block.title}\nReusing the saved Research Pack, rerunning only the writer, then checking for a complete ending.`);
+
+  await produceOne({s:fresh,run:800+index},'generate');
+  fresh=await refreshProducedRecord(fresh.id);
+  if(!fresh)throw new Error('Rewritten Master record could not be refreshed.');
+
+  const copy=String(val(fresh.fields||{},'Section Final Copy')||'').trim();
+  const temp={...block,content:copy};
+  if(looksTruncatedMasterV317(temp))throw new Error('Rewritten Master still appears truncated.');
+  const leak=producedMasterLeakageV316(fresh);
+  if(leak)throw new Error(`Rewritten Master contains wrong-publication geography: ${leak.hits.join(', ')}`);
+
+  block.title=String(val(fresh.fields,'Section Title')||block.title);
+  block.content=copy;
+  block.cta=String(val(fresh.fields,'CTA Text')||val(fresh.fields,'Primary Next Action')||block.cta||'');
+  block.button=String(val(fresh.fields,'CTA Text')||block.button||'');
+  block.url=articleUrl(fresh);
+  block.status='READY';
+  block.contentStatus='APPROVED';
+  block.productionStatus='ASSETS NEEDED';
+}
+
+async function fixQAExceptionsV317(){
+  if(!S.issue)return;
+  const items=getCanvas();
+  if(!items.length)return;
+
+  const btn=E('qa-fix-v317');
+  const old=btn?.textContent||'Fix QA Exceptions';
+  if(btn){btn.disabled=true;btn.textContent='Fixing QA Exceptions…';}
+
+  let masterFixed=0,supportFixed=0,failed=[];
+  try{
+    setWorkflowActionStatusV312(8,'QA','Fixing QA hard exceptions…',
+      'Master truncation is repaired from the saved Research Pack. Supporting-copy fixes do not change the selected Masters or partner commitments.');
+
+    // 1. Repair all truncated selected Masters.
+    const masters=items.filter(looksTruncatedMasterV317);
+    for(let i=0;i<masters.length;i++){
+      try{
+        await repairTruncatedMasterV317(masters[i],i+1,masters.length);
+        masterFixed++;
+        localStorage.setItem(assemblyKey(),JSON.stringify(items));
+        renderAssembly();
+      }catch(e){
+        failed.push(`${masters[i].title}: ${String(e.message||e)}`);
+      }
+    }
+
+    // 2. Structural support hard fixes.
+    const orphan=items.filter(orphanPartnerTipV317);
+    for(const block of orphan){
+      try{
+        block.type='EXPERT QUICK CHECK';
+        block.title='Quick Local Check';
+        block.productionTemplate='SHORT COMPONENT';
+        block.commercialRole='EDITORIAL';
+        block.partner='';
+        block.partnerAttached=false;
+        await rewriteSupportBlockV317(block,'The current reader-facing label says Partner Tip but no real partner is attached. Convert this into a useful editorial quick check. Do not mention partners, sponsors or commercial relationships.');
+        supportFixed++;
+      }catch(e){failed.push(`${block.title}: ${String(e.message||e)}`)}
+    }
+
+    const closing=duplicateOpeningClosingV317(items);
+    if(closing){
+      try{
+        closing.type='BEFORE YOU GO';
+        closing.title='Before You Go';
+        closing.productionTemplate='SHORT COMPONENT';
+        closing.purpose='Close the issue with one distinct sign-off or reader action. Do not restart the opening theme.';
+        await rewriteSupportBlockV317(closing,'This closing repeats the Opening Note. Write a distinct sign-off or single reader action that closes the issue rather than restarting it.');
+        supportFixed++;
+      }catch(e){failed.push(`Before You Go: ${String(e.message||e)}`)}
+    }
+
+    // 3. Internal/commercial reader-facing leaks.
+    const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
+    const leakIds=[...new Set((saved?.findings||[]).filter(f=>f.code==='INTERNAL_NOTE_LEAK').flatMap(f=>f.blocks||[]))];
+    for(const block of items.filter(b=>leakIds.includes(b.uid)&&b.kind!=='article')){
+      if(orphan.includes(block)||block===closing)continue;
+      try{
+        await rewriteSupportBlockV317(block,'Remove all internal, production, sponsorship, pricing, commercial-arrangement or editor-facing wording. Keep only reader-facing copy.');
+        supportFixed++;
+      }catch(e){failed.push(`${block.title}: ${String(e.message||e)}`)}
+    }
+
+    localStorage.setItem(assemblyKey(),JSON.stringify(items));
+    renderAssembly();
+    localStorage.removeItem(qaKey());
+
+    const detail=failed.length
+      ? `${masterFixed} Master repairs · ${supportFixed} support fixes · ${failed.length} exceptions remain:\n- ${failed.join('\n- ')}`
+      : `${masterFixed} truncated Masters repaired · ${supportFixed} supporting hard fixes completed. Run Final QA again now.`;
+    setWorkflowActionStatusV312(8,'QA','QA hard-fix pass finished.',detail);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=old;}
   }
 }
 async function applySafeFixes(){
@@ -4809,7 +5008,7 @@ E('smart-plan-audit')?.addEventListener('click',()=>{
   const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the Issue Plan first.');return}
   renderSmartPlan();document.querySelector('.smart-audit-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
 });
-E('smart-plan-lock').onclick=lockSmartPlan;E('smart-plan-apply').onclick=applySmartPlanToBuild;E('smart-edit-save').onclick=saveSmartArticleEdit;E('smart-edit-cancel').onclick=()=>E('smart-edit-panel').style.display='none';E('smart-plan-hide').onclick=()=>E('smart-plan-panel').style.display='none';E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;
+E('smart-plan-lock').onclick=lockSmartPlan;E('smart-plan-apply').onclick=applySmartPlanToBuild;E('smart-edit-save').onclick=saveSmartArticleEdit;E('smart-edit-cancel').onclick=()=>E('smart-edit-panel').style.display='none';E('smart-plan-hide').onclick=()=>E('smart-plan-panel').style.display='none';E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('qa-fix-v317').onclick=fixQAExceptionsV317;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;
 E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
 E('save-inspector').onclick=saveInspector;E('inspect-type').onchange=()=>{const t=E('inspect-type').value,d=COMPONENT_DEFS.find(x=>x.type===t);E('inspect-template').value=t==='MASTER ARTICLE'?'MASTER ARTICLE':(d?.template||(t==='PARTNER PRESENCE'?'PARTNER TIP':'SHORT COMPONENT'));E('inspect-points').value=t==='MASTER ARTICLE'?5:(d?.points||(t==='PARTNER PRESENCE'?3:2));if(t==='PARTNER PRESENCE'){E('inspect-has-partner').checked=true;E('partner-fields').hidden=false}};E('inspect-has-partner').onchange=toggleInspectorPartner;E('inspect-commercial-role').onchange=()=>{const role=E('inspect-commercial-role').value;if(['AUTHORITY','ACTIVATION','REVENUE'].includes(role)&&!E('inspect-has-partner').checked){E('inspect-partner-suggestion').textContent='This commercial role may benefit from a partner, but attach one only when a real partner is confirmed.'}};
 E('remove-canvas-block').onclick=()=>{if(canvasSelectedUid)removeCanvasBlock(canvasSelectedUid)};
