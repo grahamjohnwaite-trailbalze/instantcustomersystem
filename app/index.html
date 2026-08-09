@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.16.0<br><strong>Produced Master Integrity</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · produced-copy geography gate · targeted fresh-research repair · stale-state invalidation</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.16.1<br><strong>Produced Geography Detection</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · scans all reader-visible Master package fields · visible geography-review reason</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -567,12 +567,32 @@ function publicationLeakageAuditV312i(plan){
 function producedMasterTextV316(record){
   const f=record?.fields||{};
   const pkg=masterArticlePackage(f)||{};
+  const er=pkg.editorial_readiness||{};
+  // Scan every reader-visible / editorial-output field that can drive Step 5 or Step 7.
+  // Do NOT scan source metadata/URLs here: source titles may legitimately reference another area.
   return [
     val(f,'Section Title'),
     val(f,'Section Final Copy'),
-    pkg.article_subhead,pkg.summary_title,pkg.summary_subhead,pkg.summary_content,
-    pkg.seo_title,pkg.seo_description,pkg.newsletter_headline,pkg.newsletter_teaser,
-    pkg.featured_image_brief,pkg.featured_image_alt
+    val(f,'CTA Text'),
+    pkg.article_title,
+    pkg.article_subhead,
+    pkg.summary_title,
+    pkg.summary_subhead,
+    pkg.summary_content,
+    pkg.seo_title,
+    pkg.seo_description,
+    pkg.url_path,
+    pkg.keywords,
+    pkg.featured_image_brief,
+    pkg.featured_image_alt,
+    pkg.newsletter_headline,
+    pkg.newsletter_teaser,
+    pkg.social_facebook,
+    pkg.social_linkedin,
+    pkg.social_x,
+    er.rationale,
+    ...(Array.isArray(er.suggested_edits)?er.suggested_edits.flatMap(x=>[x?.original,x?.replacement,x?.reason]):[]),
+    ...(Array.isArray(pkg.related_questions)?pkg.related_questions:[])
   ].filter(Boolean).join(' ');
 }
 function producedMasterLeakageV316(record){
@@ -633,8 +653,11 @@ async function repairProducedMasterIntegrityV316(){
   const plan=getSmartPlan();
   if(!plan?.articles?.length)return;
   try{await refreshMasterSelectionDataV314()}catch{}
-  const bad=(plan.articles||[]).map(a=>({a,check:producedMasterIntegrityV316(a)}))
-    .filter(x=>x.check.state==='GEOGRAPHY REVIEW');
+  const bad=(plan.articles||[]).map(a=>{
+    const record=planArticleRecordV312(a);
+    const leak=record?producedMasterLeakageV316(record):null;
+    return {a,check:leak?{state:'GEOGRAPHY REVIEW',reason:`Wrong-publication geography in produced copy: ${leak.hits.join(', ')}`,record,leak}:producedMasterIntegrityV316(a)};
+  }).filter(x=>x.check.leak);
 
   if(!bad.length){
     setWorkflowActionStatusV312(5,'Select','No produced-content geography repairs needed.','All produced Masters pass the active-publication geography gate.');
@@ -2958,7 +2981,7 @@ function planArticleRecordV312(a){
 function masterCandidateStateV312(a){
   const r=planArticleRecordV312(a);if(!r)return 'NOT PRODUCED';
   const leak=producedMasterLeakageV316(r);
-  if(leak)return 'GEOGRAPHY REVIEW';
+  if(leak)return `GEOGRAPHY REVIEW — ${leak.hits.join(', ')}`;
   const st=masterArticleState(r);
   if(st==='complete')return 'READY';
   if(st==='review')return 'WRITTEN REVIEW';
@@ -3034,12 +3057,15 @@ function renderMasterSelectionV312(){
     const state=masterCandidateStateV312(a),checked=selected.includes(Number(a.order)),rd=masterCandidateReadinessV314(a);
     const grade=rd.grade?` · Grade ${rd.grade}`:'';
     const readiness=rd.status?`${rd.status}${grade}`:(state==='READY'?`READY${grade}`:state);
-    const rationale=rd.rationale?`<small>${esc(rd.rationale.slice(0,140))}</small>`:'';
+    const leak=rd.record?producedMasterLeakageV316(rd.record):null;
+    const geoNote=leak?`<small style="font-weight:700">Wrong-Publication Geography Detected: ${esc(leak.hits.join(', '))}</small>`:'';
+    const rationale=rd.rationale?`<small>${esc(rd.rationale.slice(0,180))}</small>`:'';
+
     const disabled=state!=='READY'?'disabled':'';
     return `<label class="master-selection-row-v312">
       <input type="checkbox" data-master-select-v312="${a.order}" ${checked&&state==='READY'?'checked':''} ${disabled}>
       <span class="order">${String(a.order).padStart(2,'0')}</span>
-      <span><strong>${esc(a.title)}</strong><small>${esc(a.life_lane||'Open')} · ${esc(a.mode||'CREATE NEW')}</small>${rationale}</span>
+      <span><strong>${esc(a.title)}</strong><small>${esc(a.life_lane||'Open')} · ${esc(a.mode||'CREATE NEW')}</small>${geoNote}${rationale}</span>
       <span class="selection-status-v312">${esc(readiness)}</span>
     </label>`;
   }).join('');
