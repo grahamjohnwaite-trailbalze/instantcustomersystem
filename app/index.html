@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.17.3.4<br><strong>Step 8 QA Run-State</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · visible QA running state · reader-language-safe leak detection · convergence gate</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.17.3.6<br><strong>Step 8 Deterministic Gate</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · deterministic format blockers · visible QA run lock · convergence gate</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -3731,14 +3731,14 @@ function workflowStepInfoV312(step){
  5:['Select',`Choose ${min}–${max} strongest READY Masters for this issue. ICS recommends from the actual Step 4 production states and editorial grades; remaining READY candidates stay bankable.`,`Review Master Selection`],
  6:['Components',`Build the supporting and partner components needed to complete this issue. ICS calculates the missing count from the saved Step 5 selection and publication target.`,`Build / Resume Supporting Components`],
  7:['Assemble','Rebuild the running order from the current saved Step 5 Masters and persistent Step 6 support/partner blocks. The old browser assembly is discarded.','Assemble Selected Issue'],
- 8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.',(()=>{try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');return window.__finalQARunningV31734?'Running Final QA…':(q?.qaVersion==='3.17.3.5'&&q?.summary?.fix>0?'Fix QA Exceptions':'Run Final QA')}catch{return 'Run Final QA'}})()],
+ 8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.',(()=>{try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');return window.__finalQARunningV31736?'Running Final QA…':(q?.qaVersion==='3.17.3.6'&&q?.summary?.fix>0?'Fix QA Exceptions':'Run Final QA')}catch{return 'Run Final QA'}})()],
  9:['Production Ready','Generate the ordered production package after QA. It can then be sent to Letterman or any other publishing platform.','Generate Production Package']
  };return info[step]||info[1]
 }
 let workflowSelectedStepV312=1;
 function updateWorkflowShellV312(forcedStep){
  const shell=E('workflow-shell-v312');if(!shell)return;
- if(window.__finalQARunningV31734) forcedStep=8;
+ if(window.__finalQARunningV31736) forcedStep=8;
  const sig=getSmartSignals(),plan=getSmartPlan(),locked=smartPlanLocked(plan),canvas=getCanvas(),profile=engineProfileForPublication();
  let auto=1;
  if(sig.length>=24&&plan?.articles?.length===(profile.defaultMasters||15))auto=2;
@@ -3772,7 +3772,7 @@ function updateWorkflowShellV312(forcedStep){
    const hasPlan=!!plan?.articles?.length||getSmartPlanBatches().flatMap(b=>b.articles||[]).length>0;
    resetBtn.style.display=(hasPlan&&workflowSelectedStepV312<=2)?'inline-flex':'none';
  }
- const [name,copy,label]=workflowStepInfoV312(workflowSelectedStepV312);E('workflow-current-v312').textContent=workflowContextLabelV312(workflowSelectedStepV312,name);E('workflow-instruction-v312').textContent=copy;const btn=E('workflow-primary-v312');btn.textContent=label;btn.dataset.step=String(workflowSelectedStepV312);btn.disabled=!!window.__finalQARunningV31734;
+ const [name,copy,label]=workflowStepInfoV312(workflowSelectedStepV312);E('workflow-current-v312').textContent=workflowContextLabelV312(workflowSelectedStepV312,name);E('workflow-instruction-v312').textContent=copy;const btn=E('workflow-primary-v312');btn.textContent=label;btn.dataset.step=String(workflowSelectedStepV312);btn.disabled=!!window.__finalQARunningV31736;
  renderMasterSelectionV312();renderSmartTitleReviewV312l(getSmartPlan());
  if(workflowSelectedStepV312===3)setTimeout(()=>hydrateStep3StateV3133(),0);
  if(workflowSelectedStepV312===6)setTimeout(()=>renderStep6StatusV3151(),0);
@@ -3837,11 +3837,11 @@ function runWorkflowPrimaryV312(){
    return
  }
  if(step===8){
-   if(window.__finalQARunningV31734)return;
+   if(window.__finalQARunningV31736)return;
    show('assemble');
    const primary=E('workflow-primary-v312');
    if(primary){primary.disabled=true;primary.textContent='Running Final QA…';}
-   try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');if(q?.qaVersion==='3.17.3.5'&&q?.summary?.fix>0){if(primary)primary.disabled=false;fixQAExceptionsV317();return}}catch{}
+   try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');if(q?.qaVersion==='3.17.3.6'&&q?.summary?.fix>0){if(primary)primary.disabled=false;fixQAExceptionsV317();return}}catch{}
    E('assembly-qa').click();return
  }
  if(step===9){show('assemble');E('assembly-generate').click();return}
@@ -4606,6 +4606,28 @@ function deterministicQA(items){
   if(multiCta.length)add('WARNING','CTA_CONFLICT',`${multiCta.length} block${multiCta.length===1?' has':'s have'} more than one differing primary CTA/button.`,multiCta.map(b=>b.uid));
   else add('PASS','ONE_BUTTON','No conflicting primary CTA/button pairs detected.');
 
+  // v3.17.3.6 deterministic format gate. AI may comment on these formats, but may not
+  // change publish severity from run to run. A hard fix is raised only when the saved
+  // reader-facing block clearly promises news/listings AND is plainly generic advice.
+  const formatBlocks=items.filter(b=>b.kind==='component'||b.kind==='partner');
+  const genericAdviceRx=/\b(check|confirm|look up|keep|before setting off|latest information|official information|official source|opening times|dates|routes|parking|costs?)\b/i;
+  const concreteRx=/\b(?:\d{1,2}[\/.-]\d{1,2}|\d{1,2}\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)|£\s?\d+|\d+%|\d{1,4}\s?(?:am|pm))\b/i;
+  const namedLocalRx=/\b(?:Cambridge|Ely|Wisbech|March|St Ives|Huntingdon|Peterborough|Fenland|South Cambridgeshire|East Cambridgeshire|Cambridgeshire County Council|Greater Cambridge|Wicken Fen|Newmarket|Soham|Whittlesey)\b/i;
+  const formatMismatch=[];
+  for(const b of formatBlocks){
+    const label=`${b.type||''} ${b.title||''}`.toLowerCase();
+    const text=String(b.content||'').trim();
+    const isNews=/news brief|quick update/.test(label);
+    const isWhatsOn=/what.?s on|listing/.test(label);
+    if(!isNews&&!isWhatsOn)continue;
+    const hasConcrete=concreteRx.test(text)||namedLocalRx.test(text);
+    const looksGeneric=genericAdviceRx.test(text);
+    if(looksGeneric&&!hasConcrete)formatMismatch.push(b);
+  }
+  if(formatMismatch.length){
+    add('FIX','FORMAT_MISMATCH',`${formatMismatch.length} factual-format support block${formatMismatch.length===1?'':'s'} promise news/update/listings but contain only generic advice. Reframe the component type/purpose or add genuine local material before publication.`,formatMismatch.map(b=>b.uid),true);
+  } else add('PASS','FORMAT_FULFILMENT','News/update/listings components do not show an obvious deterministic format mismatch.');
+
   // Semantic-ish duplicate scan across supporting components.
   const comps=items.filter(b=>b.kind==='component');
   const dupPairs=[];
@@ -4678,7 +4700,7 @@ function renderQAReport(report){
 
 function setQAFixButtonState(report){
   const b=E('qa-fix-v317'); if(!b)return;
-  const fresh=!!(report&&report.qaVersion==='3.17.3.5'&&report.summary);
+  const fresh=!!(report&&report.qaVersion==='3.17.3.6'&&report.summary);
   const fixes=fresh?Number(report.summary.fix||0):0;
   b.disabled=!(fresh&&fixes>0);
   b.textContent=fixes>0?`Fix QA Exceptions (${fixes})`:'Fix QA Exceptions';
@@ -4700,9 +4722,9 @@ function clearQAReportView(message='Run Final QA to review the complete issue.')
 function loadSavedQAReport(){
   try{
     const report=JSON.parse(localStorage.getItem(qaKey())||'null');
-    if(report?.qaVersion==='3.17.3.5')showQAReport(report,false);
-    else clearQAReportView('Fresh QA required in v3.17.3.5. Run Final QA before fixing exceptions.');
-  }catch{clearQAReportView('Fresh QA required in v3.17.3.5. Run Final QA before fixing exceptions.');}
+    if(report?.qaVersion==='3.17.3.6')showQAReport(report,false);
+    else clearQAReportView('Fresh QA required in v3.17.3.6. Run Final QA before fixing exceptions.');
+  }catch{clearQAReportView('Fresh QA required in v3.17.3.6. Run Final QA before fixing exceptions.');}
 }
 async function copyQAReport(){
   const text=E('qa-report-text')?.value||'';
@@ -4723,7 +4745,7 @@ async function runFinalQA(){
   const items=getCanvas();
   if(!items.length){alert('Add or assemble the issue first.');return}
   const btn=E('assembly-qa'),original=btn.textContent;
-  window.__finalQARunningV31734=true;
+  window.__finalQARunningV31736=true;
   workflowSelectedStepV312=8;
   document.body.dataset.workflowStep='8';
   btn.disabled=true;btn.textContent='Running Final QA…';
@@ -4751,7 +4773,7 @@ async function runFinalQA(){
       warning:findings.filter(f=>f.severity==='WARNING').length,
       pass:findings.filter(f=>f.severity==='PASS').length
     };
-    const report={qaVersion:'3.17.3.5',createdAt:new Date().toISOString(),summary,findings};
+    const report={qaVersion:'3.17.3.6',createdAt:new Date().toISOString(),summary,findings};
     localStorage.setItem(qaKey(),JSON.stringify(report));
     showQAReport(report,true);
     setWorkflowActionStatusV312(8,'QA',`Final QA complete · ${summary.fix} Fix · ${summary.warning} Warning · ${summary.pass} Pass`,
@@ -4764,7 +4786,7 @@ async function runFinalQA(){
     setWorkflowActionStatusV312(8,'QA','Final QA failed.',message);
     updateWorkflowShellV312(8);
   }finally{
-    window.__finalQARunningV31734=false;
+    window.__finalQARunningV31736=false;
     workflowSelectedStepV312=8;
     document.body.dataset.workflowStep='8';
     btn.disabled=false;btn.textContent=original;
@@ -4866,7 +4888,7 @@ async function evaluateIssueQAV3173(items){
     findings.push({severity:'WARNING',code:'AI_QA_UNAVAILABLE',message:`Editorial AI review was unavailable, so deterministic QA only was used: ${error.message}`,blocks:[],safeFix:false});
   }
   return {
-    qaVersion:'3.17.3.5',createdAt:new Date().toISOString(),
+    qaVersion:'3.17.3.6',createdAt:new Date().toISOString(),
     summary:{
       fix:findings.filter(f=>f.severity==='FIX').length,
       warning:findings.filter(f=>f.severity==='WARNING').length,
@@ -4951,8 +4973,8 @@ async function fixQAExceptionsV317(){
   if(!originalItems.length)return;
 
   const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
-  if(!saved||saved.qaVersion!=='3.17.3.4'){
-    setWorkflowActionStatusV312(8,'QA','Fresh QA required.','This QA report came from an older Step 8 build. Run Final QA in v3.17.3.5 before fixing exceptions.');
+  if(!saved||saved.qaVersion!=='3.17.3.6'){
+    setWorkflowActionStatusV312(8,'QA','Fresh QA required.','This QA report came from an older Step 8 build. Run Final QA in v3.17.3.6 before fixing exceptions.');
     localStorage.removeItem(qaKey());
     updateWorkflowShellV312(8);
     return;
@@ -4970,7 +4992,7 @@ async function fixQAExceptionsV317(){
   const failed=[];
   try{
     setWorkflowActionStatusV312(8,'QA','Testing QA hard-fix repairs…',
-      'v3.17.3.4 works on a temporary copy first. Support repairs are written back to persistent Step 6 records only if fresh whole-issue QA reduces the hard-fix count without introducing a new hard-fix class.');
+      'v3.17.3.6 works on a temporary copy first. Support repairs are written back to persistent Step 6 records only if fresh whole-issue QA reduces the hard-fix count without introducing a new hard-fix class.');
 
     // Deterministic Master truncation remains a direct upstream repair from the saved Research Pack.
     const masters=originalItems.filter(looksTruncatedMasterV317);
@@ -5054,7 +5076,7 @@ async function fixQAExceptionsV317(){
     }
 
     if(!supportPrepared&&!masterLeakPrepared.size){
-      const detail=failed.length?`No safe support repair was prepared.\n- ${failed.join('\n- ')}`:'Final QA contains no supporting hard fix that v3.17.3.5 can safely rewrite automatically.';
+      const detail=failed.length?`No safe support repair was prepared.\n- ${failed.join('\n- ')}`:'Final QA contains no supporting hard fix that v3.17.3.6 can safely rewrite automatically.';
       setWorkflowActionStatusV312(8,'QA','No support repair saved.',detail);
       return;
     }
@@ -5069,7 +5091,7 @@ async function fixQAExceptionsV317(){
     if(!(afterFix<beforeFix)||newCodes.length){
       const why=newCodes.length?`New hard-fix class detected: ${newCodes.join(', ')}.`:`Hard-fix count did not fall (${beforeFix} → ${afterFix}).`;
       setWorkflowActionStatusV312(8,'QA','Repair rejected — source records unchanged.',
-        `${why}\nThe temporary rewrite was discarded. v3.17.3.4 will not churn persistent Step 6 copy when the whole issue does not improve.`);
+        `${why}\nThe temporary rewrite was discarded. v3.17.3.6 will not churn persistent Step 6 copy when the whole issue does not improve.`);
       showQAReport(saved,false);
       return;
     }

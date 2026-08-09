@@ -51,7 +51,7 @@ Also check for over-polished/AI-ish language across the whole issue. Judge it ag
 
 Do not report a Master Article as truncated merely because a preview, excerpt or context field is shortened. Only flag incomplete copy when the actual supplied reader-facing content visibly ends mid-word, mid-sentence or with a clear missing continuation. A complete concluding sentence is not truncation.
 
-Internal/commercial leakage and genuinely incomplete reader-facing copy are publication blockers. A supporting block that falsely presents itself as factual news/listings when it contains no such material may also be a blocker. Repetition, semantic overlap, generic supporting copy, rhythm, theme concentration, duplicated reader prompts, localisation strength, partner overexposure and human-voice concerns are WARNING-level editorial issues, not hard FIXes. Never escalate those editorial concerns to FIX merely because they are widespread.
+Internal/commercial leakage and genuinely incomplete reader-facing copy are publication blockers. Format fulfilment for News Brief / Quick Update / What's On is decided deterministically by the application. If you notice a problem there, report it as WARNING only; do not create a FIX for it. Repetition, semantic overlap, generic supporting copy, rhythm, theme concentration, duplicated reader prompts, localisation strength, partner overexposure and human-voice concerns are WARNING-level editorial issues, not hard FIXes. Never escalate those editorial concerns to FIX merely because they are widespread.
 
 Do not emit generic PASS findings; if there are no extra editorial problems return {"findings":[]}.
 
@@ -74,7 +74,6 @@ ${JSON.stringify(compact)}`;
       if(/internal|commercial|sponsor(?:ship)? (?:note|rate|amount)|pricing|editor-facing|production note/.test(blob))return true;
       if(/mid[- ]?(?:sentence|word)|truncat|incomplete reader-facing|missing continuation/.test(blob))return true;
       if(/partner tip/.test(blob)&&/(no named partner|no partner|unnamed partner)/.test(blob))return true;
-      if(/news brief|what.?s on|listing/.test(blob)&&/(generic advice|not a news item|no actual|does not fulfil|doesn't fulfil|falsely|promises factual)/.test(blob))return true;
       return false;
     };
     const findings=raw.map(f=>{
