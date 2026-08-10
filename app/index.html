@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.2<br><strong>Step 9 Letterman Handoff</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-10 · article build notes + CTA destinations + newsletter metadata</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.3<br><strong>Production Reliability Update</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-10 · publication-specific components + stronger selection/rhythm + clean handoff</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -2250,7 +2250,9 @@ Write ONLY the finished Letterman-ready component copy.
 - ONE CTA maximum. If the requested action is blank and no action is needed, end without a CTA.
 - Do not include internal labels such as ISSUE PROMISE, READER JOB, LOCAL PROOF, PRODUCTION BRIEF, or [CREATE FINISHED...].
 - Do not include a markdown heading unless the copy genuinely needs a short reader-facing subhead; the component label is already stored separately. If you do create any reader-facing heading or subhead, Capitalise Every Word.
-- Avoid filler phrases such as useful, practical, meaningful, key, crucial, straightforward, 'The question is', 'The honest answer', and 'in plain English'.`;
+- NEVER use these filler words/phrases in reader-facing copy: useful, practical, meaningful, key question, important distinction, crucial, straightforward, navigate, 'The question is', 'The honest answer', and 'in plain English'. Avoid 'whether' unless grammatically unavoidable.
+- CTA/button wording must be Title Case.
+- Vary structure from nearby items; do not stack checklist after checklist or generic question after generic question.`;
     const data=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
     const text=String(data.text||'').trim();
     if(!text)throw new Error('No finished component copy returned.');
@@ -3067,21 +3069,21 @@ function recommendMasterSelectionV314(){
   if(!plan?.articles?.length)return [];
   const min=profile.targetMasters?.[0]||8,max=profile.targetMasters?.[1]||10;
   const target=Math.max(min,Math.min(max,Math.round((min+max)/2)));
-  const gradeRank={A:0,B:1,C:2};
+  const gradeScore={A:40,B:25,C:10};
   const ready=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').map(a=>{
-    const rd=masterCandidateReadinessV314(a);
-    return {a,rd,rank:gradeRank[rd.grade]??3,lane:String(a.life_lane||'Open')};
-  }).sort((x,y)=>x.rank-y.rank||Number(x.a.order)-Number(y.a.order));
-  const picked=[],usedLanes=new Set();
-  // First pass rewards grade plus lane spread.
-  for(const x of ready){
-    if(picked.length>=target)break;
-    if(!usedLanes.has(x.lane)){picked.push(x);usedLanes.add(x.lane)}
-  }
-  // Fill remaining places by grade/order.
-  for(const x of ready){
-    if(picked.length>=target)break;
-    if(!picked.includes(x))picked.push(x);
+    const rd=masterCandidateReadinessV314(a),lane=normaliseEditorialLane(a.life_lane||editorialLaneFor(a,profile)||'Open');
+    return {a,rd,lane,tone:toneBucket(a),base:gradeScore[rd.grade]??0,civic:isCivicHeavyArticle(a)};
+  });
+  const picked=[],laneCounts={},toneCounts={};
+  // Greedy editorial mix: quality first, then reward a new life lane / new tone and penalise concentration.
+  while(picked.length<target){
+    const pool=ready.filter(x=>!picked.includes(x));
+    if(!pool.length)break;
+    pool.sort((x,y)=>{
+      const score=z=>z.base + (laneCounts[z.lane]?0:14) + (toneCounts[z.tone]?0:6) - (laneCounts[z.lane]||0)*8 - (z.civic?Math.max(0,(picked.filter(q=>q.civic).length-1))*8:0);
+      return score(y)-score(x)||Number(x.a.order)-Number(y.a.order);
+    });
+    const x=pool[0]; picked.push(x); laneCounts[x.lane]=(laneCounts[x.lane]||0)+1; toneCounts[x.tone]=(toneCounts[x.tone]||0)+1;
   }
   const orders=picked.map(x=>Number(x.a.order));
   saveMasterSelectionV312(orders);
@@ -3106,7 +3108,7 @@ function renderMasterSelectionV312(){
     selected=recommendMasterSelectionV314();
   }
 
-  E('master-selection-summary-v312').textContent=`${ready}/${plan.articles.length} READY · ${review} WRITTEN REVIEW · choose ${min}–${max} READY Masters. ICS recommends a grade-first, lane-spread shortlist; unselected READY candidates remain bankable.`;
+  E('master-selection-summary-v312').textContent=`${ready}/${plan.articles.length} READY · ${review} WRITTEN REVIEW · choose ${min}–${max} READY Masters. ICS recommends the strongest issue mix using readiness grade, life-lane spread, tone variety and concentration penalties; unselected READY candidates remain bankable.`;
 
   grid.innerHTML=(plan.articles||[]).map(a=>{
     const state=masterCandidateStateV312(a),checked=selected.includes(Number(a.order)),rd=masterCandidateReadinessV314(a);
@@ -3471,26 +3473,24 @@ async function buildSupportBatchV315(){
       phase:'Step 6 — Saved State Checked'
     });
 
-    const recipe=[
-      ['OPENING NOTE','Opening Note','READER VOICE'],
-      ['NEWS BRIEF','News Brief','LOCAL LIFE'],
-      ['QUICK UPDATE','Quick Update','LOCAL LIFE'],
-      ['THREE-POINT TIPS','Three-Point Tips','LOCAL LIFE'],
-      ["WHAT'S ON","What's On","WHAT'S ON"],
-      ['READER POLL','Reader Poll','READER VOICE'],
-      ['THIS OR THAT','This Or That','FUN & CURIOSITY'],
-      ['QUICK QUIZ','Quick Quiz','FUN & CURIOSITY'],
-      ['SALLY SAVERS','Sally Savers','MONEY & CONSUMER'],
-      ['FOOD FIND','Food Find','FOOD & HOSPITALITY'],
-      ['WORTH THE DRIVE?','Worth The Drive?','PLACES & DISCOVERY'],
-      ['FAMILY ACTIVITY','Family Activity','FAMILY & COMMUNITY'],
-      ['MOTORING QUICK CHECKLIST','Motoring Quick Checklist','MOTORING & TRAVEL'],
-      ['HOME QUICK CHECKLIST','Home Quick Checklist','HOME & PROPERTY'],
-      ['EXPERT QUICK CHECK','Expert Quick Check','LOCAL LIFE'],
-      ['PARTNER TIP','Partner Tip','LOCAL LIFE'],
-      ['LOCAL DEBATE','Local Debate','READER VOICE'],
-      ['BEFORE YOU GO','Before You Go','READER VOICE']
-    ];
+    const profile=engineProfileForPublication();
+    const recipes={
+      SPOTLIGHT:[
+        ['OPENING NOTE','Opening Note','READER VOICE'],['NEWS BRIEF','News Brief','LOCAL LIFE'],['READER POLL','Reader Poll','READER VOICE'],["WHAT'S ON","What's On","WHAT'S ON"],
+        ['QUICK QUIZ','Quick Quiz','FUN & CURIOSITY'],['FOOD FIND','Food Find','FOOD & HOSPITALITY'],['SALLY SAVERS','Sally Savers','MONEY & CONSUMER'],['LOCAL BUSINESS FIND','Local Business Find','BUSINESS & PEOPLE'],
+        ['FAMILY ACTIVITY','Family Activity','FAMILY & COMMUNITY'],['THIS OR THAT','This Or That','FUN & CURIOSITY'],['MOTORING QUICK CHECK','Motoring Quick Check','MOTORING & TRAVEL'],['COMMUNITY VOICE','Community Voice','FAMILY & COMMUNITY'],
+        ['HUMOUR','Quick Breather','FUN & CURIOSITY'],['WORTH THE DRIVE?','Worth The Drive?','PLACES & DISCOVERY'],['HOME QUICK CHECK','Home Quick Check','HOME & PROPERTY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],
+        ['LOCAL DEBATE','Local Debate','READER VOICE'],['QUICK UPDATE','Quick Update','LOCAL LIFE'],['BEFORE YOU GO','Before You Go','READER VOICE']
+      ],
+      TASTE_TRAIL:[
+        ['OPENING NOTE','Opening Note','READER VOICE'],['READER POLL','Reader Poll','READER VOICE'],['QUICK PRICE CHECK','Quick Price Check','VALUE'],['FOOD FIND','Food Find','RESTAURANTS'],
+        ['PUB / RESTAURANT QUESTION','Pub / Restaurant Question','PUBS'],['LOCAL BUSINESS FIND','Hospitality People','HOSPITALITY PEOPLE'],['QUICK QUIZ','Quick Quiz','READER VOICE'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],
+        ['LOCAL TRIVIA','Local Trivia','PLACES & DISCOVERY'],['THIS OR THAT','This Or That','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']
+      ],
+      HOME_SELLER:[['OPENING NOTE','Opening Note','READER VOICE'],['READER POLL','Reader Poll','READER VOICE'],['QUICK PRICE CHECK','Quick Price Check','PRICING & VALUATION'],['READER QUESTION','Reader Question','READER VOICE'],['MYTH V FACT','Myth v Fact','FUN & CURIOSITY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']],
+      PET_INSIDER:[['OPENING NOTE','Opening Note','READER VOICE'],['READER POLL','Reader Poll','READER VOICE'],['READER PETS','Reader Pets','READER PETS'],['LOCAL TRIVIA','Local Trivia','FUN & CURIOSITY'],['WEEKEND IDEA','Weekend Idea','WALKS & PLACES'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['HUMOUR','Quick Breather','FUN & CURIOSITY'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']]
+    };
+    const recipe=recipes[profile.key]||recipes.SPOTLIGHT;
 
     let existing=persistentSupportRecordsV3153();
 
@@ -3595,17 +3595,19 @@ ISSUE PROMISE: ${theme}
 COMPONENT TYPE: ${meta.type}
 LABEL: ${title}
 LIFE LANE: ${meta.lifeLane}
+RECENT SUPPORT COMPONENTS: ${persistentSupportRecordsV3153().filter(x=>x.id!==s.id&&supportReadyRecordV3153(x)).slice(-3).map(x=>`${val(x.fields,'Section Title')}: ${String(val(x.fields,'Section Final Copy')||'').slice(0,180)}`).join(' | ')||'None yet'}
 
 Write ONLY finished newsletter copy.
-- Normally 50–130 words; shorter is fine.
+- Normally 45–120 words; shorter is fine.
 - One clear reader job.
-- Natural UK English, conversational and locally knowledgeable.
+- Natural UK English, conversational and locally knowledgeable. Give it personality; it should sound like a lively local publication, not a council guide, business article, brochure or AI explainer.
+- Vary the format and sentence shape from the recent support components. Do not create another checklist/question/explainer if the recent blocks already use that structure. Mix quick humour, a punchy observation, a mini recommendation, a tiny comparison, a specific question, a short factual nugget or a simple action as appropriate.
 - Do not invent facts, prices, dates, quotes, businesses, services or reader comments.
-- If current factual detail is needed but not supplied, use a reader question, checklist, editorial prompt or non-factual breather instead of fabricating evidence.
-- One CTA maximum.
-- Do not repeat a Master Article.
+- If current factual detail is needed but not supplied, choose a non-factual format that still earns its place rather than generic advice.
+- One CTA maximum. CTA/button wording must be Title Case.
+- Do not repeat a Master Article or recycle the same reader prompt.
 - Capitalise Every Word in any heading/subhead.
-- Avoid filler such as useful, practical, meaningful, key, crucial, straightforward and 'in plain English'.`;
+- NEVER use these filler words/phrases in reader-facing copy: useful, practical, meaningful, key question, important distinction, straightforward, crucial, navigate, 'in plain English'. Avoid 'whether' unless grammatically unavoidable.`;
 
         const data=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
         const copy=String(data.text||'').trim();
@@ -4641,6 +4643,29 @@ function deterministicQA(items){
     add('WARNING','SUPPORTING_DUPLICATION',`${dupPairs.length} supporting-component pair${dupPairs.length===1?' looks':'s look'} substantially similar.`,ids,true);
   } else add('PASS','SUPPORTING_VARIETY','Supporting components do not show obvious word-level duplication.');
 
+  // v3.18.3 editorial rhythm: catch the CBS #46 failure mode where the ending becomes check/check/question/question.
+  const tail=items.slice(-7);
+  const instructionalTail=tail.filter(b=>/check|checklist|quick check|expert quick|before you react|ask these|what change|local debate/i.test(`${b.type||''} ${b.title||''}`)||/\b(check|confirm|note|ask|mark|save|look up)\b/i.test(String(b.content||''))).length;
+  if(tail.length>=6&&instructionalTail>=4)add('WARNING','ENDING_RHYTHM',`The final ${tail.length} blocks contain ${instructionalTail} instructional/check/question-style components. Vary the ending with discovery, humour, recommendation, people, food or a warmer sign-off.`,tail.map(b=>b.uid),true);
+  else add('PASS','ENDING_RHYTHM','The final run does not show the previous check/question-heavy ending pattern.');
+
+  // Duplicate named-place / venue signal across Master Articles. Warning only: repetition can be intentional.
+  const masters=items.filter(b=>b.kind==='article');
+  const stopProper=new Set(['The','This','That','What','Why','How','When','Where','Which','Your','Our','Best','Cambridgeshire','Peterborough','Norfolk','Spotlight','Summer','Article','Guide','Local']);
+  const properByMaster=masters.map(b=>{const text=`${b.title||''} ${b.content||''}`;const hits=[...text.matchAll(/\b([A-Z][A-Za-z’'-]+(?:\s+[A-Z][A-Za-z’'-]+){0,2})\b/g)].map(m=>m[1].trim()).filter(x=>x.length>4&&!stopProper.has(x)&&!/^Section\b/.test(x));return {b,set:new Set(hits)};});
+  const properCounts=new Map(); for(const x of properByMaster)for(const n of x.set)properCounts.set(n,(properCounts.get(n)||0)+1);
+  const repeatedProper=[...properCounts.entries()].filter(([,n])=>n>=2).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if(repeatedProper.length)add('WARNING','NAMED_PLACE_REPEAT',`Named place/venue repetition across Masters: ${repeatedProper.map(([n,c])=>`${n} (${c})`).join(', ')}. Confirm each repeat earns its place; otherwise substitute a different local example.`,[],true);
+
+  // County-balance warning for Cambridgeshire Spotlight only.
+  const pubLabel=String(currentPublicationName()||'').toLowerCase();
+  if(/cambridgeshire spotlight/.test(pubLabel)&&masters.length){
+    const camBlocks=masters.filter(b=>/\bCambridge\b/i.test(`${b.title||''} ${b.content||''}`)).length;
+    const otherBlocks=masters.filter(b=>/\b(Ely|Huntingdon|St Ives|Wisbech|March|Soham|Whittlesey|Fenland|Chatteris|St Neots|Ramsey)\b/i.test(`${b.title||''} ${b.content||''}`)).length;
+    if(camBlocks>=Math.ceil(masters.length*.6)&&otherBlocks<Math.ceil(masters.length*.4))add('WARNING','COUNTY_BALANCE',`Cambridge appears in ${camBlocks}/${masters.length} Master Articles while wider-county named-place coverage is thinner (${otherBlocks}/${masters.length}). Confirm the weighting is editorially deliberate.`,masters.map(b=>b.uid),true);
+    else add('PASS','COUNTY_BALANCE','Cambridgeshire Master geography does not show an obvious Cambridge-heavy concentration.');
+  }
+
   // Topic concentration using useful content words.
   const counts=new Map();
   for(const b of items){
@@ -5210,6 +5235,33 @@ RULES:
     btn.disabled=false;btn.textContent=original;
   }
 }
+function titleCaseCtaV3183(text){
+  const small=new Set(['a','an','and','as','at','but','by','for','from','in','into','of','on','or','the','to','with']);
+  return String(text||'').trim().split(/\s+/).map((w,i,a)=>{
+    if(!w)return w; const low=w.toLowerCase();
+    if(i>0&&i<a.length-1&&small.has(low))return low;
+    return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
+  }).join(' ');
+}
+function newsletterFallbacksV3183(publication,theme,items){
+  const t=String(theme||'').trim().replace(/\s+/g,' ');
+  let subject=t;
+  if(subject.length>78)subject=subject.split(/\s+[—–-]\s+/)[0].trim();
+  if(subject.length>78)subject=subject.slice(0,75).replace(/\s+\S*$/,'')+'…';
+  if(!subject)subject=`${publication||'Local'} — This Week`;
+  const articleTitles=(items||[]).filter(x=>x.kind==='article').map(x=>String(x.title||'').trim()).filter(Boolean).slice(0,4);
+  let pre=articleTitles.length?articleTitles.join(' · '):`The latest local stories, places and decisions worth knowing about.`;
+  if(pre.length>150)pre=pre.slice(0,147).replace(/\s+\S*$/,'')+'…';
+  return {subject,preheader:pre};
+}
+function masterUsefulLinksV3183(block){
+  if(!block||block.kind!=='article')return [];
+  const record=(S.sections||[]).find(x=>x.id===block.refId),p=masterArticlePackage(record?.fields||{})||{};
+  return (Array.isArray(p.sources)?p.sources:[]).filter(x=>x&&x.url).slice(0,5).map(x=>({title:String(x.title||'Source / resource').trim(),url:String(x.url||'').trim()}));
+}
+function closingCopyV3183(publication){
+  return `Before You Go\n\nThat’s it for this issue. If we missed something worth knowing, trying, questioning or talking about in ${publication||'your area'}, tell us. The best future issues usually start with something a reader spots before we do.\n\nSee You Next Issue.`;
+}
 function publicationDefaultCtaDestinationV3182(publication){
   const p=String(publication||'').toLowerCase();
   const known=[
@@ -5256,8 +5308,11 @@ function assemblyDraft(){
   const publication=pubName(S.issue?.fields?.Publication||[]);
   const issueNumber=val(S.issue?.fields||{},'Issue Number')||'';
   const sendDate=val(S.issue?.fields||{},'Send Date')||'';
-  const subject=String(val(S.issue?.fields||{},'Subject Line')||'').trim();
-  const preheader=String(val(S.issue?.fields||{},'Preheader')||'').trim();
+  const savedSubject=String(val(S.issue?.fields||{},'Subject Line')||'').trim();
+  const savedPreheader=String(val(S.issue?.fields||{},'Preheader')||'').trim();
+  const fallbacks=newsletterFallbacksV3183(publication,theme,items);
+  const subject=savedSubject||fallbacks.subject;
+  const preheader=savedPreheader||fallbacks.preheader;
   const defaultCta=publicationDefaultCtaDestinationV3182(publication);
   let out=`PRODUCTION READY PACKAGE
 
@@ -5276,7 +5331,8 @@ PUBLISHING ORDER — ${items.length} SECTIONS`;
     const isLast=i===items.length-1;
     let title=String(b.title||b.type||`Section ${i+1}`).trim();
     if(isLast&&/opening|intro/i.test(title))title='Before You Go';
-    const content=String(b.content||'').trim();
+    let content=String(b.content||'').trim();
+    if(isLast&&(/opening|intro/i.test(String(b.title||b.type||''))||/\bas you read\b|\bthis edition is here to\b/i.test(content)))content=closingCopyV3183(publication);
     const meta=isArticle?articlePublishingMetaV3182(b):null;
     out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION ${i+1} — ${isLast?'CLOSING — ':''}${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
     if(isArticle)out+=`\n\n⚠ ARTICLE — BUILD SEPARATELY IN LETTERMAN\nThis is a permanent Master Article. Create/publish the article first, then use its published URL where the newsletter section links to the article.`;
@@ -5285,8 +5341,10 @@ PUBLISHING ORDER — ${items.length} SECTIONS`;
     if(content)out+=`\n\n${content}`;
     if(isArticle&&meta){
       out+=`\n\nARTICLE PUBLISHING DETAILS\nARTICLE DESCRIPTION / SUMMARY\n${meta.description||'[MISSING]'}\n\nSEO TITLE\n${meta.seoTitle||'[MISSING]'}\n\nSEO DESCRIPTION\n${meta.seoDescription||'[MISSING]'}\n\nARTICLE URL SLUG\n${meta.slug||'[MISSING]'}\n\nKEYWORDS\n${meta.keywords||'[MISSING]'}\n\nFEATURED IMAGE BRIEF\n${meta.imageBrief||'[MISSING]'}\n\nFEATURED IMAGE ALT TEXT\n${meta.imageAlt||'[MISSING]'}\n\nNEWSLETTER HEADLINE\n${meta.newsletterHeadline||'[MISSING]'}\n\nNEWSLETTER TEASER\n${meta.newsletterTeaser||'[MISSING]'}`;
+      const links=masterUsefulLinksV3183(b);
+      if(links.length)out+=`\n\nUSEFUL LINKS / SOURCES\n${links.map(x=>`- ${x.title}: ${x.url}`).join('\n')}`;
     }
-    const button=String(b.button||b.cta||'').trim();
+    const button=titleCaseCtaV3183(String(b.button||b.cta||'').trim());
     if(button){
       out+=`\n\nBUTTON TEXT\n${button}`;
       if(isArticle){
@@ -5299,8 +5357,12 @@ PUBLISHING ORDER — ${items.length} SECTIONS`;
   });
   out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nNEWSLETTER PUBLISHING DETAILS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nEMAIL SUBJECT / HEADLINE\n${subject||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nPREVIEW TEXT / PREHEADER\n${preheader||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nNEWSLETTER DESCRIPTION\n${newsletterDescriptionV3182(publication,theme,preheader)}\n\nSEND DATE\n${sendDate||'[MISSING]'}`;
   out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPRODUCTION STATUS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${ready.length}/${items.length} sections ready`;
-  if(notReady.length)out+=`\nBLOCKED: ${notReady.length}\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+(x.status||'NOT READY')).join('\n')}`;
-  else out+=`\nQA GATE: PASSED — 0 HARD FIXES\nREADY FOR PUBLISHING HANDOFF`;
+  const mandatoryMissing=[]; if(!subject)mandatoryMissing.push('email subject'); if(!preheader)mandatoryMissing.push('preheader'); if(!sendDate)mandatoryMissing.push('send date');
+  if(notReady.length||mandatoryMissing.length){
+    if(notReady.length)out+=`\nBLOCKED: ${notReady.length}\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+(x.status||'NOT READY')).join('\n')}`;
+    if(mandatoryMissing.length)out+=`\nMISSING PUBLISHING FIELDS: ${mandatoryMissing.join(', ')}`;
+    out+=`\nNOT READY FOR PUBLISHING HANDOFF`;
+  }else out+=`\nQA GATE: PASSED — 0 HARD FIXES\nREADY FOR PUBLISHING HANDOFF`;
   return out;
 }
 function masterAssetsPackageV3181(){
@@ -5328,17 +5390,18 @@ function masterAssetsPackageV3181(){
     const imageAlt=String(p.featured_image_alt||'').trim();
     const newsletterHeadline=String(p.newsletter_headline||title).trim();
     const newsletterTeaser=String(p.newsletter_teaser||description).trim();
-    const button=String(val(f,'CTA Text')||a.ctaText||'').trim();
+    const button=titleCaseCtaV3183(String(val(f,'CTA Text')||a.ctaText||'').trim());
     const defaultCta=publicationDefaultCtaDestinationV3182(publication);
     const partnerName=String(val(f,'Featured Partner')||val(f,'Partner')||'').trim();
     const buttonDestination=partnerName?`[PARTNER OVERRIDE REQUIRED — use the confirmed partner destination for ${partnerName}]`:(defaultCta||'[PUBLICATION CTA DESTINATION REQUIRED]');
     const fb=String(p.social_facebook||'').trim();
     const li=String(p.social_linkedin||'').trim();
     const x=String(p.social_x||'').trim();
+    const sourceLinks=(Array.isArray(p.sources)?p.sources:[]).filter(x=>x&&x.url).slice(0,5);
     const required={description,seoTitle,seoDescription,slug,keywords,imageBrief,imageAlt,newsletterHeadline,newsletterTeaser};
     const absent=Object.entries(required).filter(([,v])=>!String(v||'').trim()).map(([k])=>k);
     if(absent.length)missing.push(`${title}: ${absent.join(', ')}`);
-    out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMASTER ${idx+1} — ${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nARTICLE TITLE\n${title}\n\nARTICLE SUBHEAD\n${subhead||'[NONE SUPPLIED]'}\n\nARTICLE DESCRIPTION / SUMMARY\n${description||'[MISSING]'}\n\nSEO TITLE\n${seoTitle||'[MISSING]'}\n\nSEO DESCRIPTION\n${seoDescription||'[MISSING]'}\n\nURL SLUG\n${slug||'[MISSING]'}\n\nKEYWORDS\n${keywords||'[MISSING]'}\n\nFEATURED IMAGE BRIEF\n${imageBrief||'[MISSING]'}\n\nFEATURED IMAGE ALT TEXT\n${imageAlt||'[MISSING]'}\n\nNEWSLETTER HEADLINE\n${newsletterHeadline||'[MISSING]'}\n\nNEWSLETTER TEASER\n${newsletterTeaser||'[MISSING]'}\n\nBUTTON TEXT\n${button||'[NONE]'}\n\nBUTTON DESTINATION\n${button?buttonDestination:'[NONE]'}\n\nARTICLE URL SLUG\n${slug||'[MISSING]'}\n\nFACEBOOK\n${fb||'[NONE SUPPLIED]'}\n\nLINKEDIN\n${li||'[NONE SUPPLIED]'}\n\nX\n${x||'[NONE SUPPLIED]'}`;
+    out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMASTER ${idx+1} — ${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nARTICLE TITLE\n${title}\n\nARTICLE SUBHEAD\n${subhead||'[NONE SUPPLIED]'}\n\nARTICLE DESCRIPTION / SUMMARY\n${description||'[MISSING]'}\n\nSEO TITLE\n${seoTitle||'[MISSING]'}\n\nSEO DESCRIPTION\n${seoDescription||'[MISSING]'}\n\nURL SLUG\n${slug||'[MISSING]'}\n\nKEYWORDS\n${keywords||'[MISSING]'}\n\nFEATURED IMAGE BRIEF\n${imageBrief||'[MISSING]'}\n\nFEATURED IMAGE ALT TEXT\n${imageAlt||'[MISSING]'}\n\nNEWSLETTER HEADLINE\n${newsletterHeadline||'[MISSING]'}\n\nNEWSLETTER TEASER\n${newsletterTeaser||'[MISSING]'}\n\nBUTTON TEXT\n${button||'[NONE]'}\n\nBUTTON DESTINATION\n${button?buttonDestination:'[NONE]'}\n\nARTICLE URL SLUG\n${slug||'[MISSING]'}\n\nFACEBOOK\n${fb||'[NONE SUPPLIED]'}\n\nLINKEDIN\n${li||'[NONE SUPPLIED]'}\n\nX\n${x||'[NONE SUPPLIED]'}${sourceLinks.length?`\n\nUSEFUL LINKS / SOURCES\n${sourceLinks.map(z=>`- ${z.title||'Source / resource'}: ${z.url}`).join('\n')}`:''}`;
   });
   out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nASSET STATUS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${articles.length} selected Master Articles\n${missing.length?`METADATA REVIEW REQUIRED — ${missing.length} article(s) have missing fields:\n- ${missing.join('\n- ')}`:'LETTERMAN METADATA READY — all required article asset fields present'}\n\nIMAGE NOTE\nFeatured-image briefs and alt text are included here. Actual image-file generation is not yet part of this Step 9 package.`;
   return out;

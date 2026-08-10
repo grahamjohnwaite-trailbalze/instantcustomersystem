@@ -1050,7 +1050,7 @@ STYLE, AUDIENCE AND SAFETY
 - Keep sentences and paragraphs easy to read. Use contractions where natural. Prefer concrete nouns, numbers, examples and actions over polished adjectives or abstract explanation.
 - Headline and subhead must be clickable, conversational and specific without becoming misleading or clickbait.
 - Apply three reader tests: PUB TEST (would a normal person say it this way?), FACEBOOK TEST (would someone who clicked keep reading?), SO WHAT TEST (does the reader quickly understand why it affects them?).
-- Avoid repeated AI-ish constructions and filler such as useful, practical, meaningful, straightforward, key question, important distinction, matters, whether, crucial, navigate, 'The question is…' and 'That matters because…'. Normal one-off use is fine; patterned repetition is not.
+- NEVER use these recurring AI/filler words or phrases in reader-facing copy: useful, practical, meaningful, straightforward, key question, important distinction, crucial, navigate, 'The question is…' and 'That matters because…'. Avoid 'whether' and 'matters' unless the sentence genuinely cannot be written more naturally. Replace them with specific everyday wording.
 - LOCALISATION GATE: the finished article must not be publishable in another location simply by swapping the place name. When the subject supports it, use several verified named towns, roads, venues, businesses, current prices, figures, official decisions or other local examples. Local proof should do real editorial work, not decorate generic copy.
 - Genuine local voices or partner-supplied comments may be used when supplied and attributed. NEVER invent reader comments, quotes, consensus or local opinion. If genuine local voices are unavailable, the article may ask readers for them for a follow-up.
 - Never invent recommendations, prices, dates, businesses or factual claims.
@@ -1067,6 +1067,8 @@ STYLE, AUDIENCE AND SAFETY
 - When research.optional_missing is present, omit those details unless independently supported.
 - One primary CTA only. The CTA should match the reader's next natural action. It may be engagement, list-building, a lead magnet, a Resident Expert, a Featured Partner, a booking, an offer, a directory/resource, a community action or another genuinely useful next step; do not manufacture a weak button just because a field exists.
 - Raw clean destination URLs only.
+- READER LINK RULE: when the verified research pack contains an official venue, event, booking, guide, map, council, service or other page that would genuinely help the reader act, make that resource visible in the article package Sources and write the body so staff can naturally hyperlink the relevant words. Do not bury helpful reader routes or pad with irrelevant links.
+- VARY THE ARTICLE SHAPE: do not make every Master a polished explainer. Depending on the job, use a comparison, mini itinerary, ranked-but-qualified list, myth/fact, reported story, first-person editorial framing, quick test, Q&A shape, price breakdown or narrative lead. Keep the facts disciplined while varying the reading experience.
 - Short paragraphs suitable for a narrow article page.
 - The article must stand alone outside the newsletter.
 - QUESTION-FIRST RULE: answer ONE clear reader question well. Do not turn a broad topic into a catch-all guide.
