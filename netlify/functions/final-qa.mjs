@@ -17,9 +17,19 @@ export default async(request)=>{
       content:String(b.content||''),partner:b.partner,cta:b.cta,button:b.button,url:b.url
     }));
 
+    const profile=data.profile&&typeof data.profile==='object'?data.profile:{};
+    const sectionRange=Array.isArray(profile.targetSections)?profile.targetSections:[12,30];
+    const masterRange=Array.isArray(profile.targetMasters)?profile.targetMasters:[5,10];
+    const profileName=profile.name||'Local publication';
+    const voice=profile.voice||'Natural spoken UK English, specific local proof and a publication-appropriate editorial voice.';
+
     const prompt=`You are the final whole-issue editorial QA editor for a UK local newsletter.
 
 PUBLICATION: ${data.publication||''}
+PUBLICATION FAMILY / PROFILE: ${profileName}
+NORMAL SECTION RANGE FOR THIS PROFILE: ${sectionRange[0]}-${sectionRange[1]}
+NORMAL MASTER ARTICLE RANGE FOR THIS PROFILE: ${masterRange[0]}-${masterRange[1]}
+VOICE PROFILE: ${voice}
 ISSUE PROMISE: ${data.issuePromise||''}
 
 Review the complete running order below. Detect ONLY meaningful issue-level problems that a deterministic checker may miss:
@@ -30,13 +40,17 @@ Review the complete running order below. Detect ONLY meaningful issue-level prob
 - if a paid partner already has a Master Article in the issue, its Partner Presence must complement it with a distinct action/service/insight rather than summarise the article;
 - internal commercial/editorial notes leaking into reader-facing copy;
 - weak issue rhythm or several heavy sections together;
-- issue architecture outside the Spotlight target: normally around 24-30 total sections with roughly 8-10 concise, information-rich Master Articles and the rest lighter pace/support components; treat these as normal ranges, not quotas;
+- issue architecture outside THIS PUBLICATION PROFILE'S stated section and Master ranges above; treat those ranges as normal ranges, not quotas. Never substitute Spotlight targets for another publication family;
 - commercial opportunity should be visible across strong articles/components where natural: authority/expert routes, feature/activation routes, sponsored resources, niche-brand/list-building pathways or other sellable reader-value opportunities. Do NOT require an arbitrary sponsor count and do NOT penalise a strong editorial item merely because it has no obvious commercial route;
 - too many oversized/catch-all Master Articles where several distinct reader questions appear to have been crammed into one piece;
 - generic supporting copy that does not earn its place;
 - duplicated CTAs/social prompts;
-- a flat, over-safe issue voice: Spotlight is Unfiltered, so where the subject supports it there should be some humour, challenge, contrary thinking or clearly explained debate rather than an issue of uniformly neutral blocks;
+- a flat, over-safe or overly polished issue voice when it conflicts with the ACTIVE VOICE PROFILE above. Judge voice against that profile only; never refer to Spotlight or an 'Unfiltered Spotlight' promise unless the active profile is actually Spotlight;
 - localisation failure: reader-facing copy that claims to be local but could be moved to another county/town by changing only the place name, when the subject reasonably allows named local proof.
+
+
+IMPORTANT PROFILE RULE:
+Treat the supplied publication profile, section range, Master range, voice profile and issue promise as authoritative for this QA run. Do not invent a different family identity or report the promise as blank when ISSUE PROMISE above is populated.
 
 IMPORTANT SOURCE RULE:
 Information supplied directly by a named featured partner or organisation is valid first-party information. Do NOT flag it merely because it lacks independent public-web corroboration. You may warn only when attribution/qualification is needed or the copy overstates what the supplied information supports.

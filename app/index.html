@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.10<br><strong>Step 4 Saved-Research Writer</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-10 · cumulative v3.18.9 + write-only Step 4 + blocked-research skip</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.15<br><strong>Publication-Aware Final QA</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-10 · cumulative v3.18.14 + generic profile-aware QA + promise/entity fixes</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -4953,6 +4953,32 @@ function clearWriterOnlyStateV317(notes){
     .replace(/\n?MASTER ARTICLE FAILED v[\d.]+[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'')
     .trim();
 }
+function qaIssuePromiseV31815(){
+  return String(E('assembly-theme')?.value||localStorage.getItem(themeKey())||val(S.issue?.fields||{},'Main Theme')||'').trim();
+}
+function qaVoiceProfileV31815(profile=engineProfileForPublication()){
+  const key=String(profile?.key||'SPOTLIGHT').toUpperCase();
+  if(key==='TASTE_TRAIL')return 'Independent local food, drink and going-out guide. Conversational UK English, specific local proof, appetite and personality. Use sharper judgement where evidence earns it, but never pretend a desk-researched article is a first-hand tasting review.';
+  if(key==='PET_INSIDER')return 'Warm, knowledgeable local pet publication. Plain UK English, specific local help, reassurance without fluff, and expert authority where evidence supports it.';
+  if(key==='HOME_SELLER')return 'Clear, commercially aware seller publication. Plain UK English, specific examples, decisive explanation and no estate-agent brochure language.';
+  return 'Conversational local Spotlight voice: specific, human, locally grounded, occasionally funny or challenging where earned, and never council-report or polished generic-magazine prose.';
+}
+function qaProfilePayloadV31815(){
+  const p=engineProfileForPublication();
+  return {key:p.key,name:p.name,targetSections:p.targetSections,targetMasters:p.targetMasters,targetSupport:p.targetSupport,voice:qaVoiceProfileV31815(p)};
+}
+function qaNamedEntityCandidatesV31815(text){
+  const stop=new Set(['Opening Note','Before You Go','Quick Food Quiz','One Quick Vote','Your Recommendation','Worth The Money','Master Article']);
+  const out=[];
+  // Multi-word proper names only. This deliberately excludes sentence-start words such as Monday, There’s, Sunday and You’ll.
+  for(const m of String(text||'').matchAll(/\b([A-Z][A-Za-z’'&.-]+(?:\s+(?:&|of|the|and|at|in|on|[A-Z][A-Za-z’'&.-]+)){1,4})\b/g)){
+    const x=m[1].trim().replace(/[.,;:!?]+$/,'');
+    if(x.length<7||stop.has(x))continue;
+    if(/^(Which|Where|What|When|How|Why|This|That|There|Before|After|Peterborough Taste Trail)\b/.test(x))continue;
+    out.push(x);
+  }
+  return out;
+}
 function deterministicQA(items){
   const findings=[];
   const add=(severity,code,message,blocks=[],safeFix=false)=>findings.push({severity,code,message,blocks,safeFix});
@@ -4962,10 +4988,16 @@ function deterministicQA(items){
   else add('PASS','ALL_READY',`All ${items.length} blocks are Ready.`);
 
   const articleCount=items.filter(b=>b.kind==='article').length;
-  if(items.length<24||items.length>30)add('WARNING','ISSUE_SIZE',`Spotlight normally runs at about 24-30 sections; this canvas has ${items.length}. Treat this as a balance warning, not a quota.`);
-  else add('PASS','ISSUE_SIZE',`Issue size is within the normal 24-30 section Spotlight range.`);
-  if(articleCount<8||articleCount>10)add('WARNING','ARTICLE_COUNT',`Spotlight normally uses around 8-10 concise, information-rich Master Articles; this canvas has ${articleCount}. Judge the finished issue by value and rhythm rather than count alone.`);
-  else add('PASS','ARTICLE_COUNT',`${articleCount} Master Articles is within the normal 8-10 Spotlight range.`);
+  const qaProfile=engineProfileForPublication();
+  const [minSections,maxSections]=qaProfile.targetSections||[12,30];
+  const [minMasters,maxMasters]=qaProfile.targetMasters||[5,10];
+  if(items.length<minSections||items.length>maxSections)add('WARNING','ISSUE_SIZE',`${qaProfile.name} normally runs at about ${minSections}-${maxSections} sections; this canvas has ${items.length}. Treat this as a balance warning, not a quota.`);
+  else add('PASS','ISSUE_SIZE',`${items.length} sections is within the normal ${minSections}-${maxSections} ${qaProfile.name} range.`);
+  if(articleCount<minMasters||articleCount>maxMasters)add('WARNING','ARTICLE_COUNT',`${qaProfile.name} normally uses around ${minMasters}-${maxMasters} Master Articles; this canvas has ${articleCount}. Judge the finished issue by value and rhythm rather than count alone.`);
+  else add('PASS','ARTICLE_COUNT',`${articleCount} Master Articles is within the normal ${minMasters}-${maxMasters} ${qaProfile.name} range.`);
+  const issuePromise=qaIssuePromiseV31815();
+  if(!issuePromise)add('WARNING','ISSUE_PROMISE','The saved issue promise is blank, so the running order has no defined editorial promise to guide the edition.');
+  else add('PASS','ISSUE_PROMISE','A saved issue promise is present and available to Final QA.');
   const longArticles=items.filter(b=>b.kind==='article'&&String(b.content||'').trim().split(/\s+/).filter(Boolean).length>650);
   if(longArticles.length)add('WARNING','MEGA_ARTICLE',`${longArticles.length} Master Article${longArticles.length===1?' is':'s are'} over about 650 words. Run the Split Test: does each contain two or more questions that deserve separate 250-600 word answers?`,longArticles.map(b=>b.uid));
   else add('PASS','ARTICLE_LENGTH',`No obvious mega-articles over about 650 words.`);
@@ -5053,12 +5085,13 @@ function deterministicQA(items){
   else add('PASS','ENDING_RHYTHM','The final run does not show the previous check/question-heavy ending pattern.');
 
   // Duplicate named-place / venue signal across Master Articles. Warning only: repetition can be intentional.
+  // v3.18.15: multi-word entity candidates only, avoiding sentence-start words being mistaken for venues.
   const masters=items.filter(b=>b.kind==='article');
-  const stopProper=new Set(['The','This','That','What','Why','How','When','Where','Which','Your','Our','Best','Cambridgeshire','Peterborough','Norfolk','Spotlight','Summer','Article','Guide','Local']);
-  const properByMaster=masters.map(b=>{const text=`${b.title||''} ${b.content||''}`;const hits=[...text.matchAll(/\b([A-Z][A-Za-z’'-]+(?:\s+[A-Z][A-Za-z’'-]+){0,2})\b/g)].map(m=>m[1].trim()).filter(x=>x.length>4&&!stopProper.has(x)&&!/^Section\b/.test(x));return {b,set:new Set(hits)};});
+  const properByMaster=masters.map(b=>({b,set:new Set(qaNamedEntityCandidatesV31815(`${b.title||''} ${b.content||''}`))}));
   const properCounts=new Map(); for(const x of properByMaster)for(const n of x.set)properCounts.set(n,(properCounts.get(n)||0)+1);
   const repeatedProper=[...properCounts.entries()].filter(([,n])=>n>=2).sort((a,b)=>b[1]-a[1]).slice(0,8);
   if(repeatedProper.length)add('WARNING','NAMED_PLACE_REPEAT',`Named place/venue repetition across Masters: ${repeatedProper.map(([n,c])=>`${n} (${c})`).join(', ')}. Confirm each repeat earns its place; otherwise substitute a different local example.`,[],true);
+  else add('PASS','NAMED_PLACE_REPEAT','No obvious repeated multi-word place/venue names across Master Articles.');
 
   // County-balance warning for Cambridgeshire Spotlight only.
   const pubLabel=String(currentPublicationName()||'').toLowerCase();
@@ -5180,14 +5213,15 @@ async function runFinalQA(){
   document.body.dataset.workflowStep='8';
   btn.disabled=true;btn.textContent='Running Final QA…';
   const rerun=E('qa-rerun-v317'); if(rerun){rerun.disabled=true;rerun.textContent='Running Final QA…';}
-  setWorkflowActionStatusV312(8,'QA','Running Final QA…','Checking all 27 assembled sections. Stay on Step 8; the report will appear here when complete.');
+  setWorkflowActionStatusV312(8,'QA','Running Final QA…',`Checking all ${items.length} assembled sections against the ${engineProfileForPublication().name} profile. Stay on Step 8; the report will appear here when complete.`);
   updateWorkflowShellV312(8);
   try{
     let findings=deterministicQA(items);
     try{
       const payload={
         publication:currentPublicationName(),
-        issuePromise:E('assembly-promise')?.value||'',
+        issuePromise:qaIssuePromiseV31815(),
+        profile:qaProfilePayloadV31815(),
         blocks:items.map((b,i)=>({
           order:i+1,uid:b.uid,kind:b.kind,type:b.type,title:b.title,purpose:b.purpose,
           content:b.content,partner:b.partner,category:b.category,cta:b.cta,button:b.button,url:b.url,status:b.status,
@@ -5307,7 +5341,8 @@ async function evaluateIssueQAV3173(items){
   try{
     const payload={
       publication:currentPublicationName(),
-      issuePromise:E('assembly-promise')?.value||'',
+      issuePromise:qaIssuePromiseV31815(),
+      profile:qaProfilePayloadV31815(),
       blocks:items.map((b,i)=>({
         order:i+1,uid:b.uid,kind:b.kind,type:b.type,title:b.title,purpose:b.purpose,
         content:b.content,partner:b.partner,category:b.category,cta:b.cta,button:b.button,url:b.url,status:b.status,
