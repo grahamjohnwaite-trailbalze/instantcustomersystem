@@ -3652,6 +3652,55 @@ function setStep6LiveProgressV3152({show=true,done=0,total=0,ready=0,failed=0,cu
     : `${done}/${total} processed · ${ready} ready · ${failed} failed`;
   setWorkflowActionStatusV312(6,'Components',label,detail);
 }
+
+function supportAllocationPlanV31814(profile, recipe, plan, selectedOrders){
+  const norm=s=>String(s||'').toLowerCase();
+  const records=(plan?.articles||[]).filter(a=>!selectedOrders.includes(Number(a.order))).map(a=>{
+    const rec=typeof planArticleRecordV312==='function'?planArticleRecordV312(a):null;
+    const f=rec?.fields||{};
+    const ready=String(val(f,'Section Status')||'').toUpperCase()==='READY' || String(val(f,'Section QA Result')||'').toUpperCase()==='PASS';
+    if(!ready)return null;
+    return {
+      id:`MASTER_${Number(a.order)||0}`,
+      title:String(a.title||'').trim(),
+      source:String(val(f,'Source / Reference Link 1')||val(f,'Primary source')||'').trim(),
+      copy:String(val(f,'Section Final Copy')||'').replace(/\s+/g,' ').trim().slice(0,650)
+    };
+  }).filter(Boolean);
+  const used=new Set();
+  const score=(type,c)=>{
+    const t=norm(type),b=norm(`${c.title} ${c.copy}`);
+    let n=1;
+    if(/price|value|money|saver/.test(t))n+=/(price|value|cheap|free|deal|voucher|clubcard|cost|bill|£)/.test(b)?8:-4;
+    if(/event|what's on|weekend/.test(t))n+=/(event|festival|market|opening|launch|weekend|date|show|fair)/.test(b)?8:-8;
+    if(/business|hospitality|expert|producer/.test(t))n+=/(owner|chef|producer|brewer|grower|bakery|cafe|café|restaurant|pub|bar|smokehouse|business|opened|opening)/.test(b)?6:-2;
+    if(/trivia|history/.test(t))n+=/(former|old|history|historic|first|reopen|reopened|years|quirky)/.test(b)?7:-3;
+    if(/food find|worth the drive|discovery/.test(t))n+=/(food|cafe|café|restaurant|pub|bar|smokehouse|lounge|detour|dish|coffee)/.test(b)?6:0;
+    return n;
+  };
+  const factual=t=>!/opening note|reader poll|quick quiz|reader recommendation|before you go|this or that|reader question|local debate/i.test(String(t||''));
+  const allocations=[];
+  for(let i=0;i<recipe.length;i++){
+    let [type,label,lane]=recipe[i];
+    let candidate=null;
+    if(factual(type)){
+      const ranked=records.filter(c=>!used.has(c.id)).map(c=>({c,n:score(type,c)})).sort((a,b)=>b.n-a.n);
+      if(ranked.length && ranked[0].n>0){candidate=ranked[0].c;used.add(candidate.id)}
+      if(/event|what's on|weekend/i.test(type) && (!candidate || score(type,candidate)<5)){
+        if(candidate)used.delete(candidate.id);
+        const alt=records.filter(c=>!used.has(c.id)).map(c=>({c,n:score('WORTH THE DRIVE?',c)})).sort((a,b)=>b.n-a.n)[0];
+        if(alt){candidate=alt.c;used.add(candidate.id);type='WORTH THE DRIVE?';label='Worth The Trip?';lane='PLACES & DISCOVERY'}
+      }
+      if(/hospitality person|producer/i.test(label) && candidate && !/(owner|chef|producer|brewer|grower|person|people)/i.test(`${candidate.title} ${candidate.copy}`)){
+        type='LOCAL BUSINESS FIND';label='Local Business Find';
+      }
+      if(!candidate){type='EDITORIAL BRIDGE';label='Quick Breather';lane=lane||'OPEN'}
+    }
+    allocations.push({type,label,lane,candidate});
+  }
+  return allocations;
+}
+
 async function buildSupportBatchV315(){
   const t=supportTargetV315();
   if(!t.selectedMasters){
@@ -3825,9 +3874,19 @@ async function buildSupportBatchV315(){
     const discoverySignalsV31813=(typeof getSmartSignals==='function'?getSmartSignals():[]).slice(0,18).map(x=>`- ${String(x.signal||'').trim()}${x.source_url?` | SOURCE: ${x.source_url}`:''}`).join('\n')||'- No extra discovery signals available.';
     const masterSubjectsV31813=selectedArticlesV31813.map(a=>`- ${a.title}`).join('\n')||'- None';
 
+    // v3.18.14 generic subject allocator: assign one primary evidence subject to each factual support slot
+    // before writing begins, so a strong unused Master cannot be recycled into several different components.
+    const allSupportsV31814=existing.slice(0,t.supportNeeded);
+    const recipeV31814=allSupportsV31814.map(x=>{const m=supportMetaV3153(x);return [m.type,String(val(x.fields||{},'Section Title')||m.type),m.lifeLane]});
+    const allocationsV31814=supportAllocationPlanV31814(profile,recipeV31814,planV31813,selectedOrdersV31813);
+    const allocationByIdV31814=new Map(allSupportsV31814.map((x,idx)=>[x.id,allocationsV31814[idx]||null]));
+
     for(let i=0;i<pending.length;i++){
-      const s=pending[i],f=s.fields||{},meta=supportMetaV3153(s);
-      const title=String(val(f,'Section Title')||meta.type);
+      const s=pending[i],f=s.fields||{},originalMeta=supportMetaV3153(s),allocation=allocationByIdV31814.get(s.id)||{};
+      const meta={...originalMeta,type:allocation.type||originalMeta.type,lifeLane:allocation.lane||originalMeta.lifeLane};
+      const title=String(allocation.label||val(f,'Section Title')||meta.type);
+      const assigned=allocation.candidate?`ASSIGNED PRIMARY SUBJECT — use this subject in THIS component only:
+- ${allocation.candidate.title}${allocation.candidate.source?` | SOURCE: ${allocation.candidate.source}`:''}${allocation.candidate.copy?` | COPY EXTRACT: ${allocation.candidate.copy}`:''}`:'ASSIGNED PRIMARY SUBJECT: None. Do not borrow a named subject already allocated to another support.';
 
       setStep6LiveProgressV3152({
         show:true,done:readyNow+failed.length,total,ready:readyNow,failed:failed.length,
@@ -3842,6 +3901,7 @@ ISSUE PROMISE: ${theme}
 COMPONENT TYPE: ${meta.type}
 LABEL: ${title}
 LIFE LANE: ${meta.lifeLane}
+${assigned}
 RECENT SUPPORT COMPONENTS: ${persistentSupportRecordsV3153().filter(x=>x.id!==s.id&&supportReadyRecordV3153(x)).slice(-3).map(x=>`${val(x.fields,'Section Title')}: ${String(val(x.fields,'Section Final Copy')||'').slice(0,180)}`).join(' | ')||'None yet'}
 
 SELECTED MASTER SUBJECTS — NOVELTY EXCLUSION LIST:
@@ -3862,9 +3922,11 @@ Write ONLY finished newsletter copy.
 - Natural UK English, conversational and locally knowledgeable. Give it personality; it should sound like a lively local publication, not a council guide, business article, brochure or AI explainer.
 - Vary the format and sentence shape from the recent support components. Do not create another checklist/question/explainer if the recent blocks already use that structure.
 - GENERIC SUPPORT NOVELTY GUARD: Masters carry the big stories; supports should normally introduce a new named venue, person, event, product, fact, place or reader job. Do not miniaturise or summarise a selected Master.
-- Prefer UNUSED COMPLETED MASTER EVIDENCE for factual supports. This is deliberately supplied so the support layer can use research that did not make the headline selection.
-- Avoid repeating a named entity already used in recent supports. A repeated entity is allowed only when the component performs a clearly different job and adds a genuinely new fact.
-- If the requested component type cannot be supported by evidence, do not write filler such as 'there is no confirmed event'. Instead use the strongest evidence-backed short format available for the same life lane and make the heading match what you actually wrote.
+- SUBJECT ALLOCATION GUARD: if an ASSIGNED PRIMARY SUBJECT is supplied, that is the only named evidence-bank subject this component may centre on. Do not switch to another unused Master merely because it is easier to write.
+- A named evidence-bank subject is normally allocated to ONE support only. Do not recycle a venue/person/topic that another support already used.
+- The declared COMPONENT TYPE, LABEL and LIFE LANE above are final for this run. The copy must actually perform that job; do not write an event block about a non-event or a people block about a venue.
+- Prefer the ASSIGNED PRIMARY SUBJECT over the general UNUSED COMPLETED MASTER EVIDENCE bank. The general bank is context only and must not be mined for extra named subjects.
+- If no primary subject is assigned, keep the block non-factual/editorial/reader-facing as appropriate and do not import a named venue from another support.
 - For Taste Trail, the support set must feel like eating, drinking and going out locally: named place/dish/person/event/value/discovery where evidence supports it, not generic lifestyle advice.
 - For factual Taste Trail components (Food Find, Price Check, Hospitality Person/Producer, Event Pick, Trivia), use at least one named local proof point from the supplied evidence context when possible. If the context does not support the requested factual component, write a short clearly non-factual editorial bridge instead of inventing facts.
 - Reader-voice formats are limited: do not turn a factual/discovery component into another poll, nomination, recommendation request or question merely because evidence is thin.
@@ -3881,6 +3943,7 @@ Write ONLY finished newsletter copy.
         const d=await api('sections',{
           method:'PATCH',
           body:JSON.stringify({id:s.id,fields:{
+            'Section Title':title,
             'Section Final Copy':copy,
             'Section Status':'Ready',
             'Evidence Status':'Question Only',
@@ -3950,7 +4013,7 @@ async function rebuildComponentMixV31813(){
   const profile=engineProfileForPublication();
   const t=supportTargetV315();
   if(!t.selectedMasters){alert('Save the Step 5 Master selection first.');return}
-  if(!confirm(`Rebuild the ${t.supportNeeded} supporting components using the ${profile.name} publication profile plus the generic novelty/local-proof guard? Selected Master Articles are preserved.`))return;
+  if(!confirm(`Rebuild the ${t.supportNeeded} supporting components using the ${profile.name} publication profile plus the generic subject-allocation/novelty guard? Selected Master Articles are preserved.`))return;
   const btn=E('step6-rebuild-mix-v31812');const old=btn?.textContent;if(btn){btn.disabled=true;btn.textContent='Rebuilding Mix…'}
   try{
     await refreshPersistentSupportV3153();
@@ -3980,11 +4043,11 @@ async function rebuildComponentMixV31813(){
         'Section Final Copy':'',
         'Evidence Status':'Needs Update',
         'Section QA Result':'Not Checked',
-        'Notes':`PERSISTENT SUPPORT COMPONENT | Type: ${r[0]} | Life lane: ${r[2]} | v3.18.13 publication-profile mix + generic support novelty guard`
+        'Notes':`PERSISTENT SUPPORT COMPONENT | Type: ${r[0]} | Life lane: ${r[2]} | v3.18.14 publication-profile mix + generic support subject allocation guard`
       }})});
     }
     await refreshPersistentSupportV3153();
-    setStep6LiveProgressV3152({show:true,done:0,total:t.supportNeeded,ready:0,failed:0,current:`${profile.name} component mix reset. Producing varied supports with new subjects where evidence allows…`,phase:'Step 6 — Rebuilding Component Mix'});
+    setStep6LiveProgressV3152({show:true,done:0,total:t.supportNeeded,ready:0,failed:0,current:`${profile.name} component mix reset. Allocating distinct support subjects, then producing varied components…`,phase:'Step 6 — Rebuilding Component Mix'});
     await buildSupportBatchV315();
   }catch(e){alert('Component mix rebuild failed: '+String(e.message||e))}
   finally{if(btn){btn.disabled=false;btn.textContent=old||'Rebuild Component Mix'}}
