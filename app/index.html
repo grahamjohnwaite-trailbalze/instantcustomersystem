@@ -421,7 +421,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
       <h2 style="margin:4px 0">Supporting Components</h2>
       <div class="muted">ICS calculates what is missing from the selected Masters and publication target. You should not have to build these one by one.</div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn secondary" id="step6-rebuild-mix-v31812" type="button">Rebuild Taste Trail Mix</button><button class="btn" id="step6-build-v3151" type="button">Build / Resume Supporting Components</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn secondary" id="step6-rebuild-mix-v31812" type="button">Rebuild Component Mix</button><button class="btn" id="step6-build-v3151" type="button">Build / Resume Supporting Components</button></div>
   </div>
   <div id="step6-summary-v315" class="check" style="margin-top:10px"></div>
   <div id="step6-live-v3152" class="check" style="margin-top:10px;display:none">
@@ -3799,15 +3799,31 @@ async function buildSupportBatchV315(){
     });
 
     const theme=String(E('assembly-theme')?.value||val(S.issue.fields,'Main Theme')||'').trim();
-    const selectedOrdersV31812=(typeof getMasterSelectionV312==='function'?getMasterSelectionV312():[]).map(Number);
-    const planV31812=typeof getSmartPlan==='function'?getSmartPlan():null;
-    const selectedEvidenceV31812=(planV31812?.articles||[]).filter(a=>selectedOrdersV31812.includes(Number(a.order))).map(a=>{
+    const selectedOrdersV31813=(typeof getMasterSelectionV312==='function'?getMasterSelectionV312():[]).map(Number);
+    const planV31813=typeof getSmartPlan==='function'?getSmartPlan():null;
+    const selectedArticlesV31813=(planV31813?.articles||[]).filter(a=>selectedOrdersV31813.includes(Number(a.order)));
+    const selectedEvidenceV31813=selectedArticlesV31813.map(a=>{
       const rec=typeof planArticleRecordV312==='function'?planArticleRecordV312(a):null;
       const f=rec?.fields||{};
       const src=String(val(f,'Source / Reference Link 1')||val(f,'Primary source')||'').trim();
-      const copy=String(val(f,'Section Final Copy')||'').replace(/\s+/g,' ').trim().slice(0,420);
+      const copy=String(val(f,'Section Final Copy')||'').replace(/\s+/g,' ').trim().slice(0,360);
       return `- ${a.title}${src?` | SOURCE: ${src}`:''}${copy?` | COPY EXTRACT: ${copy}`:''}`;
     }).join('\n')||'- No selected-Master evidence context available.';
+
+    // Generic support-novelty evidence bank: completed but unselected Masters are valuable source material
+    // for short supports. They add new subjects without repeating the seven headline Masters.
+    const unusedEvidenceV31813=(planV31813?.articles||[]).filter(a=>!selectedOrdersV31813.includes(Number(a.order))).map(a=>{
+      const rec=typeof planArticleRecordV312==='function'?planArticleRecordV312(a):null;
+      const f=rec?.fields||{};
+      const ready=String(val(f,'Section Status')||'').toUpperCase()==='READY' || String(val(f,'Section QA Result')||'').toUpperCase()==='PASS';
+      if(!ready)return '';
+      const src=String(val(f,'Source / Reference Link 1')||val(f,'Primary source')||'').trim();
+      const copy=String(val(f,'Section Final Copy')||'').replace(/\s+/g,' ').trim().slice(0,420);
+      return `- ${a.title}${src?` | SOURCE: ${src}`:''}${copy?` | COPY EXTRACT: ${copy}`:''}`;
+    }).filter(Boolean).slice(0,8).join('\n')||'- No unused completed Master evidence available.';
+
+    const discoverySignalsV31813=(typeof getSmartSignals==='function'?getSmartSignals():[]).slice(0,18).map(x=>`- ${String(x.signal||'').trim()}${x.source_url?` | SOURCE: ${x.source_url}`:''}`).join('\n')||'- No extra discovery signals available.';
+    const masterSubjectsV31813=selectedArticlesV31813.map(a=>`- ${a.title}`).join('\n')||'- None';
 
     for(let i=0;i<pending.length;i++){
       const s=pending[i],f=s.fields||{},meta=supportMetaV3153(s);
@@ -3828,14 +3844,27 @@ LABEL: ${title}
 LIFE LANE: ${meta.lifeLane}
 RECENT SUPPORT COMPONENTS: ${persistentSupportRecordsV3153().filter(x=>x.id!==s.id&&supportReadyRecordV3153(x)).slice(-3).map(x=>`${val(x.fields,'Section Title')}: ${String(val(x.fields,'Section Final Copy')||'').slice(0,180)}`).join(' | ')||'None yet'}
 
-SELECTED MASTER EVIDENCE CONTEXT (may be used for named local proof, but do not repeat the Master angle):
-${selectedEvidenceV31812}
+SELECTED MASTER SUBJECTS — NOVELTY EXCLUSION LIST:
+${masterSubjectsV31813}
+
+SELECTED MASTER EVIDENCE CONTEXT — reference only. Do NOT make these same venues/people/topics the subject of the support unless the component adds a clearly different reader job:
+${selectedEvidenceV31813}
+
+UNUSED COMPLETED MASTER EVIDENCE — prefer this bank for factual support because it adds new local subjects without wasting completed research:
+${unusedEvidenceV31813}
+
+OTHER CURRENT DISCOVERY SIGNALS — secondary idea bank; do not state unverified detail as fact:
+${discoverySignalsV31813}
 
 Write ONLY finished newsletter copy.
 - Normally 45–120 words; shorter is fine.
 - One clear reader job.
 - Natural UK English, conversational and locally knowledgeable. Give it personality; it should sound like a lively local publication, not a council guide, business article, brochure or AI explainer.
 - Vary the format and sentence shape from the recent support components. Do not create another checklist/question/explainer if the recent blocks already use that structure.
+- GENERIC SUPPORT NOVELTY GUARD: Masters carry the big stories; supports should normally introduce a new named venue, person, event, product, fact, place or reader job. Do not miniaturise or summarise a selected Master.
+- Prefer UNUSED COMPLETED MASTER EVIDENCE for factual supports. This is deliberately supplied so the support layer can use research that did not make the headline selection.
+- Avoid repeating a named entity already used in recent supports. A repeated entity is allowed only when the component performs a clearly different job and adds a genuinely new fact.
+- If the requested component type cannot be supported by evidence, do not write filler such as 'there is no confirmed event'. Instead use the strongest evidence-backed short format available for the same life lane and make the heading match what you actually wrote.
 - For Taste Trail, the support set must feel like eating, drinking and going out locally: named place/dish/person/event/value/discovery where evidence supports it, not generic lifestyle advice.
 - For factual Taste Trail components (Food Find, Price Check, Hospitality Person/Producer, Event Pick, Trivia), use at least one named local proof point from the supplied evidence context when possible. If the context does not support the requested factual component, write a short clearly non-factual editorial bridge instead of inventing facts.
 - Reader-voice formats are limited: do not turn a factual/discovery component into another poll, nomination, recommendation request or question merely because evidence is thin.
@@ -3916,32 +3945,33 @@ Write ONLY finished newsletter copy.
 function step6ReadyCountV3151(){
   return persistentSupportRecordsV3153().filter(supportReadyRecordV3153).length;
 }
-async function rebuildTasteTrailSupportMixV31812(){
+async function rebuildComponentMixV31813(){
   if(!S.issue){alert('Open an issue first.');return}
   const profile=engineProfileForPublication();
-  if(profile.key!=='TASTE_TRAIL'){
-    alert('Rebuild Taste Trail Mix is only used for Taste Trail publications.');return;
-  }
   const t=supportTargetV315();
   if(!t.selectedMasters){alert('Save the Step 5 Master selection first.');return}
-  if(!confirm(`Rebuild the ${t.supportNeeded} Taste Trail supporting components using the new varied/local-proof mix? Selected Master Articles are preserved.`))return;
+  if(!confirm(`Rebuild the ${t.supportNeeded} supporting components using the ${profile.name} publication profile plus the generic novelty/local-proof guard? Selected Master Articles are preserved.`))return;
   const btn=E('step6-rebuild-mix-v31812');const old=btn?.textContent;if(btn){btn.disabled=true;btn.textContent='Rebuilding Mix…'}
   try{
     await refreshPersistentSupportV3153();
-    const recipe=[
-      ['OPENING NOTE','Opening Note','OPEN'],
-      ['FOOD FIND','Local Food Find','DISHES & MENUS'],
-      ['QUICK PRICE CHECK','Worth The Money?','VALUE'],
-      ['LOCAL BUSINESS FIND','Hospitality Person / Producer','HOSPITALITY PEOPLE'],
-      ['EVENT PICK','Food & Drink Event Pick','FOOD EVENTS'],
-      ['LOCAL TRIVIA','Local Food & Drink Trivia','PLACES & DISCOVERY'],
-      ['READER POLL','One Quick Vote','READER VOICE'],
-      ['QUICK QUIZ','Quick Food Quiz','FUN & CURIOSITY'],
-      ['READER RECOMMENDATION','Your Recommendation','READER VOICE'],
-      ['BEFORE YOU GO','Before You Go','OPEN']
-    ];
+    const recipes={
+      SPOTLIGHT:[
+        ['OPENING NOTE','Opening Note','OPEN'],['NEWS BRIEF','News Brief','LOCAL LIFE'],['READER POLL','Reader Poll','READER VOICE'],["WHAT'S ON","What's On","WHAT'S ON"],
+        ['QUICK QUIZ','Quick Quiz','FUN & CURIOSITY'],['FOOD FIND','Food Find','FOOD & HOSPITALITY'],['SALLY SAVERS','Sally Savers','MONEY & CONSUMER'],['LOCAL BUSINESS FIND','Local Business Find','BUSINESS & PEOPLE'],
+        ['FAMILY ACTIVITY','Family Activity','FAMILY & COMMUNITY'],['THIS OR THAT','This Or That','FUN & CURIOSITY'],['MOTORING QUICK CHECK','Motoring Quick Check','MOTORING & TRAVEL'],['COMMUNITY VOICE','Community Voice','FAMILY & COMMUNITY'],
+        ['HUMOUR','Quick Breather','FUN & CURIOSITY'],['WORTH THE DRIVE?','Worth The Drive?','PLACES & DISCOVERY'],['HOME QUICK CHECK','Home Quick Check','HOME & PROPERTY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],
+        ['LOCAL DEBATE','Local Debate','READER VOICE'],['QUICK UPDATE','Quick Update','LOCAL LIFE'],['BEFORE YOU GO','Before You Go','OPEN']
+      ],
+      TASTE_TRAIL:[
+        ['OPENING NOTE','Opening Note','OPEN'],['FOOD FIND','Local Food Find','DISHES & MENUS'],['QUICK PRICE CHECK','Worth The Money?','VALUE'],['LOCAL BUSINESS FIND','Hospitality Person / Producer','HOSPITALITY PEOPLE'],
+        ['EVENT PICK','Food & Drink Event Pick','FOOD EVENTS'],['LOCAL TRIVIA','Local Food & Drink Trivia','PLACES & DISCOVERY'],['READER POLL','One Quick Vote','READER VOICE'],['QUICK QUIZ','Quick Food Quiz','FUN & CURIOSITY'],
+        ['READER RECOMMENDATION','Your Recommendation','READER VOICE'],['BEFORE YOU GO','Before You Go','OPEN']
+      ],
+      HOME_SELLER:[['OPENING NOTE','Opening Note','OPEN'],['READER POLL','Reader Poll','READER VOICE'],['QUICK PRICE CHECK','Quick Price Check','PRICING & VALUATION'],['READER QUESTION','Reader Question','READER VOICE'],['MYTH V FACT','Myth v Fact','FUN & CURIOSITY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','OPEN']],
+      PET_INSIDER:[['OPENING NOTE','Opening Note','OPEN'],['READER POLL','Reader Poll','READER VOICE'],['READER PETS','Reader Pets','READER PETS'],['LOCAL TRIVIA','Local Trivia','FUN & CURIOSITY'],['WEEKEND IDEA','Weekend Idea','WALKS & PLACES'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['EXPERT QUICK CHECK','Expert Quick Check','EXPERT'],['HUMOUR','Quick Breather','FUN & CURIOSITY'],['BEFORE YOU GO','Before You Go','OPEN']]
+    };
+    const recipe=recipes[profile.key]||recipes.SPOTLIGHT;
     let supports=persistentSupportRecordsV3153();
-    // Reuse the existing persistent records so Step 7 references stay stable; clear only support copy/state.
     for(let i=0;i<Math.min(supports.length,t.supportNeeded);i++){
       const rec=supports[i],r=recipe[i%recipe.length];
       await api('sections',{method:'PATCH',body:JSON.stringify({id:rec.id,fields:{
@@ -3950,14 +3980,14 @@ async function rebuildTasteTrailSupportMixV31812(){
         'Section Final Copy':'',
         'Evidence Status':'Needs Update',
         'Section QA Result':'Not Checked',
-        'Notes':`PERSISTENT SUPPORT COMPONENT | Type: ${r[0]} | Life lane: ${r[2]} | v3.18.12 Taste Trail varied/local-proof mix`
+        'Notes':`PERSISTENT SUPPORT COMPONENT | Type: ${r[0]} | Life lane: ${r[2]} | v3.18.13 publication-profile mix + generic support novelty guard`
       }})});
     }
     await refreshPersistentSupportV3153();
-    setStep6LiveProgressV3152({show:true,done:0,total:t.supportNeeded,ready:0,failed:0,current:'Taste Trail support mix reset. Producing the new varied/local-proof components now…',phase:'Step 6 — Rebuilding Taste Trail Mix'});
+    setStep6LiveProgressV3152({show:true,done:0,total:t.supportNeeded,ready:0,failed:0,current:`${profile.name} component mix reset. Producing varied supports with new subjects where evidence allows…`,phase:'Step 6 — Rebuilding Component Mix'});
     await buildSupportBatchV315();
-  }catch(e){alert('Taste Trail support rebuild failed: '+String(e.message||e))}
-  finally{if(btn){btn.disabled=false;btn.textContent=old||'Rebuild Taste Trail Mix'}}
+  }catch(e){alert('Component mix rebuild failed: '+String(e.message||e))}
+  finally{if(btn){btn.disabled=false;btn.textContent=old||'Rebuild Component Mix'}}
 }
 
 async function renderStep6StatusV3151(){
@@ -5799,7 +5829,7 @@ E('command-open-build').onclick=()=>show('build');
 
 E('assembly-export').onclick=exportCanvasBackup;if(E('smart-copy-status'))E('smart-copy-status').onclick=copyPlannerStatus;
 if(E('workflow-copy-status-v312e'))E('workflow-copy-status-v312e').onclick=copyWorkflowStatusV312E;
-if(E('step6-rebuild-mix-v31812'))E('step6-rebuild-mix-v31812').onclick=rebuildTasteTrailSupportMixV31812;
+if(E('step6-rebuild-mix-v31812'))E('step6-rebuild-mix-v31812').onclick=rebuildComponentMixV31813;
 if(E('step6-build-v3151'))E('step6-build-v3151').onclick=()=>{
   const t=supportTargetV315(),ready=step6ReadyCountV3151();
   if(t.supportNeeded>0&&ready>=t.supportNeeded){focusWorkflowStepV312B(7);return;}
