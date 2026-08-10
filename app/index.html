@@ -421,7 +421,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
       <h2 style="margin:4px 0">Supporting Components</h2>
       <div class="muted">ICS calculates what is missing from the selected Masters and publication target. You should not have to build these one by one.</div>
     </div>
-    <button class="btn" id="step6-build-v3151" type="button">Build / Resume Supporting Components</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn secondary" id="step6-rebuild-mix-v31812" type="button">Rebuild Taste Trail Mix</button><button class="btn" id="step6-build-v3151" type="button">Build / Resume Supporting Components</button></div>
   </div>
   <div id="step6-summary-v315" class="check" style="margin-top:10px"></div>
   <div id="step6-live-v3152" class="check" style="margin-top:10px;display:none">
@@ -1641,6 +1641,7 @@ function workspaceReportV3186(){
     out.push('');
   });
 
+  // v3.18.12 — Taste Trail support mix: varied editorial jobs + local-proof grounding + surgical rebuild.
   // v3.18.11 — reports must include the data for the CURRENT workflow step, not just Master state.
   // Step 5 selection is stored as Section Order values. Surface it so downstream issue composition is shareable.
   try{
@@ -3697,9 +3698,16 @@ async function buildSupportBatchV315(){
         ['LOCAL DEBATE','Local Debate','READER VOICE'],['QUICK UPDATE','Quick Update','LOCAL LIFE'],['BEFORE YOU GO','Before You Go','READER VOICE']
       ],
       TASTE_TRAIL:[
-        ['OPENING NOTE','Opening Note','READER VOICE'],['READER POLL','Reader Poll','READER VOICE'],['QUICK PRICE CHECK','Quick Price Check','VALUE'],['FOOD FIND','Food Find','RESTAURANTS'],
-        ['PUB / RESTAURANT QUESTION','Pub / Restaurant Question','PUBS'],['LOCAL BUSINESS FIND','Hospitality People','HOSPITALITY PEOPLE'],['QUICK QUIZ','Quick Quiz','READER VOICE'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],
-        ['LOCAL TRIVIA','Local Trivia','PLACES & DISCOVERY'],['THIS OR THAT','This Or That','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']
+        ['OPENING NOTE','Opening Note','OPEN'],
+        ['FOOD FIND','Local Food Find','DISHES & MENUS'],
+        ['QUICK PRICE CHECK','Worth The Money?','VALUE'],
+        ['LOCAL BUSINESS FIND','Hospitality Person / Producer','HOSPITALITY PEOPLE'],
+        ['EVENT PICK','Food & Drink Event Pick','FOOD EVENTS'],
+        ['LOCAL TRIVIA','Local Food & Drink Trivia','PLACES & DISCOVERY'],
+        ['READER POLL','One Quick Vote','READER VOICE'],
+        ['QUICK QUIZ','Quick Food Quiz','FUN & CURIOSITY'],
+        ['READER RECOMMENDATION','Your Recommendation','READER VOICE'],
+        ['BEFORE YOU GO','Before You Go','OPEN']
       ],
       HOME_SELLER:[['OPENING NOTE','Opening Note','READER VOICE'],['READER POLL','Reader Poll','READER VOICE'],['QUICK PRICE CHECK','Quick Price Check','PRICING & VALUATION'],['READER QUESTION','Reader Question','READER VOICE'],['MYTH V FACT','Myth v Fact','FUN & CURIOSITY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']],
       PET_INSIDER:[['OPENING NOTE','Opening Note','READER VOICE'],['READER POLL','Reader Poll','READER VOICE'],['READER PETS','Reader Pets','READER PETS'],['LOCAL TRIVIA','Local Trivia','FUN & CURIOSITY'],['WEEKEND IDEA','Weekend Idea','WALKS & PLACES'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['HUMOUR','Quick Breather','FUN & CURIOSITY'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']]
@@ -3791,6 +3799,15 @@ async function buildSupportBatchV315(){
     });
 
     const theme=String(E('assembly-theme')?.value||val(S.issue.fields,'Main Theme')||'').trim();
+    const selectedOrdersV31812=(typeof getMasterSelectionV312==='function'?getMasterSelectionV312():[]).map(Number);
+    const planV31812=typeof getSmartPlan==='function'?getSmartPlan():null;
+    const selectedEvidenceV31812=(planV31812?.articles||[]).filter(a=>selectedOrdersV31812.includes(Number(a.order))).map(a=>{
+      const rec=typeof planArticleRecordV312==='function'?planArticleRecordV312(a):null;
+      const f=rec?.fields||{};
+      const src=String(val(f,'Source / Reference Link 1')||val(f,'Primary source')||'').trim();
+      const copy=String(val(f,'Section Final Copy')||'').replace(/\s+/g,' ').trim().slice(0,420);
+      return `- ${a.title}${src?` | SOURCE: ${src}`:''}${copy?` | COPY EXTRACT: ${copy}`:''}`;
+    }).join('\n')||'- No selected-Master evidence context available.';
 
     for(let i=0;i<pending.length;i++){
       const s=pending[i],f=s.fields||{},meta=supportMetaV3153(s);
@@ -3811,13 +3828,18 @@ LABEL: ${title}
 LIFE LANE: ${meta.lifeLane}
 RECENT SUPPORT COMPONENTS: ${persistentSupportRecordsV3153().filter(x=>x.id!==s.id&&supportReadyRecordV3153(x)).slice(-3).map(x=>`${val(x.fields,'Section Title')}: ${String(val(x.fields,'Section Final Copy')||'').slice(0,180)}`).join(' | ')||'None yet'}
 
+SELECTED MASTER EVIDENCE CONTEXT (may be used for named local proof, but do not repeat the Master angle):
+${selectedEvidenceV31812}
+
 Write ONLY finished newsletter copy.
 - Normally 45–120 words; shorter is fine.
 - One clear reader job.
 - Natural UK English, conversational and locally knowledgeable. Give it personality; it should sound like a lively local publication, not a council guide, business article, brochure or AI explainer.
-- Vary the format and sentence shape from the recent support components. Do not create another checklist/question/explainer if the recent blocks already use that structure. Mix quick humour, a punchy observation, a mini recommendation, a tiny comparison, a specific question, a short factual nugget or a simple action as appropriate.
-- Do not invent facts, prices, dates, quotes, businesses, services or reader comments.
-- If current factual detail is needed but not supplied, choose a non-factual format that still earns its place rather than generic advice.
+- Vary the format and sentence shape from the recent support components. Do not create another checklist/question/explainer if the recent blocks already use that structure.
+- For Taste Trail, the support set must feel like eating, drinking and going out locally: named place/dish/person/event/value/discovery where evidence supports it, not generic lifestyle advice.
+- For factual Taste Trail components (Food Find, Price Check, Hospitality Person/Producer, Event Pick, Trivia), use at least one named local proof point from the supplied evidence context when possible. If the context does not support the requested factual component, write a short clearly non-factual editorial bridge instead of inventing facts.
+- Reader-voice formats are limited: do not turn a factual/discovery component into another poll, nomination, recommendation request or question merely because evidence is thin.
+- Do not invent facts, prices, dates, quotes, businesses, services, events, people or reader comments.
 - One CTA maximum. CTA/button wording must be Title Case.
 - Do not repeat a Master Article or recycle the same reader prompt.
 - Capitalise Every Word in any heading/subhead.
@@ -3894,6 +3916,50 @@ Write ONLY finished newsletter copy.
 function step6ReadyCountV3151(){
   return persistentSupportRecordsV3153().filter(supportReadyRecordV3153).length;
 }
+async function rebuildTasteTrailSupportMixV31812(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const profile=engineProfileForPublication();
+  if(profile.key!=='TASTE_TRAIL'){
+    alert('Rebuild Taste Trail Mix is only used for Taste Trail publications.');return;
+  }
+  const t=supportTargetV315();
+  if(!t.selectedMasters){alert('Save the Step 5 Master selection first.');return}
+  if(!confirm(`Rebuild the ${t.supportNeeded} Taste Trail supporting components using the new varied/local-proof mix? Selected Master Articles are preserved.`))return;
+  const btn=E('step6-rebuild-mix-v31812');const old=btn?.textContent;if(btn){btn.disabled=true;btn.textContent='Rebuilding Mix…'}
+  try{
+    await refreshPersistentSupportV3153();
+    const recipe=[
+      ['OPENING NOTE','Opening Note','OPEN'],
+      ['FOOD FIND','Local Food Find','DISHES & MENUS'],
+      ['QUICK PRICE CHECK','Worth The Money?','VALUE'],
+      ['LOCAL BUSINESS FIND','Hospitality Person / Producer','HOSPITALITY PEOPLE'],
+      ['EVENT PICK','Food & Drink Event Pick','FOOD EVENTS'],
+      ['LOCAL TRIVIA','Local Food & Drink Trivia','PLACES & DISCOVERY'],
+      ['READER POLL','One Quick Vote','READER VOICE'],
+      ['QUICK QUIZ','Quick Food Quiz','FUN & CURIOSITY'],
+      ['READER RECOMMENDATION','Your Recommendation','READER VOICE'],
+      ['BEFORE YOU GO','Before You Go','OPEN']
+    ];
+    let supports=persistentSupportRecordsV3153();
+    // Reuse the existing persistent records so Step 7 references stay stable; clear only support copy/state.
+    for(let i=0;i<Math.min(supports.length,t.supportNeeded);i++){
+      const rec=supports[i],r=recipe[i%recipe.length];
+      await api('sections',{method:'PATCH',body:JSON.stringify({id:rec.id,fields:{
+        'Section Title':r[1],
+        'Section Status':'Planned',
+        'Section Final Copy':'',
+        'Evidence Status':'Needs Update',
+        'Section QA Result':'Not Checked',
+        'Notes':`PERSISTENT SUPPORT COMPONENT | Type: ${r[0]} | Life lane: ${r[2]} | v3.18.12 Taste Trail varied/local-proof mix`
+      }})});
+    }
+    await refreshPersistentSupportV3153();
+    setStep6LiveProgressV3152({show:true,done:0,total:t.supportNeeded,ready:0,failed:0,current:'Taste Trail support mix reset. Producing the new varied/local-proof components now…',phase:'Step 6 — Rebuilding Taste Trail Mix'});
+    await buildSupportBatchV315();
+  }catch(e){alert('Taste Trail support rebuild failed: '+String(e.message||e))}
+  finally{if(btn){btn.disabled=false;btn.textContent=old||'Rebuild Taste Trail Mix'}}
+}
+
 async function renderStep6StatusV3151(){
   const panel=E('step6-status-panel-v3151');
   if(!panel)return;
@@ -5733,6 +5799,7 @@ E('command-open-build').onclick=()=>show('build');
 
 E('assembly-export').onclick=exportCanvasBackup;if(E('smart-copy-status'))E('smart-copy-status').onclick=copyPlannerStatus;
 if(E('workflow-copy-status-v312e'))E('workflow-copy-status-v312e').onclick=copyWorkflowStatusV312E;
+if(E('step6-rebuild-mix-v31812'))E('step6-rebuild-mix-v31812').onclick=rebuildTasteTrailSupportMixV31812;
 if(E('step6-build-v3151'))E('step6-build-v3151').onclick=()=>{
   const t=supportTargetV315(),ready=step6ReadyCountV3151();
   if(t.supportNeeded>0&&ready>=t.supportNeeded){focusWorkflowStepV312B(7);return;}
