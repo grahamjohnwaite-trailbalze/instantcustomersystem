@@ -1686,6 +1686,16 @@ function workspaceReportV3186(){
     }
   }catch(e){out.push('STEP 6 REPORT WARNING: '+String(e.message||e));out.push('');}
 
+  // v3.18.16 — Step 8 Final QA must travel with the workspace report.
+  try{
+    const qa=JSON.parse(localStorage.getItem(qaKey())||'null');
+    if(qa?.summary&&Number(step)>=8){
+      out.push('STEP 8 — FINAL QA');
+      out.push(renderQAReport(qa));
+      out.push('');
+    }
+  }catch(e){out.push('STEP 8 QA REPORT WARNING: '+String(e.message||e));out.push('');}
+
   return out.join('\n').trim()+'\n';
 }
 function createWorkspaceReportV3186(){
@@ -5681,6 +5691,100 @@ function titleCaseCtaV3183(text){
     return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
   }).join(' ');
 }
+// v3.18.16 — production handoff integrity: semantic publishing metadata, article-link routing, real closing, reportable QA.
+function publicationBaseUrlV31816(publication){
+  return String(publicationDefaultCtaDestinationV3182(publication)||'').replace(/\/+$/,'');
+}
+function publicationAreaV31816(publication){
+  const p=String(publication||'').trim();
+  return p.replace(/\s+(Spotlight|Taste Trail|Pet Insider|Home Seller Insider)$/i,'').trim()||p;
+}
+function publishingHookFromTitleV31816(title,publication){
+  let t=String(title||'').replace(/^Peterborough Taste Trail:\s*/i,'').trim();
+  const area=publicationAreaV31816(publication);
+  if(area){const safeArea=area.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');t=t.replace(new RegExp("\\b"+safeArea+"(?:’s|'s)?\\b",'gi'),'').replace(/\s{2,}/g,' ').trim();}
+  const rules=[
+    [/kids?.*(free|less)|eat free/i,'Kids Eat Free'],
+    [/pubs?.*(dinner|food)|dinner.*pub/i,'Pub Dinners'],
+    [/alcohol[- ]?free|mocktail|0\.0/i,'Alcohol-Free Nights'],
+    [/outdoor|outside|terrace|garden/i,'Outdoor Dining'],
+    [/bottomless brunch/i,'Bottomless Brunch'],
+    [/taste test/i,'Next Taste Test'],
+    [/best[- ]?value|money go furthest|worth the money/i,'Best-Value Meals'],
+    [/cafe|café|coffee/i,'Coffee Stops'],
+    [/restaurant/i,'Restaurant Picks'],
+    [/property/i,'Property'],
+    [/mortgage/i,'Mortgages'],
+    [/road|traffic|transport/i,'Roads & Travel'],
+    [/event|what.?s on|weekend/i,'What’s On'],
+    [/dog|pet|vet/i,'Pets']
+  ];
+  for(const [rx,label] of rules)if(rx.test(t))return label;
+  t=t.replace(/^(where|which|what|why|how|is|are|can|should|would)\s+/i,'')
+     .replace(/[?!.]+$/,'').replace(/\s+[—–-]\s+.*$/,'').trim();
+  const words=t.split(/\s+/).filter(Boolean).slice(0,4);
+  return words.join(' ')||'Local Picks';
+}
+function productionPublishingMetaV31816(publication,theme,items){
+  const area=publicationAreaV31816(publication);
+  const family=publicationProfileV31815(publication).family;
+  const articleItems=(items||[]).filter(b=>b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE');
+  const labels=[];
+  for(const b of articleItems){
+    const meta=articlePublishingMetaV3182(b);
+    const label=publishingHookFromTitleV31816(meta?.newsletterHeadline||b.title||'',publication);
+    if(label&&!labels.some(x=>x.toLowerCase()===label.toLowerCase()))labels.push(label);
+  }
+  const first=labels.slice(0,3);
+  let subject='';
+  if(family==='TASTE_TRAIL')subject=`${area} Eats: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'Where To Eat This Week'}`;
+  else if(family==='PET_INSIDER')subject=`${area} Pet Insider: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'This Week’s Local Pet Guide'}`;
+  else if(family==='HOME_SELLER')subject=`${area} Home Seller: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'This Week’s Property Brief'}`;
+  else subject=`${area}: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'This Week’s Local Brief'}`;
+  subject=subject.replace(/\s+/g,' ').trim();
+  if(subject.length>72)subject=subject.slice(0,69).replace(/\s+\S*$/,'')+'…';
+  const next=labels.slice(3,6);
+  let preheader=next.length?`Also inside: ${next.join(', ').replace(/, ([^,]*)$/, ' & $1')}.`:`Fresh local picks, useful detail and one clear reason to open this week’s issue.`;
+  if(first.length)preheader=`${first.join(', ').replace(/, ([^,]*)$/, ' & $1')} — ${preheader.charAt(0).toLowerCase()+preheader.slice(1)}`;
+  if(preheader.length>155)preheader=preheader.slice(0,152).replace(/\s+\S*$/,'')+'…';
+  const promise=String(theme||'').trim();
+  let description='';
+  if(family==='TASTE_TRAIL')description=`This ${area} Taste Trail brings together ${labels.slice(0,5).join(', ').replace(/, ([^,]*)$/, ' and $1')||'food, drink and going-out ideas'}, with local prices, places and reader prompts worth acting on.`;
+  else description=`This issue brings together ${labels.slice(0,5).join(', ').replace(/, ([^,]*)$/, ' and $1')||'the strongest local stories and reader decisions'}, shaped around the edition promise${promise?`: ${promise}`:'.'}`;
+  if(description.length>240)description=description.slice(0,237).replace(/\s+\S*$/,'')+'…';
+  return {subject,preheader,description};
+}
+function publishingMetaWeakV31816(kind,text,theme){
+  const t=String(text||'').trim(); if(!t)return true;
+  if(kind==='subject'&&(t.length>78||t===String(theme||'').trim()))return true;
+  if(kind!=='subject'&&((t.match(/ · /g)||[]).length>=2||/…$/.test(t)))return true;
+  return false;
+}
+function articlePublishedUrlV31816(publication,slug){
+  const base=publicationBaseUrlV31816(publication),s=String(slug||'').replace(/^\/+|\/+$/g,'').trim();
+  return base&&s?`${base}/a/${s}`:'';
+}
+function explicitActionDestinationV31816(block,recordFields,publication){
+  const candidates=[block?.url,val(recordFields||{},'Action Destination URL')].map(x=>String(x||'').trim()).filter(x=>/^https?:\/\//i.test(x));
+  const home=publicationBaseUrlV31816(publication).toLowerCase();
+  return candidates.find(x=>x.replace(/\/+$/,'').toLowerCase()!==home)||'';
+}
+function newsletterArticleButtonTextV31816(block,meta){
+  const t=String(meta?.newsletterHeadline||block?.title||'').toLowerCase();
+  if(/guide|where|which|compare|best|worth|free|outdoor|drink|pub|brunch/.test(t))return 'Read The Full Guide';
+  if(/taste test|nominate|vote/.test(t))return 'Read The Article';
+  return 'Read The Full Article';
+}
+function articleActionNeedsDestinationV31816(text){return /nominate|tell us|send|vote|book|buy|claim|register|enter|contact|reply|recommend/i.test(String(text||''));}
+function closingCandidateV31816(b){return b&&b.kind!=='article'&&/(BEFORE YOU GO|CLOSING|SIGN.?OFF|ONE LAST QUESTION)/i.test(`${b.type||''} ${b.title||''}`);}
+function productionOrderV31816(items,publication){
+  const list=(items||[]).slice(); if(!list.length)return list;
+  if(closingCandidateV31816(list[list.length-1]))return list;
+  let idx=-1; for(let i=list.length-2;i>=0;i--){if(closingCandidateV31816(list[i])){idx=i;break}}
+  if(idx>=0){const [c]=list.splice(idx,1);list.push(c);return list}
+  list.push({uid:'v31816-closing',kind:'support',type:'CLOSING',title:'Before You Go',content:closingCopyV3183(publication),status:'READY',lifeLane:'OPEN'});
+  return list;
+}
 function newsletterFallbacksV3183(publication,theme,items){
   const t=String(theme||'').trim().replace(/\s+/g,' ');
   let subject=t;
@@ -5739,68 +5843,59 @@ function newsletterDescriptionV3182(publication,theme,preheader){
   return `Latest issue of ${publication||'the newsletter'}.`;
 }
 function assemblyDraft(){
-  const items=getCanvas(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();
-  if(!items.length)return 'No assembled running order is available.';
+  const rawItems=getCanvas(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();
+  if(!rawItems.length)return 'No assembled running order is available.';
+  const publication=pubName(S.issue?.fields?.Publication||[]);
+  const items=productionOrderV31816(rawItems,publication);
   const ready=items.filter(x=>String(x.status||'').toUpperCase()==='READY');
   const notReady=items.filter(x=>String(x.status||'').toUpperCase()!=='READY');
-  const publication=pubName(S.issue?.fields?.Publication||[]);
   const issueNumber=val(S.issue?.fields||{},'Issue Number')||'';
   const sendDate=val(S.issue?.fields||{},'Send Date')||'';
   const savedSubject=String(val(S.issue?.fields||{},'Subject Line')||'').trim();
   const savedPreheader=String(val(S.issue?.fields||{},'Preheader')||'').trim();
-  const fallbacks=newsletterFallbacksV3183(publication,theme,items);
-  const subject=savedSubject||fallbacks.subject;
-  const preheader=savedPreheader||fallbacks.preheader;
-  const defaultCta=publicationDefaultCtaDestinationV3182(publication);
-  let out=`PRODUCTION READY PACKAGE
-
-PUBLICATION
-${publication}
-
-ISSUE
-${issueNumber}${sendDate?`\n\nSEND DATE\n${sendDate}`:''}
-
-ISSUE PROMISE / QUESTION
-${theme||'[ADD ISSUE PROMISE]'}
-
-PUBLISHING ORDER — ${items.length} SECTIONS`;
+  const generated=productionPublishingMetaV31816(publication,theme,items);
+  const subject=publishingMetaWeakV31816('subject',savedSubject,theme)?generated.subject:savedSubject;
+  const preheader=publishingMetaWeakV31816('preheader',savedPreheader,theme)?generated.preheader:savedPreheader;
+  const description=generated.description;
+  let out=`PRODUCTION READY PACKAGE\n\nPUBLICATION\n${publication}\n\nISSUE\n${issueNumber}${sendDate?`\n\nSEND DATE\n${sendDate}`:''}\n\nISSUE PROMISE / QUESTION\n${theme||'[ADD ISSUE PROMISE]'}\n\nPUBLISHING ORDER — ${items.length} SECTIONS`;
   items.forEach((b,i)=>{
     const isArticle=b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE';
     const isLast=i===items.length-1;
-    let title=String(b.title||b.type||`Section ${i+1}`).trim();
-    if(isLast&&/opening|intro/i.test(title))title='Before You Go';
-    let content=String(b.content||'').trim();
-    if(isLast&&(/opening|intro/i.test(String(b.title||b.type||''))||/\bas you read\b|\bthis edition is here to\b/i.test(content)))content=closingCopyV3183(publication);
+    const title=String(b.title||b.type||`Section ${i+1}`).trim();
+    const content=String(b.content||'').trim();
     const meta=isArticle?articlePublishingMetaV3182(b):null;
-    out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION ${i+1} — ${isLast?'CLOSING — ':''}${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION ${i+1} — ${isLast&&closingCandidateV31816(b)?'CLOSING — ':''}${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
     if(isArticle)out+=`\n\n⚠ ARTICLE — BUILD SEPARATELY IN LETTERMAN\nThis is a permanent Master Article. Create/publish the article first, then use its published URL where the newsletter section links to the article.`;
     if(b.partner)out+=`\nPARTNER / ATTRIBUTION: ${String(b.partner).trim()}`;
     if(isArticle&&meta?.subhead)out+=`\n\nARTICLE SUBTITLE\n${meta.subhead}`;
     if(content)out+=`\n\n${content}`;
     if(isArticle&&meta){
-      out+=`\n\nARTICLE PUBLISHING DETAILS\nARTICLE DESCRIPTION / SUMMARY\n${meta.description||'[MISSING]'}\n\nSEO TITLE\n${meta.seoTitle||'[MISSING]'}\n\nSEO DESCRIPTION\n${meta.seoDescription||'[MISSING]'}\n\nARTICLE URL SLUG\n${meta.slug||'[MISSING]'}\n\nKEYWORDS\n${meta.keywords||'[MISSING]'}\n\nFEATURED IMAGE BRIEF\n${meta.imageBrief||'[MISSING]'}\n\nFEATURED IMAGE ALT TEXT\n${meta.imageAlt||'[MISSING]'}\n\nNEWSLETTER HEADLINE\n${meta.newsletterHeadline||'[MISSING]'}\n\nNEWSLETTER TEASER\n${meta.newsletterTeaser||'[MISSING]'}`;
-      const links=masterUsefulLinksV3183(b);
-      if(links.length)out+=`\n\nUSEFUL LINKS / SOURCES\n${links.map(x=>`- ${x.title}: ${x.url}`).join('\n')}`;
-    }
-    const button=titleCaseCtaV3183(String(b.button||b.cta||'').trim());
-    if(button){
-      out+=`\n\nBUTTON TEXT\n${button}`;
-      if(isArticle){
-        const dest=b.partner&&String(b.partner).trim()?`[PARTNER OVERRIDE REQUIRED — use the confirmed partner destination for ${String(b.partner).trim()}]`:(defaultCta||'[PUBLICATION CTA DESTINATION REQUIRED]');
-        out+=`\nBUTTON DESTINATION\n${dest}`;
-      }else if(b.url){
-        out+=`\nBUTTON DESTINATION\n${String(b.url).trim()}`;
-      }
+      const record=(S.sections||[]).find(x=>x.id===b.refId),f=record?.fields||{};
+      const articleUrl=articlePublishedUrlV31816(publication,meta.slug);
+      out+=`\n\nARTICLE PUBLISHING DETAILS\nARTICLE DESCRIPTION / SUMMARY\n${meta.description||'[MISSING]'}\n\nSEO TITLE\n${meta.seoTitle||'[MISSING]'}\n\nSEO DESCRIPTION\n${meta.seoDescription||'[MISSING]'}\n\nARTICLE URL SLUG\n${meta.slug||'[MISSING]'}\n\nPUBLISHED ARTICLE URL\n${articleUrl||'[MISSING — PUBLICATION URL OR SLUG REQUIRED]'}\n\nKEYWORDS\n${meta.keywords||'[MISSING]'}\n\nFEATURED IMAGE BRIEF\n${meta.imageBrief||'[MISSING]'}\n\nFEATURED IMAGE ALT TEXT\n${meta.imageAlt||'[MISSING]'}\n\nNEWSLETTER HEADLINE\n${meta.newsletterHeadline||'[MISSING]'}\n\nNEWSLETTER TEASER\n${meta.newsletterTeaser||'[MISSING]'}`;
+      const links=masterUsefulLinksV3183(b); if(links.length)out+=`\n\nUSEFUL LINKS / SOURCES\n${links.map(x=>`- ${x.title}: ${x.url}`).join('\n')}`;
+      out+=`\n\nNEWSLETTER BUTTON TEXT\n${newsletterArticleButtonTextV31816(b,meta)}\nNEWSLETTER BUTTON DESTINATION\n${articleUrl||'[PUBLISH ARTICLE FIRST — THEN INSERT ITS URL]'}`;
+      const actionText=titleCaseCtaV3183(String(b.button||b.cta||val(f,'CTA Text')||'').trim());
+      if(actionText){const actionDest=explicitActionDestinationV31816(b,f,publication);out+=`\n\nARTICLE CTA TEXT\n${actionText}\nARTICLE CTA DESTINATION\n${actionDest||(articleActionNeedsDestinationV31816(actionText)?'[DESTINATION REQUIRED — DO NOT USE PUBLICATION HOMEPAGE AS FALLBACK]':'[NO EXTERNAL DESTINATION REQUIRED]')}`;}
+    }else{
+      const button=titleCaseCtaV3183(String(b.button||b.cta||'').trim());
+      if(button){out+=`\n\nBUTTON TEXT\n${button}\nBUTTON DESTINATION\n${String(b.url||'').trim()||'[DESTINATION REQUIRED]'}`;}
     }
   });
-  out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nNEWSLETTER PUBLISHING DETAILS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nEMAIL SUBJECT / HEADLINE\n${subject||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nPREVIEW TEXT / PREHEADER\n${preheader||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nNEWSLETTER DESCRIPTION\n${newsletterDescriptionV3182(publication,theme,preheader)}\n\nSEND DATE\n${sendDate||'[MISSING]'}`;
+  out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nNEWSLETTER PUBLISHING DETAILS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nEMAIL SUBJECT / HEADLINE\n${subject||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nPREVIEW TEXT / PREHEADER\n${preheader||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nNEWSLETTER DESCRIPTION\n${description||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nSEND DATE\n${sendDate||'[MISSING]'}`;
   out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPRODUCTION STATUS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${ready.length}/${items.length} sections ready`;
-  const mandatoryMissing=[]; if(!subject)mandatoryMissing.push('email subject'); if(!preheader)mandatoryMissing.push('preheader'); if(!sendDate)mandatoryMissing.push('send date');
+  const mandatoryMissing=[];
+  if(!subject||publishingMetaWeakV31816('subject',subject,theme))mandatoryMissing.push('quality email subject');
+  if(!preheader||publishingMetaWeakV31816('preheader',preheader,theme))mandatoryMissing.push('quality preheader');
+  if(!description||publishingMetaWeakV31816('description',description,theme))mandatoryMissing.push('quality newsletter description');
+  if(!sendDate)mandatoryMissing.push('send date');
+  const articleRouteMissing=items.filter(b=>b.kind==='article').filter(b=>!articlePublishedUrlV31816(publication,articlePublishingMetaV3182(b)?.slug));
+  if(articleRouteMissing.length)mandatoryMissing.push(`${articleRouteMissing.length} article link destination(s)`);
   if(notReady.length||mandatoryMissing.length){
     if(notReady.length)out+=`\nBLOCKED: ${notReady.length}\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+(x.status||'NOT READY')).join('\n')}`;
-    if(mandatoryMissing.length)out+=`\nMISSING PUBLISHING FIELDS: ${mandatoryMissing.join(', ')}`;
+    if(mandatoryMissing.length)out+=`\nMISSING / WEAK PUBLISHING FIELDS: ${mandatoryMissing.join(', ')}`;
     out+=`\nNOT READY FOR PUBLISHING HANDOFF`;
-  }else out+=`\nQA GATE: PASSED — 0 HARD FIXES\nREADY FOR PUBLISHING HANDOFF`;
+  }else out+=`\nQA GATE: PASSED — 0 HARD FIXES\nHANDOFF INTEGRITY: PASSED\nREADY FOR PUBLISHING HANDOFF`;
   return out;
 }
 function masterAssetsPackageV3181(){
@@ -5829,9 +5924,11 @@ function masterAssetsPackageV3181(){
     const newsletterHeadline=String(p.newsletter_headline||title).trim();
     const newsletterTeaser=String(p.newsletter_teaser||description).trim();
     const button=titleCaseCtaV3183(String(val(f,'CTA Text')||a.ctaText||'').trim());
-    const defaultCta=publicationDefaultCtaDestinationV3182(publication);
     const partnerName=String(val(f,'Featured Partner')||val(f,'Partner')||'').trim();
-    const buttonDestination=partnerName?`[PARTNER OVERRIDE REQUIRED — use the confirmed partner destination for ${partnerName}]`:(defaultCta||'[PUBLICATION CTA DESTINATION REQUIRED]');
+    const articleUrl=articlePublishedUrlV31816(publication,slug);
+    const actionDestination=explicitActionDestinationV31816({url:val(f,'Action Destination URL')},f,publication);
+    const newsletterButton=newsletterArticleButtonTextV31816({title}, {newsletterHeadline});
+    const buttonDestination=actionDestination||(button&&articleActionNeedsDestinationV31816(button)?'[DESTINATION REQUIRED — DO NOT USE PUBLICATION HOMEPAGE AS FALLBACK]':'[NO EXTERNAL DESTINATION REQUIRED]');
     const fb=String(p.social_facebook||'').trim();
     const li=String(p.social_linkedin||'').trim();
     const x=String(p.social_x||'').trim();
@@ -5839,7 +5936,7 @@ function masterAssetsPackageV3181(){
     const required={description,seoTitle,seoDescription,slug,keywords,imageBrief,imageAlt,newsletterHeadline,newsletterTeaser};
     const absent=Object.entries(required).filter(([,v])=>!String(v||'').trim()).map(([k])=>k);
     if(absent.length)missing.push(`${title}: ${absent.join(', ')}`);
-    out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMASTER ${idx+1} — ${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nARTICLE TITLE\n${title}\n\nARTICLE SUBHEAD\n${subhead||'[NONE SUPPLIED]'}\n\nARTICLE DESCRIPTION / SUMMARY\n${description||'[MISSING]'}\n\nSEO TITLE\n${seoTitle||'[MISSING]'}\n\nSEO DESCRIPTION\n${seoDescription||'[MISSING]'}\n\nURL SLUG\n${slug||'[MISSING]'}\n\nKEYWORDS\n${keywords||'[MISSING]'}\n\nFEATURED IMAGE BRIEF\n${imageBrief||'[MISSING]'}\n\nFEATURED IMAGE ALT TEXT\n${imageAlt||'[MISSING]'}\n\nNEWSLETTER HEADLINE\n${newsletterHeadline||'[MISSING]'}\n\nNEWSLETTER TEASER\n${newsletterTeaser||'[MISSING]'}\n\nBUTTON TEXT\n${button||'[NONE]'}\n\nBUTTON DESTINATION\n${button?buttonDestination:'[NONE]'}\n\nARTICLE URL SLUG\n${slug||'[MISSING]'}\n\nFACEBOOK\n${fb||'[NONE SUPPLIED]'}\n\nLINKEDIN\n${li||'[NONE SUPPLIED]'}\n\nX\n${x||'[NONE SUPPLIED]'}${sourceLinks.length?`\n\nUSEFUL LINKS / SOURCES\n${sourceLinks.map(z=>`- ${z.title||'Source / resource'}: ${z.url}`).join('\n')}`:''}`;
+    out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMASTER ${idx+1} — ${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nARTICLE TITLE\n${title}\n\nARTICLE SUBHEAD\n${subhead||'[NONE SUPPLIED]'}\n\nARTICLE DESCRIPTION / SUMMARY\n${description||'[MISSING]'}\n\nSEO TITLE\n${seoTitle||'[MISSING]'}\n\nSEO DESCRIPTION\n${seoDescription||'[MISSING]'}\n\nURL SLUG\n${slug||'[MISSING]'}\n\nKEYWORDS\n${keywords||'[MISSING]'}\n\nFEATURED IMAGE BRIEF\n${imageBrief||'[MISSING]'}\n\nFEATURED IMAGE ALT TEXT\n${imageAlt||'[MISSING]'}\n\nNEWSLETTER HEADLINE\n${newsletterHeadline||'[MISSING]'}\n\nNEWSLETTER TEASER\n${newsletterTeaser||'[MISSING]'}\n\nPUBLISHED ARTICLE URL\n${articleUrl||'[MISSING]'}\n\nNEWSLETTER BUTTON TEXT\n${newsletterButton}\n\nNEWSLETTER BUTTON DESTINATION\n${articleUrl||'[PUBLISH ARTICLE FIRST — THEN INSERT ITS URL]'}\n\nARTICLE CTA TEXT\n${button||'[NONE]'}\n\nARTICLE CTA DESTINATION\n${button?buttonDestination:'[NONE]'}\n\nARTICLE URL SLUG\n${slug||'[MISSING]'}\n\nFACEBOOK\n${fb||'[NONE SUPPLIED]'}\n\nLINKEDIN\n${li||'[NONE SUPPLIED]'}\n\nX\n${x||'[NONE SUPPLIED]'}${sourceLinks.length?`\n\nUSEFUL LINKS / SOURCES\n${sourceLinks.map(z=>`- ${z.title||'Source / resource'}: ${z.url}`).join('\n')}`:''}`;
   });
   out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nASSET STATUS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${articles.length} selected Master Articles\n${missing.length?`METADATA REVIEW REQUIRED — ${missing.length} article(s) have missing fields:\n- ${missing.join('\n- ')}`:'LETTERMAN METADATA READY — all required article asset fields present'}\n\nIMAGE NOTE\nFeatured-image briefs and alt text are included here. Actual image-file generation is not yet part of this Step 9 package.`;
   return out;
