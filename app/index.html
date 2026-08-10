@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.0<br><strong>Step 9 Production Package</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-09 · clean publishing handoff · QA-gated production output</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.2<br><strong>Step 9 Letterman Handoff</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-10 · article build notes + CTA destinations + newsletter metadata</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><button class="btn secondary" onclick="loadAll()">Refresh</button></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -411,7 +411,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 <div id="smart-plan-list" class="checklist"></div>
 </section>
 <section class="master-selection-panel-v312" id="master-selection-panel-v312" style="display:none"><div class="section-head" style="margin:0"><div><h2 style="margin:0">Step 5 — Select Masters For This Issue</h2><div class="muted" id="master-selection-summary-v312">Produce the 15 candidates first, then choose the strongest publication-fit set for this issue. Unselected READY articles stay available for later.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn secondary" id="repair-master-integrity-v316" type="button">Repair Produced Masters</button><button class="btn secondary" id="master-selection-save-v312" type="button">Save Selection</button></div></div><div id="master-selection-grid-v312" class="master-selection-grid-v312"></div></section>
-<section id="production-ready-panel-v312c"><div class="eyebrow">Step 9 — Production Ready</div><h2 style="margin:5px 0 6px">Production Package</h2><div class="muted">Create the clean publishing handoff from the QA-approved running order. Internal planning fields are excluded.</div><div class="production-ready-grid"><div><strong id="pr-sections-v312c">—</strong><span>Sections</span></div><div><strong id="pr-masters-v312c">—</strong><span>Master Articles</span></div><div><strong id="pr-status-v312c">CHECK</strong><span>Issue Status</span></div></div><div class="toolbar"><button class="btn" id="pr-generate-v312c" type="button">Generate Production Package</button><button class="btn secondary" id="pr-copy-v312c" type="button">Open / Copy Package</button></div><div class="warning" style="margin-top:14px"><strong>Universal output:</strong> Letterman is one destination. The production package is designed to work with any newsletter, CMS or publishing platform.</div></section>
+<section id="production-ready-panel-v312c"><div class="eyebrow">Step 9 — Production Ready</div><h2 style="margin:5px 0 6px">Production Package</h2><div class="muted">Create the clean publishing handoff from the QA-approved running order. Internal planning fields are excluded.</div><div class="production-ready-grid"><div><strong id="pr-sections-v312c">—</strong><span>Sections</span></div><div><strong id="pr-masters-v312c">—</strong><span>Master Articles</span></div><div><strong id="pr-status-v312c">CHECK</strong><span>Issue Status</span></div></div><div class="toolbar"><button class="btn" id="pr-generate-v312c" type="button">Generate Production Package</button><button class="btn secondary" id="pr-copy-v312c" type="button">Open / Copy Package</button><button class="btn" id="pr-assets-v3181" type="button">Generate Article & Social Assets</button></div><div class="warning" style="margin-top:14px"><strong>Production outputs:</strong> the clean issue package is for assembly. Article & Social Assets contains the Letterman metadata for the selected Master Articles: description/summary, SEO, slug, keywords, featured-image brief + alt text, newsletter teaser and social posts.</div></section>
 <section id="step6-status-panel-v3151" class="panel" style="display:none;margin-bottom:14px">
   <div class="section-head" style="margin:0 0 8px">
     <div>
@@ -5210,6 +5210,44 @@ RULES:
     btn.disabled=false;btn.textContent=original;
   }
 }
+function publicationDefaultCtaDestinationV3182(publication){
+  const p=String(publication||'').toLowerCase();
+  const known=[
+    ['cambridgeshire spotlight','https://cambridgeshirespotlight.co.uk/'],
+    ['peterborough spotlight','https://peterboroughspotlight.co.uk/'],
+    ['norfolk spotlight','https://norfolkspotlight.co.uk/'],
+    ['peterborough taste trail','https://peterboroughtastetrail.co.uk/']
+  ];
+  const hit=known.find(([name])=>p.includes(name));
+  return hit?hit[1]:'';
+}
+function articlePublishingMetaV3182(block){
+  if(!block||block.kind!=='article')return null;
+  const record=(S.sections||[]).find(x=>x.id===block.refId);
+  const f=record?.fields||{};
+  const p=masterArticlePackage(f)||{};
+  const title=String(val(f,'Section Title')||p.article_title||block.title||'').trim();
+  const subhead=String(p.article_subhead||'').trim();
+  const description=String(p.summary_content||p.newsletter_teaser||subhead||'').trim();
+  const seoTitle=String(p.seo_title||title).trim();
+  const seoDescription=String(p.seo_description||description).trim();
+  const slug=String(p.url_path||block.url||'').replace(/^\/+|\/+$/g,'').trim();
+  const keywords=Array.isArray(p.keywords)?p.keywords.join(', '):String(p.keywords||'').trim();
+  const imageBrief=String(p.featured_image_brief||'').trim();
+  const imageAlt=String(p.featured_image_alt||'').trim();
+  const newsletterHeadline=String(p.newsletter_headline||title).trim();
+  const newsletterTeaser=String(p.newsletter_teaser||description).trim();
+  const fb=String(p.social_facebook||'').trim();
+  const li=String(p.social_linkedin||'').trim();
+  const x=String(p.social_x||'').trim();
+  return {title,subhead,description,seoTitle,seoDescription,slug,keywords,imageBrief,imageAlt,newsletterHeadline,newsletterTeaser,fb,li,x};
+}
+function newsletterDescriptionV3182(publication,theme,preheader){
+  const t=String(theme||'').trim(), pre=String(preheader||'').trim();
+  if(pre)return pre;
+  if(t)return t;
+  return `Latest issue of ${publication||'the newsletter'}.`;
+}
 function assemblyDraft(){
   const items=getCanvas(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();
   if(!items.length)return 'No assembled running order is available.';
@@ -5218,54 +5256,102 @@ function assemblyDraft(){
   const publication=pubName(S.issue?.fields?.Publication||[]);
   const issueNumber=val(S.issue?.fields||{},'Issue Number')||'';
   const sendDate=val(S.issue?.fields||{},'Send Date')||'';
+  const subject=String(val(S.issue?.fields||{},'Subject Line')||'').trim();
+  const preheader=String(val(S.issue?.fields||{},'Preheader')||'').trim();
+  const defaultCta=publicationDefaultCtaDestinationV3182(publication);
   let out=`PRODUCTION READY PACKAGE
 
 PUBLICATION
 ${publication}
 
 ISSUE
-${issueNumber}${sendDate?`
-
-SEND DATE
-${sendDate}`:''}
+${issueNumber}${sendDate?`\n\nSEND DATE\n${sendDate}`:''}
 
 ISSUE PROMISE / QUESTION
 ${theme||'[ADD ISSUE PROMISE]'}
 
 PUBLISHING ORDER — ${items.length} SECTIONS`;
   items.forEach((b,i)=>{
-    const title=String(b.title||b.type||`Section ${i+1}`).trim();
+    const isArticle=b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE';
+    const isLast=i===items.length-1;
+    let title=String(b.title||b.type||`Section ${i+1}`).trim();
+    if(isLast&&/opening|intro/i.test(title))title='Before You Go';
     const content=String(b.content||'').trim();
-    out+=`
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION ${i+1} — ${title}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-    if(b.partner)out+=`
-PARTNER / ATTRIBUTION: ${String(b.partner).trim()}`;
-    if(content)out+=`
-
-${content}`;
-    if(b.button)out+=`
-
-BUTTON: ${String(b.button).trim()}`;
-    else if(b.cta)out+=`
-
-CTA: ${String(b.cta).trim()}`;
-    if(b.url)out+=`
-URL: ${String(b.url).trim()}`;
+    const meta=isArticle?articlePublishingMetaV3182(b):null;
+    out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION ${i+1} — ${isLast?'CLOSING — ':''}${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    if(isArticle)out+=`\n\n⚠ ARTICLE — BUILD SEPARATELY IN LETTERMAN\nThis is a permanent Master Article. Create/publish the article first, then use its published URL where the newsletter section links to the article.`;
+    if(b.partner)out+=`\nPARTNER / ATTRIBUTION: ${String(b.partner).trim()}`;
+    if(isArticle&&meta?.subhead)out+=`\n\nARTICLE SUBTITLE\n${meta.subhead}`;
+    if(content)out+=`\n\n${content}`;
+    if(isArticle&&meta){
+      out+=`\n\nARTICLE PUBLISHING DETAILS\nARTICLE DESCRIPTION / SUMMARY\n${meta.description||'[MISSING]'}\n\nSEO TITLE\n${meta.seoTitle||'[MISSING]'}\n\nSEO DESCRIPTION\n${meta.seoDescription||'[MISSING]'}\n\nARTICLE URL SLUG\n${meta.slug||'[MISSING]'}\n\nKEYWORDS\n${meta.keywords||'[MISSING]'}\n\nFEATURED IMAGE BRIEF\n${meta.imageBrief||'[MISSING]'}\n\nFEATURED IMAGE ALT TEXT\n${meta.imageAlt||'[MISSING]'}\n\nNEWSLETTER HEADLINE\n${meta.newsletterHeadline||'[MISSING]'}\n\nNEWSLETTER TEASER\n${meta.newsletterTeaser||'[MISSING]'}`;
+    }
+    const button=String(b.button||b.cta||'').trim();
+    if(button){
+      out+=`\n\nBUTTON TEXT\n${button}`;
+      if(isArticle){
+        const dest=b.partner&&String(b.partner).trim()?`[PARTNER OVERRIDE REQUIRED — use the confirmed partner destination for ${String(b.partner).trim()}]`:(defaultCta||'[PUBLICATION CTA DESTINATION REQUIRED]');
+        out+=`\nBUTTON DESTINATION\n${dest}`;
+      }else if(b.url){
+        out+=`\nBUTTON DESTINATION\n${String(b.url).trim()}`;
+      }
+    }
   });
-  out+=`
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PRODUCTION STATUS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${ready.length}/${items.length} sections ready`;
-  if(notReady.length)out+=`
-BLOCKED: ${notReady.length}
-${notReady.map(x=>'- '+(x.title||x.type)+' — '+(x.status||'NOT READY')).join('\n')}`;
+  out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nNEWSLETTER PUBLISHING DETAILS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nEMAIL SUBJECT / HEADLINE\n${subject||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nPREVIEW TEXT / PREHEADER\n${preheader||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nNEWSLETTER DESCRIPTION\n${newsletterDescriptionV3182(publication,theme,preheader)}\n\nSEND DATE\n${sendDate||'[MISSING]'}`;
+  out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPRODUCTION STATUS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${ready.length}/${items.length} sections ready`;
+  if(notReady.length)out+=`\nBLOCKED: ${notReady.length}\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+(x.status||'NOT READY')).join('\n')}`;
   else out+=`\nQA GATE: PASSED — 0 HARD FIXES\nREADY FOR PUBLISHING HANDOFF`;
   return out;
+}
+function masterAssetsPackageV3181(){
+  const plan=getSmartPlan();
+  const selected=new Set(getMasterSelectionV312().map(Number));
+  const articles=(plan?.articles||[]).filter(a=>selected.has(Number(a.order))).sort((a,b)=>Number(a.order)-Number(b.order));
+  if(!articles.length)return 'No selected Master Articles are available. Return to Step 5 and confirm the final Master selection.';
+  const publication=pubName(S.issue?.fields?.Publication||[]);
+  const issueNumber=val(S.issue?.fields||{},'Issue Number')||'';
+  const sendDate=val(S.issue?.fields||{},'Send Date')||'';
+  let missing=[];
+  let out=`ARTICLE & SOCIAL ASSETS\n\nSTAFF NOTE\nEvery MASTER below is an ARTICLE — BUILD SEPARATELY IN LETTERMAN before the newsletter is scheduled.\n\nPUBLICATION\n${publication}\n\nISSUE\n${issueNumber}${sendDate?`\n\nSEND DATE\n${sendDate}`:''}\n\nSELECTED MASTER ARTICLES — ${articles.length}`;
+  articles.forEach((a,idx)=>{
+    const r=planArticleRecordV312(a);
+    const f=r?.fields||{};
+    const p=masterArticlePackage(f)||{};
+    const title=String(val(f,'Section Title')||p.article_title||a.title||`Master ${idx+1}`).trim();
+    const subhead=String(p.article_subhead||'').trim();
+    const description=String(p.summary_content||p.newsletter_teaser||subhead||'').trim();
+    const seoTitle=String(p.seo_title||title).trim();
+    const seoDescription=String(p.seo_description||description).trim();
+    const slug=String(p.url_path||val(f,'Action Destination URL')||'').replace(/^\/+|\/+$/g,'').trim();
+    const keywords=Array.isArray(p.keywords)?p.keywords.join(', '):String(p.keywords||'').trim();
+    const imageBrief=String(p.featured_image_brief||'').trim();
+    const imageAlt=String(p.featured_image_alt||'').trim();
+    const newsletterHeadline=String(p.newsletter_headline||title).trim();
+    const newsletterTeaser=String(p.newsletter_teaser||description).trim();
+    const button=String(val(f,'CTA Text')||a.ctaText||'').trim();
+    const defaultCta=publicationDefaultCtaDestinationV3182(publication);
+    const partnerName=String(val(f,'Featured Partner')||val(f,'Partner')||'').trim();
+    const buttonDestination=partnerName?`[PARTNER OVERRIDE REQUIRED — use the confirmed partner destination for ${partnerName}]`:(defaultCta||'[PUBLICATION CTA DESTINATION REQUIRED]');
+    const fb=String(p.social_facebook||'').trim();
+    const li=String(p.social_linkedin||'').trim();
+    const x=String(p.social_x||'').trim();
+    const required={description,seoTitle,seoDescription,slug,keywords,imageBrief,imageAlt,newsletterHeadline,newsletterTeaser};
+    const absent=Object.entries(required).filter(([,v])=>!String(v||'').trim()).map(([k])=>k);
+    if(absent.length)missing.push(`${title}: ${absent.join(', ')}`);
+    out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMASTER ${idx+1} — ${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nARTICLE TITLE\n${title}\n\nARTICLE SUBHEAD\n${subhead||'[NONE SUPPLIED]'}\n\nARTICLE DESCRIPTION / SUMMARY\n${description||'[MISSING]'}\n\nSEO TITLE\n${seoTitle||'[MISSING]'}\n\nSEO DESCRIPTION\n${seoDescription||'[MISSING]'}\n\nURL SLUG\n${slug||'[MISSING]'}\n\nKEYWORDS\n${keywords||'[MISSING]'}\n\nFEATURED IMAGE BRIEF\n${imageBrief||'[MISSING]'}\n\nFEATURED IMAGE ALT TEXT\n${imageAlt||'[MISSING]'}\n\nNEWSLETTER HEADLINE\n${newsletterHeadline||'[MISSING]'}\n\nNEWSLETTER TEASER\n${newsletterTeaser||'[MISSING]'}\n\nBUTTON TEXT\n${button||'[NONE]'}\n\nBUTTON DESTINATION\n${button?buttonDestination:'[NONE]'}\n\nARTICLE URL SLUG\n${slug||'[MISSING]'}\n\nFACEBOOK\n${fb||'[NONE SUPPLIED]'}\n\nLINKEDIN\n${li||'[NONE SUPPLIED]'}\n\nX\n${x||'[NONE SUPPLIED]'}`;
+  });
+  out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nASSET STATUS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${articles.length} selected Master Articles\n${missing.length?`METADATA REVIEW REQUIRED — ${missing.length} article(s) have missing fields:\n- ${missing.join('\n- ')}`:'LETTERMAN METADATA READY — all required article asset fields present'}\n\nIMAGE NOTE\nFeatured-image briefs and alt text are included here. Actual image-file generation is not yet part of this Step 9 package.`;
+  return out;
+}
+function generateMasterAssetsV3181(){
+  let qa=null;try{qa=JSON.parse(localStorage.getItem(qaKey())||'null')}catch{}
+  if(!qa||Number(qa?.summary?.fix)!==0){
+    alert('Article & Social Assets are locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');
+    return;
+  }
+  const text=masterAssetsPackageV3181();
+  E('article-package-text').value=text;
+  E('article-dialog').showModal();
 }
 function generateAssembly(){
   let qa=null;try{qa=JSON.parse(localStorage.getItem(qaKey())||'null')}catch{}
@@ -5435,5 +5521,5 @@ if(E('master-selection-save-v312'))E('master-selection-save-v312').onclick=()=>{
 if(E('toggle-canvas-library'))E('toggle-canvas-library').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('library-open-v312c');E('toggle-canvas-library').textContent=l.classList.contains('library-open-v312c')?'Hide Content Library':'Show Content Library'}else{l.classList.toggle('library-hidden');E('toggle-canvas-library').textContent=l.classList.contains('library-hidden')?'Show Content Library':'Hide Content Library'}};
 if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('inspector-open-v312c');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-open-v312c')?'Hide Selected Section':'Show Selected Section'}else{l.classList.toggle('inspector-hidden');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-hidden')?'Show Selected Section':'Hide Selected Section'}};if(E('pr-generate-v312c'))E('pr-generate-v312c').onclick=generateAssembly;
 if(E('pr-copy-v312c'))E('pr-copy-v312c').onclick=generateAssembly;
-E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('new-issue').onclick=()=>{E('new-date').value='';E('issue-dialog').showModal()};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>researchAllApprovedMastersV3131();E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
+E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('new-issue').onclick=()=>{E('new-date').value='';E('issue-dialog').showModal()};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>researchAllApprovedMastersV3131();E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('pr-assets-v3181').onclick=generateMasterAssetsV3181;E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
 </script></body></html>
