@@ -5691,7 +5691,7 @@ function titleCaseCtaV3183(text){
     return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
   }).join(' ');
 }
-// v3.18.16 — production handoff integrity: semantic publishing metadata, article-link routing, real closing, reportable QA.
+// v3.18.18 — publishing metadata quality + actionable CTA handoff gate; builds on v3.18.16 integrity routing.
 function publicationBaseUrlV31816(publication){
   return String(publicationDefaultCtaDestinationV3182(publication)||'').replace(/\/+$/,'');
 }
@@ -5699,17 +5699,27 @@ function publicationAreaV31816(publication){
   const p=String(publication||'').trim();
   return p.replace(/\s+(Spotlight|Taste Trail|Pet Insider|Home Seller Insider)$/i,'').trim()||p;
 }
+function cleanHookFragmentV31818(text){
+  let t=String(text||'').replace(/\s+/g,' ').trim()
+    .replace(/[?!.:;,…]+$/g,'').trim()
+    .replace(/^(where|which|what|why|how|is|are|can|could|should|would|do|does|did)\s+/i,'');
+  // A second pass removes constructions such as “What Should …” after the first question word is stripped.
+  t=t.replace(/^(should|would|could|can|do|does|did)\s+/i,'');
+  const dangling=/\b(and|or|for|to|with|at|in|on|of|the|a|an|your|our|this|that|these|those|should|would|could)$/i;
+  while(dangling.test(t))t=t.replace(dangling,'').trim();
+  return t;
+}
 function publishingHookFromTitleV31816(title,publication){
   let t=String(title||'').replace(/^Peterborough Taste Trail:\s*/i,'').trim();
   const area=publicationAreaV31816(publication);
   if(area){const safeArea=area.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');t=t.replace(new RegExp("\\b"+safeArea+"(?:’s|'s)?\\b",'gi'),'').replace(/\s{2,}/g,' ').trim();}
   const rules=[
-    [/kids?.*(free|less)|eat free/i,'Kids Eat Free'],
+    [/(kids?|children).*(free|cheap|less|deal|summer)|eat free|cheap summer meal/i,'Kids’ Summer Deals'],
     [/pubs?.*(dinner|food)|dinner.*pub/i,'Pub Dinners'],
     [/alcohol[- ]?free|mocktail|0\.0/i,'Alcohol-Free Nights'],
     [/outdoor|outside|terrace|garden/i,'Outdoor Dining'],
     [/bottomless brunch/i,'Bottomless Brunch'],
-    [/taste test/i,'Next Taste Test'],
+    [/taste[- ]?test|test next/i,'Next Taste Test'],
     [/best[- ]?value|money go furthest|worth the money/i,'Best-Value Meals'],
     [/cafe|café|coffee/i,'Coffee Stops'],
     [/restaurant/i,'Restaurant Picks'],
@@ -5720,10 +5730,9 @@ function publishingHookFromTitleV31816(title,publication){
     [/dog|pet|vet/i,'Pets']
   ];
   for(const [rx,label] of rules)if(rx.test(t))return label;
-  t=t.replace(/^(where|which|what|why|how|is|are|can|should|would)\s+/i,'')
-     .replace(/[?!.]+$/,'').replace(/\s+[—–-]\s+.*$/,'').trim();
+  t=cleanHookFragmentV31818(t.replace(/\s+[—–-]\s+.*$/,'').trim());
   const words=t.split(/\s+/).filter(Boolean).slice(0,4);
-  return words.join(' ')||'Local Picks';
+  return cleanHookFragmentV31818(words.join(' '))||'Local Picks';
 }
 function productionPublishingMetaV31816(publication,theme,items){
   const area=publicationAreaV31816(publication);
@@ -5755,10 +5764,24 @@ function productionPublishingMetaV31816(publication,theme,items){
   return {subject,preheader,description};
 }
 function publishingMetaWeakV31816(kind,text,theme){
-  const t=String(text||'').trim(); if(!t)return true;
+  const t=String(text||'').replace(/\s+/g,' ').trim(); if(!t)return true;
   if(kind==='subject'&&(t.length>78||t===String(theme||'').trim()))return true;
   if(kind!=='subject'&&((t.match(/ · /g)||[]).length>=2||/…$/.test(t)))return true;
+  if(/\b(and|or|for|to|with|at|in|on|of|the|a|an|your|our|this|that|these|those|should|would|could)[…?.!]*$/i.test(t))return true;
+  if(/\b(cheap summer meals for|should taste[- ]?test next)\b/i.test(t))return true;
   return false;
+}
+function unresolvedInteractiveCtasV31818(items,publication){
+  const out=[];
+  for(const b of (items||[])){
+    if(!(b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE'))continue;
+    const record=(S.sections||[]).find(x=>x.id===b.refId),f=record?.fields||{};
+    const actionText=titleCaseCtaV3183(String(b.button||b.cta||val(f,'CTA Text')||'').trim());
+    if(!actionText||!articleActionNeedsDestinationV31816(actionText))continue;
+    const actionDest=explicitActionDestinationV31816(b,f,publication);
+    if(!actionDest)out.push({title:String(b.title||'Master Article').trim(),cta:actionText});
+  }
+  return out;
 }
 function articlePublishedUrlV31816(publication,slug){
   const base=publicationBaseUrlV31816(publication),s=String(slug||'').replace(/^\/+|\/+$/g,'').trim();
@@ -5891,9 +5914,12 @@ function assemblyDraft(){
   if(!sendDate)mandatoryMissing.push('send date');
   const articleRouteMissing=items.filter(b=>b.kind==='article').filter(b=>!articlePublishedUrlV31816(publication,articlePublishingMetaV3182(b)?.slug));
   if(articleRouteMissing.length)mandatoryMissing.push(`${articleRouteMissing.length} article link destination(s)`);
+  const unresolvedCtas=unresolvedInteractiveCtasV31818(items,publication);
+  if(unresolvedCtas.length)mandatoryMissing.push(`${unresolvedCtas.length} interactive article CTA destination(s)`);
   if(notReady.length||mandatoryMissing.length){
     if(notReady.length)out+=`\nBLOCKED: ${notReady.length}\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+(x.status||'NOT READY')).join('\n')}`;
     if(mandatoryMissing.length)out+=`\nMISSING / WEAK PUBLISHING FIELDS: ${mandatoryMissing.join(', ')}`;
+    if(typeof unresolvedCtas!=='undefined'&&unresolvedCtas.length)out+=`\nCTA DESTINATIONS REQUIRED:\n${unresolvedCtas.map(x=>`- ${x.title}: ${x.cta}`).join('\n')}`;
     out+=`\nNOT READY FOR PUBLISHING HANDOFF`;
   }else out+=`\nQA GATE: PASSED — 0 HARD FIXES\nHANDOFF INTEGRITY: PASSED\nREADY FOR PUBLISHING HANDOFF`;
   return out;
