@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.7<br><strong>Step 3 Research Reliability</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-10 · cumulative v3.18.6 + UK geography verification + persisted research summary</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.8<br><strong>Persisted Research Guard + Surgical Re-research</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-10 · cumulative v3.18.7 + persisted geography audit + selected research repair</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -339,6 +339,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 <button class="btn secondary" id="view-research" type="button">View research</button>
 <button class="btn secondary" id="open-primary-source" type="button">Open source</button>
 <button class="btn secondary" id="add-authoritative-source" type="button" style="grid-column:1/-1">Add authoritative evidence</button>
+<button class="btn secondary" id="rerun-selected-research-v3188" type="button" style="grid-column:1/-1">Re-research Selected Master</button>
 <button class="btn secondary" id="mark-evidence-verified" type="button" style="grid-column:1/-1">2. Mark Evidence Verified</button>
 </div>
 <div id="production-progress" class="empty" style="margin-bottom:14px">Production service not run yet.</div>
@@ -1113,9 +1114,10 @@ function persistedResearchSummary(records=[]){
    out.total++;
    const outcome=latestResearchServiceOutcome(f);
    const evidence=String(val(f,'Evidence Status')||'');
-   if(['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(outcome)||evidence==='Researching')out.blocked++;
-   else if(outcome==='ATTRIBUTED_REPORT'||/Reported/i.test(evidence)){out.reported++;out.publishable++;}
-   else if(['VERIFIED_NOW','EDITORIAL'].includes(outcome)||evidence==='Verified'){out.verified++;out.publishable++;}
+   const gate=evidencePublishabilityV3134(f);
+   if(gate.blocked||['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(outcome)||evidence==='Researching')out.blocked++;
+   else if(gate.attributed||outcome==='ATTRIBUTED_REPORT'||/Reported/i.test(evidence)){out.reported++;out.publishable++;}
+   else if(gate.verified||['VERIFIED_NOW','EDITORIAL'].includes(outcome)||evidence==='Verified'){out.verified++;out.publishable++;}
    else out.other++;
  }
  return out;
@@ -1622,6 +1624,7 @@ function workspaceReportV3186(){
     out.push(`State: ${state.toUpperCase()}${outcome?` · Outcome: ${outcome}`:''}`);
     out.push(`Pipeline: R ${wf.researched?'✓':'○'} · V ${wf.verified?'✓':'○'} · W ${wf.hasCopy?'✓':'○'} · QA ${wf.ready?'✓':'○'} · ${completion(r)}%`);
     const evidence=String(val(f,'Evidence Status')||'').trim(); if(evidence)out.push('Evidence: '+evidence);
+    const geoIssue=persistedResearchGeographyIssueV3188(f); if(geoIssue)out.push('Research guard: BLOCKED — '+geoIssue);
     const sectionStatus=String(val(f,'Section Status')||'').trim(); if(sectionStatus)out.push('Section status: '+sectionStatus);
     const qa=String(val(f,'Section QA Result')||'').trim(); if(qa)out.push('QA result: '+qa);
     const source=String(val(f,'Source / Reference Link 1')||'').trim(); if(source)out.push('Primary source: '+source);
@@ -1855,16 +1858,33 @@ function attributionInstructionV3134(fields){
   if(!gate.attributed)return '';
   return 'ATTRIBUTION RULE V3.13.4: This Research Pack is publishable as ATTRIBUTED evidence, not independently VERIFIED evidence. Attribute material factual claims to the named source/report/organisation in the copy. Do not upgrade attributed claims into unqualified fact. Do not add “according to” mechanically to every sentence; attribute where it materially supports the claim.';
 }
+function persistedResearchGeographyIssueV3188(fields){
+  const pub=String(typeof currentPublicationName==='function'?currentPublicationName():'').toLowerCase();
+  const title=String(val(fields,'Section Title')||'').toLowerCase();
+  const q=String(val(fields,'Core Reader Question')||'').toLowerCase();
+  const src=String(val(fields,'Source / Reference Link 1')||'').toLowerCase();
+  const notes=String(val(fields,'Notes')||'').toLowerCase();
+  const blob=[src,notes].join(' ');
+  if(!pub.includes('peterborough'))return '';
+  const intentionalTrip=/worth the trip|food trip|detour from peterborough|outside peterborough|from peterborough/.test(title+' '+q);
+  if(/peterboroughnh\.gov|peterborough[,\s]+new hampshire|peterborough[,\s]+nh\b|\bnew hampshire\b/.test(blob))return 'Wrong Peterborough: New Hampshire/US evidence';
+  if(/peterborough[,\s]+ontario|\bontario,? canada\b|\bpeterborough\.ca\b|\bkawartha\b|\botonabee\b/.test(blob))return 'Wrong Peterborough: Ontario/Canada evidence';
+  if(!intentionalTrip && /tripadvisor\.ca/.test(src))return 'Foreign geography source';
+  return '';
+}
 function evidencePublishabilityV3134(fields){
   const status=String(val(fields,'Evidence Status')||'').trim().toLowerCase();
   const verified=/verified|verification complete|verified evidence/.test(status);
   const attributed=/reported\s*[—-]\s*attribution required|attribution required|reported/.test(status);
-  const blocked=/blocked|insufficient|unverified central claim|no reliable basis/.test(status);
+  const statusBlocked=/blocked|insufficient|unverified central claim|no reliable basis/.test(status);
+  const geographyIssue=persistedResearchGeographyIssueV3188(fields);
+  const blocked=statusBlocked||!!geographyIssue;
   return {
-    verified,
+    verified:verified&&!blocked,
     attributed:attributed&&!blocked,
     publishable:(verified||attributed)&&!blocked,
-    blocked
+    blocked,
+    geographyIssue
   };
 }
 function articleWorkflowState(s){
@@ -5757,5 +5777,32 @@ if(E('master-selection-save-v312'))E('master-selection-save-v312').onclick=()=>{
 if(E('toggle-canvas-library'))E('toggle-canvas-library').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('library-open-v312c');E('toggle-canvas-library').textContent=l.classList.contains('library-open-v312c')?'Hide Content Library':'Show Content Library'}else{l.classList.toggle('library-hidden');E('toggle-canvas-library').textContent=l.classList.contains('library-hidden')?'Show Content Library':'Hide Content Library'}};
 if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('inspector-open-v312c');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-open-v312c')?'Hide Selected Section':'Show Selected Section'}else{l.classList.toggle('inspector-hidden');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-hidden')?'Show Selected Section':'Hide Selected Section'}};if(E('pr-generate-v312c'))E('pr-generate-v312c').onclick=generateAssembly;
 if(E('pr-copy-v312c'))E('pr-copy-v312c').onclick=generateAssembly;
-E('create-workspace-report-v3186').onclick=createWorkspaceReportV3186;E('copy-workspace-report-v3186').onclick=copyWorkspaceReportV3186;E('download-workspace-report-v3186').onclick=downloadWorkspaceReportV3186;E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('add-publication').onclick=()=>{E('pub-area').value='';E('pub-family').value='Taste Trail';E('pub-name').value='';E('pub-name').dataset.auto='1';E('pub-code').value='';E('pub-code').dataset.auto='1';E('pub-status').value='Active';syncPublicationSetupV3184(true);E('publication-dialog').showModal()};E('pub-area').oninput=()=>syncPublicationSetupV3184();E('pub-family').onchange=()=>syncPublicationSetupV3184();E('pub-name').oninput=()=>{E('pub-name').dataset.auto='0';if(E('pub-code').dataset.auto==='1'){E('pub-code').value=publicationCodeFromNameV3184(E('pub-name').value)}};E('pub-code').oninput=()=>{E('pub-code').dataset.auto='0'};E('create-publication').onclick=createPublicationV3184;E('new-issue').onclick=()=>{E('new-date').value='';E('issue-dialog').showModal()};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>researchAllApprovedMastersV3131();E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('pr-assets-v3181').onclick=generateMasterAssetsV3181;E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
+
+async function rerunSelectedResearchV3188(){
+  if(!S.section){alert('Select the Master you want to re-research first.');return}
+  const plan=getSmartPlan();
+  const order=Number(val(S.section.fields||{},'Section Order')||0);
+  const title=String(val(S.section.fields||{},'Section Title')||'');
+  const a=(plan?.articles||[]).find(x=>Number(x.order||0)===order)||
+          (plan?.articles||[]).find(x=>normalizePlanTitle(x.title||'')===normalizePlanTitle(title));
+  if(!a){alert('This Master is not linked to the locked Smart Issue Plan, so ICS cannot safely clear and rebuild its research automatically.');return}
+  if(!confirm(`Re-research only Article ${order}: ${title}?\n\nThe saved Research Pack/source for this Master will be cleared. The approved brief and every other Master will be preserved.`))return;
+  const b=E('rerun-selected-research-v3188'); const old=b?.textContent||'Re-research Selected Master';
+  if(b){b.disabled=true;b.textContent='Re-researching…'}
+  try{
+    let record=await invalidateMasterForFreshResearchV316(a,S.section,'Step 3 persisted research geography/evidence repair');
+    S.section=record;
+    const d=await produceOne({s:record,run:988},'research');
+    await refreshIssueSectionsForSummary();
+    S.section=S.sections.find(x=>x.id===record.id)||record;
+    renderSections();renderForm();renderArticleWorkflow();updateWorkflowGuide();
+    const gate=evidencePublishabilityV3134(S.section.fields||{});
+    if(gate.blocked)throw new Error(gate.geographyIssue||'Fresh research is still blocked.');
+    E('save-state').textContent=`Selected research rebuilt. ${gate.verified?'Verified':gate.attributed?'Attribution required':'Publishability review required'}. All other Masters preserved.`;
+  }catch(e){
+    E('save-state').textContent='Selected re-research failed: '+String(e.message||e);
+    alert('Selected re-research did not complete cleanly: '+String(e.message||e));
+  }finally{if(b){b.disabled=false;b.textContent=old}}
+}
+E('create-workspace-report-v3186').onclick=createWorkspaceReportV3186;E('rerun-selected-research-v3188').onclick=rerunSelectedResearchV3188;E('copy-workspace-report-v3186').onclick=copyWorkspaceReportV3186;E('download-workspace-report-v3186').onclick=downloadWorkspaceReportV3186;E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('add-publication').onclick=()=>{E('pub-area').value='';E('pub-family').value='Taste Trail';E('pub-name').value='';E('pub-name').dataset.auto='1';E('pub-code').value='';E('pub-code').dataset.auto='1';E('pub-status').value='Active';syncPublicationSetupV3184(true);E('publication-dialog').showModal()};E('pub-area').oninput=()=>syncPublicationSetupV3184();E('pub-family').onchange=()=>syncPublicationSetupV3184();E('pub-name').oninput=()=>{E('pub-name').dataset.auto='0';if(E('pub-code').dataset.auto==='1'){E('pub-code').value=publicationCodeFromNameV3184(E('pub-name').value)}};E('pub-code').oninput=()=>{E('pub-code').dataset.auto='0'};E('create-publication').onclick=createPublicationV3184;E('new-issue').onclick=()=>{E('new-date').value='';E('issue-dialog').showModal()};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>researchAllApprovedMastersV3131();E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('pr-assets-v3181').onclick=generateMasterAssetsV3181;E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
 </script></body></html>
