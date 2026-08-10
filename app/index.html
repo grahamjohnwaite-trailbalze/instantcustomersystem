@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.4<br><strong>Publication Creation + Portability</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-10 · add publications in ICS + Taste Trail portability unblock</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.5<br><strong>Niche + Geography Signal Guard</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-10 · publication-aware discovery + Peterborough geography guard</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -3918,6 +3918,26 @@ function mergeSignalPools(pools){
   }}
   return out;
 }
+function tasteTrailSignalRelevantV3185(item){
+  const pool=String(item?.discovery_pool||item?.scope||'').toUpperCase();
+  if(pool==='EVERGREEN_BANK')return true;
+  const t=`${item?.signal||''} ${item?.title||''} ${item?.question||''} ${item?.source_title||''}`.toLowerCase();
+  return /\b(restaurant|restaurants|pub|pubs|cafe|cafes|café|coffee|food|drink|drinks|bar|bars|beer|brewery|wine|takeaway|takeaways|menu|menus|dining|diner|eat|eating|chef|kitchen|breakfast|brunch|lunch|dinner|roast|pizza|burger|curry|fish\s*(?:and|&)\s*chips|bakery|baker|street food|hospitality|supper|tasting|cocktail|nightlife|night club|nightclub|live music|gig|comedy|food festival|beer festival)\b/.test(t);
+}
+function wrongSignalGeographyV3185(item,publication=currentPublicationName()){
+  const pub=String(publication||'').toLowerCase();
+  const t=`${item?.signal||''} ${item?.title||''} ${item?.source_title||''} ${item?.source_url||''}`.toLowerCase();
+  if(pub.includes('peterborough')&&(/\bontario\b|\bcanada\b|\bkawartha\b|\botonabee\b|\btrent university\b|peterborough\s*,?\s*on\b/.test(t)))return true;
+  return false;
+}
+function signalFitsPublicationV3185(item,publication=currentPublicationName(),profile=engineProfileForPublication(publication)){
+  if(wrongSignalGeographyV3185(item,publication))return false;
+  if(profile?.key==='TASTE_TRAIL'&&!tasteTrailSignalRelevantV3185(item))return false;
+  return true;
+}
+function filterSignalsForPublicationV3185(items,publication=currentPublicationName(),profile=engineProfileForPublication(publication)){
+  return (Array.isArray(items)?items:[]).filter(x=>signalFitsPublicationV3185(x,publication,profile));
+}
 
 function evergreenSignalSeedsForProfile(profileKey){
   const common=[
@@ -3985,7 +4005,15 @@ async function collectSmartSignals(){
   const btn=E('assembly-auto'),old=btn.textContent;btn.disabled=true;btn.textContent='Collecting diverse signals…';
   try{
     const publication=currentPublicationName(),issueNumber=val(S.issue.fields,'Issue Number')||'',sendDate=val(S.issue.fields,'Send Date'),operatorSignals=E('smart-plan-signals')?.value||'';
-    const passes=[
+    const profile=engineProfileForPublication(publication);
+    const passes=profile.key==='TASTE_TRAIL' ? [
+      {pool:'CURRENT',instruction:'Taste Trail only. Find current Peterborough-area restaurant, pub, cafe, takeaway, food, drink, hospitality opening/closure/change leads. Reject unrelated council, planning, crime, transport, housing and general local-news stories.'},
+      {pool:'FOOD_HOSPITALITY',instruction:'Taste Trail only: pubs, restaurants, cafes, takeaways, menus, prices, value, breakfast, lunch, Sunday roast, local food producers, chefs and hospitality people.'},
+      {pool:'WHATSON_DISCOVERY',instruction:'Taste Trail going-out discovery only: food/drink events, street food, markets with a food angle, tastings, beer festivals, live music/comedy in pubs/bars/food venues, supper clubs and worthwhile nights out.'},
+      {pool:'HUMAN_COMMUNITY',instruction:'Taste Trail people only: independent hospitality owners, chefs, publicans, cafe owners, local producers, breweries, bakeries and human stories directly connected to eating, drinking or going out.'},
+      {pool:'FUN_READER',instruction:'Taste Trail reader angles only: value comparisons, dishes, menus, breakfast/roast/takeaway tests, overrated debates, hidden gems and recommendations people would argue about or share.'},
+      {pool:'EVERGREEN',instruction:'Taste Trail evergreen questions only: where to eat, drink or go out; what is worth the money; what to order; which venue is worth a detour. Every idea still needs current local research.'}
+    ] : [
       {pool:'CURRENT',instruction:'Find strong current local developments, changes, openings, closures, decisions, events and genuinely timely reader questions. Avoid routine council filler and avoid recently published subjects.'},
       {pool:'FOOD_HOSPITALITY',instruction:'Find food and hospitality leads only: pubs, restaurants, cafes, takeaways, openings, closures, menus, prices, value, Sunday lunch, breakfast, local food producers and questions readers would recommend or argue about.'},
       {pool:'WHATSON_DISCOVERY',instruction:'Find things to do and places to discover: events, theatre, live music, markets, attractions, walks, villages, day trips, weekend ideas, unusual places and worthwhile local discoveries.'},
@@ -3993,7 +4021,9 @@ async function collectSmartSignals(){
       {pool:'FUN_READER',instruction:'Find lighter and highly engaging candidates: curiosities, local trivia, oddities, nominations, polls, debates, comparisons, reader questions, fun tests and shareable conversation starters.'},
       {pool:'EVERGREEN',instruction:'Find evergreen or seasonal reader questions that can be made locally specific now. Prefer compare, recommend, test, reveal, save, discover or explain angles that have not appeared in the recent publication history.'}
     ];
-    let accumulated=mergeSignalPools([getSmartSignals()]);
+    const previouslySaved=getSmartSignals();
+    let accumulated=mergeSignalPools([filterSignalsForPublicationV3185(previouslySaved,publication,profile)]);
+    const removedSaved=Math.max(0,previouslySaved.length-accumulated.length);
     let failed=0,completed=0;
     E('smart-scan-progress').textContent=`Starting diverse discovery. ${accumulated.length} existing saved lead${accumulated.length===1?'':'s'} will be preserved and excluded from repeat discovery.`;
     for(const pass of passes){
@@ -4003,18 +4033,18 @@ async function collectSmartSignals(){
       E('smart-scan-progress').textContent=`Discovery ${completed+1}/${passes.length}: ${pass.pool.replaceAll('_',' ')} · ${accumulated.length} distinct leads saved so far.`;
       try{
         const r=await api('collect-issue-signals',{method:'POST',body:JSON.stringify({publication,issueNumber,sendDate,issuePromise:passPrompt,knownSignals:[operatorSignals,exclusionText].filter(Boolean).join('\n'),discoveryPool:pass.pool,discoveryInstruction:pass.instruction,excludeSignals:exclusionTitles})});
-        const arr=Array.isArray(r?.signals)?r.signals:[];
+        const arr=filterSignalsForPublicationV3185(Array.isArray(r?.signals)?r.signals:[],publication,profile);
         accumulated=mergeSignalPools([accumulated,arr.map(x=>({...x,discovery_pool:x.discovery_pool||pass.pool}))]).slice(0,40);
         completed++;
       }catch(err){failed++;console.warn('Signal discovery pass failed',pass.pool,err)}
       if(accumulated.length>=30)break;
     }
-    const liveSignals=accumulated.slice(0,40);
+    const liveSignals=filterSignalsForPublicationV3185(accumulated,publication,profile).slice(0,40);
     if(!liveSignals.length)throw new Error('No discovery leads returned from any pool.');
     const signals=expandSignalPoolWithEvergreen(liveSignals,36);
     const evergreenAdded=Math.max(0,signals.length-liveSignals.length);
     saveSmartSignals(signals);localStorage.removeItem(smartPlanKey());saveSmartPlanBatches([]);clearSmartRejected();renderSmartPlan();
-    const note=`${liveSignals.length} fresh/current discovery leads found. Added ${evergreenAdded} archive-guarded evergreen question-bank candidates, giving ${signals.length} planning candidates. Fresh leads are evidence signals; evergreen seeds are ideas only and must be researched/localised before production. Next: Build / Resume Issue Plan.`;
+    const note=`${liveSignals.length} publication-matched fresh/current discovery leads found. Added ${evergreenAdded} archive-guarded evergreen question-bank candidates, giving ${signals.length} planning candidates.${removedSaved?` Removed ${removedSaved} previously saved lead${removedSaved===1?'':'s'} that failed the new niche/geography gate.`:''} Fresh leads are evidence signals; evergreen seeds are ideas only and must be researched/localised before production. Next: Build / Resume Issue Plan.`;
     E('smart-scan-progress').textContent=note;updateWorkflowGuide();alert(note+(failed?`\n\n${failed} discovery pass${failed===1?'':'es'} failed, but all successful and previously saved leads were preserved.`:''));
   }catch(e){renderSmartPlan();alert('Signal collection stopped: '+e.message+'\n\nAny previously saved signals are still available.');}
   finally{btn.disabled=false;btn.textContent=old}
