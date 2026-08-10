@@ -1640,6 +1640,51 @@ function workspaceReportV3186(){
     const pack=masterArticlePackage(f), readiness=pack?.editorial_readiness; if(readiness?.status)out.push(`Editorial readiness: ${readiness.status}${readiness.grade?` · ${readiness.grade}`:''}${readiness.rationale?` — ${readiness.rationale}`:''}`);
     out.push('');
   });
+
+  // v3.18.11 — reports must include the data for the CURRENT workflow step, not just Master state.
+  // Step 5 selection is stored as Section Order values. Surface it so downstream issue composition is shareable.
+  try{
+    const selectedOrders=(typeof getMasterSelectionV312==='function'?getMasterSelectionV312():[]);
+    if(selectedOrders.length){
+      out.push('STEP 5 — SAVED MASTER SELECTION');
+      out.push(`Selected Masters: ${selectedOrders.length}`);
+      selectedOrders.forEach((ord,idx)=>{
+        const r=rows.find(x=>Number(val(x.fields||{},'Section Order'))===Number(ord));
+        out.push(`${idx+1}. [${ord}] ${r?String(val(r.fields||{},'Section Title')||'Untitled'):'Saved selection record not currently visible'}`);
+      });
+      out.push('');
+    }
+  }catch{}
+
+  // Step 6 is persistent in Airtable. Include every support component, its copy and readiness.
+  try{
+    if(typeof persistentSupportRecordsV3153==='function'){
+      const supports=persistentSupportRecordsV3153().slice().sort((a,b)=>Number(val(a.fields||{},'Section Order')||999)-Number(val(b.fields||{},'Section Order')||999));
+      const target=typeof supportTargetV315==='function'?supportTargetV315():null;
+      if(supports.length||Number(step)>=6){
+        const readySupports=supports.filter(s=>typeof supportReadyRecordV3153==='function'&&supportReadyRecordV3153(s)).length;
+        out.push('STEP 6 — SUPPORTING COMPONENTS');
+        out.push(`Components: ${supports.length}${target?` / ${target.supportNeeded} required`:''} · ${readySupports} ready · ${Math.max(0,supports.length-readySupports)} incomplete`);
+        supports.forEach((r,i)=>{
+          const f=r.fields||{};
+          const meta=typeof supportMetaV3153==='function'?supportMetaV3153(r):{};
+          const title=String(val(f,'Section Title')||meta.type||'Supporting Component');
+          const status=String(val(f,'Section Status')||'').trim()||'—';
+          const qa=String(val(f,'Section QA Result')||'').trim()||'—';
+          const copy=String(val(f,'Section Final Copy')||'').trim();
+          out.push(`${i+1}. ${title}`);
+          if(meta.type)out.push(`Type: ${meta.type}`);
+          if(meta.lifeLane)out.push(`Life lane: ${meta.lifeLane}`);
+          out.push(`Status: ${status} · QA: ${qa} · ${copy?'COPY SAVED':'NO COPY'}`);
+          if(copy)out.push('Copy: '+copy.replace(/\s+/g,' ').trim());
+          const cta=String(val(f,'CTA Text')||'').trim(); if(cta)out.push('CTA: '+cta);
+          const dest=String(val(f,'Action Destination URL')||'').trim(); if(dest)out.push('CTA destination: '+dest);
+          out.push('');
+        });
+      }
+    }
+  }catch(e){out.push('STEP 6 REPORT WARNING: '+String(e.message||e));out.push('');}
+
   return out.join('\n').trim()+'\n';
 }
 function createWorkspaceReportV3186(){
