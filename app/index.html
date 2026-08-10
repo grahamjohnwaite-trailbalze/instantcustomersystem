@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.6<br><strong>Workspace Report + Copy/Download</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-10 · cumulative v3.18.5 + universal copyable workspace report</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.7<br><strong>Step 3 Research Reliability</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-10 · cumulative v3.18.6 + UK geography verification + persisted research summary</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -1094,6 +1094,39 @@ async function produceOne(item,mode="generate"){
  }
  throw new Error('Background production did not finish within 3 minutes. No resumable checkpoint was found yet; check the Airtable Notes trace for the last completed stage.');
 }
+function latestResearchServiceOutcome(fields={}){
+ const notes=String(val(fields,'Notes')||'');
+ const blocks=[...notes.matchAll(/PRODUCTION SERVICE v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|RESEARCH PACK|PRODUCTION SERVICE)|$)/g)].map(m=>m[0]);
+ for(let i=blocks.length-1;i>=0;i--){
+   const block=blocks[i];
+   if(!/Stage:\s*RESEARCH/i.test(block))continue;
+   const outcome=String((block.match(/Outcome:\s*([A-Z_]+)/i)||[])[1]||'').toUpperCase();
+   if(outcome)return outcome;
+ }
+ return '';
+}
+function persistedResearchSummary(records=[]){
+ const out={total:0,publishable:0,verified:0,reported:0,blocked:0,other:0};
+ for(const r of records){
+   const f=r?.fields||{};
+   if(!researchPackPresent(f))continue;
+   out.total++;
+   const outcome=latestResearchServiceOutcome(f);
+   const evidence=String(val(f,'Evidence Status')||'');
+   if(['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(outcome)||evidence==='Researching')out.blocked++;
+   else if(outcome==='ATTRIBUTED_REPORT'||/Reported/i.test(evidence)){out.reported++;out.publishable++;}
+   else if(['VERIFIED_NOW','EDITORIAL'].includes(outcome)||evidence==='Verified'){out.verified++;out.publishable++;}
+   else out.other++;
+ }
+ return out;
+}
+async function refreshIssueSectionsForSummary(){
+ try{
+   const r=await api('sections?issueId='+encodeURIComponent(S.issue.id)+'&_ts='+Date.now());
+   S.sections=r.records||[];
+ }catch(e){console.warn('Could not refresh persisted production summary',e)}
+ return S.sections||[];
+}
 async function runProduction({one=false,mode="generate"}={}){
  if(!S.issue){alert('Open an issue first.');return}
  let work;
@@ -1142,19 +1175,19 @@ async function runProduction({one=false,mode="generate"}={}){
    S.productionUi[item.s.id]={state:'running',error:''};
    renderSections();
    E('production-progress').className='philosophy-box';
-   E('production-progress').innerHTML=`<strong>${mode==='research'?'Researching selected article':'Generating selected Master Article'}</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">${mode==='research'?'Building and locking the Research Pack. The writer will not run.':'Using the locked Research Pack only. No web research will run.'}</div><div class="muted">Written ready ${pass} · Written review ${sourceCheck+editorialReview} · Research blocked ${researchIncomplete} · Technical failed ${failed}</div>`;
+   E('production-progress').innerHTML=`<strong>${mode==='research'?'Researching selected article':'Generating selected Master Article'}</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">${mode==='research'?'Building and locking the Research Pack. The writer will not run.':'Using the locked Research Pack only. No web research will run.'}</div><div class="muted">Research publishable ${pass+editorialReview} · Attribution/source review ${sourceCheck} · Research blocked ${researchIncomplete} · Technical failed ${failed}</div>`;
    try{
      let d;
      if(!one && mode==='generate'){
        // v3.9.9 bulk pipeline: research each queued article first, persist the
        // Research Pack/checkpoint, then write only when research is publishable.
-       E('production-progress').innerHTML=`<strong>Step 1/2 — Researching</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Article ${i+1}/${work.length} · Research is saved before writing starts.</div><div class="muted">Written ready ${pass} · Written review ${sourceCheck+editorialReview} · Research blocked ${researchIncomplete} · Technical failed ${failed}</div>`;
+       E('production-progress').innerHTML=`<strong>Step 1/2 — Researching</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Article ${i+1}/${work.length} · Research is saved before writing starts.</div><div class="muted">Research publishable ${pass+editorialReview} · Attribution/source review ${sourceCheck} · Research blocked ${researchIncomplete} · Technical failed ${failed}</div>`;
        const researchResult=await produceOne(item,'research');
        const researchOutcome=String(researchResult?.outcome||'');
        if(['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(researchOutcome)){
          d=researchResult;
        }else{
-         E('production-progress').innerHTML=`<strong>Step 2/2 — Writing Master Article</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Article ${i+1}/${work.length} · Using the saved Research Pack. No duplicate research call.</div><div class="muted">Written ready ${pass} · Written review ${sourceCheck+editorialReview} · Research blocked ${researchIncomplete} · Technical failed ${failed}</div>`;
+         E('production-progress').innerHTML=`<strong>Step 2/2 — Writing Master Article</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Article ${i+1}/${work.length} · Using the saved Research Pack. No duplicate research call.</div><div class="muted">Research publishable ${pass+editorialReview} · Attribution/source review ${sourceCheck} · Research blocked ${researchIncomplete} · Technical failed ${failed}</div>`;
          d=await produceOne(item,'generate');
        }
      }else{
@@ -1186,11 +1219,19 @@ async function runProduction({one=false,mode="generate"}={}){
  if(document.querySelector('#view-assemble')?.classList.contains('active'))renderAssembly();
  if(!one){
    const failedList=failureDetails.length?`<div class="muted" style="margin-top:6px">${failureDetails.map(x=>`Failed: ${esc(x.title)} — ${esc(x.error)}`).join('<br>')}</div>`:'';
-   E('production-progress').innerHTML=`<strong>Production run finished</strong><div class="muted">Written ready ${pass} · Written review ${sourceCheck+editorialReview} · Research blocked ${researchIncomplete} · Technical failed ${failed}</div>${failedList}`;
+   if(mode==='research'){
+     const persisted=persistedResearchSummary(await refreshIssueSectionsForSummary());
+     E('production-progress').innerHTML=`<strong>Research run finished</strong><div class="muted">Research Packs ${persisted.total} · Publishable ${persisted.publishable} (${persisted.verified} verified/editorial · ${persisted.reported} attribution required) · Blocked ${persisted.blocked} · Technical failed this run ${failed}</div>${failedList}`;
+     E('save-state').textContent=`Research run complete. Persisted state: ${persisted.total} Research Packs · ${persisted.publishable} publishable · ${persisted.blocked} blocked · ${failed} technical failed this run. Completed Research Packs are preserved.`;
+   }else{
+     E('production-progress').innerHTML=`<strong>Production run finished</strong><div class="muted">Research publishable ${pass+editorialReview} · Attribution/source review ${sourceCheck} · Research blocked ${researchIncomplete} · Technical failed ${failed}</div>${failedList}`;
+     E('save-state').textContent=`Master Article pipeline complete. ${pass} complete · ${sourceCheck} source check · ${researchIncomplete} research incomplete · ${editorialReview} editorial review · ${failed} failed. This status is selectable/copyable.`;
+   }
+ }else{
+   E('save-state').textContent=mode==='research'
+    ? `Research complete for selected Master. Saved Research Pack preserved.`
+    : `Selected Master Article production complete.`;
  }
- E('save-state').textContent=mode==='research'
- ? `Research run complete. ${work.length-failed} processed · ${sourceCheck} source check · ${researchIncomplete} research incomplete/blocked · ${failed} technical failed. Completed Research Packs are preserved.`
- : `Master Article pipeline complete. ${pass} complete · ${sourceCheck} source check · ${researchIncomplete} research incomplete · ${editorialReview} editorial review · ${failed} failed. This status is selectable/copyable.`;
 }
 function buildProfile(f){
  const title=String(val(f,'Section Title')||'');
