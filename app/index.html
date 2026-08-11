@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.26<br><strong>Publishability Gate Reset</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-11 · cumulative v3.18.26</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.27<br><strong>Step 6 Mix Integrity Guard</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-11 · cumulative v3.18.27</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -3884,7 +3884,12 @@ function supportAllocationPlanV31814(profile, recipe, plan, selectedOrders){
     const t=norm(type),b=norm(`${c.title} ${c.copy}`);
     let n=1;
     if(/price|value|money|saver/.test(t))n+=/(price|value|cheap|free|deal|voucher|clubcard|cost|bill|£)/.test(b)?8:-4;
-    if(/event|what's on|weekend/.test(t))n+=/(event|festival|market|opening|launch|weekend|date|show|fair)/.test(b)?8:-8;
+    if(/event|what's on|weekend/.test(t)){
+      const eventWords=/(event|festival|live music|gig|concert|show|fair|tasting|supper club|ticket|tickets|opening night|launch night|market day)/.test(b);
+      const timeWords=/(today|tomorrow|this week|this weekend|tonight|next week|august|september|october|november|december|january|february|march|april|may|june|july|2026|2027)/.test(b);
+      const historicOpeningOnly=/(reopened|reopening|opened in|opened on|former .* closed|closed in)/.test(b) && !eventWords;
+      n+=(eventWords&&timeWords&&!historicOpeningOnly)?12:-12;
+    }
     if(/business|hospitality|expert|producer/.test(t))n+=/(owner|chef|producer|brewer|grower|bakery|cafe|café|restaurant|pub|bar|smokehouse|business|opened|opening)/.test(b)?6:-2;
     if(/trivia|history/.test(t))n+=/(former|old|history|historic|first|reopen|reopened|years|quirky)/.test(b)?7:-3;
     if(/food find|worth the drive|discovery/.test(t))n+=/(food|cafe|café|restaurant|pub|bar|smokehouse|lounge|detour|dish|coffee)/.test(b)?6:0;
@@ -3964,7 +3969,9 @@ async function buildSupportBatchV315(){
         ['QUICK PRICE CHECK','Worth The Money?','VALUE'],
         ['LOCAL BUSINESS FIND','Hospitality Person / Place','HOSPITALITY PEOPLE'],
         ['EVENT PICK',"What's On / Going Out Pick",'EVENTS & EXPERIENCES'],
-        ['LOCAL TRIVIA','Wider-Area Discovery','PLACES & DISCOVERY'],
+        ['LOCAL TRIVIA','Local Food & Drink Curiosity','FUN & CURIOSITY'],
+        ['WORTH THE DRIVE?','Wider-Area Discovery','PLACES & DISCOVERY'],
+        ['PUB / RESTAURANT QUESTION','One Table Question','READER VOICE'],
         ['READER POLL','One Quick Vote','READER VOICE'],
         ['QUICK QUIZ','Quick Taste Trail Quiz','READER VOICE'],
         ['READER RECOMMENDATION','Your Recommendation','READER VOICE'],
@@ -4048,7 +4055,8 @@ async function buildSupportBatchV315(){
     const failed=[];
 
     if(!pending.length){
-      setStep6LiveProgressV3152({show:true,done:total,total,ready:readyNow,failed:0,current:'All supporting components are already saved and ready in Airtable.',phase:'Step 6 complete'});
+      const integrity=supportMixIntegrityV31827(existing,t.supportNeeded,profile.key);
+      setStep6LiveProgressV3152({show:true,done:total,total,ready:readyNow,failed:0,current:integrity.ok?'All supporting components are saved, ready and structurally distinct.':'All supporting copy is saved, but the component mix needs repair: '+integrity.errors.join(' '),phase:integrity.ok?'Step 6 complete':'Step 6 — Mix Integrity Failed'});
       await renderStep6StatusV3151();
       return;
     }
@@ -4239,8 +4247,8 @@ async function rebuildComponentMixV31813(){
       ],
       TASTE_TRAIL:[
         ['OPENING NOTE','Opening Note','OPEN'],['FOOD FIND','Morning / Daytime Find','BREAKFAST & BRUNCH'],['QUICK PRICE CHECK','Worth The Money?','VALUE'],['LOCAL BUSINESS FIND','Hospitality Person / Place','HOSPITALITY PEOPLE'],
-        ['EVENT PICK',"What's On / Going Out Pick",'EVENTS & EXPERIENCES'],['LOCAL TRIVIA','Wider-Area Discovery','PLACES & DISCOVERY'],['READER POLL','One Quick Vote','READER VOICE'],['QUICK QUIZ','Quick Taste Trail Quiz','READER VOICE'],
-        ['READER RECOMMENDATION','Your Recommendation','READER VOICE'],['BEFORE YOU GO',"That's All For This Week — But Before You Go…",'OPEN']
+        ['EVENT PICK',"What's On / Going Out Pick",'EVENTS & EXPERIENCES'],['LOCAL TRIVIA','Local Food & Drink Curiosity','FUN & CURIOSITY'],['WORTH THE DRIVE?','Wider-Area Discovery','PLACES & DISCOVERY'],['PUB / RESTAURANT QUESTION','One Table Question','READER VOICE'],
+        ['READER POLL','One Quick Vote','READER VOICE'],['QUICK QUIZ','Quick Taste Trail Quiz','READER VOICE'],['READER RECOMMENDATION','Your Recommendation','READER VOICE'],['BEFORE YOU GO',"That's All For This Week — But Before You Go…",'OPEN']
       ],
       HOME_SELLER:[['OPENING NOTE','Opening Note','OPEN'],['READER POLL','Reader Poll','READER VOICE'],['QUICK PRICE CHECK','Quick Price Check','PRICING & VALUATION'],['READER QUESTION','Reader Question','READER VOICE'],['MYTH V FACT','Myth v Fact','FUN & CURIOSITY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','OPEN']],
       PET_INSIDER:[['OPENING NOTE','Opening Note','OPEN'],['READER POLL','Reader Poll','READER VOICE'],['READER PETS','Reader Pets','READER PETS'],['LOCAL TRIVIA','Local Trivia','FUN & CURIOSITY'],['WEEKEND IDEA','Weekend Idea','WALKS & PLACES'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['EXPERT QUICK CHECK','Expert Quick Check','EXPERT'],['HUMOUR','Quick Breather','FUN & CURIOSITY'],['BEFORE YOU GO','Before You Go','OPEN']]
@@ -4265,6 +4273,30 @@ async function rebuildComponentMixV31813(){
   finally{if(btn){btn.disabled=false;btn.textContent=old||'Rebuild Component Mix'}}
 }
 
+
+function supportMixIntegrityV31827(records,needed,profileKey){
+  const rows=(records||[]).slice(0,needed).map(r=>{
+    const f=r?.fields||{},m=supportMetaV3153(r);
+    return {id:r.id,type:String(m.type||'').trim().toUpperCase(),title:String(val(f,'Section Title')||'').trim(),copy:String(val(f,'Section Final Copy')||'').trim(),ready:supportReadyRecordV3153(r)};
+  });
+  const errors=[];
+  if(rows.length!==needed)errors.push(`Component count ${rows.length}/${needed}.`);
+  const counts={};for(const r of rows)counts[r.type]=(counts[r.type]||0)+1;
+  const dupes=Object.entries(counts).filter(([type,n])=>type&&n>1).map(([type,n])=>`${type} ×${n}`);
+  if(dupes.length)errors.push(`Duplicate functional roles: ${dupes.join(', ')}.`);
+  if((counts['OPENING NOTE']||0)>1)errors.push('More than one Opening Note.');
+  if((counts['BEFORE YOU GO']||0)>1)errors.push('More than one closing component.');
+  if(String(profileKey||'').toUpperCase()==='TASTE_TRAIL'){
+    const ev=rows.find(r=>r.type==='EVENT PICK');
+    if(ev&&ev.ready){
+      const b=(ev.title+' '+ev.copy).toLowerCase();
+      const eventWords=/(event|festival|live music|gig|concert|show|fair|tasting|supper club|ticket|tickets|opening night|launch night|market day)/.test(b);
+      const timeWords=/(today|tomorrow|this week|this weekend|tonight|next week|august|september|october|november|december|january|february|march|april|may|june|july|2026|2027)/.test(b);
+      if(!(eventWords&&timeWords))errors.push('Event Pick is not visibly a current/dated event; it should fall back to a different discovery role.');
+    }
+  }
+  return {ok:errors.length===0,errors,rows,dupes};
+}
 async function renderStep6StatusV3151(){
   const panel=E('step6-status-panel-v3151');
   if(!panel)return;
@@ -4285,31 +4317,40 @@ async function renderStep6StatusV3151(){
       `Remaining to build: ${remaining}`;
   }
 
+  const mix=supportMixIntegrityV31827(persistentSupportRecordsV3153(),t.supportNeeded,engineProfileForPublication().key);
   const btn=E('step6-build-v3151');
   if(btn){
     btn.textContent=remaining>0?'Build / Resume Supporting Components':
-      (ready>=t.supportNeeded?'Go To Step 7 — Assemble':'Produce Remaining Components');
+      (ready>=t.supportNeeded&&mix.ok?'Go To Step 7 — Assemble':'Repair Component Mix');
   }
 
-  const headline=ready>=t.supportNeeded&&t.supportNeeded>0
-    ? `Step 6 complete · ${built}/${t.supportNeeded} built · ${ready} ready · 0 remaining`
-    : `${built}/${t.supportNeeded} support components built · ${ready} ready`;
-  const message=ready>=t.supportNeeded&&t.supportNeeded>0
-    ? 'Step 6 is complete. All supporting components are persistently saved. Next: Step 7 — Assemble.'
-    : `Selected Masters ${t.selectedMasters} · issue target ${t.issueTarget} · ${remaining} support/partner components still need to be built.`;
+  const fullyReady=ready>=t.supportNeeded&&t.supportNeeded>0&&mix.ok;
+  const headline=fullyReady
+    ? `Step 6 complete · ${built}/${t.supportNeeded} built · ${ready} ready · mix integrity passed`
+    : (ready>=t.supportNeeded&&!mix.ok
+      ? `Step 6 attention required · ${ready}/${t.supportNeeded} ready · mix integrity failed`
+      : `${built}/${t.supportNeeded} support components built · ${ready} ready`);
+  const message=fullyReady
+    ? 'Step 6 is complete. Count, readiness and component-mix integrity all pass. Next: Step 7 — Assemble.'
+    : (ready>=t.supportNeeded&&!mix.ok
+      ? `Supporting copy is preserved, but Step 6 cannot go green until the mix is structurally sound. ${mix.errors.join(' ')}`
+      : `Selected Masters ${t.selectedMasters} · issue target ${t.issueTarget} · ${remaining} support/partner components still need to be built.`);
   setWorkflowActionStatusV312(6,'Components',headline,message);
 }
 function renderStep6SummaryV315(){
   const panel=E('step6-summary-v315');if(!panel)return;
   const t=supportTargetV315(),items=currentSupportComponentsV315();
   const ready=items.filter(x=>String(x.status||x.contentStatus||'').toUpperCase()==='READY'||String(x.productionStatus||'').toUpperCase()==='READY').length;
+  const mix=supportMixIntegrityV31827(persistentSupportRecordsV3153(),t.supportNeeded,engineProfileForPublication().key);
   panel.innerHTML=`<strong>Step 6 — Components</strong>
   <div class="muted" style="margin-top:6px">Selected Masters: ${t.selectedMasters} · Target issue size: ${t.issueTarget} · Support/partner components required: ${t.supportNeeded}</div>
-  <div style="margin-top:8px"><strong>${items.length}/${t.supportNeeded}</strong> built · <strong>${ready}</strong> ready</div>
+  <div style="margin-top:8px"><strong>${items.length}/${t.supportNeeded}</strong> built · <strong>${ready}</strong> ready · <strong>${mix.ok?'mix passed':'mix needs repair'}</strong></div>
+  ${mix.ok?'':`<div style="margin-top:6px;color:#a33"><strong>Mix integrity:</strong> ${esc(mix.errors.join(' '))}</div>`}
   <div class="muted" style="margin-top:6px">ICS should create the missing support automatically. Manual component controls are Advanced only.</div>`;
 }
 // v3.18.21 — Step 7 running order must also survive deploy-preview/localStorage changes.
 // v3.18.22 — Step 9 generates universal /tell-us/ response URLs for reader-response CTAs; GC tags stay in Letterman.
+// v3.18.27 — Step 6 Mix Integrity Guard: family recipes must cover required support count without modulo duplicates; event slots require genuine current-event evidence; green status requires mix integrity.
 // v3.18.26 — Publishability Gate Reset: deterministic local proof, true round-up detection, legacy false-review repair; preserves successful research and writing.
 // v3.18.24 — Issue promise source-of-truth guard: publication-safe defaults, Airtable persistence and sibling-geography carry-over repair.
 // v3.18.23 — Taste Trail day-to-night hospitality profile, broader discovery, newsletter SEO output and synced CTA destinations.
