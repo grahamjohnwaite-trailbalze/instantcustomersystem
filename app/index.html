@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.19<br><strong>Workflow Completion State</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-10 · cumulative v3.18.19</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.20<br><strong>Persistent QA Completion Gate</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-11 · cumulative v3.18.20</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -4106,6 +4106,33 @@ function renderStep6SummaryV315(){
   <div style="margin-top:8px"><strong>${items.length}/${t.supportNeeded}</strong> built · <strong>${ready}</strong> ready</div>
   <div class="muted" style="margin-top:6px">ICS should create the missing support automatically. Manual component controls are Advanced only.</div>`;
 }
+// v3.18.20 — Final QA completion must survive browser refreshes and new deploys.
+// A zero-hard-fix QA run persists the issue lifecycle as QA in Airtable. Step 9 can
+// therefore trust the issue record even when the browser-local report is unavailable.
+function persistedQAPassedV31820(){
+  const status=String(val(S.issue?.fields||{},'Issue Status')||'').trim().toUpperCase();
+  return ['QA','READY FOR LETTERMAN','PUBLISHED','ARCHIVED'].includes(status);
+}
+function finalQAPassedV31820(){
+  try{
+    const q=JSON.parse(localStorage.getItem(qaKey())||'null');
+    if(q?.qaVersion==='3.17.3.7'&&q?.summary&&Number(q.summary.fix||0)===0)return true;
+  }catch{}
+  return persistedQAPassedV31820();
+}
+async function persistQALifecycleV31820(passed){
+  if(!S.issue?.id)return;
+  const current=String(val(S.issue.fields||{},'Issue Status')||'').trim().toUpperCase();
+  const target=passed?'QA':(['QA'].includes(current)?'BUILDING':current||'BUILDING');
+  if(current===target)return;
+  try{
+    const data=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Issue Status':target}})});
+    if(data?.record){S.issue=data.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);}
+  }catch(error){
+    console.warn('QA lifecycle persistence failed',error);
+    throw new Error(`Final QA completed, but its persisted issue status could not be saved: ${error?.message||error}`);
+  }
+}
 function workflowStepInfoV312(step){
  const sig=getSmartSignals(),plan=getSmartPlan(),locked=smartPlanLocked(plan),profile=engineProfileForPublication(),selected=getMasterSelectionV312(),canvas=getCanvas();
  const target=profile.defaultMasters||15,min=profile.targetMasters?.[0]||5,max=profile.targetMasters?.[1]||7;
@@ -4167,12 +4194,7 @@ function updateWorkflowShellV312(forcedStep){
  if(assemblyCompleteV31819)auto=8;
 
  let qaCompleteV31819=false;
- if(assemblyCompleteV31819){
-   try{
-     const q=JSON.parse(localStorage.getItem(qaKey())||'null');
-     qaCompleteV31819=!!(q?.qaVersion==='3.17.3.7'&&q?.summary&&Number(q.summary.fix||0)===0);
-   }catch{}
- }
+ if(assemblyCompleteV31819)qaCompleteV31819=finalQAPassedV31820();
  if(qaCompleteV31819)auto=9;
 
  workflowSelectedStepV312=forcedStep||auto;
@@ -4624,6 +4646,14 @@ async function smartAssembleIssue(){
 
   const items=buildSmartCanvas(chosen,persistedSupport.slice(0,requiredSupport));
   localStorage.setItem(assemblyKey(),JSON.stringify(items));
+  // A rebuilt running order invalidates any previously persisted QA pass.
+  if(persistedQAPassedV31820()){
+    try{
+      const data=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Issue Status':'BUILDING'}})});
+      if(data?.record){S.issue=data.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);}
+    }catch(error){console.warn('Could not invalidate prior QA lifecycle after assembly rebuild',error);}
+  }
+  localStorage.removeItem(qaKey());
   canvasSelectedUid=items[0]?.uid||null;
   renderAssembly();
 
@@ -5278,6 +5308,7 @@ async function runFinalQA(){
     };
     const report={qaVersion:'3.17.3.7',createdAt:new Date().toISOString(),summary,findings};
     localStorage.setItem(qaKey(),JSON.stringify(report));
+    await persistQALifecycleV31820(summary.fix===0);
     showQAReport(report,true);
     setWorkflowActionStatusV312(8,'QA',`Final QA complete · ${summary.fix} Fix · ${summary.warning} Warning · ${summary.pass} Pass`,
       summary.fix?'Hard fixes remain. Use Fix QA Exceptions, then rerun Final QA.':'No hard QA fixes remain. Review warnings, then move to Step 9 Production Ready.');
@@ -5998,15 +6029,13 @@ function masterAssetsPackageV3181(){
 function step9SafeRunV31817(kind){
   try{
     if(kind==='assets'){
-      let qa=null;try{qa=JSON.parse(localStorage.getItem(qaKey())||'null')}catch{}
-      if(!qa||Number(qa?.summary?.fix)!==0){alert('Article & Social Assets are locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');return}
+      if(!finalQAPassedV31820()){alert('Article & Social Assets are locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');return}
       const text=masterAssetsPackageV3181();
       E('article-package-text').value=text;
       E('article-dialog').showModal();
       return;
     }
-    let qa=null;try{qa=JSON.parse(localStorage.getItem(qaKey())||'null')}catch{}
-    if(!qa||Number(qa?.summary?.fix)!==0){alert('Production Package is locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');return}
+    if(!finalQAPassedV31820()){alert('Production Package is locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');return}
     E('preview-text').value=assemblyDraft();
     E('preview-dialog').showModal();
   }catch(err){
@@ -6015,8 +6044,7 @@ function step9SafeRunV31817(kind){
   }
 }
 function generateMasterAssetsV3181(){
-  let qa=null;try{qa=JSON.parse(localStorage.getItem(qaKey())||'null')}catch{}
-  if(!qa||Number(qa?.summary?.fix)!==0){
+  if(!finalQAPassedV31820()){
     alert('Article & Social Assets are locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');
     return;
   }
@@ -6025,8 +6053,7 @@ function generateMasterAssetsV3181(){
   E('article-dialog').showModal();
 }
 function generateAssembly(){
-  let qa=null;try{qa=JSON.parse(localStorage.getItem(qaKey())||'null')}catch{}
-  if(!qa||Number(qa?.summary?.fix)!==0){
+  if(!finalQAPassedV31820()){
     alert('Production Package is locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');
     return;
   }
