@@ -7,24 +7,66 @@ const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=65000;
-const RELEASE_VERSION='3.8.2';
+const RELEASE_VERSION='3.8.3';
 const WRITER_PROMPT_VERSION='ARTICLE-BUILDER-SPOTLIGHT-v4';
 
 function publicationContext(fields={}){
   const supplied=String(fields.__publicationName||fields['Publication Name']||'').trim();
-  const blob=[supplied,value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Local Proof Needed'),value(fields,'Notes')].join(' ').toLowerCase();
+  const blob=[value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Local Proof Needed'),value(fields,'Notes')].join(' ').toLowerCase();
   let name=supplied,area='',country='England',councilDomain='',policeDomain='',visitDomain='';
-  if(/peterborough/.test(blob)){
-    name=name||'Peterborough Spotlight';area='Peterborough';councilDomain='peterborough.gov.uk';policeDomain='cambs.police.uk';visitDomain='visitpeterborough.com';
-  }else if(/cambridgeshire|cambridge/.test(blob)){
-    name=name||'Cambridgeshire Spotlight';area='Cambridgeshire';councilDomain='cambridgeshire.gov.uk';policeDomain='cambs.police.uk';visitDomain='visitcambridge.org';
-  }else if(/norfolk|norwich|king'?s lynn|great yarmouth|cromer|hunstanton/.test(blob)){
-    name=name||'Norfolk Spotlight';area='Norfolk';councilDomain='norfolk.gov.uk';policeDomain='norfolk.police.uk';visitDomain='visitnorfolk.com';
-  }else{
-    area=(supplied.replace(/\s+(Spotlight|Taste Trail|Pet Insider|Home Seller Insider).*$/i,'').trim()||'the publication area');
+
+  // v3.18.25: publication identity is authoritative. Never infer Cambridge Taste Trail
+  // as Cambridgeshire merely because article copy contains the county name.
+  if(supplied){
+    area=supplied.replace(/\s+(Spotlight|Taste Trail|Pet Insider|Home Seller Insider|Business Pulse).*$/i,'').trim();
+    name=supplied;
+  }
+  if(!area){
+    if(/peterborough/.test(blob))area='Peterborough';
+    else if(/cambridgeshire/.test(blob))area='Cambridgeshire';
+    else if(/cambridge/.test(blob))area='Cambridge';
+    else if(/north norfolk/.test(blob))area='North Norfolk';
+    else if(/norwich/.test(blob))area='Norwich';
+    else if(/norfolk/.test(blob))area='Norfolk';
+    else area='the publication area';
     name=name||area;
   }
+
+  const areaLower=area.toLowerCase();
+  if(areaLower==='peterborough'){councilDomain='peterborough.gov.uk';policeDomain='cambs.police.uk';visitDomain='visitpeterborough.com';}
+  else if(areaLower==='cambridgeshire'||areaLower==='cambridge'){councilDomain='cambridgeshire.gov.uk';policeDomain='cambs.police.uk';visitDomain='visitcambridge.org';}
+  else if(/norfolk|norwich/.test(areaLower)){councilDomain='norfolk.gov.uk';policeDomain='norfolk.police.uk';visitDomain='visitnorfolk.com';}
   return {name,area,country,location:`${area}, ${country}`,councilDomain,policeDomain,visitDomain};
+}
+
+function localityAnchors(fields={},ctx=publicationContext(fields)){
+  const anchors=new Set();
+  const add=v=>{const x=String(v||'').trim();if(x&&x!=='the publication area')anchors.add(x.toLowerCase())};
+  add(ctx.area);
+  // City/county pairs are legitimate shared geography, but neither is mandatory
+  // when a named venue/place from the approved brief provides the local root.
+  if(/^cambridge$/i.test(ctx.area))add('Cambridgeshire');
+  if(/^cambridgeshire$/i.test(ctx.area))add('Cambridge');
+  if(/^norwich$/i.test(ctx.area))add('Norfolk');
+  if(/^north norfolk$/i.test(ctx.area))add('Norfolk');
+
+  const source=[value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Local Proof Needed')].join(' ');
+  const stop=new Set(['Where','Which','What','When','Why','How','Can','Could','Should','Would','Is','Are','The','A','An','And','Or','For','From','With','Without','Worth','Actually','Right','Now','New','Best','Good','Proper','Local','Food','Drink','Restaurant','Restaurants','Pub','Pubs','Cafe','Café','Bar','Bars','Hotel','Hotels','Taste','Trail','Spotlight']);
+  for(const m of source.matchAll(/\b(?:[A-Z][A-Za-z'’&-]+(?:\s+[A-Z][A-Za-z'’&-]+){0,3})\b/g)){
+    const phrase=String(m[0]||'').trim();
+    const words=phrase.split(/\s+/);
+    if(!phrase||words.every(w=>stop.has(w)))continue;
+    if(phrase.length>=4)add(phrase);
+  }
+  return [...anchors];
+}
+
+function hasVisibleLocalRoot(fields={},body=''){
+  const ctx=publicationContext(fields);
+  if(!ctx.area||ctx.area==='the publication area')return true;
+  const hay=String(body||'').toLowerCase();
+  const anchors=localityAnchors(fields,ctx);
+  return anchors.some(a=>a.length>=4&&hay.includes(a));
 }
 function publicationArea(fields={}){return publicationContext(fields).area}
 
@@ -147,7 +189,7 @@ function writerPublishabilityGate(fields,result,research){
     if(/which|best|five|six|seven|eight|nine|ten|worth|recommend|attraction|takeaway|restaurant|pub/i.test(title) && !/\b(The|At|In) [A-Z][A-Za-z'’&-]+|\b[A-Z][A-Za-z'’&-]+ (?:Arms|Inn|Hotel|Museum|Park|Centre|Center|Restaurant|Cafe|Café|Pub|Takeaway|Gardens|Hall|House|Theatre|Cinema)\b/.test(body))reasons.push('Discovery/list article does not contain enough named examples to answer the question.');
   }
   const ctx=publicationContext(fields);
-  if(ctx.area&&ctx.area!=='the publication area'&&!body.toLowerCase().includes(ctx.area.toLowerCase()))reasons.push(`Finished copy is not visibly rooted in ${ctx.area}.`);
+  if(!hasVisibleLocalRoot(fields,body))reasons.push(`Finished copy is not visibly rooted in ${ctx.area} or an approved named local place/venue.`);
   const summary=String(result?.summary_content||'').trim();
   const seoTitle=String(result?.seo_title||'').trim();
   const seoDescription=String(result?.seo_description||'').trim();
@@ -1392,7 +1434,8 @@ export default async(request)=>{
     const writerCandidate=(savedWriter?.brief_key===key)?savedWriter:null;
     const runningStage=mode==='research'?'Researching only':'Generating from locked research';
     const runningBlock=[`MASTER ARTICLE RUNNING v2.22`,`Run ID: ${runId}`,`Stage: ${runningStage}`,`Started: ${new Date().toISOString()}`,`END MASTER ARTICLE RUNNING`].join('\n');
-    await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':'Researching','Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
+    const runningEvidenceStatus=(mode==='generate'&&reusableResearch)?String(value(fields,'Evidence Status')||'Verified'):'Researching';
+    await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{'Section Status':'Researching','Evidence Status':runningEvidenceStatus,'Notes':originalNotes?`${originalNotes}\n\n${runningBlock}`:runningBlock}}],typecast:true}});
     log('running_marker_saved');
     const traceStarted=Date.now();
     const trace=[];
@@ -1604,7 +1647,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.8.2`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.8.3`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1767,13 +1810,13 @@ export default async(request)=>{
     result.editorial_readiness=editorialReadiness(result,publishGate,lockDecision,sources,fields);
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.8.2`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.8.3`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':titleCaseAllWords(result.article_title||value(fields,'Section Title')),
       'Section Final Copy':String(result.article_body||'').trim(),
       'CTA Text':String(result.cta_text||value(fields,'CTA Text')||'').trim(),
       'Source / Reference Link 1':sources[0]?.url||value(fields,'Source / Reference Link 1')||'',
-      'Evidence Status':qa==='Pass'?(cls==='A — Question Only'?'Question Only':lockDecision.code==='ATTRIBUTED_REPORT'?'Reported — Attribution Required':'Verified'):'Researching',
+      'Evidence Status':cls==='A — Question Only'?'Question Only':lockDecision.code==='ATTRIBUTED_REPORT'?'Reported — Attribution Required':lockDecision.code==='BLOCKED'?'Researching':'Verified',
       'Evidence Checked Date':new Date().toISOString().slice(0,10),
       'Section QA Result':qa,
       'Section Status':qa==='Pass'?'Ready':'Researching',

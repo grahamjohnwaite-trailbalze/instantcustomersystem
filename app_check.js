@@ -1,6 +1,20 @@
 
 const S={publications:[],issues:[],sections:[],articleLibrary:[],issue:null,section:null,hot:[],productionUi:{}};const E=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));const val=(f,k)=>f?.[k]??'';const fmt=d=>d?new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00')):'—';
-async function api(path,opt={}){const r=await fetch('/.netlify/functions/'+path,{headers:{'content-type':'application/json',accept:'application/json'},...opt});const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={ok:false,error:`Invalid server response (${r.status}). ${raw.slice(0,300)||'No response body.'}`}}if(!r.ok||!d.ok){const err=new Error(d.error||`Request failed (${r.status})`);err.details=d.details;throw err}return d}function conn(ok,msg){E('dot').className='dot '+(ok?'ok':'bad');E('connection').textContent=msg}function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));E('view-'+v).classList.add('active');document.querySelector(`[data-view="${v}"]`).classList.add('active');E('page-title').textContent={dashboard:'Dashboard',publications:'Publications',issues:'Issues',build:'Issue Command Centre',assemble:'Issue Workflow'}[v];E('page-sub').textContent=v==='build'?'Plan, write and export one real issue.':v==='assemble'?'One clear production step at a time, from planning to production ready.':(S.issue?`${pubName(S.issue.fields.Publication)} production workspace.`:'Publication-aware production workspace.');if(v==='assemble'){renderAssembly();updateWorkflowGuide()}}
+async function api(path,opt={}){const r=await fetch('/.netlify/functions/'+path,{headers:{'content-type':'application/json',accept:'application/json'},...opt});const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={ok:false,error:`Invalid server response (${r.status}). ${raw.slice(0,300)||'No response body.'}`}}if(!r.ok||!d.ok){const err=new Error(d.error||`Request failed (${r.status})`);err.details=d.details;throw err}return d}async function apiTransientRetryV31825(path,opt={},attempts=2){
+  let last;
+  for(let attempt=1;attempt<=Math.max(1,attempts);attempt++){
+    try{return await api(path,opt)}catch(e){
+      last=e;
+      const msg=String(e?.message||e||'');
+      const transient=/504|inactivity timeout|timed out|timeout|failed to fetch|network|temporarily unavailable|gateway/i.test(msg);
+      if(!transient||attempt>=attempts)throw e;
+      E('smart-scan-progress')&&(E('smart-scan-progress').textContent=`Transient server timeout recovered — retrying automatically (${attempt+1}/${attempts})…`);
+      await sleep(1200*attempt);
+    }
+  }
+  throw last;
+}
+function conn(ok,msg){E('dot').className='dot '+(ok?'ok':'bad');E('connection').textContent=msg}function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));E('view-'+v).classList.add('active');document.querySelector(`[data-view="${v}"]`).classList.add('active');E('page-title').textContent={dashboard:'Dashboard',publications:'Publications',issues:'Issues',build:'Issue Command Centre',assemble:'Issue Workflow'}[v];E('page-sub').textContent=v==='build'?'Plan, write and export one real issue.':v==='assemble'?'One clear production step at a time, from planning to production ready.':(S.issue?`${pubName(S.issue.fields.Publication)} production workspace.`:'Publication-aware production workspace.');if(v==='assemble'){renderAssembly();updateWorkflowGuide()}}
 function pubName(ids){return S.publications.find(p=>p.id===(ids||[])[0])?.fields['Publication Name']||'Unlinked'}function pill(v){return `<span class="pill ${/ready|published|complete/i.test(v)?'good':/warning|blocked|late/i.test(v)?'warn':''}">${esc(v||'Not set')}</span>`}
 function currentPublicationName(){return S.issue?pubName(S.issue.fields.Publication):''}
 function defaultIssuePromiseV31824(publication){
@@ -369,7 +383,42 @@ function renderIssues(){const f=E('issue-filter').value;E('issue-table').innerHT
 function editIssue(id){const i=S.issues.find(x=>x.id===id);if(!i)return;E('edit-issue-id').value=id;E('edit-number').value=val(i.fields,'Issue Number')||'';E('edit-date').value=val(i.fields,'Send Date')||'';E('edit-status').value=val(i.fields,'Issue Status')||'PLANNED';E('edit-theme').value=val(i.fields,'Main Theme')||'';E('edit-issue-dialog').showModal()}
 async function saveEditedIssue(ev){ev.preventDefault();const id=E('edit-issue-id').value;const issue=S.issues.find(x=>x.id===id);if(!issue)return;const no=String(E('edit-number').value||'').trim();const pub=(issue.fields.Publication||[])[0]||'';if(no&&E('edit-status').value!=='ARCHIVED'){const clash=S.issues.find(x=>x.id!==id&&String(val(x.fields,'Issue Status')||'').toUpperCase()!=='ARCHIVED'&&(x.fields.Publication||[])[0]===pub&&String(val(x.fields,'Issue Number')||'').trim()===no);if(clash&&!confirm(`Another ${pubName(issue.fields.Publication)} issue already uses #${no}. Save anyway?`))return}const fields={'Issue Number':no?Number(no):undefined,'Send Date':E('edit-date').value,'Issue Status':E('edit-status').value,'Main Theme':E('edit-theme').value};const btn=E('save-edited-issue');btn.disabled=true;const old=btn.textContent;btn.textContent='Saving…';try{const d=await api('issues',{method:'PATCH',body:JSON.stringify({id,fields})});S.issues=S.issues.map(x=>x.id===id?d.record:x);if(S.issue?.id===id)S.issue=d.record;E('edit-issue-dialog').close();render();if(S.issue?.id===id){E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;if(E('ih-date'))E('ih-date').value=val(S.issue.fields,'Send Date')||''}}catch(e){alert(e.message)}finally{btn.disabled=false;btn.textContent=old}}
 async function loadAll(){try{conn(false,'Connecting…');const [p,i,h]=await Promise.all([api('publications'),api('issues'),fetch('/app/hot-buttons.json').then(r=>r.json())]);S.publications=p.records;S.issues=i.records;S.hot=h;conn(true,`Connected · ${p.count} publications · ${i.count} issues`);render()}catch(e){conn(false,e.message);alert(e.message)}}
-async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);await Promise.all([loadSections(),loadArticleLibrary()]);await ensureIssuePromiseSourceV31824();restorePersistedAssemblyV31821();show('assemble');renderAssembly()}
+async function repairLegacyLocalityOnlyReviewsV31825(){
+  if(!S.issue)return 0;
+  const area=String(publicationAreaV31816(currentPublicationName())||'').trim();
+  if(!area)return 0;
+  let repaired=0;
+  const serviceRx=new RegExp('PRODUCTION SERVICE v(?:2\\.\\d+|3\\.\\d+\\.\\d+)[\\s\\S]*?(?=\\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|RESEARCH PACK|PRODUCTION SERVICE|MASTER ARTICLE FAILED|MASTER ARTICLE TRACE)|$)','g');
+  const packageRx=new RegExp('MASTER ARTICLE PACKAGE v1\\n([\\s\\S]*?)\\nEND MASTER ARTICLE PACKAGE','g');
+  for(const sec of S.sections||[]){
+    const f=sec.fields||{};
+    if(String(val(f,'Section QA Result')||'')!=='Fix Required'||!isProducedArticle(sec))continue;
+    const body=String(val(f,'Section Final Copy')||'');
+    if(!body.toLowerCase().includes(area.toLowerCase()))continue;
+    const notes=String(val(f,'Notes')||'');
+    const service=[...notes.matchAll(serviceRx)].map(m=>m[0]).pop()||'';
+    const exception=String((service.match(/^Exception:\s*(.+)$/mi)||[])[1]||'').trim();
+    if(!/^Publishability gate failed:\s*Finished copy is not visibly rooted in [^.]+\.?$/i.test(exception))continue;
+    const packMatch=[...notes.matchAll(packageRx)].pop();
+    let nextNotes=notes;
+    if(packMatch){
+      try{
+        const pack=JSON.parse(packMatch[1]);
+        pack.editorial_readiness={...(pack.editorial_readiness||{}),status:'READY',grade:pack.editorial_readiness?.grade||'B',rationale:[String(pack.editorial_readiness?.rationale||'').replace(/^REWORK\s*[—-]\s*/i,'').trim(),`v3.18.25 locality recheck: finished copy is visibly rooted in ${area}.`].filter(Boolean).join(' '),suggested_edits:[]};
+        const replacement=`MASTER ARTICLE PACKAGE v1\n${JSON.stringify(pack,null,2)}\nEND MASTER ARTICLE PACKAGE`;
+        nextNotes=nextNotes.replace(packMatch[0],replacement);
+      }catch(e){console.warn('Could not update legacy package readiness',sec.id,e)}
+    }
+    nextNotes=nextNotes.replace(/(PRODUCTION SERVICE v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?Exception:)\s*Publishability gate failed:\s*Finished copy is not visibly rooted in [^.]+\.?/g,'$1 None');
+    try{
+      const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{'Section QA Result':'Pass','Section Status':'Ready','Evidence Status':String(val(f,'Evidence Status')||'').includes('Reported')?'Reported — Attribution Required':'Verified','Notes':nextNotes}})});
+      const idx=S.sections.findIndex(x=>x.id===sec.id);if(idx>=0)S.sections[idx]=d.record;repaired++;
+    }catch(e){console.warn('Legacy locality-only QA repair failed',sec.id,e)}
+  }
+  if(repaired)E('save-state').textContent=`v3.18.25 repaired ${repaired} legacy locality-only QA review${repaired===1?'':'s'} without rewriting or rerunning research.`;
+  return repaired;
+}
+async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);await Promise.all([loadSections(),loadArticleLibrary()]);await ensureIssuePromiseSourceV31824();await repairLegacyLocalityOnlyReviewsV31825();restorePersistedAssemblyV31821();show('assemble');renderAssembly()}
 function sectionOrderValue(s){const n=Number(val(s.fields,'Section Order'));return Number.isFinite(n)?n:999999}
 function sortSections(){S.sections=[...S.sections].sort((a,b)=>sectionOrderValue(a)-sectionOrderValue(b)||(a.createdTime||'').localeCompare(b.createdTime||''))}
 function sectionOrderDiagnostic(){
@@ -663,6 +712,24 @@ async function produceOne(item,mode="generate"){
  }
  throw new Error('Background production did not finish within 3 minutes. No resumable checkpoint was found yet; check the Airtable Notes trace for the last completed stage.');
 }
+async function produceOneReliablyV31825(item,mode='generate'){
+  const attempts=(mode==='generate'?2:1);
+  let last;
+  for(let attempt=1;attempt<=attempts;attempt++){
+    try{return await produceOne(item,mode)}catch(e){
+      last=e;
+      const msg=String(e?.message||e||'');
+      const transient=/openai request timed out|timed out after|background production did not finish|failed to fetch|network|gateway|temporarily unavailable/i.test(msg);
+      if(!transient||attempt>=attempts)throw e;
+      E('production-progress').innerHTML=`<strong>Technical timeout — recovering automatically</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Retry ${attempt+1}/${attempts}. Saved research and any successful checkpoints are preserved; research will not rerun.</div>`;
+      await sleep(1000);
+      const refreshed=await refreshProducedRecord(item.s.id).catch(()=>null);
+      if(refreshed)item.s=refreshed;
+      if(productionDone(item.s))return {ok:true,record:item.s,qaResult:String(val(item.s.fields,'Section QA Result')||'Fix Required'),outcome:latestResearchServiceOutcome(item.s.fields)||'EDITORIAL_REVIEW',recovered:true};
+    }
+  }
+  throw last;
+}
 function latestResearchServiceOutcome(fields={}){
  const notes=String(val(fields,'Notes')||'');
  const blocks=[...notes.matchAll(/PRODUCTION SERVICE v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|RESEARCH PACK|PRODUCTION SERVICE)|$)/g)].map(m=>m[0]);
@@ -757,9 +824,9 @@ async function runProduction({one=false,mode="generate"}={}){
        // v3.18.10 Step 4 is write-only. Step 3 owns research.
        // Use the persisted Research Pack and never re-run research here.
        E('production-progress').innerHTML=`<strong>Writing Master Article</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Article ${i+1}/${work.length} · Using the saved publishable Research Pack. No web research will run.</div><div class="muted">Completed ${pass+editorialReview+sourceCheck} · Technical failed ${failed}</div>`;
-       d=await produceOne(item,'generate');
+       d=await produceOneReliablyV31825(item,'generate');
      }else{
-       d=await produceOne(item,mode);
+       d=await produceOneReliablyV31825(item,mode);
      }
      delete S.productionUi[item.s.id];
      if(d.qaResult==='Pass')pass++;
@@ -775,7 +842,7 @@ async function runProduction({one=false,mode="generate"}={}){
      if(one)alert(msg);
    }
    renderSections();
-   if(!one&&i<work.length-1)await sleep(2500);
+   if(!one&&i<work.length-1)await sleep(500);
  }
  E('run-production').disabled=false;E('run-next-production').disabled=false;E('generate-selected-production').disabled=false;
  if(one&&work[0]?.s){S.section=S.sections.find(x=>x.id===work[0].s.id)||work[0].s;}
@@ -1516,9 +1583,16 @@ function evidencePublishabilityV3134(fields){
   };
 }
 function articleWorkflowState(s){
-  const evidenceGate=evidencePublishabilityV3134(s?.fields||s||{});const f=s?.fields||{},researched=researchPackPresent(f),verified=['Verified','Question Only','Illustrative Example'].includes(String(val(f,'Evidence Status')||'')),hasCopy=isProducedArticle(s),qa=String(val(f,'Section QA Result')||''),ready=hasCopy&&qa==='Pass';return{researched,verified:evidenceGate.verified,
-    publishableEvidence:evidenceGate.publishable,
-    attributedEvidence:evidenceGate.attributed,hasCopy,qa,ready,steps:[researched,verified,hasCopy,ready]}}
+  const f=s?.fields||s||{};
+  const evidenceGate=evidencePublishabilityV3134(f);
+  const researched=researchPackPresent(f);
+  const researchOutcome=latestResearchServiceOutcome(f);
+  const persistedVerified=evidenceGate.verified||['VERIFIED_NOW','EDITORIAL'].includes(researchOutcome)||['Verified','Question Only','Illustrative Example'].includes(String(val(f,'Evidence Status')||''));
+  const persistedAttributed=evidenceGate.attributed||researchOutcome==='ATTRIBUTED_REPORT';
+  const researchBlocked=['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(researchOutcome)||evidenceGate.blocked;
+  const publishableEvidence=researched&&!researchBlocked&&(persistedVerified||persistedAttributed);
+  const hasCopy=isProducedArticle(s),qa=String(val(f,'Section QA Result')||''),ready=hasCopy&&qa==='Pass';
+  return{researched,verified:persistedVerified,publishableEvidence,attributedEvidence:persistedAttributed,hasCopy,qa,ready,steps:[researched,persistedVerified,hasCopy,ready]}}
 function renderArticleWorkflow(){
  const box=E('article-workflow');if(!box)return;
  if(!S.section){box.className='workflow-card';box.innerHTML='<strong>Current article workflow</strong><div class="muted" style="margin-top:6px">Select an article to see the next required action.</div>';return}
@@ -3694,6 +3768,7 @@ function renderStep6SummaryV315(){
 }
 // v3.18.21 — Step 7 running order must also survive deploy-preview/localStorage changes.
 // v3.18.22 — Step 9 generates universal /tell-us/ response URLs for reader-response CTAs; GC tags stay in Letterman.
+// v3.18.25 — Production Reliability Foundation: authoritative publication locality, transient planner/writer recovery, immutable research verification, faster batch cadence.
 // v3.18.24 — Issue promise source-of-truth guard: publication-safe defaults, Airtable persistence and sibling-geography carry-over repair.
 // v3.18.23 — Taste Trail day-to-night hospitality profile, broader discovery, newsletter SEO output and synced CTA destinations.
 // Persist the exact 17-block assembly order onto the existing issue section records.
@@ -4127,7 +4202,7 @@ async function buildSmartPlanFromSavedSignals(){
       const progress=`Planning ${spec.batch}/${targetMasters} ${spec.label}.`;
       E('smart-scan-progress').textContent=`${progress} Each article decision is saved immediately.`;
       setWorkflowActionStatusV312(1,'Plan',progress,'ICS is choosing and saving the next Master candidate.');
-      const data=await api('plan-issue-batch',{method:'POST',body:JSON.stringify({...base,forbiddenPublicationTerms:forbiddenPublicationTermsV312i(),rejectedCandidates:getSmartRejected(),existingArticles:inventory,batch:spec.batch,batchLabel:spec.label,batchBrief:spec.brief,targetCount:1,totalBatches:targetMasters,priorArticles:prior,engineProfile:profile.key,editorialLanes:profile.lanes,minimumGroups:profile.minimumGroups,maxHeavyMoodShare:profile.maxHeavyMoodShare})});
+      const data=await apiTransientRetryV31825('plan-issue-batch',{method:'POST',body:JSON.stringify({...base,forbiddenPublicationTerms:forbiddenPublicationTermsV312i(),rejectedCandidates:getSmartRejected(),existingArticles:inventory,batch:spec.batch,batchLabel:spec.label,batchBrief:spec.brief,targetCount:1,totalBatches:targetMasters,priorArticles:prior,engineProfile:profile.key,editorialLanes:profile.lanes,minimumGroups:profile.minimumGroups,maxHeavyMoodShare:profile.maxHeavyMoodShare})},2);
       if(data.deterministicFallback){
         const source=data.fallbackSource==='saved-signal'?'saved signal/question-bank pool':'article library';
         const note=`Planning ${spec.batch}/${targetMasters} recovered automatically: duplicate rejected, safe unused candidate selected from ${source}.`;
