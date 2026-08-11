@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.20<br><strong>Persistent QA Completion Gate</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-11 · cumulative v3.18.20</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.21<br><strong>Persisted Assembly + QA Completion</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-11 · cumulative v3.18.21</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -803,7 +803,7 @@ function renderIssues(){const f=E('issue-filter').value;E('issue-table').innerHT
 function editIssue(id){const i=S.issues.find(x=>x.id===id);if(!i)return;E('edit-issue-id').value=id;E('edit-number').value=val(i.fields,'Issue Number')||'';E('edit-date').value=val(i.fields,'Send Date')||'';E('edit-status').value=val(i.fields,'Issue Status')||'PLANNED';E('edit-theme').value=val(i.fields,'Main Theme')||'';E('edit-issue-dialog').showModal()}
 async function saveEditedIssue(ev){ev.preventDefault();const id=E('edit-issue-id').value;const issue=S.issues.find(x=>x.id===id);if(!issue)return;const no=String(E('edit-number').value||'').trim();const pub=(issue.fields.Publication||[])[0]||'';if(no&&E('edit-status').value!=='ARCHIVED'){const clash=S.issues.find(x=>x.id!==id&&String(val(x.fields,'Issue Status')||'').toUpperCase()!=='ARCHIVED'&&(x.fields.Publication||[])[0]===pub&&String(val(x.fields,'Issue Number')||'').trim()===no);if(clash&&!confirm(`Another ${pubName(issue.fields.Publication)} issue already uses #${no}. Save anyway?`))return}const fields={'Issue Number':no?Number(no):undefined,'Send Date':E('edit-date').value,'Issue Status':E('edit-status').value,'Main Theme':E('edit-theme').value};const btn=E('save-edited-issue');btn.disabled=true;const old=btn.textContent;btn.textContent='Saving…';try{const d=await api('issues',{method:'PATCH',body:JSON.stringify({id,fields})});S.issues=S.issues.map(x=>x.id===id?d.record:x);if(S.issue?.id===id)S.issue=d.record;E('edit-issue-dialog').close();render();if(S.issue?.id===id){E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;if(E('ih-date'))E('ih-date').value=val(S.issue.fields,'Send Date')||''}}catch(e){alert(e.message)}finally{btn.disabled=false;btn.textContent=old}}
 async function loadAll(){try{conn(false,'Connecting…');const [p,i,h]=await Promise.all([api('publications'),api('issues'),fetch('/app/hot-buttons.json').then(r=>r.json())]);S.publications=p.records;S.issues=i.records;S.hot=h;conn(true,`Connected · ${p.count} publications · ${i.count} issues`);render()}catch(e){conn(false,e.message);alert(e.message)}}
-async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);await Promise.all([loadSections(),loadArticleLibrary()]);show('assemble');renderAssembly()}
+async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);await Promise.all([loadSections(),loadArticleLibrary()]);restorePersistedAssemblyV31821();show('assemble');renderAssembly()}
 function sectionOrderValue(s){const n=Number(val(s.fields,'Section Order'));return Number.isFinite(n)?n:999999}
 function sortSections(){S.sections=[...S.sections].sort((a,b)=>sectionOrderValue(a)-sectionOrderValue(b)||(a.createdTime||'').localeCompare(b.createdTime||''))}
 function sectionOrderDiagnostic(){
@@ -4106,6 +4106,57 @@ function renderStep6SummaryV315(){
   <div style="margin-top:8px"><strong>${items.length}/${t.supportNeeded}</strong> built · <strong>${ready}</strong> ready</div>
   <div class="muted" style="margin-top:6px">ICS should create the missing support automatically. Manual component controls are Advanced only.</div>`;
 }
+// v3.18.21 — Step 7 running order must also survive deploy-preview/localStorage changes.
+// Persist the exact 17-block assembly order onto the existing issue section records.
+const ASSEMBLY_MARKER_RE_V31821=/^ISSUE ASSEMBLY — Final Running Order (\d{2})\.\s*$/mi;
+function assemblyOrderFromNotesV31821(notes){
+  const m=String(notes||'').match(ASSEMBLY_MARKER_RE_V31821);return m?Number(m[1]):0;
+}
+function stripAssemblyMarkerV31821(notes){
+  return String(notes||'').replace(/^ISSUE ASSEMBLY — Final Running Order \d{2}\.\s*\n?/gmi,'').trim();
+}
+function persistedAssemblyItemsV31821(){
+  const rows=(S.sections||[]).map(s=>({s,order:assemblyOrderFromNotesV31821(val(s.fields||{},'Notes'))})).filter(x=>x.order>0).sort((a,b)=>a.order-b.order);
+  return rows.map(({s})=>isPersistentSupportSectionV3153(s)?supportRecordToCanvasV3153(s):makeArticleBlock(s));
+}
+function persistedAssemblyCompleteV31821(){
+  const profile=engineProfileForPublication(), selected=getMasterSelectionV312(), plan=getSmartPlan();
+  const rows=(S.sections||[]).map(s=>({s,order:assemblyOrderFromNotesV31821(val(s.fields||{},'Notes'))})).filter(x=>x.order>0).sort((a,b)=>a.order-b.order);
+  if(!rows.length)return false;
+  const min=Number(profile.targetSections?.[0]||0),max=Number(profile.targetSections?.[1]||999),supportNeed=supportTargetV315().supportNeeded;
+  if(rows.length<min||rows.length>max)return false;
+  const masters=rows.filter(x=>!isPersistentSupportSectionV3153(x.s));
+  const supports=rows.filter(x=>isPersistentSupportSectionV3153(x.s));
+  if(masters.length!==selected.length||supports.length<supportNeed)return false;
+  const selectedOrders=new Set(selected.map(Number));
+  const wantedIds=new Set((plan?.articles||[]).filter(a=>selectedOrders.has(Number(a.order))).map(a=>planArticleRecordV312(a)?.id).filter(Boolean));
+  const gotIds=new Set(masters.map(x=>x.s.id));
+  return wantedIds.size===selected.length && [...wantedIds].every(id=>gotIds.has(id));
+}
+async function persistAssemblyV31821(items){
+  if(!S.issue?.id)throw new Error('Open an issue first.');
+  const desired=new Map(items.map((b,i)=>[String(b.refId||''),i+1]));
+  if(desired.size!==items.length||[...desired.keys()].some(k=>!k))throw new Error('Running order contains a block without a persistent section record.');
+  await refreshPersistentSupportV3153();
+  const changes=[];
+  for(const sec of S.sections||[]){
+    const old=String(val(sec.fields||{},'Notes')||''), clean=stripAssemblyMarkerV31821(old), ord=desired.get(String(sec.id));
+    const next=ord?`ISSUE ASSEMBLY — Final Running Order ${String(ord).padStart(2,'0')}.\n${clean}`.trim():clean;
+    if(next!==old.trim())changes.push({sec,next});
+  }
+  for(const {sec,next} of changes){
+    const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next}})});
+    const i=S.sections.findIndex(x=>x.id===sec.id);if(i>=0)S.sections[i]=d.record;
+  }
+  if(!persistedAssemblyCompleteV31821())throw new Error('Running order was generated but its persisted assembly markers did not verify.');
+  return changes.length;
+}
+function restorePersistedAssemblyV31821(){
+  const local=getCanvas();if(local.length)return local;
+  const persisted=persistedAssemblyItemsV31821();
+  if(persisted.length){localStorage.setItem(assemblyKey(),JSON.stringify(persisted));return persisted.map(normaliseCanvasBlock)}
+  return [];
+}
 // v3.18.20 — Final QA completion must survive browser refreshes and new deploys.
 // A zero-hard-fix QA run persists the issue lifecycle as QA in Airtable. Step 9 can
 // therefore trust the issue record even when the browser-local report is unavailable.
@@ -4180,21 +4231,25 @@ function updateWorkflowShellV312(forcedStep){
  // nine-step progress bar truthful after refresh and when Step 9 is opened directly.
  const expectedSectionsV31819=Number(profile.targetSections?.[0]||0);
  const maxSectionsV31819=Number(profile.targetSections?.[1]||999);
- const canvasArticlesV31819=canvas.filter(b=>b.kind==='article');
- const canvasSupportsV31819=canvas.filter(b=>b.kind!=='article');
+ const persistedAssemblyOkV31821=persistedAssemblyCompleteV31821();
+ const stateCanvasV31821=canvas.length?canvas:persistedAssemblyItemsV31821();
+ const canvasArticlesV31819=stateCanvasV31821.filter(b=>b.kind==='article');
+ const canvasSupportsV31819=stateCanvasV31821.filter(b=>b.kind!=='article');
  const selectedOrdersV31819=new Set(selected.map(Number));
  const selectedTitlesV31819=new Set((plan?.articles||[]).filter(a=>selectedOrdersV31819.has(Number(a.order))).map(a=>String(a.title||'').trim().toLowerCase()).filter(Boolean));
  const canvasTitlesV31819=new Set(canvasArticlesV31819.map(b=>String(b.title||'').trim().toLowerCase()).filter(Boolean));
  const selectedMastersPresentV31819=selectedTitlesV31819.size===selected.length&&[...selectedTitlesV31819].every(t=>canvasTitlesV31819.has(t));
- const assemblyCompleteV31819=selectionReady
-   && canvas.length>=expectedSectionsV31819 && canvas.length<=maxSectionsV31819
+ const browserAssemblyOkV31821=selectionReady
+   && stateCanvasV31821.length>=expectedSectionsV31819 && stateCanvasV31821.length<=maxSectionsV31819
    && canvasArticlesV31819.length===selected.length
    && canvasSupportsV31819.length>=targetV315.supportNeeded
    && selectedMastersPresentV31819;
+ const assemblyCompleteV31819=persistedAssemblyOkV31821||browserAssemblyOkV31821;
  if(assemblyCompleteV31819)auto=8;
 
- let qaCompleteV31819=false;
- if(assemblyCompleteV31819)qaCompleteV31819=finalQAPassedV31820();
+ // QA is persisted independently. If the issue lifecycle says QA passed, Step 8 is complete
+ // even when this deploy preview has no browser-local QA report/canvas.
+ const qaCompleteV31819=assemblyCompleteV31819&&finalQAPassedV31820();
  if(qaCompleteV31819)auto=9;
 
  workflowSelectedStepV312=forcedStep||auto;
@@ -4646,6 +4701,13 @@ async function smartAssembleIssue(){
 
   const items=buildSmartCanvas(chosen,persistedSupport.slice(0,requiredSupport));
   localStorage.setItem(assemblyKey(),JSON.stringify(items));
+  try{
+    await persistAssemblyV31821(items);
+  }catch(error){
+    clearRunningOrderV3164();
+    setStep7StatusV3164('Step 7 failed persistence check.',String(error?.message||error));
+    return;
+  }
   // A rebuilt running order invalidates any previously persisted QA pass.
   if(persistedQAPassedV31820()){
     try{

@@ -302,7 +302,7 @@ function renderIssues(){const f=E('issue-filter').value;E('issue-table').innerHT
 function editIssue(id){const i=S.issues.find(x=>x.id===id);if(!i)return;E('edit-issue-id').value=id;E('edit-number').value=val(i.fields,'Issue Number')||'';E('edit-date').value=val(i.fields,'Send Date')||'';E('edit-status').value=val(i.fields,'Issue Status')||'PLANNED';E('edit-theme').value=val(i.fields,'Main Theme')||'';E('edit-issue-dialog').showModal()}
 async function saveEditedIssue(ev){ev.preventDefault();const id=E('edit-issue-id').value;const issue=S.issues.find(x=>x.id===id);if(!issue)return;const no=String(E('edit-number').value||'').trim();const pub=(issue.fields.Publication||[])[0]||'';if(no&&E('edit-status').value!=='ARCHIVED'){const clash=S.issues.find(x=>x.id!==id&&String(val(x.fields,'Issue Status')||'').toUpperCase()!=='ARCHIVED'&&(x.fields.Publication||[])[0]===pub&&String(val(x.fields,'Issue Number')||'').trim()===no);if(clash&&!confirm(`Another ${pubName(issue.fields.Publication)} issue already uses #${no}. Save anyway?`))return}const fields={'Issue Number':no?Number(no):undefined,'Send Date':E('edit-date').value,'Issue Status':E('edit-status').value,'Main Theme':E('edit-theme').value};const btn=E('save-edited-issue');btn.disabled=true;const old=btn.textContent;btn.textContent='Saving…';try{const d=await api('issues',{method:'PATCH',body:JSON.stringify({id,fields})});S.issues=S.issues.map(x=>x.id===id?d.record:x);if(S.issue?.id===id)S.issue=d.record;E('edit-issue-dialog').close();render();if(S.issue?.id===id){E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;if(E('ih-date'))E('ih-date').value=val(S.issue.fields,'Send Date')||''}}catch(e){alert(e.message)}finally{btn.disabled=false;btn.textContent=old}}
 async function loadAll(){try{conn(false,'Connecting…');const [p,i,h]=await Promise.all([api('publications'),api('issues'),fetch('/app/hot-buttons.json').then(r=>r.json())]);S.publications=p.records;S.issues=i.records;S.hot=h;conn(true,`Connected · ${p.count} publications · ${i.count} issues`);render()}catch(e){conn(false,e.message);alert(e.message)}}
-async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);await Promise.all([loadSections(),loadArticleLibrary()]);show('assemble');renderAssembly()}
+async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);await Promise.all([loadSections(),loadArticleLibrary()]);restorePersistedAssemblyV31821();show('assemble');renderAssembly()}
 function sectionOrderValue(s){const n=Number(val(s.fields,'Section Order'));return Number.isFinite(n)?n:999999}
 function sortSections(){S.sections=[...S.sections].sort((a,b)=>sectionOrderValue(a)-sectionOrderValue(b)||(a.createdTime||'').localeCompare(b.createdTime||''))}
 function sectionOrderDiagnostic(){
@@ -3605,6 +3605,84 @@ function renderStep6SummaryV315(){
   <div style="margin-top:8px"><strong>${items.length}/${t.supportNeeded}</strong> built · <strong>${ready}</strong> ready</div>
   <div class="muted" style="margin-top:6px">ICS should create the missing support automatically. Manual component controls are Advanced only.</div>`;
 }
+// v3.18.21 — Step 7 running order must also survive deploy-preview/localStorage changes.
+// Persist the exact 17-block assembly order onto the existing issue section records.
+const ASSEMBLY_MARKER_RE_V31821=/^ISSUE ASSEMBLY — Final Running Order (\d{2})\.\s*$/mi;
+function assemblyOrderFromNotesV31821(notes){
+  const m=String(notes||'').match(ASSEMBLY_MARKER_RE_V31821);return m?Number(m[1]):0;
+}
+function stripAssemblyMarkerV31821(notes){
+  return String(notes||'').replace(/^ISSUE ASSEMBLY — Final Running Order \d{2}\.\s*\n?/gmi,'').trim();
+}
+function persistedAssemblyItemsV31821(){
+  const rows=(S.sections||[]).map(s=>({s,order:assemblyOrderFromNotesV31821(val(s.fields||{},'Notes'))})).filter(x=>x.order>0).sort((a,b)=>a.order-b.order);
+  return rows.map(({s})=>isPersistentSupportSectionV3153(s)?supportRecordToCanvasV3153(s):makeArticleBlock(s));
+}
+function persistedAssemblyCompleteV31821(){
+  const profile=engineProfileForPublication(), selected=getMasterSelectionV312(), plan=getSmartPlan();
+  const rows=(S.sections||[]).map(s=>({s,order:assemblyOrderFromNotesV31821(val(s.fields||{},'Notes'))})).filter(x=>x.order>0).sort((a,b)=>a.order-b.order);
+  if(!rows.length)return false;
+  const min=Number(profile.targetSections?.[0]||0),max=Number(profile.targetSections?.[1]||999),supportNeed=supportTargetV315().supportNeeded;
+  if(rows.length<min||rows.length>max)return false;
+  const masters=rows.filter(x=>!isPersistentSupportSectionV3153(x.s));
+  const supports=rows.filter(x=>isPersistentSupportSectionV3153(x.s));
+  if(masters.length!==selected.length||supports.length<supportNeed)return false;
+  const selectedOrders=new Set(selected.map(Number));
+  const wantedIds=new Set((plan?.articles||[]).filter(a=>selectedOrders.has(Number(a.order))).map(a=>planArticleRecordV312(a)?.id).filter(Boolean));
+  const gotIds=new Set(masters.map(x=>x.s.id));
+  return wantedIds.size===selected.length && [...wantedIds].every(id=>gotIds.has(id));
+}
+async function persistAssemblyV31821(items){
+  if(!S.issue?.id)throw new Error('Open an issue first.');
+  const desired=new Map(items.map((b,i)=>[String(b.refId||''),i+1]));
+  if(desired.size!==items.length||[...desired.keys()].some(k=>!k))throw new Error('Running order contains a block without a persistent section record.');
+  await refreshPersistentSupportV3153();
+  const changes=[];
+  for(const sec of S.sections||[]){
+    const old=String(val(sec.fields||{},'Notes')||''), clean=stripAssemblyMarkerV31821(old), ord=desired.get(String(sec.id));
+    const next=ord?`ISSUE ASSEMBLY — Final Running Order ${String(ord).padStart(2,'0')}.\n${clean}`.trim():clean;
+    if(next!==old.trim())changes.push({sec,next});
+  }
+  for(const {sec,next} of changes){
+    const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next}})});
+    const i=S.sections.findIndex(x=>x.id===sec.id);if(i>=0)S.sections[i]=d.record;
+  }
+  if(!persistedAssemblyCompleteV31821())throw new Error('Running order was generated but its persisted assembly markers did not verify.');
+  return changes.length;
+}
+function restorePersistedAssemblyV31821(){
+  const local=getCanvas();if(local.length)return local;
+  const persisted=persistedAssemblyItemsV31821();
+  if(persisted.length){localStorage.setItem(assemblyKey(),JSON.stringify(persisted));return persisted.map(normaliseCanvasBlock)}
+  return [];
+}
+// v3.18.20 — Final QA completion must survive browser refreshes and new deploys.
+// A zero-hard-fix QA run persists the issue lifecycle as QA in Airtable. Step 9 can
+// therefore trust the issue record even when the browser-local report is unavailable.
+function persistedQAPassedV31820(){
+  const status=String(val(S.issue?.fields||{},'Issue Status')||'').trim().toUpperCase();
+  return ['QA','READY FOR LETTERMAN','PUBLISHED','ARCHIVED'].includes(status);
+}
+function finalQAPassedV31820(){
+  try{
+    const q=JSON.parse(localStorage.getItem(qaKey())||'null');
+    if(q?.qaVersion==='3.17.3.7'&&q?.summary&&Number(q.summary.fix||0)===0)return true;
+  }catch{}
+  return persistedQAPassedV31820();
+}
+async function persistQALifecycleV31820(passed){
+  if(!S.issue?.id)return;
+  const current=String(val(S.issue.fields||{},'Issue Status')||'').trim().toUpperCase();
+  const target=passed?'QA':(['QA'].includes(current)?'BUILDING':current||'BUILDING');
+  if(current===target)return;
+  try{
+    const data=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Issue Status':target}})});
+    if(data?.record){S.issue=data.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);}
+  }catch(error){
+    console.warn('QA lifecycle persistence failed',error);
+    throw new Error(`Final QA completed, but its persisted issue status could not be saved: ${error?.message||error}`);
+  }
+}
 function workflowStepInfoV312(step){
  const sig=getSmartSignals(),plan=getSmartPlan(),locked=smartPlanLocked(plan),profile=engineProfileForPublication(),selected=getMasterSelectionV312(),canvas=getCanvas();
  const target=profile.defaultMasters||15,min=profile.targetMasters?.[0]||5,max=profile.targetMasters?.[1]||7;
@@ -3645,6 +3723,33 @@ function updateWorkflowShellV312(forcedStep){
  const supportCountV315=currentSupportComponentsV315().length;
  const supportReadyV315=currentSupportComponentsV315().filter(b=>String(b.status||b.productionStatus||'').toUpperCase()==='READY').length;
  if(selectionReady&&supportCountV315>=targetV315.supportNeeded&&supportReadyV315>=Math.min(targetV315.supportNeeded,supportCountV315))auto=7;
+
+ // v3.18.19 — derive Steps 7/8 completion from persisted issue state, not from the
+ // operator's current screen. A valid running order advances the workflow to QA; a
+ // fresh zero-hard-fix Final QA advances it to Production Ready. This keeps the
+ // nine-step progress bar truthful after refresh and when Step 9 is opened directly.
+ const expectedSectionsV31819=Number(profile.targetSections?.[0]||0);
+ const maxSectionsV31819=Number(profile.targetSections?.[1]||999);
+ const persistedAssemblyOkV31821=persistedAssemblyCompleteV31821();
+ const stateCanvasV31821=canvas.length?canvas:persistedAssemblyItemsV31821();
+ const canvasArticlesV31819=stateCanvasV31821.filter(b=>b.kind==='article');
+ const canvasSupportsV31819=stateCanvasV31821.filter(b=>b.kind!=='article');
+ const selectedOrdersV31819=new Set(selected.map(Number));
+ const selectedTitlesV31819=new Set((plan?.articles||[]).filter(a=>selectedOrdersV31819.has(Number(a.order))).map(a=>String(a.title||'').trim().toLowerCase()).filter(Boolean));
+ const canvasTitlesV31819=new Set(canvasArticlesV31819.map(b=>String(b.title||'').trim().toLowerCase()).filter(Boolean));
+ const selectedMastersPresentV31819=selectedTitlesV31819.size===selected.length&&[...selectedTitlesV31819].every(t=>canvasTitlesV31819.has(t));
+ const browserAssemblyOkV31821=selectionReady
+   && stateCanvasV31821.length>=expectedSectionsV31819 && stateCanvasV31821.length<=maxSectionsV31819
+   && canvasArticlesV31819.length===selected.length
+   && canvasSupportsV31819.length>=targetV315.supportNeeded
+   && selectedMastersPresentV31819;
+ const assemblyCompleteV31819=persistedAssemblyOkV31821||browserAssemblyOkV31821;
+ if(assemblyCompleteV31819)auto=8;
+
+ // QA is persisted independently. If the issue lifecycle says QA passed, Step 8 is complete
+ // even when this deploy preview has no browser-local QA report/canvas.
+ const qaCompleteV31819=assemblyCompleteV31819&&finalQAPassedV31820();
+ if(qaCompleteV31819)auto=9;
 
  workflowSelectedStepV312=forcedStep||auto;
  // v3.12d: one source of truth. The visible active step and the CSS-isolated
@@ -4095,6 +4200,21 @@ async function smartAssembleIssue(){
 
   const items=buildSmartCanvas(chosen,persistedSupport.slice(0,requiredSupport));
   localStorage.setItem(assemblyKey(),JSON.stringify(items));
+  try{
+    await persistAssemblyV31821(items);
+  }catch(error){
+    clearRunningOrderV3164();
+    setStep7StatusV3164('Step 7 failed persistence check.',String(error?.message||error));
+    return;
+  }
+  // A rebuilt running order invalidates any previously persisted QA pass.
+  if(persistedQAPassedV31820()){
+    try{
+      const data=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Issue Status':'BUILDING'}})});
+      if(data?.record){S.issue=data.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);}
+    }catch(error){console.warn('Could not invalidate prior QA lifecycle after assembly rebuild',error);}
+  }
+  localStorage.removeItem(qaKey());
   canvasSelectedUid=items[0]?.uid||null;
   renderAssembly();
 
@@ -4749,6 +4869,7 @@ async function runFinalQA(){
     };
     const report={qaVersion:'3.17.3.7',createdAt:new Date().toISOString(),summary,findings};
     localStorage.setItem(qaKey(),JSON.stringify(report));
+    await persistQALifecycleV31820(summary.fix===0);
     showQAReport(report,true);
     setWorkflowActionStatusV312(8,'QA',`Final QA complete · ${summary.fix} Fix · ${summary.warning} Warning · ${summary.pass} Pass`,
       summary.fix?'Hard fixes remain. Use Fix QA Exceptions, then rerun Final QA.':'No hard QA fixes remain. Review warnings, then move to Step 9 Production Ready.');
@@ -5190,7 +5311,7 @@ function titleCaseCtaV3183(text){
     return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
   }).join(' ');
 }
-// v3.18.16 — production handoff integrity: semantic publishing metadata, article-link routing, real closing, reportable QA.
+// v3.18.18 — publishing metadata quality + actionable CTA handoff gate; builds on v3.18.16 integrity routing.
 function publicationBaseUrlV31816(publication){
   return String(publicationDefaultCtaDestinationV3182(publication)||'').replace(/\/+$/,'');
 }
@@ -5198,17 +5319,27 @@ function publicationAreaV31816(publication){
   const p=String(publication||'').trim();
   return p.replace(/\s+(Spotlight|Taste Trail|Pet Insider|Home Seller Insider)$/i,'').trim()||p;
 }
+function cleanHookFragmentV31818(text){
+  let t=String(text||'').replace(/\s+/g,' ').trim()
+    .replace(/[?!.:;,…]+$/g,'').trim()
+    .replace(/^(where|which|what|why|how|is|are|can|could|should|would|do|does|did)\s+/i,'');
+  // A second pass removes constructions such as “What Should …” after the first question word is stripped.
+  t=t.replace(/^(should|would|could|can|do|does|did)\s+/i,'');
+  const dangling=/\b(and|or|for|to|with|at|in|on|of|the|a|an|your|our|this|that|these|those|should|would|could)$/i;
+  while(dangling.test(t))t=t.replace(dangling,'').trim();
+  return t;
+}
 function publishingHookFromTitleV31816(title,publication){
   let t=String(title||'').replace(/^Peterborough Taste Trail:\s*/i,'').trim();
   const area=publicationAreaV31816(publication);
   if(area){const safeArea=area.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');t=t.replace(new RegExp("\\b"+safeArea+"(?:’s|'s)?\\b",'gi'),'').replace(/\s{2,}/g,' ').trim();}
   const rules=[
-    [/kids?.*(free|less)|eat free/i,'Kids Eat Free'],
+    [/(kids?|children).*(free|cheap|less|deal|summer)|eat free|cheap summer meal/i,'Kids’ Summer Deals'],
     [/pubs?.*(dinner|food)|dinner.*pub/i,'Pub Dinners'],
     [/alcohol[- ]?free|mocktail|0\.0/i,'Alcohol-Free Nights'],
     [/outdoor|outside|terrace|garden/i,'Outdoor Dining'],
     [/bottomless brunch/i,'Bottomless Brunch'],
-    [/taste test/i,'Next Taste Test'],
+    [/taste[- ]?test|test next/i,'Next Taste Test'],
     [/best[- ]?value|money go furthest|worth the money/i,'Best-Value Meals'],
     [/cafe|café|coffee/i,'Coffee Stops'],
     [/restaurant/i,'Restaurant Picks'],
@@ -5219,14 +5350,13 @@ function publishingHookFromTitleV31816(title,publication){
     [/dog|pet|vet/i,'Pets']
   ];
   for(const [rx,label] of rules)if(rx.test(t))return label;
-  t=t.replace(/^(where|which|what|why|how|is|are|can|should|would)\s+/i,'')
-     .replace(/[?!.]+$/,'').replace(/\s+[—–-]\s+.*$/,'').trim();
+  t=cleanHookFragmentV31818(t.replace(/\s+[—–-]\s+.*$/,'').trim());
   const words=t.split(/\s+/).filter(Boolean).slice(0,4);
-  return words.join(' ')||'Local Picks';
+  return cleanHookFragmentV31818(words.join(' '))||'Local Picks';
 }
 function productionPublishingMetaV31816(publication,theme,items){
   const area=publicationAreaV31816(publication);
-  const family=publicationProfileV31815(publication).family;
+  const family=engineProfileForPublication(publication).key;
   const articleItems=(items||[]).filter(b=>b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE');
   const labels=[];
   for(const b of articleItems){
@@ -5254,10 +5384,24 @@ function productionPublishingMetaV31816(publication,theme,items){
   return {subject,preheader,description};
 }
 function publishingMetaWeakV31816(kind,text,theme){
-  const t=String(text||'').trim(); if(!t)return true;
+  const t=String(text||'').replace(/\s+/g,' ').trim(); if(!t)return true;
   if(kind==='subject'&&(t.length>78||t===String(theme||'').trim()))return true;
   if(kind!=='subject'&&((t.match(/ · /g)||[]).length>=2||/…$/.test(t)))return true;
+  if(/\b(and|or|for|to|with|at|in|on|of|the|a|an|your|our|this|that|these|those|should|would|could)[…?.!]*$/i.test(t))return true;
+  if(/\b(cheap summer meals for|should taste[- ]?test next)\b/i.test(t))return true;
   return false;
+}
+function unresolvedInteractiveCtasV31818(items,publication){
+  const out=[];
+  for(const b of (items||[])){
+    if(!(b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE'))continue;
+    const record=(S.sections||[]).find(x=>x.id===b.refId),f=record?.fields||{};
+    const actionText=titleCaseCtaV3183(String(b.button||b.cta||val(f,'CTA Text')||'').trim());
+    if(!actionText||!articleActionNeedsDestinationV31816(actionText))continue;
+    const actionDest=explicitActionDestinationV31816(b,f,publication);
+    if(!actionDest)out.push({title:String(b.title||'Master Article').trim(),cta:actionText});
+  }
+  return out;
 }
 function articlePublishedUrlV31816(publication,slug){
   const base=publicationBaseUrlV31816(publication),s=String(slug||'').replace(/^\/+|\/+$/g,'').trim();
@@ -5390,9 +5534,12 @@ function assemblyDraft(){
   if(!sendDate)mandatoryMissing.push('send date');
   const articleRouteMissing=items.filter(b=>b.kind==='article').filter(b=>!articlePublishedUrlV31816(publication,articlePublishingMetaV3182(b)?.slug));
   if(articleRouteMissing.length)mandatoryMissing.push(`${articleRouteMissing.length} article link destination(s)`);
+  const unresolvedCtas=unresolvedInteractiveCtasV31818(items,publication);
+  if(unresolvedCtas.length)mandatoryMissing.push(`${unresolvedCtas.length} interactive article CTA destination(s)`);
   if(notReady.length||mandatoryMissing.length){
     if(notReady.length)out+=`\nBLOCKED: ${notReady.length}\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+(x.status||'NOT READY')).join('\n')}`;
     if(mandatoryMissing.length)out+=`\nMISSING / WEAK PUBLISHING FIELDS: ${mandatoryMissing.join(', ')}`;
+    if(typeof unresolvedCtas!=='undefined'&&unresolvedCtas.length)out+=`\nCTA DESTINATIONS REQUIRED:\n${unresolvedCtas.map(x=>`- ${x.title}: ${x.cta}`).join('\n')}`;
     out+=`\nNOT READY FOR PUBLISHING HANDOFF`;
   }else out+=`\nQA GATE: PASSED — 0 HARD FIXES\nHANDOFF INTEGRITY: PASSED\nREADY FOR PUBLISHING HANDOFF`;
   return out;
@@ -5440,9 +5587,25 @@ function masterAssetsPackageV3181(){
   out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nASSET STATUS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${articles.length} selected Master Articles\n${missing.length?`METADATA REVIEW REQUIRED — ${missing.length} article(s) have missing fields:\n- ${missing.join('\n- ')}`:'LETTERMAN METADATA READY — all required article asset fields present'}\n\nIMAGE NOTE\nFeatured-image briefs and alt text are included here. Actual image-file generation is not yet part of this Step 9 package.`;
   return out;
 }
+function step9SafeRunV31817(kind){
+  try{
+    if(kind==='assets'){
+      if(!finalQAPassedV31820()){alert('Article & Social Assets are locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');return}
+      const text=masterAssetsPackageV3181();
+      E('article-package-text').value=text;
+      E('article-dialog').showModal();
+      return;
+    }
+    if(!finalQAPassedV31820()){alert('Production Package is locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');return}
+    E('preview-text').value=assemblyDraft();
+    E('preview-dialog').showModal();
+  }catch(err){
+    console.error('Step 9 output error',err);
+    alert('Step 9 could not generate the '+(kind==='assets'?'Article & Social Assets':'Production Package')+': '+(err?.message||err));
+  }
+}
 function generateMasterAssetsV3181(){
-  let qa=null;try{qa=JSON.parse(localStorage.getItem(qaKey())||'null')}catch{}
-  if(!qa||Number(qa?.summary?.fix)!==0){
+  if(!finalQAPassedV31820()){
     alert('Article & Social Assets are locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');
     return;
   }
@@ -5451,8 +5614,7 @@ function generateMasterAssetsV3181(){
   E('article-dialog').showModal();
 }
 function generateAssembly(){
-  let qa=null;try{qa=JSON.parse(localStorage.getItem(qaKey())||'null')}catch{}
-  if(!qa||Number(qa?.summary?.fix)!==0){
+  if(!finalQAPassedV31820()){
     alert('Production Package is locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');
     return;
   }
@@ -5617,8 +5779,8 @@ if(E('master-selection-save-v312'))E('master-selection-save-v312').onclick=()=>{
   setWorkflowActionStatusV312(5,'Select',`${n} Masters selected for this issue.`,`Selection saved. Unselected READY candidates remain bankable. Next: click Step 6 — Components.`);
 };
 if(E('toggle-canvas-library'))E('toggle-canvas-library').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('library-open-v312c');E('toggle-canvas-library').textContent=l.classList.contains('library-open-v312c')?'Hide Content Library':'Show Content Library'}else{l.classList.toggle('library-hidden');E('toggle-canvas-library').textContent=l.classList.contains('library-hidden')?'Show Content Library':'Hide Content Library'}};
-if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('inspector-open-v312c');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-open-v312c')?'Hide Selected Section':'Show Selected Section'}else{l.classList.toggle('inspector-hidden');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-hidden')?'Show Selected Section':'Hide Selected Section'}};if(E('pr-generate-v312c'))E('pr-generate-v312c').onclick=generateAssembly;
-if(E('pr-copy-v312c'))E('pr-copy-v312c').onclick=generateAssembly;
+if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('inspector-open-v312c');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-open-v312c')?'Hide Selected Section':'Show Selected Section'}else{l.classList.toggle('inspector-hidden');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-hidden')?'Show Selected Section':'Hide Selected Section'}};if(E('pr-generate-v312c'))E('pr-generate-v312c').onclick=()=>step9SafeRunV31817('package');
+if(E('pr-copy-v312c'))E('pr-copy-v312c').onclick=()=>step9SafeRunV31817('package');
 
 
 async function repairLockedResearchQueueV3189(){
@@ -5690,4 +5852,4 @@ async function rerunSelectedResearchV3188(){
     alert('Selected re-research did not complete cleanly: '+String(e.message||e));
   }finally{if(b){b.disabled=false;b.textContent=old}}
 }
-E('create-workspace-report-v3186').onclick=createWorkspaceReportV3186;E('repair-research-queue-v3189').onclick=runRepairLockedResearchQueueV3189;E('rerun-selected-research-v3188').onclick=rerunSelectedResearchV3188;E('copy-workspace-report-v3186').onclick=copyWorkspaceReportV3186;E('download-workspace-report-v3186').onclick=downloadWorkspaceReportV3186;E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('add-publication').onclick=()=>{E('pub-area').value='';E('pub-family').value='Taste Trail';E('pub-name').value='';E('pub-name').dataset.auto='1';E('pub-code').value='';E('pub-code').dataset.auto='1';E('pub-status').value='Active';syncPublicationSetupV3184(true);E('publication-dialog').showModal()};E('pub-area').oninput=()=>syncPublicationSetupV3184();E('pub-family').onchange=()=>syncPublicationSetupV3184();E('pub-name').oninput=()=>{E('pub-name').dataset.auto='0';if(E('pub-code').dataset.auto==='1'){E('pub-code').value=publicationCodeFromNameV3184(E('pub-name').value)}};E('pub-code').oninput=()=>{E('pub-code').dataset.auto='0'};E('create-publication').onclick=createPublicationV3184;E('new-issue').onclick=()=>{E('new-date').value='';E('issue-dialog').showModal()};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>researchAllApprovedMastersV3131();E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('pr-assets-v3181').onclick=generateMasterAssetsV3181;E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
+E('create-workspace-report-v3186').onclick=createWorkspaceReportV3186;E('repair-research-queue-v3189').onclick=runRepairLockedResearchQueueV3189;E('rerun-selected-research-v3188').onclick=rerunSelectedResearchV3188;E('copy-workspace-report-v3186').onclick=copyWorkspaceReportV3186;E('download-workspace-report-v3186').onclick=downloadWorkspaceReportV3186;E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('add-publication').onclick=()=>{E('pub-area').value='';E('pub-family').value='Taste Trail';E('pub-name').value='';E('pub-name').dataset.auto='1';E('pub-code').value='';E('pub-code').dataset.auto='1';E('pub-status').value='Active';syncPublicationSetupV3184(true);E('publication-dialog').showModal()};E('pub-area').oninput=()=>syncPublicationSetupV3184();E('pub-family').onchange=()=>syncPublicationSetupV3184();E('pub-name').oninput=()=>{E('pub-name').dataset.auto='0';if(E('pub-code').dataset.auto==='1'){E('pub-code').value=publicationCodeFromNameV3184(E('pub-name').value)}};E('pub-code').oninput=()=>{E('pub-code').dataset.auto='0'};E('create-publication').onclick=createPublicationV3184;E('new-issue').onclick=()=>{E('new-date').value='';E('issue-dialog').showModal()};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>researchAllApprovedMastersV3131();E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('pr-assets-v3181').onclick=()=>step9SafeRunV31817('assets');E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
