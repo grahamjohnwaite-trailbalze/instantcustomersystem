@@ -319,7 +319,7 @@ body[data-workflow-step="6"] #step6-status-panel-v3151{display:block!important}
 
 body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.25<br><strong>Production Reliability Foundation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-11 · cumulative v3.18.25</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.18.26<br><strong>Publishability Gate Reset</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-11 · cumulative v3.18.26</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -884,42 +884,83 @@ function renderIssues(){const f=E('issue-filter').value;E('issue-table').innerHT
 function editIssue(id){const i=S.issues.find(x=>x.id===id);if(!i)return;E('edit-issue-id').value=id;E('edit-number').value=val(i.fields,'Issue Number')||'';E('edit-date').value=val(i.fields,'Send Date')||'';E('edit-status').value=val(i.fields,'Issue Status')||'PLANNED';E('edit-theme').value=val(i.fields,'Main Theme')||'';E('edit-issue-dialog').showModal()}
 async function saveEditedIssue(ev){ev.preventDefault();const id=E('edit-issue-id').value;const issue=S.issues.find(x=>x.id===id);if(!issue)return;const no=String(E('edit-number').value||'').trim();const pub=(issue.fields.Publication||[])[0]||'';if(no&&E('edit-status').value!=='ARCHIVED'){const clash=S.issues.find(x=>x.id!==id&&String(val(x.fields,'Issue Status')||'').toUpperCase()!=='ARCHIVED'&&(x.fields.Publication||[])[0]===pub&&String(val(x.fields,'Issue Number')||'').trim()===no);if(clash&&!confirm(`Another ${pubName(issue.fields.Publication)} issue already uses #${no}. Save anyway?`))return}const fields={'Issue Number':no?Number(no):undefined,'Send Date':E('edit-date').value,'Issue Status':E('edit-status').value,'Main Theme':E('edit-theme').value};const btn=E('save-edited-issue');btn.disabled=true;const old=btn.textContent;btn.textContent='Saving…';try{const d=await api('issues',{method:'PATCH',body:JSON.stringify({id,fields})});S.issues=S.issues.map(x=>x.id===id?d.record:x);if(S.issue?.id===id)S.issue=d.record;E('edit-issue-dialog').close();render();if(S.issue?.id===id){E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;if(E('ih-date'))E('ih-date').value=val(S.issue.fields,'Send Date')||''}}catch(e){alert(e.message)}finally{btn.disabled=false;btn.textContent=old}}
 async function loadAll(){try{conn(false,'Connecting…');const [p,i,h]=await Promise.all([api('publications'),api('issues'),fetch('/app/hot-buttons.json').then(r=>r.json())]);S.publications=p.records;S.issues=i.records;S.hot=h;conn(true,`Connected · ${p.count} publications · ${i.count} issues`);render()}catch(e){conn(false,e.message);alert(e.message)}}
-async function repairLegacyLocalityOnlyReviewsV31825(){
-  if(!S.issue)return 0;
+function catchmentTermsV31826(){
   const area=String(publicationAreaV31816(currentPublicationName())||'').trim();
-  if(!area)return 0;
-  let repaired=0;
-  const serviceRx=new RegExp('PRODUCTION SERVICE v(?:2\\.\\d+|3\\.\\d+\\.\\d+)[\\s\\S]*?(?=\\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|RESEARCH PACK|PRODUCTION SERVICE|MASTER ARTICLE FAILED|MASTER ARTICLE TRACE)|$)','g');
-  const packageRx=new RegExp('MASTER ARTICLE PACKAGE v1\\n([\\s\\S]*?)\\nEND MASTER ARTICLE PACKAGE','g');
+  const map={
+    Cambridge:['Cambridge','Cambridgeshire','Ely','St Ives','Coton','Huntingdon','Newmarket','Soham','Wisbech','March','Fenland','South Cambridgeshire','East Cambridgeshire'],
+    Cambridgeshire:['Cambridgeshire','Cambridge','Ely','St Ives','Coton','Huntingdon','Newmarket','Soham','Wisbech','March','Fenland','South Cambridgeshire','East Cambridgeshire'],
+    Peterborough:['Peterborough','Werrington','Orton','Hampton','Eye','Dogsthorpe','Whittlesey','Yaxley','Stanground'],
+    Norwich:['Norwich','Norfolk','Wymondham','Hethersett','Sprowston','Thorpe St Andrew'],
+    Norfolk:['Norfolk','Norwich','King’s Lynn','Kings Lynn','Cromer','Sheringham','Dereham','Fakenham','Wymondham']
+  };
+  return map[area]||[area];
+}
+function visibleLocalRootV31826(text=''){
+  const hay=String(text||'').toLowerCase();
+  return catchmentTermsV31826().filter(Boolean).some(x=>hay.includes(String(x).toLowerCase()));
+}
+function latestPackageMatchV31826(notes=''){
+  const all=[...String(notes||'').matchAll(/MASTER ARTICLE PACKAGE v1\n([\s\S]*?)\nEND MASTER ARTICLE PACKAGE/g)];
+  return all.length?all[all.length-1]:null;
+}
+function latestServiceMatchV31826(notes=''){
+  const all=[...String(notes||'').matchAll(/PRODUCTION SERVICE v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|RESEARCH PACK|PRODUCTION SERVICE|MASTER ARTICLE FAILED|MASTER ARTICLE TRACE)|$)/g)];
+  return all.length?all[all.length-1]:null;
+}
+function splitPublishabilityReasonsV31826(exception=''){
+  const m=String(exception||'').match(/Publishability gate failed:\s*([\s\S]*)/i);
+  if(!m)return [];
+  return m[1].split(/;\s*/).map(x=>x.trim()).filter(Boolean);
+}
+function falsePositiveReasonV31826(reason,sec,pack){
+  const body=[String(val(sec.fields||{},'Section Final Copy')||''),String(pack?.article_title||''),String(pack?.article_subhead||''),String(pack?.newsletter_headline||'')].join(' ');
+  if(/Finished copy (?:is not visibly rooted|has no credible local root)/i.test(reason))return visibleLocalRootV31826(body);
+  if(/Discovery\/list article does not contain enough named examples/i.test(reason)){
+    const title=String(val(sec.fields||{},'Section Title')||pack?.article_title||'');
+    const q=String(val(sec.fields||{},'Core Reader Question')||'');
+    const tq=`${title} ${q}`;
+    const trueRoundup=/\b(?:which|best|top|five|six|seven|eight|nine|ten|\d+)\b.*\b(?:places|restaurants|pubs|cafes|cafés|bars|takeaways|venues|options|spots)\b|\b(?:restaurants|pubs|cafes|cafés|bars|takeaways|venues|options|spots)\b.*\b(?:which|best|top|worth|recommend)/i.test(tq);
+    return !trueRoundup;
+  }
+  return false;
+}
+async function repairLegacyPublishabilityReviewsV31826(){
+  if(!S.issue)return {repaired:0,remaining:0};
+  let repaired=0,remaining=0;
   for(const sec of S.sections||[]){
     const f=sec.fields||{};
     if(String(val(f,'Section QA Result')||'')!=='Fix Required'||!isProducedArticle(sec))continue;
-    const body=String(val(f,'Section Final Copy')||'');
-    if(!body.toLowerCase().includes(area.toLowerCase()))continue;
     const notes=String(val(f,'Notes')||'');
-    const service=[...notes.matchAll(serviceRx)].map(m=>m[0]).pop()||'';
+    const serviceMatch=latestServiceMatchV31826(notes);
+    const service=serviceMatch?.[0]||'';
     const exception=String((service.match(/^Exception:\s*(.+)$/mi)||[])[1]||'').trim();
-    if(!/^Publishability gate failed:\s*Finished copy is not visibly rooted in [^.]+\.?$/i.test(exception))continue;
-    const packMatch=[...notes.matchAll(packageRx)].pop();
+    const reasons=splitPublishabilityReasonsV31826(exception);
+    if(!reasons.length){remaining++;continue}
+    const packMatch=latestPackageMatchV31826(notes);
+    let pack=null;try{pack=packMatch?JSON.parse(packMatch[1]):null}catch{}
+    const unresolved=reasons.filter(r=>!falsePositiveReasonV31826(r,sec,pack));
+    if(unresolved.length){remaining++;continue}
     let nextNotes=notes;
-    if(packMatch){
-      try{
-        const pack=JSON.parse(packMatch[1]);
-        pack.editorial_readiness={...(pack.editorial_readiness||{}),status:'READY',grade:pack.editorial_readiness?.grade||'B',rationale:[String(pack.editorial_readiness?.rationale||'').replace(/^REWORK\s*[—-]\s*/i,'').trim(),`v3.18.25 locality recheck: finished copy is visibly rooted in ${area}.`].filter(Boolean).join(' '),suggested_edits:[]};
-        const replacement=`MASTER ARTICLE PACKAGE v1\n${JSON.stringify(pack,null,2)}\nEND MASTER ARTICLE PACKAGE`;
-        nextNotes=nextNotes.replace(packMatch[0],replacement);
-      }catch(e){console.warn('Could not update legacy package readiness',sec.id,e)}
+    if(packMatch&&pack){
+      pack.qa_result='Pass';
+      pack.exception='';
+      pack.editorial_readiness={...(pack.editorial_readiness||{}),status:'READY',grade:pack.editorial_readiness?.grade||'B',rationale:[String(pack.editorial_readiness?.rationale||'').replace(/^REWORK\s*[—-]\s*/i,'').trim(),`v3.18.26 deterministic publishability recheck passed for ${publicationAreaV31816(currentPublicationName())}.`].filter(Boolean).join(' '),suggested_edits:[]};
+      nextNotes=nextNotes.replace(packMatch[0],`MASTER ARTICLE PACKAGE v1\n${JSON.stringify(pack,null,2)}\nEND MASTER ARTICLE PACKAGE`);
     }
-    nextNotes=nextNotes.replace(/(PRODUCTION SERVICE v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?Exception:)\s*Publishability gate failed:\s*Finished copy is not visibly rooted in [^.]+\.?/g,'$1 None');
+    if(serviceMatch){
+      const cleanService=service.replace(/^Exception:\s*.+$/mi,'Exception: None').replace(/^Outcome:\s*.+$/mi,m=>m);
+      nextNotes=nextNotes.replace(serviceMatch[0],cleanService);
+    }
     try{
-      const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{'Section QA Result':'Pass','Section Status':'Ready','Evidence Status':String(val(f,'Evidence Status')||'').includes('Reported')?'Reported — Attribution Required':'Verified','Notes':nextNotes}})});
+      const ev=String(val(f,'Evidence Status')||'');
+      const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{'Section QA Result':'Pass','Section Status':'Ready','Evidence Status':/Reported/i.test(ev)?'Reported — Attribution Required':'Verified','Notes':nextNotes}})});
       const idx=S.sections.findIndex(x=>x.id===sec.id);if(idx>=0)S.sections[idx]=d.record;repaired++;
-    }catch(e){console.warn('Legacy locality-only QA repair failed',sec.id,e)}
+    }catch(e){console.warn('v3.18.26 publishability repair failed',sec.id,e);remaining++}
   }
-  if(repaired)E('save-state').textContent=`v3.18.25 repaired ${repaired} legacy locality-only QA review${repaired===1?'':'s'} without rewriting or rerunning research.`;
-  return repaired;
+  if(repaired)E('save-state').textContent=`v3.18.26 repaired ${repaired} false publishability review${repaired===1?'':'s'} without rewriting or rerunning research.`;
+  return {repaired,remaining};
 }
-async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);await Promise.all([loadSections(),loadArticleLibrary()]);await ensureIssuePromiseSourceV31824();await repairLegacyLocalityOnlyReviewsV31825();restorePersistedAssemblyV31821();show('assemble');renderAssembly()}
+async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);await Promise.all([loadSections(),loadArticleLibrary()]);await ensureIssuePromiseSourceV31824();await repairLegacyPublishabilityReviewsV31826();restorePersistedAssemblyV31821();show('assemble');renderAssembly()}
 function sectionOrderValue(s){const n=Number(val(s.fields,'Section Order'));return Number.isFinite(n)?n:999999}
 function sortSections(){S.sections=[...S.sections].sort((a,b)=>sectionOrderValue(a)-sectionOrderValue(b)||(a.createdTime||'').localeCompare(b.createdTime||''))}
 function sectionOrderDiagnostic(){
@@ -4269,7 +4310,7 @@ function renderStep6SummaryV315(){
 }
 // v3.18.21 — Step 7 running order must also survive deploy-preview/localStorage changes.
 // v3.18.22 — Step 9 generates universal /tell-us/ response URLs for reader-response CTAs; GC tags stay in Letterman.
-// v3.18.25 — Production Reliability Foundation: authoritative publication locality, transient planner/writer recovery, immutable research verification, faster batch cadence.
+// v3.18.26 — Publishability Gate Reset: deterministic local proof, true round-up detection, legacy false-review repair; preserves successful research and writing.
 // v3.18.24 — Issue promise source-of-truth guard: publication-safe defaults, Airtable persistence and sibling-geography carry-over repair.
 // v3.18.23 — Taste Trail day-to-night hospitality profile, broader discovery, newsletter SEO output and synced CTA destinations.
 // Persist the exact 17-block assembly order onto the existing issue section records.

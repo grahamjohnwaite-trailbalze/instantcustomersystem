@@ -1,6 +1,6 @@
 {
   "name": "instantcustomersystem",
-  "version": "3.17.3-5",
+  "version": "3.18.26",
   "type": "module",
   "dependencies": {
     "@netlify/blobs": "^8.1.0"

@@ -7,7 +7,7 @@ const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=65000;
-const RELEASE_VERSION='3.8.3';
+const RELEASE_VERSION='3.8.4';
 const WRITER_PROMPT_VERSION='ARTICLE-BUILDER-SPOTLIGHT-v4';
 
 function publicationContext(fields={}){
@@ -61,12 +61,26 @@ function localityAnchors(fields={},ctx=publicationContext(fields)){
   return [...anchors];
 }
 
-function hasVisibleLocalRoot(fields={},body=''){
+function localProofAssessment(fields={},body=''){
   const ctx=publicationContext(fields);
-  if(!ctx.area||ctx.area==='the publication area')return true;
+  if(!ctx.area||ctx.area==='the publication area')return {pass:true,score:3,matched:['publication area'],anchors:[]};
   const hay=String(body||'').toLowerCase();
   const anchors=localityAnchors(fields,ctx);
-  return anchors.some(a=>a.length>=4&&hay.includes(a));
+  const matched=anchors.filter(a=>a.length>=4&&hay.includes(a));
+  let score=0;
+  const area=String(ctx.area||'').toLowerCase();
+  if(area&&hay.includes(area))score+=3;
+  // Cambridge/Cambridgeshire and Norwich/Norfolk are legitimate city/county coverage pairs.
+  if(/^cambridge$/i.test(ctx.area)&&hay.includes('cambridgeshire'))score=Math.max(score,2);
+  if(/^cambridgeshire$/i.test(ctx.area)&&hay.includes('cambridge'))score=Math.max(score,2);
+  if(/^norwich$/i.test(ctx.area)&&hay.includes('norfolk'))score=Math.max(score,2);
+  if(matched.length)score=Math.max(score,2);
+  // Named places/venues already approved in the brief are strong local proof even when the county word is absent.
+  if(matched.some(x=>x!==area&&x!=='cambridgeshire'&&x!=='cambridge'&&x!=='norfolk'))score=Math.max(score,3);
+  return {pass:score>=2,score,matched,anchors};
+}
+function hasVisibleLocalRoot(fields={},body=''){
+  return localProofAssessment(fields,body).pass;
 }
 function publicationArea(fields={}){return publicationContext(fields).area}
 
@@ -186,10 +200,17 @@ function writerPublishabilityGate(fields,result,research){
   if(/like-for-like evidence|unsafe to treat as fact|latest available evidence|established in the evidence|the fair test is|for now, the honest answer|in plain English/i.test(body+' '+String(result?.article_subhead||'')))reasons.push('Spotlight voice gate: research-room or defensive evidence language remains in reader-facing copy.');
   if(/RECOMMENDATION \/ DISCOVERY|LIST \/ ROUND-UP/.test(mode)){
     const title=String(value(fields,'Section Title')||'');
-    if(/which|best|five|six|seven|eight|nine|ten|worth|recommend|attraction|takeaway|restaurant|pub/i.test(title) && !/\b(The|At|In) [A-Z][A-Za-z'’&-]+|\b[A-Z][A-Za-z'’&-]+ (?:Arms|Inn|Hotel|Museum|Park|Centre|Center|Restaurant|Cafe|Café|Pub|Takeaway|Gardens|Hall|House|Theatre|Cinema)\b/.test(body))reasons.push('Discovery/list article does not contain enough named examples to answer the question.');
+    const question=String(value(fields,'Core Reader Question')||'');
+    const tq=`${title} ${question}`;
+    // Only true round-ups/comparisons need multiple named examples. A single-venue review such as
+    // “Is YORI BBQ Cambridge worth it?” must not fail merely because it focuses on one named venue.
+    const requiresMultiple=/\b(?:which|best|top|five|six|seven|eight|nine|ten|\d+)\b.*\b(?:places|restaurants|pubs|cafes|cafés|bars|takeaways|venues|options|spots)\b|\b(?:restaurants|pubs|cafes|cafés|bars|takeaways|venues|options|spots)\b.*\b(?:which|best|top|worth|recommend)/i.test(tq);
+    const namedCount=(body.match(/\b(?:The\s+)?[A-Z][A-Za-z'’&-]+(?:\s+[A-Z][A-Za-z'’&-]+){0,3}\b/g)||[]).filter(x=>x.length>=4).length;
+    if(requiresMultiple&&namedCount<2)reasons.push('Discovery/list article does not contain enough named examples to answer the question.');
   }
   const ctx=publicationContext(fields);
-  if(!hasVisibleLocalRoot(fields,body))reasons.push(`Finished copy is not visibly rooted in ${ctx.area} or an approved named local place/venue.`);
+  const local=localProofAssessment(fields,body);
+  if(!local.pass)reasons.push(`Finished copy has no credible local root for ${ctx.area} or an approved named local place/venue.`);
   const summary=String(result?.summary_content||'').trim();
   const seoTitle=String(result?.seo_title||'').trim();
   const seoDescription=String(result?.seo_description||'').trim();
@@ -1647,7 +1668,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel);
-      const service=[`PRODUCTION SERVICE v3.8.3`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.8.4`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1810,7 +1831,7 @@ export default async(request)=>{
     result.editorial_readiness=editorialReadiness(result,publishGate,lockDecision,sources,fields);
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.8.3`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.8.4`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':titleCaseAllWords(result.article_title||value(fields,'Section Title')),
       'Section Final Copy':String(result.article_body||'').trim(),
