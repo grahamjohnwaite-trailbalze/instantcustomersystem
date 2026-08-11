@@ -3,6 +3,73 @@ const S={publications:[],issues:[],sections:[],articleLibrary:[],issue:null,sect
 async function api(path,opt={}){const r=await fetch('/.netlify/functions/'+path,{headers:{'content-type':'application/json',accept:'application/json'},...opt});const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={ok:false,error:`Invalid server response (${r.status}). ${raw.slice(0,300)||'No response body.'}`}}if(!r.ok||!d.ok){const err=new Error(d.error||`Request failed (${r.status})`);err.details=d.details;throw err}return d}function conn(ok,msg){E('dot').className='dot '+(ok?'ok':'bad');E('connection').textContent=msg}function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));E('view-'+v).classList.add('active');document.querySelector(`[data-view="${v}"]`).classList.add('active');E('page-title').textContent={dashboard:'Dashboard',publications:'Publications',issues:'Issues',build:'Issue Command Centre',assemble:'Issue Workflow'}[v];E('page-sub').textContent=v==='build'?'Plan, write and export one real issue.':v==='assemble'?'One clear production step at a time, from planning to production ready.':(S.issue?`${pubName(S.issue.fields.Publication)} production workspace.`:'Publication-aware production workspace.');if(v==='assemble'){renderAssembly();updateWorkflowGuide()}}
 function pubName(ids){return S.publications.find(p=>p.id===(ids||[])[0])?.fields['Publication Name']||'Unlinked'}function pill(v){return `<span class="pill ${/ready|published|complete/i.test(v)?'good':/warning|blocked|late/i.test(v)?'warn':''}">${esc(v||'Not set')}</span>`}
 function currentPublicationName(){return S.issue?pubName(S.issue.fields.Publication):''}
+function defaultIssuePromiseV31824(publication){
+ const name=String(publication||'').trim(), area=publicationAreaV31816(name)||'the local area', profile=engineProfileForPublication(name);
+ if(profile.key==='TASTE_TRAIL')return `Where Is Actually Worth Eating, Drinking, Staying And Going Out Around ${area} Right Now — And What Is Worth Your Time And Money?`;
+ if(profile.key==='PET_INSIDER')return `What Do Pet Owners Around ${area} Most Need To Know, Try Or Decide Right Now?`;
+ if(profile.key==='HOME_SELLER')return `What Do Home Sellers Around ${area} Need To Know Before Making Their Next Move?`;
+ return `What Is Most Worth Knowing, Doing And Talking About Around ${area} Right Now?`;
+}
+function foreignPromiseAreaV31824(theme,publication){
+ const text=String(theme||'').toLowerCase(), current=publicationAreaV31816(publication).toLowerCase();
+ if(!text)return '';
+ const areas=[...new Set((S.publications||[]).map(p=>publicationAreaV31816(val(p.fields,'Publication Name'))).filter(Boolean))]
+   .filter(a=>a.toLowerCase()!==current&&a.length>=4).sort((a,b)=>b.length-a.length);
+ return areas.find(a=>new RegExp('\\b'+a.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\$&')+'\\b','i').test(text))||'';
+}
+async function ensureIssuePromiseSourceV31824(){
+ if(!S.issue)return '';
+ const publication=currentPublicationName(), currentArea=publicationAreaV31816(publication);
+ const stored=String(val(S.issue.fields,'Main Theme')||'').trim();
+ const local=String(localStorage.getItem(themeKey())||'').trim();
+ let promise=stored||local||defaultIssuePromiseV31824(publication);
+ // Prefer a current-publication local promise if Airtable still carries a sibling-publication promise.
+ if(foreignPromiseAreaV31824(stored,publication)){
+   promise=(local&&!foreignPromiseAreaV31824(local,publication)&&new RegExp('\\b'+currentArea.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\$&')+'\\b','i').test(local))?local:defaultIssuePromiseV31824(publication);
+ }
+ // Never restore a browser-local sibling promise over the issue record.
+ if(foreignPromiseAreaV31824(promise,publication))promise=defaultIssuePromiseV31824(publication);
+ localStorage.setItem(themeKey(),promise);
+ if(E('assembly-theme'))E('assembly-theme').value=promise;
+ if(E('ih-theme'))E('ih-theme').value=promise;
+ const plan=getSmartPlan();if(plan&&plan.issuePromise!==promise){plan.issuePromise=promise;saveSmartPlan(plan)}
+ if(stored!==promise){
+   try{
+     const d=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Main Theme':promise}})});
+     S.issue=d.record;S.issues=S.issues.map(x=>x.id===d.record.id?d.record:x);
+     console.info(`v3.18.24 repaired issue promise source of truth for ${publication}:`,promise);
+   }catch(e){console.warn('v3.18.24 could not persist repaired issue promise',e)}
+ }
+ return promise;
+}
+async function saveCanvasPromiseV31824(){
+ if(!S.issue)return;
+ const promise=String(E('assembly-theme')?.value||'').trim();
+ if(!promise){alert('Add an Issue Promise first.');return}
+ const foreign=foreignPromiseAreaV31824(promise,currentPublicationName());
+ if(foreign){alert(`This promise mentions ${foreign}, which belongs to another publication. Update it for ${publicationAreaV31816(currentPublicationName())} before saving.`);return}
+ localStorage.setItem(themeKey(),promise);
+ if(E('ih-theme'))E('ih-theme').value=promise;
+ const plan=getSmartPlan();if(plan&&plan.issuePromise!==promise){plan.issuePromise=promise;saveSmartPlan(plan)}
+ try{
+   const d=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Main Theme':promise}})});
+   S.issue=d.record;S.issues=S.issues.map(x=>x.id===d.record.id?d.record:x);render();alert('Issue promise saved to the issue record.');
+ }catch(e){alert('Issue promise could not be saved: '+e.message)}
+}
+function prepareNewIssueV31824(){
+ E('new-date').value='';E('new-number').value='';
+ const pubId=E('new-publication').value||(E('production-publication')?.value||'');
+ if(pubId)E('new-publication').value=pubId;
+ const pub=S.publications.find(p=>p.id===E('new-publication').value);
+ E('new-theme').value=defaultIssuePromiseV31824(pub?val(pub.fields,'Publication Name'):'');
+ E('new-theme').dataset.auto='1';E('issue-dialog').showModal();
+}
+function syncNewIssuePromiseV31824(){
+ if(E('new-theme').dataset.auto!=='1'&&String(E('new-theme').value||'').trim())return;
+ const pub=S.publications.find(p=>p.id===E('new-publication').value);
+ E('new-theme').value=defaultIssuePromiseV31824(pub?val(pub.fields,'Publication Name'):'');E('new-theme').dataset.auto='1';
+}
+
 
 
 function publicationSpecificTermsV313(name=''){
@@ -302,7 +369,7 @@ function renderIssues(){const f=E('issue-filter').value;E('issue-table').innerHT
 function editIssue(id){const i=S.issues.find(x=>x.id===id);if(!i)return;E('edit-issue-id').value=id;E('edit-number').value=val(i.fields,'Issue Number')||'';E('edit-date').value=val(i.fields,'Send Date')||'';E('edit-status').value=val(i.fields,'Issue Status')||'PLANNED';E('edit-theme').value=val(i.fields,'Main Theme')||'';E('edit-issue-dialog').showModal()}
 async function saveEditedIssue(ev){ev.preventDefault();const id=E('edit-issue-id').value;const issue=S.issues.find(x=>x.id===id);if(!issue)return;const no=String(E('edit-number').value||'').trim();const pub=(issue.fields.Publication||[])[0]||'';if(no&&E('edit-status').value!=='ARCHIVED'){const clash=S.issues.find(x=>x.id!==id&&String(val(x.fields,'Issue Status')||'').toUpperCase()!=='ARCHIVED'&&(x.fields.Publication||[])[0]===pub&&String(val(x.fields,'Issue Number')||'').trim()===no);if(clash&&!confirm(`Another ${pubName(issue.fields.Publication)} issue already uses #${no}. Save anyway?`))return}const fields={'Issue Number':no?Number(no):undefined,'Send Date':E('edit-date').value,'Issue Status':E('edit-status').value,'Main Theme':E('edit-theme').value};const btn=E('save-edited-issue');btn.disabled=true;const old=btn.textContent;btn.textContent='Saving…';try{const d=await api('issues',{method:'PATCH',body:JSON.stringify({id,fields})});S.issues=S.issues.map(x=>x.id===id?d.record:x);if(S.issue?.id===id)S.issue=d.record;E('edit-issue-dialog').close();render();if(S.issue?.id===id){E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;if(E('ih-date'))E('ih-date').value=val(S.issue.fields,'Send Date')||''}}catch(e){alert(e.message)}finally{btn.disabled=false;btn.textContent=old}}
 async function loadAll(){try{conn(false,'Connecting…');const [p,i,h]=await Promise.all([api('publications'),api('issues'),fetch('/app/hot-buttons.json').then(r=>r.json())]);S.publications=p.records;S.issues=i.records;S.hot=h;conn(true,`Connected · ${p.count} publications · ${i.count} issues`);render()}catch(e){conn(false,e.message);alert(e.message)}}
-async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);await Promise.all([loadSections(),loadArticleLibrary()]);restorePersistedAssemblyV31821();show('assemble');renderAssembly()}
+async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);await Promise.all([loadSections(),loadArticleLibrary()]);await ensureIssuePromiseSourceV31824();restorePersistedAssemblyV31821();show('assemble');renderAssembly()}
 function sectionOrderValue(s){const n=Number(val(s.fields,'Section Order'));return Number.isFinite(n)?n:999999}
 function sortSections(){S.sections=[...S.sections].sort((a,b)=>sectionOrderValue(a)-sectionOrderValue(b)||(a.createdTime||'').localeCompare(b.createdTime||''))}
 function sectionOrderDiagnostic(){
@@ -1685,10 +1752,15 @@ const ENGINE_PROFILES={
   supportRecipe:['OPENING NOTE','READER POLL','QUICK PRICE CHECK','READER QUESTION','EXPERT QUICK CHECK','MYTH V FACT','READER RECOMMENDATION','NOMINATION','BEFORE YOU GO']
  },
  TASTE_TRAIL:{
-  key:'TASTE_TRAIL',name:'Taste Trail',description:'Food-first discovery publication: places, dishes, value, openings and reader recommendations.',targetSections:[14,20],targetMasters:[5,7],targetSupport:[8,13],defaultMasters:15,
-  lanes:['RESTAURANTS','PUBS','CAFES','TAKEAWAYS','LOCAL PRODUCERS','DISHES & MENUS','VALUE','OPENINGS & CLOSURES','FOOD EVENTS','PLACES & DISCOVERY','READER VOICE','HOSPITALITY PEOPLE'],
-  minimumGroups:[{label:'Places to eat/drink',min:4,lanes:['RESTAURANTS','PUBS','CAFES','TAKEAWAYS']},{label:'Discovery / events',min:2,lanes:['FOOD EVENTS','PLACES & DISCOVERY','OPENINGS & CLOSURES']},{label:'Reader interaction',min:2,lanes:['READER VOICE']}],maxHeavyMoodShare:.45,
-  supportRecipe:['OPENING NOTE','READER POLL','FOOD FIND','PUB / RESTAURANT QUESTION','QUICK PRICE CHECK','READER RECOMMENDATION','FOOD FIND','LOCAL TRIVIA','NOMINATION','BEFORE YOU GO']
+  key:'TASTE_TRAIL',name:'Taste Trail',description:'Independent hospitality and going-out guide built around the rhythm of a day: eat, drink, discover, go out and stay over.',targetSections:[15,20],targetMasters:[5,7],targetSupport:[8,13],defaultMasters:15,
+  lanes:['BREAKFAST & BRUNCH','COFFEE & CAFES','LUNCH & DAYTIME','AFTERNOON TEA','DINNER & RESTAURANTS','PUBS & BARS','NIGHTLIFE & LIVE','HOTELS & STAYS','TAKEAWAYS & STREET FOOD','MARKETS & PRODUCERS','EVENTS & EXPERIENCES','VALUE','OPENINGS & CLOSURES','PLACES & DISCOVERY','READER VOICE','HOSPITALITY PEOPLE'],
+  minimumGroups:[
+    {label:'Morning / daytime',min:3,lanes:['BREAKFAST & BRUNCH','COFFEE & CAFES','LUNCH & DAYTIME','AFTERNOON TEA','TAKEAWAYS & STREET FOOD','MARKETS & PRODUCERS']},
+    {label:'Dinner / evening / night',min:3,lanes:['DINNER & RESTAURANTS','PUBS & BARS','NIGHTLIFE & LIVE']},
+    {label:'Discovery / events / stays',min:2,lanes:['HOTELS & STAYS','EVENTS & EXPERIENCES','PLACES & DISCOVERY','OPENINGS & CLOSURES']},
+    {label:'Reader interaction',min:2,lanes:['READER VOICE']}
+  ],maxHeavyMoodShare:.45,
+  supportRecipe:['OPENING NOTE','FOOD FIND','QUICK PRICE CHECK','LOCAL BUSINESS FIND','EVENT PICK','LOCAL TRIVIA','READER POLL','QUICK QUIZ','READER RECOMMENDATION','BEFORE YOU GO']
  },
  PET_INSIDER:{
   key:'PET_INSIDER',name:'Pet Insider',description:'Pet niche publication: health, behaviour, costs, local places, services and reader pets.',targetSections:[12,18],targetMasters:[5,7],targetSupport:[6,11],defaultMasters:15,
@@ -1728,7 +1800,22 @@ function classifyNicheLane(text,profile){
   if(/price|valuation|asking|value/.test(t))return 'PRICING & VALUATION';if(/estate agent|agent/.test(t))return 'ESTATE AGENTS';if(/stage|presentation|declutter|viewing|photo/.test(t))return 'PRESENTATION';if(/legal|conveyanc|solicitor|contract/.test(t))return 'LEGAL & CONVEYANCING';if(/mortgage|finance|loan/.test(t))return 'MORTGAGES & FINANCE';if(/survey|condition|defect|repair/.test(t))return 'SURVEYS & CONDITION';if(/move|removal|moving/.test(t))return 'MOVING';if(/negot|offer/.test(t))return 'NEGOTIATION';if(/mistake|avoid|wrong/.test(t))return 'SELLER MISTAKES';if(/buyer|psycholog/.test(t))return 'BUYER PSYCHOLOGY';if(/reader|poll|question|nominate/.test(t))return 'READER VOICE';return 'EXPERT';
  }
  if(profile.key==='TASTE_TRAIL'){
-  if(/restaurant/.test(t))return 'RESTAURANTS';if(/pub|beer|ale/.test(t))return 'PUBS';if(/cafe|coffee/.test(t))return 'CAFES';if(/takeaway|chippy|pizza|kebab/.test(t))return 'TAKEAWAYS';if(/producer|farm shop|butcher|bakery/.test(t))return 'LOCAL PRODUCERS';if(/menu|dish|breakfast|lunch|dinner|roast/.test(t))return 'DISHES & MENUS';if(/price|value|cheap|cost|under £|deal/.test(t))return 'VALUE';if(/open|close|closure|new/.test(t))return 'OPENINGS & CLOSURES';if(/event|festival|market/.test(t))return 'FOOD EVENTS';if(/reader|poll|recommend|nominate/.test(t))return 'READER VOICE';if(/chef|owner|team|people/.test(t))return 'HOSPITALITY PEOPLE';return 'PLACES & DISCOVERY';
+  if(/reader|poll|recommend|nominate|vote|tell us/.test(t))return 'READER VOICE';
+  if(/hotel|accommodation|accomodation|stay over|stayover|room|spa|bnb|b&b|bed and breakfast/.test(t))return 'HOTELS & STAYS';
+  if(/nightclub|club night|late night|dj|dancefloor|dance floor|live music|gig|concert|comedy|theatre|show/.test(t))return 'NIGHTLIFE & LIVE';
+  if(/pub|bar|cocktail|beer|ale|wine|whisky|drinks?/.test(t))return 'PUBS & BARS';
+  if(/afternoon tea|cream tea|tea room/.test(t))return 'AFTERNOON TEA';
+  if(/breakfast|brunch/.test(t))return 'BREAKFAST & BRUNCH';
+  if(/cafe|café|coffee|bakery/.test(t))return 'COFFEE & CAFES';
+  if(/takeaway|chippy|kebab|street food|food stall|food truck/.test(t))return 'TAKEAWAYS & STREET FOOD';
+  if(/market|producer|farm shop|butcher|deli|food hall/.test(t))return 'MARKETS & PRODUCERS';
+  if(/lunch|daytime|midday/.test(t))return 'LUNCH & DAYTIME';
+  if(/dinner|restaurant|supper|roast|menu|dish/.test(t))return 'DINNER & RESTAURANTS';
+  if(/event|festival|experience|tasting|tour|what.?s on/.test(t))return 'EVENTS & EXPERIENCES';
+  if(/price|value|cheap|cost|under £|deal|offer/.test(t))return 'VALUE';
+  if(/open|close|closure|relaunch|rebrand|new venue|new opening/.test(t))return 'OPENINGS & CLOSURES';
+  if(/chef|owner|publican|team|people|hospitality person/.test(t))return 'HOSPITALITY PEOPLE';
+  return 'PLACES & DISCOVERY';
  }
  if(profile.key==='PET_INSIDER'){
   if(/vet|health|dental|ill|injur/.test(t))return 'HEALTH';if(/train|behavio|bark|recall/.test(t))return 'BEHAVIOUR & TRAINING';if(/food|diet|nutrition/.test(t))return 'FOOD & NUTRITION';if(/cost|insurance|bill|price/.test(t))return 'COSTS';if(/walk|park|place|beach/.test(t))return 'WALKS & PLACES';if(/groom|walker|sitter|service/.test(t))return 'SERVICES';if(/product|toy|lead|bed/.test(t))return 'PRODUCTS';if(/reader|pet of|photo|nominate/.test(t))return 'READER PETS';if(/expert|vet|trainer/.test(t))return 'EXPERT';if(/fun|fact|quiz|odd/.test(t))return 'FUN & CURIOSITY';return 'LOCAL PET LIFE';
@@ -3257,15 +3344,15 @@ async function buildSupportBatchV315(){
       ],
       TASTE_TRAIL:[
         ['OPENING NOTE','Opening Note','OPEN'],
-        ['FOOD FIND','Local Food Find','DISHES & MENUS'],
+        ['FOOD FIND','Morning / Daytime Find','BREAKFAST & BRUNCH'],
         ['QUICK PRICE CHECK','Worth The Money?','VALUE'],
-        ['LOCAL BUSINESS FIND','Hospitality Person / Producer','HOSPITALITY PEOPLE'],
-        ['EVENT PICK','Food & Drink Event Pick','FOOD EVENTS'],
-        ['LOCAL TRIVIA','Local Food & Drink Trivia','PLACES & DISCOVERY'],
+        ['LOCAL BUSINESS FIND','Hospitality Person / Place','HOSPITALITY PEOPLE'],
+        ['EVENT PICK',"What's On / Going Out Pick",'EVENTS & EXPERIENCES'],
+        ['LOCAL TRIVIA','Wider-Area Discovery','PLACES & DISCOVERY'],
         ['READER POLL','One Quick Vote','READER VOICE'],
-        ['QUICK QUIZ','Quick Food Quiz','FUN & CURIOSITY'],
+        ['QUICK QUIZ','Quick Taste Trail Quiz','READER VOICE'],
         ['READER RECOMMENDATION','Your Recommendation','READER VOICE'],
-        ['BEFORE YOU GO','Before You Go','OPEN']
+        ['BEFORE YOU GO',"That's All For This Week — But Before You Go…",'OPEN']
       ],
       HOME_SELLER:[['OPENING NOTE','Opening Note','READER VOICE'],['READER POLL','Reader Poll','READER VOICE'],['QUICK PRICE CHECK','Quick Price Check','PRICING & VALUATION'],['READER QUESTION','Reader Question','READER VOICE'],['MYTH V FACT','Myth v Fact','FUN & CURIOSITY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']],
       PET_INSIDER:[['OPENING NOTE','Opening Note','READER VOICE'],['READER POLL','Reader Poll','READER VOICE'],['READER PETS','Reader Pets','READER PETS'],['LOCAL TRIVIA','Local Trivia','FUN & CURIOSITY'],['WEEKEND IDEA','Weekend Idea','WALKS & PLACES'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['HUMOUR','Quick Breather','FUN & CURIOSITY'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']]
@@ -3436,8 +3523,8 @@ Write ONLY finished newsletter copy.
 - The declared COMPONENT TYPE, LABEL and LIFE LANE above are final for this run. The copy must actually perform that job; do not write an event block about a non-event or a people block about a venue.
 - Prefer the ASSIGNED PRIMARY SUBJECT over the general UNUSED COMPLETED MASTER EVIDENCE bank. The general bank is context only and must not be mined for extra named subjects.
 - If no primary subject is assigned, keep the block non-factual/editorial/reader-facing as appropriate and do not import a named venue from another support.
-- For Taste Trail, the support set must feel like eating, drinking and going out locally: named place/dish/person/event/value/discovery where evidence supports it, not generic lifestyle advice.
-- For factual Taste Trail components (Food Find, Price Check, Hospitality Person/Producer, Event Pick, Trivia), use at least one named local proof point from the supplied evidence context when possible. If the context does not support the requested factual component, write a short clearly non-factual editorial bridge instead of inventing facts.
+- For Taste Trail, the support set must feel like a local hospitality day-and-night circuit: breakfast/coffee/daytime, lunch/afternoon, dinner, pubs/bars, nightlife/live, hotels/stays, markets/stalls/takeaways, events and wider-area discoveries. Use named place/dish/person/event/value/discovery where evidence supports it, not generic lifestyle advice.
+- For factual Taste Trail components (daytime find, price check, hospitality person/place, What's On pick, wider-area discovery), use at least one named local proof point from the supplied evidence context when possible. Where a venue/business is named, prefer a current official website, booking/menu page or official social page as the reader route and status double-check. If the context does not support the requested factual component, write a short clearly non-factual editorial bridge instead of inventing facts.
 - Reader-voice formats are limited: do not turn a factual/discovery component into another poll, nomination, recommendation request or question merely because evidence is thin.
 - Do not invent facts, prices, dates, quotes, businesses, services, events, people or reader comments.
 - One CTA maximum. CTA/button wording must be Title Case.
@@ -3535,9 +3622,9 @@ async function rebuildComponentMixV31813(){
         ['LOCAL DEBATE','Local Debate','READER VOICE'],['QUICK UPDATE','Quick Update','LOCAL LIFE'],['BEFORE YOU GO','Before You Go','OPEN']
       ],
       TASTE_TRAIL:[
-        ['OPENING NOTE','Opening Note','OPEN'],['FOOD FIND','Local Food Find','DISHES & MENUS'],['QUICK PRICE CHECK','Worth The Money?','VALUE'],['LOCAL BUSINESS FIND','Hospitality Person / Producer','HOSPITALITY PEOPLE'],
-        ['EVENT PICK','Food & Drink Event Pick','FOOD EVENTS'],['LOCAL TRIVIA','Local Food & Drink Trivia','PLACES & DISCOVERY'],['READER POLL','One Quick Vote','READER VOICE'],['QUICK QUIZ','Quick Food Quiz','FUN & CURIOSITY'],
-        ['READER RECOMMENDATION','Your Recommendation','READER VOICE'],['BEFORE YOU GO','Before You Go','OPEN']
+        ['OPENING NOTE','Opening Note','OPEN'],['FOOD FIND','Morning / Daytime Find','BREAKFAST & BRUNCH'],['QUICK PRICE CHECK','Worth The Money?','VALUE'],['LOCAL BUSINESS FIND','Hospitality Person / Place','HOSPITALITY PEOPLE'],
+        ['EVENT PICK',"What's On / Going Out Pick",'EVENTS & EXPERIENCES'],['LOCAL TRIVIA','Wider-Area Discovery','PLACES & DISCOVERY'],['READER POLL','One Quick Vote','READER VOICE'],['QUICK QUIZ','Quick Taste Trail Quiz','READER VOICE'],
+        ['READER RECOMMENDATION','Your Recommendation','READER VOICE'],['BEFORE YOU GO',"That's All For This Week — But Before You Go…",'OPEN']
       ],
       HOME_SELLER:[['OPENING NOTE','Opening Note','OPEN'],['READER POLL','Reader Poll','READER VOICE'],['QUICK PRICE CHECK','Quick Price Check','PRICING & VALUATION'],['READER QUESTION','Reader Question','READER VOICE'],['MYTH V FACT','Myth v Fact','FUN & CURIOSITY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','OPEN']],
       PET_INSIDER:[['OPENING NOTE','Opening Note','OPEN'],['READER POLL','Reader Poll','READER VOICE'],['READER PETS','Reader Pets','READER PETS'],['LOCAL TRIVIA','Local Trivia','FUN & CURIOSITY'],['WEEKEND IDEA','Weekend Idea','WALKS & PLACES'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['EXPERT QUICK CHECK','Expert Quick Check','EXPERT'],['HUMOUR','Quick Breather','FUN & CURIOSITY'],['BEFORE YOU GO','Before You Go','OPEN']]
@@ -3607,6 +3694,8 @@ function renderStep6SummaryV315(){
 }
 // v3.18.21 — Step 7 running order must also survive deploy-preview/localStorage changes.
 // v3.18.22 — Step 9 generates universal /tell-us/ response URLs for reader-response CTAs; GC tags stay in Letterman.
+// v3.18.24 — Issue promise source-of-truth guard: publication-safe defaults, Airtable persistence and sibling-geography carry-over repair.
+// v3.18.23 — Taste Trail day-to-night hospitality profile, broader discovery, newsletter SEO output and synced CTA destinations.
 // Persist the exact 17-block assembly order onto the existing issue section records.
 const ASSEMBLY_MARKER_RE_V31821=/^ISSUE ASSEMBLY — Final Running Order (\d{2})\.\s*$/mi;
 function assemblyOrderFromNotesV31821(notes){
@@ -3920,7 +4009,21 @@ function evergreenSignalSeedsForProfile(profileKey){
       ['PRICING','What makes an asking price realistic rather than optimistic?'],['AGENTS','What should a seller ask before choosing an estate agent?'],['PRESENTATION','Which small presentation changes actually influence buyers?'],['LEGAL','What slows conveyancing most often and what can a seller prepare early?'],['NEGOTIATION','When should a seller accept, reject or counter an offer?'],['MOVING','Which moving costs catch sellers by surprise?']
     ],
     TASTE_TRAIL:[
-      ['FOOD','Where is the best-value main course locally?'],['PUBS','Which pub is worth visiting for the food rather than just the drink?'],['CAFE','Which cafe does one thing unusually well?'],['DEBATE','Which local dish, restaurant or food trend is overrated?'],['DISCOVERY','Which food place is worth a detour?'],['READER','What should readers nominate for the next taste test?']
+      ['BREAKFAST','Where is breakfast genuinely worth getting up for locally?'],
+      ['COFFEE','Which local coffee stop is worth choosing rather than simply convenient?'],
+      ['BRUNCH','Which brunch gives you the best mix of food, atmosphere and value?'],
+      ['LUNCH','Where should you go for a lunch that changes the rest of the day?'],
+      ['AFTERNOON','Where is afternoon tea, cake or a slower afternoon actually worth booking?'],
+      ['DINNER','Which dinner venue is worth planning the evening around?'],
+      ['PUBS','Which pub or bar is worth going to for more than one quick drink?'],
+      ['NIGHTLIFE','Where can you go after dinner when you are not ready to go home?'],
+      ['STAY','Which local hotel, inn or stay makes a night out or short break better?'],
+      ['TAKEAWAY','Which takeaway, street-food stall or food truck deserves a proper test?'],
+      ['MARKETS','Which market, food hall or producer is worth building a visit around?'],
+      ['EVENTS','What food, drink, music, theatre or hospitality event is worth putting in the diary?'],
+      ['VALUE','What hospitality experience is genuinely worth the money?'],
+      ['DISCOVERY','Which place outside the core city is worth the journey this week?'],
+      ['READER','What should readers nominate for the next Taste Trail test?']
     ],
     PET_INSIDER:[
       ['HEALTH','Which routine pet check is easiest to miss?'],['BEHAVIOUR','What everyday pet behaviour should owners deal with earlier?'],['COST','Where do pet costs surprise owners most?'],['PLACES','Which local pet-friendly place is genuinely welcoming?'],['SERVICES','What should owners ask before choosing a groomer, walker, trainer or sitter?'],['READER','What local pet recommendation do owners keep giving each other?']
@@ -3949,13 +4052,16 @@ async function collectSmartSignals(){
   try{
     const publication=currentPublicationName(),issueNumber=val(S.issue.fields,'Issue Number')||'',sendDate=val(S.issue.fields,'Send Date'),operatorSignals=E('smart-plan-signals')?.value||'';
     const profile=engineProfileForPublication(publication);
+    const tasteArea=publicationAreaV31816(publication);
     const passes=profile.key==='TASTE_TRAIL' ? [
-      {pool:'CURRENT',instruction:'Taste Trail only. Find current Peterborough-area restaurant, pub, cafe, takeaway, food, drink, hospitality opening/closure/change leads. Reject unrelated council, planning, crime, transport, housing and general local-news stories.'},
-      {pool:'FOOD_HOSPITALITY',instruction:'Taste Trail only: pubs, restaurants, cafes, takeaways, menus, prices, value, breakfast, lunch, Sunday roast, local food producers, chefs and hospitality people.'},
-      {pool:'WHATSON_DISCOVERY',instruction:'Taste Trail going-out discovery only: food/drink events, street food, markets with a food angle, tastings, beer festivals, live music/comedy in pubs/bars/food venues, supper clubs and worthwhile nights out.'},
-      {pool:'HUMAN_COMMUNITY',instruction:'Taste Trail people only: independent hospitality owners, chefs, publicans, cafe owners, local producers, breweries, bakeries and human stories directly connected to eating, drinking or going out.'},
-      {pool:'FUN_READER',instruction:'Taste Trail reader angles only: value comparisons, dishes, menus, breakfast/roast/takeaway tests, overrated debates, hidden gems and recommendations people would argue about or share.'},
-      {pool:'EVERGREEN',instruction:'Taste Trail evergreen questions only: where to eat, drink or go out; what is worth the money; what to order; which venue is worth a detour. Every idea still needs current local research.'}
+      {pool:'CURRENT',instruction:`Taste Trail only. Find current ${tasteArea}-area hospitality and going-out leads: restaurants, pubs, bars, cafes, takeaways, hotels, accommodation, nightlife, live venues, food markets, stalls, events, openings, closures, relaunches and meaningful changes. Reject unrelated council, crime, transport, housing and general local-news stories unless they directly change the hospitality experience.`},
+      {pool:'DAYTIME_HOSPITALITY',instruction:`Taste Trail daytime circuit for ${tasteArea}: breakfast, coffee, brunch, lunch, afternoon tea, cafes, bakeries, markets, food halls, stalls, street food, takeaways, prices, value and local producers.`},
+      {pool:'EVENING_NIGHT',instruction:`Taste Trail evening circuit for ${tasteArea}: dinner, pubs, bars, cocktails, alcohol-free nights, live music, comedy, theatre-linked nights out, nightclubs, late-night venues and places where the evening naturally continues.`},
+      {pool:'STAY_EXPERIENCE',instruction:`Taste Trail stay-and-experience discovery for ${tasteArea}: hotels, inns, B&Bs, accommodation, spas, destination dining, short-break ideas, hospitality experiences and places worth travelling to within the wider publication catchment.`},
+      {pool:'WHATSON_DISCOVERY',instruction:`Taste Trail What's On for ${tasteArea}: food and drink events, markets, tastings, beer or wine events, supper clubs, live music, comedy, theatre, hospitality events and nights worth putting in the diary.`},
+      {pool:'HUMAN_COMMUNITY',instruction:`Taste Trail people only in the ${tasteArea} hospitality world: independent owners, chefs, publicans, bar teams, cafe owners, hoteliers, local producers, market traders, breweries, bakeries and other people who make the local going-out scene work.`},
+      {pool:'FUN_READER',instruction:`Taste Trail reader angles for ${tasteArea}: value comparisons, dishes, venues, brunch/takeaway tests, overrated debates, hidden gems, nightlife choices, stay-over ideas and recommendations people would argue about or share.`},
+      {pool:'EVERGREEN',instruction:`Taste Trail evergreen questions across a full day and night in ${tasteArea}: breakfast, coffee, lunch, afternoon, dinner, drinks, nightlife, stay over, takeaways, markets, recipes and events. Every idea still needs current local research and should help a reader decide where to eat, drink, stay or go out.`}
     ] : [
       {pool:'CURRENT',instruction:'Find strong current local developments, changes, openings, closures, decisions, events and genuinely timely reader questions. Avoid routine council filler and avoid recently published subjects.'},
       {pool:'FOOD_HOSPITALITY',instruction:'Find food and hospitality leads only: pubs, restaurants, cafes, takeaways, openings, closures, menus, prices, value, Sunday lunch, breakfast, local food producers and questions readers would recommend or argue about.'},
@@ -4588,7 +4694,7 @@ function qaIssuePromiseV31815(){
 }
 function qaVoiceProfileV31815(profile=engineProfileForPublication()){
   const key=String(profile?.key||'SPOTLIGHT').toUpperCase();
-  if(key==='TASTE_TRAIL')return 'Independent local food, drink and going-out guide. Conversational UK English, specific local proof, appetite and personality. Use sharper judgement where evidence earns it, but never pretend a desk-researched article is a first-hand tasting review.';
+  if(key==='TASTE_TRAIL')return 'Independent local hospitality and going-out guide following the rhythm of a day and night: breakfast, coffee, lunch, afternoon, dinner, drinks, nightlife, events and stays. Conversational UK English, specific local proof, appetite and personality. Use sharper judgement where evidence earns it, but never pretend a desk-researched article is a first-hand tasting or stay review.';
   if(key==='PET_INSIDER')return 'Warm, knowledgeable local pet publication. Plain UK English, specific local help, reassurance without fluff, and expert authority where evidence supports it.';
   if(key==='HOME_SELLER')return 'Clear, commercially aware seller publication. Plain UK English, specific examples, decisive explanation and no estate-agent brochure language.';
   return 'Conversational local Spotlight voice: specific, human, locally grounded, occasionally funny or challenging where earned, and never council-report or polished generic-magazine prose.';
@@ -5367,7 +5473,7 @@ function productionPublishingMetaV31816(publication,theme,items){
   }
   const first=labels.slice(0,3);
   let subject='';
-  if(family==='TASTE_TRAIL')subject=`${area} Eats: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'Where To Eat This Week'}`;
+  if(family==='TASTE_TRAIL')subject=`${area} Taste Trail: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'Where To Eat, Drink & Go Out'}`;
   else if(family==='PET_INSIDER')subject=`${area} Pet Insider: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'This Week’s Local Pet Guide'}`;
   else if(family==='HOME_SELLER')subject=`${area} Home Seller: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'This Week’s Property Brief'}`;
   else subject=`${area}: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'This Week’s Local Brief'}`;
@@ -5379,7 +5485,7 @@ function productionPublishingMetaV31816(publication,theme,items){
   if(preheader.length>155)preheader=preheader.slice(0,152).replace(/\s+\S*$/,'')+'…';
   const promise=String(theme||'').trim();
   let description='';
-  if(family==='TASTE_TRAIL')description=`This ${area} Taste Trail brings together ${labels.slice(0,5).join(', ').replace(/, ([^,]*)$/, ' and $1')||'food, drink and going-out ideas'}, plus local prices, places and reader questions that invite a response.`;
+  if(family==='TASTE_TRAIL')description=`This ${area} Taste Trail brings together ${labels.slice(0,5).join(', ').replace(/, ([^,]*)$/, ' and $1')||'places to eat, drink, stay and go out'}, with current local detail, useful links and reader questions that invite a response.`;
   else description=`This issue brings together ${labels.slice(0,5).join(', ').replace(/, ([^,]*)$/, ' and $1')||'the strongest local stories and reader decisions'}, shaped around the edition promise${promise?`: ${promise}`:'.'}`;
   if(description.length>240)description=description.slice(0,237).replace(/\s+\S*$/,'')+'…';
   return {subject,preheader,description};
@@ -5391,6 +5497,26 @@ function publishingMetaWeakV31816(kind,text,theme){
   if(/\b(and|or|for|to|with|at|in|on|of|the|a|an|your|our|this|that|these|those|should|would|could)[…?.!]*$/i.test(t))return true;
   if(/\b(cheap summer meals for|should taste[- ]?test next)\b/i.test(t))return true;
   return false;
+}
+function newsletterSeoMetaV31823(publication,issueNumber,sendDate,items){
+  const area=publicationAreaV31816(publication);
+  const family=engineProfileForPublication(publication).key;
+  const articleItems=(items||[]).filter(b=>b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE');
+  const labels=[];
+  for(const b of articleItems){
+    const meta=articlePublishingMetaV3182(b);
+    const label=publishingHookFromTitleV31816(meta?.newsletterHeadline||b.title||'',publication);
+    if(label&&!labels.some(x=>x.toLowerCase()===label.toLowerCase()))labels.push(label);
+  }
+  const month=sendDate?new Date(String(sendDate)+'T12:00:00').toLocaleString('en-GB',{month:'long',year:'numeric'}):'';
+  let seoTitle=family==='TASTE_TRAIL' ? `${area} Taste Trail: ${labels.slice(0,3).join(', ').replace(/, ([^,]*)$/, ' & $1')||'Eat, Drink, Stay & Go Out'}` : `${publication}${issueNumber?` Issue ${issueNumber}`:''}`;
+  if(seoTitle.length>68)seoTitle=seoTitle.slice(0,65).replace(/\s+\S*$/,'')+'…';
+  let seoDescription=family==='TASTE_TRAIL' ? `Discover where to eat, drink, stay and go out around ${area}${month?` in ${month}`:''}, with local hospitality picks, events, value checks and reader recommendations.` : `Read ${publication}${issueNumber?` Issue ${issueNumber}`:''}${month?` for ${month}`:''}.`;
+  if(seoDescription.length>160)seoDescription=seoDescription.slice(0,157).replace(/\s+\S*$/,'')+'…';
+  const slugBase=[area,'taste-trail',issueNumber?`issue-${issueNumber}`:'',month?month.toLowerCase().replace(/\s+/g,'-'):''].filter(Boolean).join('-');
+  const slug=slugBase.toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  const keywords=family==='TASTE_TRAIL' ? [`${area} Taste Trail`,`${area} restaurants`,`${area} pubs`,`${area} cafes`,`${area} nightlife`,`${area} eating out`,`${area} drinking out`,`${area} hotels`,`${area} accommodation`,`${area} events`,`${area} food markets`,`${area} takeaways`].join(', ') : `${publication}, local newsletter, ${area}`;
+  return {seoTitle,seoDescription,slug,keywords};
 }
 function unresolvedInteractiveCtasV31818(items,publication){
   const out=[];
@@ -5532,6 +5658,7 @@ function assemblyDraft(){
   const subject=publishingMetaWeakV31816('subject',savedSubject,theme)?generated.subject:savedSubject;
   const preheader=publishingMetaWeakV31816('preheader',savedPreheader,theme)?generated.preheader:savedPreheader;
   const description=generated.description;
+  const newsletterSeo=newsletterSeoMetaV31823(publication,issueNumber,sendDate,items);
   let out=`PRODUCTION READY PACKAGE\n\nPUBLICATION\n${publication}\n\nISSUE\n${issueNumber}${sendDate?`\n\nSEND DATE\n${sendDate}`:''}\n\nISSUE PROMISE / QUESTION\n${theme||'[ADD ISSUE PROMISE]'}\n\nPUBLISHING ORDER — ${items.length} SECTIONS`;
   items.forEach((b,i)=>{
     const isArticle=b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE';
@@ -5557,7 +5684,7 @@ function assemblyDraft(){
       if(button){out+=`\n\nBUTTON TEXT\n${button}\nBUTTON DESTINATION\n${String(b.url||'').trim()||'[DESTINATION REQUIRED]'}`;}
     }
   });
-  out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nNEWSLETTER PUBLISHING DETAILS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nEMAIL SUBJECT / HEADLINE\n${subject||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nPREVIEW TEXT / PREHEADER\n${preheader||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nNEWSLETTER DESCRIPTION\n${description||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nSEND DATE\n${sendDate||'[MISSING]'}`;
+  out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nNEWSLETTER PUBLISHING DETAILS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nEMAIL SUBJECT / HEADLINE\n${subject||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nPREVIEW TEXT / PREHEADER\n${preheader||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nNEWSLETTER DESCRIPTION\n${description||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nNEWSLETTER SEO TITLE\n${newsletterSeo.seoTitle||'[MISSING]'}\n\nNEWSLETTER SEO DESCRIPTION\n${newsletterSeo.seoDescription||'[MISSING]'}\n\nNEWSLETTER / ARCHIVE SLUG\n${newsletterSeo.slug||'[MISSING]'}\n\nNEWSLETTER KEYWORDS\n${newsletterSeo.keywords||'[MISSING]'}\n\nSEND DATE\n${sendDate||'[MISSING]'}`;
   out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPRODUCTION STATUS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${ready.length}/${items.length} sections ready`;
   const mandatoryMissing=[];
   if(!subject||publishingMetaWeakV31816('subject',subject,theme))mandatoryMissing.push('quality email subject');
@@ -5604,7 +5731,7 @@ function masterAssetsPackageV3181(){
     const button=titleCaseCtaV3183(String(val(f,'CTA Text')||a.ctaText||'').trim());
     const partnerName=String(val(f,'Featured Partner')||val(f,'Partner')||'').trim();
     const articleUrl=articlePublishedUrlV31816(publication,slug);
-    const actionDestination=explicitActionDestinationV31816({url:val(f,'Action Destination URL')},f,publication);
+    const actionDestination=resolvedActionDestinationV31822({title,button,cta:button,url:val(f,'Action Destination URL')},f,publication);
     const newsletterButton=newsletterArticleButtonTextV31816({title}, {newsletterHeadline});
     const buttonDestination=actionDestination||(button&&articleActionNeedsDestinationV31816(button)?'[DESTINATION REQUIRED — DO NOT USE PUBLICATION HOMEPAGE AS FALLBACK]':'[NO EXTERNAL DESTINATION REQUIRED]');
     const fb=String(p.social_facebook||'').trim();
@@ -5884,4 +6011,4 @@ async function rerunSelectedResearchV3188(){
     alert('Selected re-research did not complete cleanly: '+String(e.message||e));
   }finally{if(b){b.disabled=false;b.textContent=old}}
 }
-E('create-workspace-report-v3186').onclick=createWorkspaceReportV3186;E('repair-research-queue-v3189').onclick=runRepairLockedResearchQueueV3189;E('rerun-selected-research-v3188').onclick=rerunSelectedResearchV3188;E('copy-workspace-report-v3186').onclick=copyWorkspaceReportV3186;E('download-workspace-report-v3186').onclick=downloadWorkspaceReportV3186;E('save-canvas-theme').onclick=()=>{localStorage.setItem(themeKey(),E('assembly-theme').value);alert('Issue promise saved.')};E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('add-publication').onclick=()=>{E('pub-area').value='';E('pub-family').value='Taste Trail';E('pub-name').value='';E('pub-name').dataset.auto='1';E('pub-code').value='';E('pub-code').dataset.auto='1';E('pub-status').value='Active';syncPublicationSetupV3184(true);E('publication-dialog').showModal()};E('pub-area').oninput=()=>syncPublicationSetupV3184();E('pub-family').onchange=()=>syncPublicationSetupV3184();E('pub-name').oninput=()=>{E('pub-name').dataset.auto='0';if(E('pub-code').dataset.auto==='1'){E('pub-code').value=publicationCodeFromNameV3184(E('pub-name').value)}};E('pub-code').oninput=()=>{E('pub-code').dataset.auto='0'};E('create-publication').onclick=createPublicationV3184;E('new-issue').onclick=()=>{E('new-date').value='';E('issue-dialog').showModal()};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>researchAllApprovedMastersV3131();E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('pr-assets-v3181').onclick=()=>step9SafeRunV31817('assets');E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
+E('create-workspace-report-v3186').onclick=createWorkspaceReportV3186;E('repair-research-queue-v3189').onclick=runRepairLockedResearchQueueV3189;E('rerun-selected-research-v3188').onclick=rerunSelectedResearchV3188;E('copy-workspace-report-v3186').onclick=copyWorkspaceReportV3186;E('download-workspace-report-v3186').onclick=downloadWorkspaceReportV3186;E('save-canvas-theme').onclick=saveCanvasPromiseV31824;E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('add-publication').onclick=()=>{E('pub-area').value='';E('pub-family').value='Taste Trail';E('pub-name').value='';E('pub-name').dataset.auto='1';E('pub-code').value='';E('pub-code').dataset.auto='1';E('pub-status').value='Active';syncPublicationSetupV3184(true);E('publication-dialog').showModal()};E('pub-area').oninput=()=>syncPublicationSetupV3184();E('pub-family').onchange=()=>syncPublicationSetupV3184();E('pub-name').oninput=()=>{E('pub-name').dataset.auto='0';if(E('pub-code').dataset.auto==='1'){E('pub-code').value=publicationCodeFromNameV3184(E('pub-name').value)}};E('pub-code').oninput=()=>{E('pub-code').dataset.auto='0'};E('create-publication').onclick=createPublicationV3184;E('new-issue').onclick=prepareNewIssueV31824;E('new-publication').onchange=syncNewIssuePromiseV31824;E('new-theme').oninput=()=>{E('new-theme').dataset.auto='0'};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>researchAllApprovedMastersV3131();E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('pr-assets-v3181').onclick=()=>step9SafeRunV31817('assets');E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
