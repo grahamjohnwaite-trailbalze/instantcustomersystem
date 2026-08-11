@@ -240,6 +240,40 @@ function stripRuntimeBlocks(notes){
 function briefKey(fields,cls){
   return [cls,String(value(fields,'Section Title')||'').trim().toLowerCase(),String(value(fields,'Core Reader Question')||'').trim().toLowerCase()].join(' | ');
 }
+function normIdentityText(s){
+  return String(s||'').toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9£]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function tokenSimilarity(a,b){
+  const A=new Set(normIdentityText(a).split(' ').filter(x=>x.length>2));
+  const B=new Set(normIdentityText(b).split(' ').filter(x=>x.length>2));
+  if(!A.size||!B.size)return 0;
+  let hit=0; for(const x of A)if(B.has(x))hit++;
+  return hit/Math.max(A.size,B.size);
+}
+function checkpointCompatible(saved,fields,cls,currentKey,recordId=''){
+  if(!saved)return false;
+  if(saved.research_prompt_version!==CURRENT_RESEARCH_PROMPT_VERSION)return false;
+  if(saved.section_record_id && recordId && saved.section_record_id===recordId)return true;
+  if(saved.brief_key===currentKey)return true;
+  // Recovery guard for Issue Builder edits/rebuilds: the Airtable section can retain
+  // verified research while the display title changes slightly (e.g. “What's Next”
+  // -> “What Happens Next”). Reuse only a sufficient, sourced checkpoint whose
+  // production class and semantic identity still strongly match the current brief.
+  const parts=String(saved.brief_key||'').split(' | ');
+  const savedClass=parts.shift()||'';
+  const savedTitle=parts.shift()||'';
+  const savedQuestion=parts.join(' | ');
+  const currentTitle=String(value(fields,'Section Title')||'');
+  const currentQuestion=String(value(fields,'Core Reader Question')||'');
+  const evidenceStatus=String(value(fields,'Evidence Status')||'').toLowerCase();
+  const research=saved.research||{};
+  const sourced=Array.isArray(research.sources)&&research.sources.length>0;
+  const sufficient=String(research.research_status||'').toLowerCase()==='sufficient';
+  if(savedClass!==cls || !sourced || !sufficient || !/verified|reported|attribution/.test(evidenceStatus))return false;
+  const titleScore=tokenSimilarity(savedTitle,currentTitle);
+  const questionScore=tokenSimilarity(savedQuestion,currentQuestion);
+  return titleScore>=0.72 || (titleScore>=0.55 && questionScore>=0.72);
+}
 function latestCheckpoint(notes,label){
   const re=label==='research'
     ? /MASTER ARTICLE RESEARCH CHECKPOINT v2\n([\s\S]*?)\nEND MASTER ARTICLE RESEARCH CHECKPOINT/g
@@ -307,8 +341,8 @@ function lockedResearchFromNotes(notes){
   return null;
 }
 const CURRENT_RESEARCH_PROMPT_VERSION='GEOGRAPHY-HARD-GATE-v3';
-function researchCheckpointBlock(key,research,model){
-  return `MASTER ARTICLE RESEARCH CHECKPOINT v2\n${JSON.stringify({brief_key:key,research_prompt_version:CURRENT_RESEARCH_PROMPT_VERSION,saved_at:new Date().toISOString(),model:model||'',research},null,2)}\nEND MASTER ARTICLE RESEARCH CHECKPOINT`;
+function researchCheckpointBlock(key,research,model,sectionRecordId=''){
+  return `MASTER ARTICLE RESEARCH CHECKPOINT v2\n${JSON.stringify({brief_key:key,section_record_id:String(sectionRecordId||''),research_prompt_version:CURRENT_RESEARCH_PROMPT_VERSION,saved_at:new Date().toISOString(),model:model||'',research},null,2)}\nEND MASTER ARTICLE RESEARCH CHECKPOINT`;
 }
 function researchKey(research){
   const sources=(Array.isArray(research?.sources)?research.sources:[]).map(x=>({
@@ -1449,7 +1483,7 @@ export default async(request)=>{
     // research prompt version. Older checkpoints and legacy locked research packs may
     // contain source-selection behaviour that newer safety/geography gates are meant
     // to replace, so they must trigger a fresh research pass instead of being silently reused.
-    const reusableResearch=(savedResearch?.brief_key===key && savedResearch?.research_prompt_version===CURRENT_RESEARCH_PROMPT_VERSION)
+    const reusableResearch=checkpointCompatible(savedResearch,fields,cls,key,record.id)
       ? savedResearch
       : null;
     const writerCandidate=(savedWriter?.brief_key===key)?savedWriter:null;
@@ -1629,7 +1663,7 @@ export default async(request)=>{
         research=relaxOpenQuestionEvidenceDemands(fields,research);
         research=applyEditorialEvidencePolicy(fields,research,cls);
         log('research_gate_completed',{status:research.research_status,sourceCount:research.sources.length,missing:research.missing_evidence?.length||0,recoveryUsed:!!research.recovery_used,coreEvidenceRelaxed:!!research.core_evidence_relaxed});
-        const checkpoint=researchCheckpointBlock(key,research,researchModel);
+        const checkpoint=researchCheckpointBlock(key,research,researchModel,record.id);
         const checkpointNotes=originalNotes?`${originalNotes}\n\n${checkpoint}\n\n${runningBlock}`:`${checkpoint}\n\n${runningBlock}`;
         await withTimeout(
           airtableRequest(TABLES.sections,{
@@ -1667,7 +1701,7 @@ export default async(request)=>{
         `END RESEARCH PACK`
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
-      const checkpoint=researchCheckpointBlock(key,research,researchModel);
+      const checkpoint=researchCheckpointBlock(key,research,researchModel,record.id);
       const service=[`PRODUCTION SERVICE v3.8.4`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{

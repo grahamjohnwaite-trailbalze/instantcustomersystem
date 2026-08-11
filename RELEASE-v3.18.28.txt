@@ -1,0 +1,13 @@
+ICS v3.18.28 — Research Identity + State Recovery
+
+Purpose
+- Prevent a completed/verified Research Pack from becoming unusable after Issue Builder title edits, reordering or rebuilds.
+- Preserve research by persistent Airtable section record identity going forward.
+- Recover older checkpoints safely when the saved and current brief are semantically the same.
+
+Key behaviour
+- New research checkpoints store section_record_id.
+- Generate mode accepts a checkpoint by exact persistent record identity, exact brief key, or a guarded semantic match.
+- Guarded recovery requires the same production class, Evidence Status already verified/reported/attribution-ready, a Sufficient research pack, at least one saved source, and strong title/question similarity.
+- A genuine unrelated title/question change still requires fresh research.
+- No whole-issue reset or research rerun is required for a compatible saved pack.
