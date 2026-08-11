@@ -3606,6 +3606,7 @@ function renderStep6SummaryV315(){
   <div class="muted" style="margin-top:6px">ICS should create the missing support automatically. Manual component controls are Advanced only.</div>`;
 }
 // v3.18.21 — Step 7 running order must also survive deploy-preview/localStorage changes.
+// v3.18.22 — Step 9 generates universal /tell-us/ response URLs for reader-response CTAs; GC tags stay in Letterman.
 // Persist the exact 17-block assembly order onto the existing issue section records.
 const ASSEMBLY_MARKER_RE_V31821=/^ISSUE ASSEMBLY — Final Running Order (\d{2})\.\s*$/mi;
 function assemblyOrderFromNotesV31821(notes){
@@ -5378,7 +5379,7 @@ function productionPublishingMetaV31816(publication,theme,items){
   if(preheader.length>155)preheader=preheader.slice(0,152).replace(/\s+\S*$/,'')+'…';
   const promise=String(theme||'').trim();
   let description='';
-  if(family==='TASTE_TRAIL')description=`This ${area} Taste Trail brings together ${labels.slice(0,5).join(', ').replace(/, ([^,]*)$/, ' and $1')||'food, drink and going-out ideas'}, with local prices, places and reader prompts worth acting on.`;
+  if(family==='TASTE_TRAIL')description=`This ${area} Taste Trail brings together ${labels.slice(0,5).join(', ').replace(/, ([^,]*)$/, ' and $1')||'food, drink and going-out ideas'}, plus local prices, places and reader questions that invite a response.`;
   else description=`This issue brings together ${labels.slice(0,5).join(', ').replace(/, ([^,]*)$/, ' and $1')||'the strongest local stories and reader decisions'}, shaped around the edition promise${promise?`: ${promise}`:'.'}`;
   if(description.length>240)description=description.slice(0,237).replace(/\s+\S*$/,'')+'…';
   return {subject,preheader,description};
@@ -5398,7 +5399,7 @@ function unresolvedInteractiveCtasV31818(items,publication){
     const record=(S.sections||[]).find(x=>x.id===b.refId),f=record?.fields||{};
     const actionText=titleCaseCtaV3183(String(b.button||b.cta||val(f,'CTA Text')||'').trim());
     if(!actionText||!articleActionNeedsDestinationV31816(actionText))continue;
-    const actionDest=explicitActionDestinationV31816(b,f,publication);
+    const actionDest=resolvedActionDestinationV31822(b,f,publication);
     if(!actionDest)out.push({title:String(b.title||'Master Article').trim(),cta:actionText});
   }
   return out;
@@ -5411,6 +5412,37 @@ function explicitActionDestinationV31816(block,recordFields,publication){
   const candidates=[block?.url,val(recordFields||{},'Action Destination URL')].map(x=>String(x||'').trim()).filter(x=>/^https?:\/\//i.test(x));
   const home=publicationBaseUrlV31816(publication).toLowerCase();
   return candidates.find(x=>x.replace(/\/+$/,'').toLowerCase()!==home)||'';
+}
+// v3.18.22 — one universal Trail Blaze Local reader-response destination.
+// GC tracking remains a Letterman concern; ICS only supplies source context required by the form.
+function publicationShortCodeV31822(publication){
+  const currentId=(S.issue?.fields?.Publication||[])[0]||'';
+  const rec=S.publications.find(p=>p.id===currentId)||S.publications.find(p=>String(val(p.fields,'Publication Name')||'').trim().toLowerCase()===String(publication||'').trim().toLowerCase());
+  return String(val(rec?.fields||{},'Short Code')||publicationCodeFromNameV3184(publication)||'').trim().toUpperCase();
+}
+function articleActionCanUseTellUsV31822(text){
+  return /nominate|tell us|send|reply|recommend|vote/i.test(String(text||''));
+}
+function tellUsResponseTypeV31822(text){
+  const t=String(text||'').toLowerCase();
+  if(/nominate/.test(t))return 'nomination';
+  if(/recommend/.test(t))return 'recommendation';
+  return 'feedback';
+}
+function tellUsDestinationV31822(block,recordFields,publication){
+  const actionText=titleCaseCtaV3183(String(block?.button||block?.cta||val(recordFields||{},'CTA Text')||'').trim());
+  if(!articleActionCanUseTellUsV31822(actionText))return '';
+  const meta=articlePublishingMetaV3182(block)||{};
+  const topic=String(meta.slug||block?.title||'reader-response').replace(/^\/+|\/+$/g,'').trim();
+  const params=new URLSearchParams();
+  params.set('publication',String(publication||'Trail Blaze Local').trim());
+  const code=publicationShortCodeV31822(publication); if(code)params.set('code',code);
+  if(topic)params.set('topic',topic);
+  params.set('type',tellUsResponseTypeV31822(actionText));
+  return `https://trailblazelocal.com/tell-us/?${params.toString()}`;
+}
+function resolvedActionDestinationV31822(block,recordFields,publication){
+  return explicitActionDestinationV31816(block,recordFields,publication)||tellUsDestinationV31822(block,recordFields,publication);
 }
 function newsletterArticleButtonTextV31816(block,meta){
   const t=String(meta?.newsletterHeadline||block?.title||'').toLowerCase();
@@ -5519,7 +5551,7 @@ function assemblyDraft(){
       const links=masterUsefulLinksV3183(b); if(links.length)out+=`\n\nUSEFUL LINKS / SOURCES\n${links.map(x=>`- ${x.title}: ${x.url}`).join('\n')}`;
       out+=`\n\nNEWSLETTER BUTTON TEXT\n${newsletterArticleButtonTextV31816(b,meta)}\nNEWSLETTER BUTTON DESTINATION\n${articleUrl||'[PUBLISH ARTICLE FIRST — THEN INSERT ITS URL]'}`;
       const actionText=titleCaseCtaV3183(String(b.button||b.cta||val(f,'CTA Text')||'').trim());
-      if(actionText){const actionDest=explicitActionDestinationV31816(b,f,publication);out+=`\n\nARTICLE CTA TEXT\n${actionText}\nARTICLE CTA DESTINATION\n${actionDest||(articleActionNeedsDestinationV31816(actionText)?'[DESTINATION REQUIRED — DO NOT USE PUBLICATION HOMEPAGE AS FALLBACK]':'[NO EXTERNAL DESTINATION REQUIRED]')}`;}
+      if(actionText){const actionDest=resolvedActionDestinationV31822(b,f,publication);out+=`\n\nARTICLE CTA TEXT\n${actionText}\nARTICLE CTA DESTINATION\n${actionDest||(articleActionNeedsDestinationV31816(actionText)?'[DESTINATION REQUIRED — DO NOT USE PUBLICATION HOMEPAGE AS FALLBACK]':'[NO EXTERNAL DESTINATION REQUIRED]')}`;}
     }else{
       const button=titleCaseCtaV3183(String(b.button||b.cta||'').trim());
       if(button){out+=`\n\nBUTTON TEXT\n${button}\nBUTTON DESTINATION\n${String(b.url||'').trim()||'[DESTINATION REQUIRED]'}`;}
