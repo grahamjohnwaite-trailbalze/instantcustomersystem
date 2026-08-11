@@ -1026,6 +1026,7 @@ ${routeRule}
 - When the brief requires local proof, include genuinely place-specific or directly relevant regional primary sources for the named publication area. Generic national background is not enough.
 - If the brief names a body such as Anglian Water, NHS, NICE, FCA, MoneyHelper, a promoter, ticket agent or local council, actively search that body.
 - Current prices, dates, availability, service details and material current claims require current sources.
+- HOSPITALITY STATUS DOUBLE-CHECK: when an article names a restaurant, pub, bar, cafe, takeaway, hotel, accommodation provider, market, stall, nightclub, venue or hospitality business, actively look for a current official website, booking/menu page or official social page. Use it to confirm the business still appears to be trading under that identity, at that location, and that the relevant offer/service is current. A live but obviously stale page is not enough on its own when newer evidence suggests closure, sale, relaunch or rebrand.
 - Do not invent a source or claim.
 - If adequate evidence cannot be found, say so explicitly.
 
@@ -1067,7 +1068,7 @@ STYLE, AUDIENCE AND SAFETY
 - When research.optional_missing is present, omit those details unless independently supported.
 - One primary CTA only. The CTA should match the reader's next natural action. It may be engagement, list-building, a lead magnet, a Resident Expert, a Featured Partner, a booking, an offer, a directory/resource, a community action or another genuinely useful next step; do not manufacture a weak button just because a field exists.
 - Raw clean destination URLs only.
-- READER LINK RULE: when the verified research pack contains an official venue, event, booking, guide, map, council, service or other page that would genuinely help the reader act, make that resource visible in the article package Sources and write the body so staff can naturally hyperlink the relevant words. Do not bury helpful reader routes or pad with irrelevant links.
+- READER LINK RULE: when the verified research pack contains an official venue, event, booking, guide, map, council, service or other page that would genuinely help the reader act, make that resource visible in the article package Sources and write the body so staff can naturally hyperlink the first meaningful mention of the named venue/resource. Prefer the specific menu, booking, offer, event or official social page over a generic homepage when it is more useful. Do not bury helpful reader routes or pad with irrelevant links.
 - VARY THE ARTICLE SHAPE: do not make every Master a polished explainer. Depending on the job, use a comparison, mini itinerary, ranked-but-qualified list, myth/fact, reported story, first-person editorial framing, quick test, Q&A shape, price breakdown or narrative lead. Keep the facts disciplined while varying the reading experience.
 - Short paragraphs suitable for a narrow article page.
 - The article must stand alone outside the newsletter.
