@@ -14,14 +14,14 @@ export default async(request)=>{
 
     const compact=blocks.map(b=>({
       order:b.order,uid:b.uid,kind:b.kind,type:b.type,title:b.title,purpose:b.purpose,
-      content:String(b.content||''),partner:b.partner,cta:b.cta,button:b.button,url:b.url
+      content:String(b.content||''),partner:b.partner,cta:b.cta,button:b.button,url:b.url,articleMeta:b.articleMeta||null
     }));
 
     const profile=data.profile&&typeof data.profile==='object'?data.profile:{};
     const sectionRange=Array.isArray(profile.targetSections)?profile.targetSections:[12,30];
     const masterRange=Array.isArray(profile.targetMasters)?profile.targetMasters:[5,10];
     const profileName=profile.name||'Local publication';
-    const voice=profile.voice||'Natural spoken UK English, specific local proof and a publication-appropriate editorial voice.';
+    const voice=profile.voice||'Research deeply, write simply, sound like normal people talk. Specific local proof with publication-appropriate flavour.';
 
     const prompt=`You are the final whole-issue editorial QA editor for a UK local newsletter.
 
@@ -45,9 +45,11 @@ Review the complete running order below. Detect ONLY meaningful issue-level prob
 - too many oversized/catch-all Master Articles where several distinct reader questions appear to have been crammed into one piece;
 - generic supporting copy that does not earn its place;
 - duplicated CTAs/social prompts;
-- a flat, over-safe or overly polished issue voice when it conflicts with the ACTIVE VOICE PROFILE above. Judge voice against that profile only; never refer to Spotlight or an 'Unfiltered Spotlight' promise unless the active profile is actually Spotlight;
-- localisation failure: reader-facing copy that claims to be local but could be moved to another county/town by changing only the place name, when the subject reasonably allows named local proof.
-
+- a flat, over-safe, review-template or overly polished issue voice. The universal standard is normal spoken UK English: explain, do not perform expertise. Judge family flavour against the ACTIVE VOICE PROFILE above; never refer to Spotlight unless the active profile is actually Spotlight;
+- repeated desk-review constructions such as “our verdict”, “our view”, “strong option”, “worth considering”, “the evidence suggests”, “on balance”, or several paragraphs that sound like formal assessment rather than a human recommendation/explanation;
+- localisation failure: reader-facing copy that claims to be local but could be moved to another county/town by changing only the place name, when the subject reasonably allows named local proof;
+- for Master Articles, compare the reader-facing title/body with articleMeta (article title, subhead, SEO title/description, slug, newsletter headline and CTA). If those fields clearly describe a DIFFERENT venue, business, development, person or story, report FIX with code ENTITY_IDENTITY_MISMATCH. This is a hard publishing defect, not an editorial preference. Do not use fuzzy similarity: only flag an obvious contradictory identity;
+- publication-family leakage: if reader-facing copy names a different Trail Blaze family (for example “Tell Spotlight” inside Taste Trail), report FIX with code WRONG_FAMILY_LANGUAGE.
 
 IMPORTANT PROFILE RULE:
 Treat the supplied publication profile, section range, Master range, voice profile and issue promise as authoritative for this QA run. Do not invent a different family identity or report the promise as blank when ISSUE PROMISE above is populated.
@@ -61,7 +63,7 @@ Return strict JSON only:
 {"findings":[{"severity":"FIX|WARNING|PASS","code":"SHORT_CODE","message":"specific concise finding","blocks":["uid"],"safeFix":true|false}]}
 
 Use FIX only for clear publication problems. Use WARNING for editorial judgement. safeFix may be true only for supporting/partner-copy rewrites, never for Master Articles, partner removal, factual changes or commercial commitments.
-Also check for over-polished/AI-ish language across the whole issue. Judge it against ordinary spoken UK English, not literary copy. Do not ban normal words used once, but warn when words or constructions such as useful, practical, straightforward, meaningful, valuable, importantly, helpful, navigate, whether, matters, key, crucial, “The question is…”, “That matters because…”, or similar polished patterns are repeated enough to make the issue sound machine-written. Prefer everyday spoken UK English and specificity over adjectives.
+Also check for over-polished/AI-ish language across the whole issue. An article can be factually excellent and still deserve a VOICE warning if a normal person would not naturally say it that way. Judge it against ordinary spoken UK English, not literary copy. Do not ban normal words used once, but warn when words or constructions such as useful, practical, straightforward, meaningful, valuable, importantly, helpful, navigate, whether, matters, key, crucial, “The question is…”, “That matters because…”, or similar polished patterns are repeated enough to make the issue sound machine-written. Prefer everyday spoken UK English and specificity over adjectives.
 
 Do not report a Master Article as truncated merely because a preview, excerpt or context field is shortened. Only flag incomplete copy when the actual supplied reader-facing content visibly ends mid-word, mid-sentence or with a clear missing continuation. A complete concluding sentence is not truncation.
 
@@ -88,6 +90,8 @@ ${JSON.stringify(compact)}`;
       if(/internal|commercial|sponsor(?:ship)? (?:note|rate|amount)|pricing|editor-facing|production note/.test(blob))return true;
       if(/mid[- ]?(?:sentence|word)|truncat|incomplete reader-facing|missing continuation/.test(blob))return true;
       if(/partner tip/.test(blob)&&/(no named partner|no partner|unnamed partner)/.test(blob))return true;
+      if(/entity_identity_mismatch|entity identity mismatch|different (?:venue|business|development|person|story)|title.*(?:seo|slug|body).*(?:conflict|contradict|different)/.test(blob))return true;
+      if(/wrong_family_language|wrong family|family leakage|tell spotlight/.test(blob))return true;
       return false;
     };
     const findings=raw.map(f=>{

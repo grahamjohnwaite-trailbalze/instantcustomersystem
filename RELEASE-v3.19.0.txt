@@ -1,0 +1,48 @@
+ICS v3.19.0 — Operator-First Publishing + Human Voice
+Build date: 2026-08-12
+
+WHAT THIS BUILD CHANGES
+
+1. OPERATOR-FIRST WORKFLOW
+- Persistent operator guide on the workflow screen.
+- Every step now states NEXT ACTION, PASS CONDITION and IF IT FAILS.
+- Core rule shown in the UI: never go backwards unless ICS explicitly says a downstream blocker requires it.
+- Step 7 workspace report now includes the actual assembled running order.
+- Step 8 recognises a persisted QA pass after refresh even when the detailed browser-only warning report is no longer available.
+- Step 9 persists READY FOR LETTERMAN only after the handoff package passes its hard gates.
+
+2. UNIVERSAL TRAIL BLAZE HUMAN VOICE
+- Production writer is no longer hard-wired as a Spotlight editor.
+- Universal standard: Research deeply. Write simply. Sound like people actually talk.
+- Publication-family voice is layered on top of that standard.
+- Taste Trail specifically prioritises discovery, sociability and “Fancy this?” energy rather than formal verdict/review language.
+- Money/property copy is instructed to explain pounds-and-pence consequences in normal spoken English without brochure/compliance/textbook tone.
+- Business, Pet Insider and Spotlight each receive their own conversational flavour.
+- Final QA now warns when technically sound copy is stiff, over-polished or repeatedly uses desk-review/AI-ish constructions.
+
+3. RESEARCH IDENTITY SAFETY
+- Removed fuzzy title/question recovery for saved research checkpoints.
+- Research may be reused only by the exact persistent section record identity, or an exact legacy brief key where no record identity exists.
+- Similar stories can no longer inherit one another’s research merely because their titles/questions look alike.
+
+4. ENTITY + FAMILY CONSISTENCY
+- Final QA receives Master publishing metadata alongside reader-facing copy.
+- Clear contradictions between title/body and SEO/slug/article metadata can now become ENTITY_IDENTITY_MISMATCH hard fixes.
+- Taste Trail containing Spotlight reader-facing language such as “Tell Spotlight” is a deterministic hard fix.
+
+5. CANONICAL LETTERMAN HANDOFF
+- Step 9 primary output is now the Canonical Letterman Build Package.
+- It follows the actual newsletter running order from Section 1 downward.
+- Each Master carries its body, publishing metadata, CTA, useful links and social copy in the same section of the package.
+- The separate Master-only asset view remains available as a secondary view, not the primary build workflow.
+
+6. ARTICLE BANK / USAGE TRACKING FOUNDATION
+- READY Master Articles shown in the assembly library are labelled BANKED · UNUSED or USED IN NEWSLETTER.
+- When a Step 9 package becomes publishing-ready, selected Master records receive a persistent NEWSLETTER USAGE v1 marker in Airtable Notes.
+- Once explicit usage markers exist for an issue, unselected READY Masters from that issue remain banked rather than being treated as already used.
+- Older published/archive issues retain a legacy fallback so previous material is still protected from accidental duplication.
+
+KNOWN NEXT-LAYER WORK
+- Letterman permanent article URLs still need to be entered/synchronised after an article is published; ICS cannot invent them.
+- More detailed evergreen/seasonal/expiry classification can be added as the article bank matures.
+- The current QA warning detail remains browser-local; the pass/fail lifecycle itself is persistent.

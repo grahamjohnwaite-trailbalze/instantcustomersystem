@@ -7,8 +7,8 @@ const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=65000;
-const RELEASE_VERSION='3.8.4';
-const WRITER_PROMPT_VERSION='ARTICLE-BUILDER-SPOTLIGHT-v4';
+const RELEASE_VERSION='3.9.0';
+const WRITER_PROMPT_VERSION='TRAIL-BLAZE-HUMAN-VOICE-v1';
 
 function publicationContext(fields={}){
   const supplied=String(fields.__publicationName||fields['Publication Name']||'').trim();
@@ -197,7 +197,7 @@ function writerPublishabilityGate(fields,result,research){
   if(body.length>=700 && !/[.!?…"'’”\)\]]/.test(terminal))reasons.push(`Article body appears truncated or incomplete; it ends "${body.slice(-40)}".`);
   if(/\b(?:and|or|but|because|with|from|the|a|an|to|of|for|in|on|at|by|could|would|should|can|will|what|which|who|when|where)\s*$/i.test(body))reasons.push('Article body appears to end mid-sentence.');
   if(/FIX REQUIRED BEFORE PUBLICATION|before this article can go live|the editorial team (?:also )?needs|we are holding publication|holding publication until|needs? (?:local )?reader examples before deciding|research (?:is|was) insufficient|records still need checking before readers/i.test(body+' '+String(result?.article_subhead||'')))reasons.push('Reader-facing copy contains internal research/production language.');
-  if(/like-for-like evidence|unsafe to treat as fact|latest available evidence|established in the evidence|the fair test is|for now, the honest answer|in plain English/i.test(body+' '+String(result?.article_subhead||'')))reasons.push('Spotlight voice gate: research-room or defensive evidence language remains in reader-facing copy.');
+  if(/like-for-like evidence|unsafe to treat as fact|latest available evidence|established in the evidence|the fair test is|for now, the honest answer|in plain English|our verdict|our view:|strong option|promising choice|worth considering|on balance/i.test(body+' '+String(result?.article_subhead||'')))reasons.push('Trail Blaze voice gate: research-room or defensive evidence language remains in reader-facing copy.');
   if(/RECOMMENDATION \/ DISCOVERY|LIST \/ ROUND-UP/.test(mode)){
     const title=String(value(fields,'Section Title')||'');
     const question=String(value(fields,'Core Reader Question')||'');
@@ -253,27 +253,15 @@ function tokenSimilarity(a,b){
 function checkpointCompatible(saved,fields,cls,currentKey,recordId=''){
   if(!saved)return false;
   if(saved.research_prompt_version!==CURRENT_RESEARCH_PROMPT_VERSION)return false;
-  if(saved.section_record_id && recordId && saved.section_record_id===recordId)return true;
-  if(saved.brief_key===currentKey)return true;
-  // Recovery guard for Issue Builder edits/rebuilds: the Airtable section can retain
-  // verified research while the display title changes slightly (e.g. “What's Next”
-  // -> “What Happens Next”). Reuse only a sufficient, sourced checkpoint whose
-  // production class and semantic identity still strongly match the current brief.
-  const parts=String(saved.brief_key||'').split(' | ');
-  const savedClass=parts.shift()||'';
-  const savedTitle=parts.shift()||'';
-  const savedQuestion=parts.join(' | ');
-  const currentTitle=String(value(fields,'Section Title')||'');
-  const currentQuestion=String(value(fields,'Core Reader Question')||'');
-  const evidenceStatus=String(value(fields,'Evidence Status')||'').toLowerCase();
-  const research=saved.research||{};
-  const sourced=Array.isArray(research.sources)&&research.sources.length>0;
-  const sufficient=String(research.research_status||'').toLowerCase()==='sufficient';
-  if(savedClass!==cls || !sourced || !sufficient || !/verified|reported|attribution/.test(evidenceStatus))return false;
-  const titleScore=tokenSimilarity(savedTitle,currentTitle);
-  const questionScore=tokenSimilarity(savedQuestion,currentQuestion);
-  return titleScore>=0.72 || (titleScore>=0.55 && questionScore>=0.72);
+  // v3.19.0 — research identity is exact, never fuzzy. A saved pack may be reused only
+  // by the same persistent Airtable section record, or by an exact brief key for legacy
+  // records that pre-date section_record_id. Similar titles/questions are not enough:
+  // two nearby venues or planning stories can look semantically alike while being
+  // completely different real-world entities.
+  if(saved.section_record_id && recordId)return saved.section_record_id===recordId;
+  return saved.brief_key===currentKey;
 }
+
 function latestCheckpoint(notes,label){
   const re=label==='research'
     ? /MASTER ARTICLE RESEARCH CHECKPOINT v2\n([\s\S]*?)\nEND MASTER ARTICLE RESEARCH CHECKPOINT/g
@@ -1137,10 +1125,48 @@ Return ONLY valid JSON:
 Return 2-8 strongest sources. Do not pad with irrelevant generic sources.`;
 }
 
+function writerVoiceProfile(fields={}){
+  const name=String(fields.__publicationName||fields['Publication Name']||'').trim();
+  const p=name.toLowerCase();
+  if(p.includes('taste trail'))return `TASTE TRAIL VOICE
+- This is a discovery-and-going-out publication, not primarily a review site. Tempt and entertain before evaluating.
+- Write so the reader can picture the outing: who they might go with, how the plan could unfold, what makes the place/event feel different and the small detail worth knowing before they go.
+- Internal test: would a friend send this saying “Fancy this?” If not, loosen the copy.
+- Avoid constant verdict/value language such as “our view”, “strong option”, “worth considering”, “the evidence suggests”, “the better test” and repeated “worth your money”.
+- Never pretend a desk-researched piece is a first-hand tasting, visit or stay.`;
+  if(p.includes('pet insider'))return `PET INSIDER VOICE
+- Warm, calm and knowledgeable. Explain it the way a good vet, trainer or experienced owner would in a normal conversation.
+- Reassure with specifics, not fluff. Avoid lecture tone and jargon.`;
+  if(p.includes('home seller')||p.includes('property')||p.includes('money')||p.includes('mortgage'))return `MONEY / PROPERTY VOICE
+- Speak to a normal homeowner, buyer, seller or saver. Explain the pounds-and-pence consequence early.
+- Use everyday examples and trade-offs. Define unavoidable jargon once, then return to normal speech.
+- Never sound like a brochure, compliance leaflet or finance textbook.`;
+  if(p.includes('business pulse'))return `BUSINESS VOICE
+- Talk like one business owner explaining a change to another. Say what changed, why it matters to the business and what someone may do next.
+- No consultancy language, management clichés or corporate filler.`;
+  return `SPOTLIGHT VOICE
+- Sound like a well-informed local person explaining what is going on and why people are talking about it.
+- Local detail, curiosity, humour or challenge where earned. Never sound like a council press release or editorial board.`;
+}
+
 function promptFor(fields,cls,research){
   const useEvidence=cls!=='A — Question Only';
   const sourcePack=JSON.stringify(research||{},null,2);
-  return `You are the production editor for Spotlight. Build one complete MASTER ARTICLE PACKAGE ready for manual upload to Letterman.
+  const voice=writerVoiceProfile(fields);
+  const publication=publicationContext(fields).name||'Trail Blaze publication';
+  return `You are the production editor for Trail Blaze. Build one complete MASTER ARTICLE PACKAGE for ${publication} ready for manual upload to Letterman.
+
+UNIVERSAL TRAIL BLAZE VOICE STANDARD
+Research deeply. Write simply. Sound like people actually talk.
+- Accuracy stays underneath; the reader should experience a clear, natural conversation on top.
+- Read every paragraph aloud mentally. If it sounds like a report, brochure, review template, AI summary or someone performing expertise, rewrite it.
+- Prefer “Here’s the bit you need to know” energy over “This highlights an important consideration”.
+- Explain, do not impress. Specific beats polished. Short concrete sentences beat abstract framing.
+- Do not repeatedly announce judgement with “our view”, “our verdict”, “strong option”, “promising choice”, “the evidence suggests”, “on balance”, “worth considering” or similar review-desk phrases. Say the thing directly.
+- Do not end every article with a generic reader question. Use a prompt only when a genuine answer could improve a follow-up story.
+
+PUBLICATION FLAVOUR
+${voice}
 
 STYLE, AUDIENCE AND SAFETY
 - UK English. Research deeply, write simply, sound real.
@@ -1300,6 +1326,7 @@ Return ONLY valid JSON in this exact shape:
 QUALITY SCORING
 - Score each quality field from 1-10 after drafting. Be demanding, not flattering.
 - If human_readability, friend_test, conversation or evidence_discipline is below 7, revise the article before returning the JSON.
+- HUMAN VOICE IS NOT OPTIONAL: an accurate article that still reads like a report/review template should be revised before return. For all families, friend_test and human_readability should normally reach 8+; for Taste Trail, the copy should also create appetite, curiosity or a plausible plan to go out.
 - Scores are editorial diagnostics, not claims to the reader.
 
 QA DECISION
@@ -1702,7 +1729,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel,record.id);
-      const service=[`PRODUCTION SERVICE v3.8.4`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.9.0`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1865,7 +1892,7 @@ export default async(request)=>{
     result.editorial_readiness=editorialReadiness(result,publishGate,lockDecision,sources,fields);
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.8.4`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.9.0`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':titleCaseAllWords(result.article_title||value(fields,'Section Title')),
       'Section Final Copy':String(result.article_body||'').trim(),
