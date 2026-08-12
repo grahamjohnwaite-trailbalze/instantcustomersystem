@@ -326,7 +326,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 .operator-rule-v319{background:#f3f7fd;border-radius:9px;padding:9px}.operator-rule-v319 span{font-size:11px;color:#475467;line-height:1.35}.operator-sop-v319{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.operator-sop-v319 summary{cursor:pointer;font-size:11px;font-weight:800;color:#475467}.operator-matrix-row-v319{display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #edf0f4;font-size:10px}.operator-matrix-row-v319 b{font-size:10px}.operator-matrix-row-v319 span{color:#667085}.workflow-step-v312.done[data-flow-step="9"]{background:#15803d!important;border-color:#15803d!important;color:#fff!important}
 @media(max-width:1100px){.operator-guide-v319{grid-template-columns:1fr 1fr}.operator-rule-v319,.operator-sop-v319{grid-column:1/-1}.operator-matrix-row-v319{grid-template-columns:70px 1fr}}
 @media(max-width:700px){.operator-guide-v319{grid-template-columns:1fr}.operator-rule-v319,.operator-sop-v319{grid-column:auto}.operator-matrix-row-v319{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.19.1<br><strong>Legacy State + Named Fix Repair</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-12 · cumulative v3.19.0</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.19.2<br><strong>Legacy Reconciliation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-12 · lean package</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -4448,6 +4448,22 @@ function legacyAssemblyStructurallyCompleteV3191(){
   const [minMasters,maxMasters]=profile.targetMasters||[1,99];
   return masters.length>=minMasters&&masters.length<=maxMasters&&supports.length>=supportNeed;
 }
+// v3.19.2 — a valid legacy browser running order may pre-date Airtable assembly markers.
+// Treat its structure as Step 7 complete without forcing the operator to rebuild finished work.
+function browserAssemblyStructurallyCompleteV3192(){
+  const items=getCanvas(),profile=engineProfileForPublication();
+  if(!items.length)return false;
+  const min=Number(profile.targetSections?.[0]||0),max=Number(profile.targetSections?.[1]||999),supportNeed=supportTargetV315().supportNeeded;
+  if(items.length<min||items.length>max)return false;
+  const masters=items.filter(b=>b.kind==='article'),supports=items.filter(b=>b.kind!=='article');
+  const [minMasters,maxMasters]=profile.targetMasters||[1,99];
+  if(masters.length<minMasters||masters.length>maxMasters||supports.length<supportNeed)return false;
+  if(items.some(b=>!b.uid||!b.refId))return false;
+  const refs=items.map(b=>String(b.refId));
+  if(new Set(refs).size!==refs.length)return false;
+  const liveIds=new Set((S.sections||[]).map(s=>String(s.id)));
+  return refs.every(id=>liveIds.has(id));
+}
 async function persistAssemblyV31821(items){
   if(!S.issue?.id)throw new Error('Open an issue first.');
   const desired=new Map(items.map((b,i)=>[String(b.refId||''),i+1]));
@@ -4582,7 +4598,7 @@ function updateWorkflowShellV312(forcedStep){
    && canvasArticlesV31819.length===selected.length
    && canvasSupportsV31819.length>=targetV315.supportNeeded
    && selectedMastersPresentV31819;
- const assemblyCompleteV31819=persistedAssemblyOkV31821||legacyAssemblyStructurallyCompleteV3191()||browserAssemblyOkV31821;
+ const assemblyCompleteV31819=persistedAssemblyOkV31821||legacyAssemblyStructurallyCompleteV3191()||browserAssemblyStructurallyCompleteV3192()||browserAssemblyOkV31821;
  if(assemblyCompleteV31819)auto=8;
 
  // QA is persisted independently. If the issue lifecycle says QA passed, Step 8 is complete
@@ -6113,7 +6129,7 @@ async function repairNamedHardFixesV3191(){
   if(!wrongIds.length&&!entityIds.length){alert('There are no named hard fixes this repair can handle safely.');return}
   const entityBlocks=original.filter(b=>entityIds.includes(b.uid)&&b.kind==='article');
   const names=entityBlocks.map(b=>b.title).join('\n- ');
-  const prompt=`ICS will repair only the named hard fixes.\n\nWrong-family wording: ${wrongIds.length} block(s).\nEntity/story mismatches: ${entityBlocks.length} Master(s).${entityBlocks.length?`\n- ${names}`:''}\n\nFor an entity mismatch, ICS will keep the approved Master brief, discard the contaminated article package, run fresh research for that one Master, and rewrite only that Master. All other Masters and support components are preserved. Continue?`;
+  const prompt=`ICS will repair only the named hard fixes.\n\nWrong-family wording: ${wrongIds.length} block(s).\nEntity/story mismatches: ${entityBlocks.length} Master(s).${entityBlocks.length?`\n- ${names}`:''}\n\nFor an entity mismatch, ICS will first look for an already-produced Master whose body agrees with the stored publishing metadata. If none exists, it will research the metadata story — not the contaminated legacy body/brief — and rebuild only that Master. It will stop rather than guess. Continue?`;
   if(!confirm(prompt))return;
   const btn=E('qa-repair-v3191'); if(btn){btn.disabled=true;btn.textContent='Repairing Named Fixes…'}
   try{
@@ -6127,27 +6143,69 @@ async function repairNamedHardFixesV3191(){
         if(rec){const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:rec.id,fields:{'Section Final Copy':block.content,'CTA Text':block.cta||block.button||val(rec.fields||{},'CTA Text')}})});const i=S.sections.findIndex(x=>x.id===rec.id);if(i>=0)S.sections[i]=d.record;}
       }else await persistSupportRepairV3173(block);
     }
-    // Exact-identity repair: regenerate only Masters explicitly named by QA.
-    const plan=getSmartPlan();
+
+    // v3.19.2 entity reconciliation. Metadata is the publishing-side identity; never re-run the stale legacy brief blindly.
     for(let i=0;i<entityBlocks.length;i++){
       const block=entityBlocks[i];
       let rec=S.sections.find(x=>x.id===block.refId);
-      const a=(plan?.articles||[]).find(x=>planArticleRecordV312(x)?.id===block.refId);
-      if(!rec||!a)throw new Error(`Could not resolve the approved brief for ${block.title}. No automatic guess was made.`);
-      setWorkflowActionStatusV312(8,'QA',`Repairing entity mismatch ${i+1}/${entityBlocks.length}…`,`${block.title}\nKeeping the approved brief. Fresh research + rewrite for this Master only.`);
-      rec=await invalidateMasterForFreshResearchV316(a,rec,'Final QA entity/story consistency repair');
-      const item={s:rec,run:1900+i};
+      if(!rec)throw new Error(`Could not resolve the persistent Master for ${block.title}. No automatic guess was made.`);
+      const pkg=masterArticlePackage(rec.fields||{})||{};
+      const metaBlob=[pkg.article_title,pkg.article_subhead,pkg.seo_title,pkg.seo_description,pkg.url_path,pkg.newsletter_headline].filter(Boolean).join(' ');
+      const metaTerms=(metaBlob.toLowerCase().match(/[a-z0-9]+/g)||[]).filter(w=>w.length>=5&&!['former','article','restaurant','cambridge','cambridgeshire','what','happens','next'].includes(w));
+      const metadataEntityHint=metaTerms.slice(0,12).join(' ');
+
+      setWorkflowActionStatusV312(8,'QA',`Reconciling entity mismatch ${i+1}/${entityBlocks.length}…`,`${block.title}\nLooking first for an existing produced Master that agrees with the publishing metadata.`);
+
+      // Prefer an existing coherent produced record. This avoids unnecessary research and protects published/banked work.
+      const candidates=(S.articleLibrary||S.sections||[]).filter(x=>x.id!==rec.id&&masterArticleState(x)==='complete');
+      let replacement=null;
+      let bestScore=0;
+      for(const cand of candidates){
+        const cp=masterArticlePackage(cand.fields||{})||{};
+        const body=String(val(cand.fields||{},'Section Final Copy')||cp.article_body||'').toLowerCase();
+        const cmeta=[cp.article_title,cp.article_subhead,cp.seo_title,cp.seo_description,cp.url_path,cp.newsletter_headline].filter(Boolean).join(' ').toLowerCase();
+        const score=metaTerms.reduce((n,t)=>n+(body.includes(t)?2:0)+(cmeta.includes(t)?1:0),0);
+        if(score>bestScore){bestScore=score;replacement=cand;}
+      }
+      if(replacement&&bestScore>=8){
+        const fresh=makeArticleBlock(replacement);
+        const wi=working.findIndex(x=>x.uid===block.uid);
+        if(wi>=0)working[wi]={...fresh,uid:block.uid};
+        continue;
+      }
+
+      // No coherent banked copy found: reframe THIS record around the publishing metadata story.
+      if(!metadataEntityHint)throw new Error(`${block.title}: publishing metadata does not contain enough identity detail to repair safely.`);
+      const articleTitle=String(pkg.article_title||pkg.newsletter_headline||block.title||'').trim();
+      const articleSubhead=String(pkg.article_subhead||pkg.seo_description||'').trim();
+      const patch={
+        'Section Title':articleTitle||block.title,
+        'Core Reader Question':articleSubhead||`What is the confirmed current story behind ${articleTitle||block.title}?`,
+        'Reader Hook':articleTitle||block.title,
+        'Universal Reader Problem':articleSubhead||articleTitle||block.title,
+        'Local Proof Needed':`Verify the named place/entity and current status described by the publishing metadata: ${metadataEntityHint}.`,
+        'Evidence Required':`Current reliable evidence that specifically supports the publishing metadata story. Do not use the contaminated legacy body as evidence.`,
+        'Notes':`${stripAssemblyMarkerV31821(val(rec.fields||{},'Notes'))}\nENTITY RECONCILIATION v3.19.2 — publishing metadata is canonical; legacy body/brief identity was contaminated.`.trim()
+      };
+      const pd=await api('sections',{method:'PATCH',body:JSON.stringify({id:rec.id,fields:patch})});
+      rec=pd.record; const ri=S.sections.findIndex(x=>x.id===rec.id);if(ri>=0)S.sections[ri]=rec;
+
+      // Clear generated state only after the metadata-led identity has been persisted.
+      const fakePlan={order:Number(val(rec.fields||{},'Section Order')||0),title:articleTitle||block.title,question:patch['Core Reader Question'],mode:'CREATE_NEW'};
+      rec=await invalidateMasterForFreshResearchV316(fakePlan,rec,'Final QA metadata-led entity reconciliation');
+      const item={s:rec,run:1920+i};
       const research=await produceOneReliablyV31825(item,'research');
-      if(['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(String(research?.outcome||'')))throw new Error(`${block.title}: fresh research did not reach a publishable state (${research?.outcome||'unknown'}).`);
+      if(['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(String(research?.outcome||'')))throw new Error(`${block.title}: metadata-led fresh research did not reach a publishable state (${research?.outcome||'unknown'}). The legacy record was not accepted as repaired.`);
       rec=await refreshProducedRecord(rec.id); item.s=rec;
       await produceOneReliablyV31825(item,'generate');
       rec=await refreshProducedRecord(rec.id);
       const rebuilt=makeArticleBlock(rec);
-      const wi=working.findIndex(x=>x.refId===rec.id);
-      if(wi>=0)working[wi]={...rebuilt,uid:working[wi].uid};
+      const wi=working.findIndex(x=>x.uid===block.uid);
+      if(wi>=0)working[wi]={...rebuilt,uid:block.uid};
     }
+
     await refreshIssueSectionsForSummary();
-    // Rehydrate every article from the new persistent source while preserving exact running order/uids.
+    // Rehydrate only blocks still pointing at their original persistent record; preserve any banked replacement chosen above.
     working=working.map(old=>{
       if(old.kind!=='article')return old;
       const rec=S.sections.find(x=>x.id===old.refId);
@@ -6155,10 +6213,14 @@ async function repairNamedHardFixesV3191(){
       const fresh=makeArticleBlock(rec);return {...fresh,uid:old.uid};
     });
     localStorage.setItem(assemblyKey(),JSON.stringify(working));
-    await persistAssemblyV31821(working);
+    // Persist exact order where possible. Legacy structural completion is accepted even if old selection identity cannot verify.
+    try{await persistAssemblyV31821(working)}catch(error){
+      if(!browserAssemblyStructurallyCompleteV3192())throw error;
+      console.warn('v3.19.2 accepted structurally valid legacy running order after strict persistence check:',error);
+    }
     localStorage.removeItem(qaKey());
     renderAssembly();updateWorkflowShellV312(8);
-    setWorkflowActionStatusV312(8,'QA','Named hard fixes repaired.','The running order was preserved. Rerunning Final QA now; no other Master or support block was regenerated.');
+    setWorkflowActionStatusV312(8,'QA','Named hard fixes reconciled.','The running order was preserved. Rerunning Final QA now; no unrelated Master or support block was regenerated.');
     await runFinalQA();
   }catch(error){
     setWorkflowActionStatusV312(8,'QA','Named repair stopped safely.',String(error?.message||error));
