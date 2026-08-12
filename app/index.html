@@ -326,7 +326,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 .operator-rule-v319{background:#f3f7fd;border-radius:9px;padding:9px}.operator-rule-v319 span{font-size:11px;color:#475467;line-height:1.35}.operator-sop-v319{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.operator-sop-v319 summary{cursor:pointer;font-size:11px;font-weight:800;color:#475467}.operator-matrix-row-v319{display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #edf0f4;font-size:10px}.operator-matrix-row-v319 b{font-size:10px}.operator-matrix-row-v319 span{color:#667085}.workflow-step-v312.done[data-flow-step="9"]{background:#15803d!important;border-color:#15803d!important;color:#fff!important}
 @media(max-width:1100px){.operator-guide-v319{grid-template-columns:1fr 1fr}.operator-rule-v319,.operator-sop-v319{grid-column:1/-1}.operator-matrix-row-v319{grid-template-columns:70px 1fr}}
 @media(max-width:700px){.operator-guide-v319{grid-template-columns:1fr}.operator-rule-v319,.operator-sop-v319{grid-column:auto}.operator-matrix-row-v319{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.19.0<br><strong>Operator-First Publishing</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-12 · cumulative v3.19.0</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.19.1<br><strong>Legacy State + Named Fix Repair</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-12 · cumulative v3.19.0</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -473,6 +473,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
   <div class="small muted" id="qa-report-summary">Run Final QA to review the complete issue.</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
     <button class="btn" id="qa-fix-v317" disabled>Fix QA Exceptions</button>
+    <button class="btn secondary" id="qa-repair-v3191" style="display:none">Repair Named Hard Fixes</button>
     <button class="btn secondary" id="qa-rerun-v317">Rerun Final QA</button>
     <button class="btn secondary" id="qa-copy">Copy QA Report</button>
     <button class="btn secondary" id="qa-hide">Hide Report</button>
@@ -4433,6 +4434,20 @@ function persistedAssemblyCompleteV31821(){
   const gotIds=new Set(masters.map(x=>x.s.id));
   return wantedIds.size===selected.length && [...wantedIds].every(id=>gotIds.has(id));
 }
+function legacyAssemblyStructurallyCompleteV3191(){
+  const profile=engineProfileForPublication();
+  const rows=(S.sections||[]).map(s=>({s,order:assemblyOrderFromNotesV31821(val(s.fields||{},'Notes'))})).filter(x=>x.order>0).sort((a,b)=>a.order-b.order);
+  if(!rows.length)return false;
+  const min=Number(profile.targetSections?.[0]||0),max=Number(profile.targetSections?.[1]||999),supportNeed=supportTargetV315().supportNeeded;
+  if(rows.length<min||rows.length>max)return false;
+  const orders=rows.map(x=>x.order);
+  if(new Set(orders).size!==rows.length)return false;
+  if(orders.some((n,i)=>n!==i+1))return false;
+  const masters=rows.filter(x=>!isPersistentSupportSectionV3153(x.s));
+  const supports=rows.filter(x=>isPersistentSupportSectionV3153(x.s));
+  const [minMasters,maxMasters]=profile.targetMasters||[1,99];
+  return masters.length>=minMasters&&masters.length<=maxMasters&&supports.length>=supportNeed;
+}
 async function persistAssemblyV31821(items){
   if(!S.issue?.id)throw new Error('Open an issue first.');
   const desired=new Map(items.map((b,i)=>[String(b.refId||''),i+1]));
@@ -4567,7 +4582,7 @@ function updateWorkflowShellV312(forcedStep){
    && canvasArticlesV31819.length===selected.length
    && canvasSupportsV31819.length>=targetV315.supportNeeded
    && selectedMastersPresentV31819;
- const assemblyCompleteV31819=persistedAssemblyOkV31821||browserAssemblyOkV31821;
+ const assemblyCompleteV31819=persistedAssemblyOkV31821||legacyAssemblyStructurallyCompleteV3191()||browserAssemblyOkV31821;
  if(assemblyCompleteV31819)auto=8;
 
  // QA is persisted independently. If the issue lifecycle says QA passed, Step 8 is complete
@@ -5645,6 +5660,9 @@ function setQAFixButtonState(report){
   const fresh=!!(report&&report.qaVersion==='3.17.3.7'&&report.summary);
   const fixes=fresh?Number(report.summary.fix||0):0;
   if(b){b.disabled=!(fresh&&fixes>0);b.textContent=fixes>0?`Fix QA Exceptions (${fixes})`:'Fix QA Exceptions';}
+  const repair=E('qa-repair-v3191');
+  const named=(report?.findings||[]).some(f=>f.severity==='FIX'&&(f.code==='WRONG_FAMILY_LANGUAGE'||/articleMeta|align the metadata|different slug|metadata.*former|entity mismatch/i.test(String(f.message||''))));
+  if(repair){repair.style.display=fresh&&fixes>0&&named?'inline-block':'none';repair.disabled=!!window.__finalQARunningV31736;}
   if(r){r.disabled=!fresh||!!window.__finalQARunningV31736;r.textContent=window.__finalQARunningV31736?'Running Final QA…':'Rerun Final QA';}
 }
 function showQAReport(report,scroll=true){
@@ -6082,6 +6100,70 @@ async function fixQAExceptionsV317(){
   }finally{
     if(btn){btn.disabled=false;btn.textContent=old;}
   }
+}
+
+
+async function repairNamedHardFixesV3191(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
+  if(!saved?.summary?.fix){alert('Run Final QA first.');return}
+  const original=getCanvas();
+  const wrongIds=[...new Set((saved.findings||[]).filter(f=>f.severity==='FIX'&&f.code==='WRONG_FAMILY_LANGUAGE').flatMap(f=>f.blocks||[]))];
+  const entityIds=[...new Set((saved.findings||[]).filter(f=>f.severity==='FIX'&&/articleMeta|align the metadata|different slug|metadata.*former|entity mismatch/i.test(String(f.message||''))).flatMap(f=>f.blocks||[]))];
+  if(!wrongIds.length&&!entityIds.length){alert('There are no named hard fixes this repair can handle safely.');return}
+  const entityBlocks=original.filter(b=>entityIds.includes(b.uid)&&b.kind==='article');
+  const names=entityBlocks.map(b=>b.title).join('\n- ');
+  const prompt=`ICS will repair only the named hard fixes.\n\nWrong-family wording: ${wrongIds.length} block(s).\nEntity/story mismatches: ${entityBlocks.length} Master(s).${entityBlocks.length?`\n- ${names}`:''}\n\nFor an entity mismatch, ICS will keep the approved Master brief, discard the contaminated article package, run fresh research for that one Master, and rewrite only that Master. All other Masters and support components are preserved. Continue?`;
+  if(!confirm(prompt))return;
+  const btn=E('qa-repair-v3191'); if(btn){btn.disabled=true;btn.textContent='Repairing Named Fixes…'}
+  try{
+    let working=JSON.parse(JSON.stringify(original));
+    // Deterministic family-language repair.
+    for(const block of working.filter(b=>wrongIds.includes(b.uid))){
+      const clean=x=>String(x||'').replace(/Tell Spotlight/gi,'Tell us').replace(/Spotlight readers?/gi,'Taste Trail readers').replace(/Spotlight newsletter/gi,'Taste Trail');
+      block.title=clean(block.title);block.content=clean(block.content);block.cta=clean(block.cta);block.button=clean(block.button);
+      if(block.kind==='article'){
+        const rec=S.sections.find(x=>x.id===block.refId);
+        if(rec){const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:rec.id,fields:{'Section Final Copy':block.content,'CTA Text':block.cta||block.button||val(rec.fields||{},'CTA Text')}})});const i=S.sections.findIndex(x=>x.id===rec.id);if(i>=0)S.sections[i]=d.record;}
+      }else await persistSupportRepairV3173(block);
+    }
+    // Exact-identity repair: regenerate only Masters explicitly named by QA.
+    const plan=getSmartPlan();
+    for(let i=0;i<entityBlocks.length;i++){
+      const block=entityBlocks[i];
+      let rec=S.sections.find(x=>x.id===block.refId);
+      const a=(plan?.articles||[]).find(x=>planArticleRecordV312(x)?.id===block.refId);
+      if(!rec||!a)throw new Error(`Could not resolve the approved brief for ${block.title}. No automatic guess was made.`);
+      setWorkflowActionStatusV312(8,'QA',`Repairing entity mismatch ${i+1}/${entityBlocks.length}…`,`${block.title}\nKeeping the approved brief. Fresh research + rewrite for this Master only.`);
+      rec=await invalidateMasterForFreshResearchV316(a,rec,'Final QA entity/story consistency repair');
+      const item={s:rec,run:1900+i};
+      const research=await produceOneReliablyV31825(item,'research');
+      if(['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(String(research?.outcome||'')))throw new Error(`${block.title}: fresh research did not reach a publishable state (${research?.outcome||'unknown'}).`);
+      rec=await refreshProducedRecord(rec.id); item.s=rec;
+      await produceOneReliablyV31825(item,'generate');
+      rec=await refreshProducedRecord(rec.id);
+      const rebuilt=makeArticleBlock(rec);
+      const wi=working.findIndex(x=>x.refId===rec.id);
+      if(wi>=0)working[wi]={...rebuilt,uid:working[wi].uid};
+    }
+    await refreshIssueSectionsForSummary();
+    // Rehydrate every article from the new persistent source while preserving exact running order/uids.
+    working=working.map(old=>{
+      if(old.kind!=='article')return old;
+      const rec=S.sections.find(x=>x.id===old.refId);
+      if(!rec)return old;
+      const fresh=makeArticleBlock(rec);return {...fresh,uid:old.uid};
+    });
+    localStorage.setItem(assemblyKey(),JSON.stringify(working));
+    await persistAssemblyV31821(working);
+    localStorage.removeItem(qaKey());
+    renderAssembly();updateWorkflowShellV312(8);
+    setWorkflowActionStatusV312(8,'QA','Named hard fixes repaired.','The running order was preserved. Rerunning Final QA now; no other Master or support block was regenerated.');
+    await runFinalQA();
+  }catch(error){
+    setWorkflowActionStatusV312(8,'QA','Named repair stopped safely.',String(error?.message||error));
+    alert(`Repair stopped safely: ${String(error?.message||error)}`);
+  }finally{if(btn){btn.disabled=false;btn.textContent='Repair Named Hard Fixes'}}
 }
 
 async function applySafeFixes(){
@@ -6637,7 +6719,7 @@ E('smart-plan-audit')?.addEventListener('click',()=>{
   const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the Issue Plan first.');return}
   renderSmartPlan();document.querySelector('.smart-audit-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
 });
-E('smart-plan-lock').onclick=lockSmartPlan;E('smart-plan-apply').onclick=applySmartPlanToBuild;E('smart-edit-save').onclick=saveSmartArticleEdit;E('smart-edit-cancel').onclick=()=>E('smart-edit-panel').style.display='none';E('smart-plan-hide').onclick=()=>E('smart-plan-panel').style.display='none';E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('qa-fix-v317').onclick=fixQAExceptionsV317;E('qa-rerun-v317').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;
+E('smart-plan-lock').onclick=lockSmartPlan;E('smart-plan-apply').onclick=applySmartPlanToBuild;E('smart-edit-save').onclick=saveSmartArticleEdit;E('smart-edit-cancel').onclick=()=>E('smart-edit-panel').style.display='none';E('smart-plan-hide').onclick=()=>E('smart-plan-panel').style.display='none';E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('qa-fix-v317').onclick=fixQAExceptionsV317;E('qa-repair-v3191').onclick=repairNamedHardFixesV3191;E('qa-rerun-v317').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;
 E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
 E('save-inspector').onclick=saveInspector;E('inspect-type').onchange=()=>{const t=E('inspect-type').value,d=COMPONENT_DEFS.find(x=>x.type===t);E('inspect-template').value=t==='MASTER ARTICLE'?'MASTER ARTICLE':(d?.template||(t==='PARTNER PRESENCE'?'PARTNER TIP':'SHORT COMPONENT'));E('inspect-points').value=t==='MASTER ARTICLE'?5:(d?.points||(t==='PARTNER PRESENCE'?3:2));if(t==='PARTNER PRESENCE'){E('inspect-has-partner').checked=true;E('partner-fields').hidden=false}};E('inspect-has-partner').onchange=toggleInspectorPartner;E('inspect-commercial-role').onchange=()=>{const role=E('inspect-commercial-role').value;if(['AUTHORITY','ACTIVATION','REVENUE'].includes(role)&&!E('inspect-has-partner').checked){E('inspect-partner-suggestion').textContent='This commercial role may benefit from a partner, but attach one only when a real partner is confirmed.'}};
 E('remove-canvas-block').onclick=()=>{if(canvasSelectedUid)removeCanvasBlock(canvasSelectedUid)};
