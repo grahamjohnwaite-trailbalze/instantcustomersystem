@@ -326,7 +326,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 .operator-rule-v319{background:#f3f7fd;border-radius:9px;padding:9px}.operator-rule-v319 span{font-size:11px;color:#475467;line-height:1.35}.operator-sop-v319{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.operator-sop-v319 summary{cursor:pointer;font-size:11px;font-weight:800;color:#475467}.operator-matrix-row-v319{display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #edf0f4;font-size:10px}.operator-matrix-row-v319 b{font-size:10px}.operator-matrix-row-v319 span{color:#667085}.workflow-step-v312.done[data-flow-step="9"]{background:#15803d!important;border-color:#15803d!important;color:#fff!important}
 @media(max-width:1100px){.operator-guide-v319{grid-template-columns:1fr 1fr}.operator-rule-v319,.operator-sop-v319{grid-column:1/-1}.operator-matrix-row-v319{grid-template-columns:70px 1fr}}
 @media(max-width:700px){.operator-guide-v319{grid-template-columns:1fr}.operator-rule-v319,.operator-sop-v319{grid-column:auto}.operator-matrix-row-v319{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.19.2<br><strong>Legacy Reconciliation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-12 · lean package</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.19.3<br><strong>Step 9 Live Handoff State</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-12 · lean package</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -4488,6 +4488,28 @@ function restorePersistedAssemblyV31821(){
   if(persisted.length){localStorage.setItem(assemblyKey(),JSON.stringify(persisted));return persisted.map(normaliseCanvasBlock)}
   return [];
 }
+// v3.19.3 — Step 9 must use the same persisted/live assembly state that makes Step 7 complete.
+// Never show 0 sections simply because browser-local canvas state was absent or loaded later.
+function step9LiveItemsV3193(){
+  const persisted=persistedAssemblyItemsV31821();
+  if(persisted.length)return persisted.map(normaliseCanvasBlock);
+  const local=getCanvas();
+  if(local.length)return local.map(normaliseCanvasBlock);
+  return [];
+}
+function step9LiveStatusV3193(){
+  const current=String(val(S.issue?.fields||{},'Issue Status')||'').trim().toUpperCase();
+  if(['READY FOR LETTERMAN','PUBLISHED','ARCHIVED'].includes(current))return current==='READY FOR LETTERMAN'?'PRODUCTION READY':current;
+  if(finalQAPassedV31820())return 'QA PASSED';
+  return current||'CHECK';
+}
+function renderStep9LiveStateV3193(){
+  const items=step9LiveItemsV3193();
+  const masters=items.filter(b=>b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE').length;
+  if(E('pr-sections-v312c'))E('pr-sections-v312c').textContent=String(items.length||0);
+  if(E('pr-masters-v312c'))E('pr-masters-v312c').textContent=String(masters||0);
+  if(E('pr-status-v312c'))E('pr-status-v312c').textContent=step9LiveStatusV3193();
+}
 // v3.18.20 — Final QA completion must survive browser refreshes and new deploys.
 // A zero-hard-fix QA run persists the issue lifecycle as QA in Airtable. Step 9 can
 // therefore trust the issue record even when the browser-local report is unavailable.
@@ -6538,7 +6560,7 @@ function newsletterDescriptionV3182(publication,theme,preheader){
   return `Latest issue of ${publication||'the newsletter'}.`;
 }
 function assemblyDraft(){
-  const rawItems=getCanvas(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();
+  const rawItems=step9LiveItemsV3193(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();
   if(!rawItems.length)return 'No assembled running order is available.';
   const publication=pubName(S.issue?.fields?.Publication||[]);
   const items=productionOrderV31816(rawItems,publication);
@@ -6610,7 +6632,7 @@ function masterAssetsPackageV3181(){
   const plan=getSmartPlan();
   const selected=new Set(getMasterSelectionV312().map(Number));
   const selectedArticles=(plan?.articles||[]).filter(a=>selected.has(Number(a.order)));
-  const canvasOrder=new Map(getCanvas().filter(b=>b.kind==='article').map((b,i)=>[String(b.refId||''),i]));
+  const canvasOrder=new Map(step9LiveItemsV3193().filter(b=>b.kind==='article').map((b,i)=>[String(b.refId||''),i]));
   const articles=selectedArticles.sort((a,b)=>{const ar=planArticleRecordV312(a),br=planArticleRecordV312(b);const ai=canvasOrder.has(String(ar?.id||''))?canvasOrder.get(String(ar.id)):999;const bi=canvasOrder.has(String(br?.id||''))?canvasOrder.get(String(br.id)):999;return ai-bi||Number(a.order)-Number(b.order)});
   if(!articles.length)return 'No selected Master Articles are available. Return to Step 5 and confirm the final Master selection.';
   const publication=pubName(S.issue?.fields?.Publication||[]);
@@ -6656,7 +6678,7 @@ async function persistNewsletterUsageV319(){
   const issueId=String(S.issue.id),publication=currentPublicationName();
   const issueNumber=String(val(S.issue.fields||{},'Issue Number')||'').trim();
   const sendDate=String(val(S.issue.fields||{},'Send Date')||'').trim();
-  const articleIds=[...new Set(getCanvas().filter(b=>b.kind==='article'&&b.refId).map(b=>String(b.refId)))];
+  const articleIds=[...new Set(step9LiveItemsV3193().filter(b=>b.kind==='article'&&b.refId).map(b=>String(b.refId)))];
   for(const id of articleIds){
     const record=(S.sections||[]).find(x=>String(x.id)===id)||(S.articleLibrary||[]).find(x=>String(x.id)===id);
     if(!record)continue;
@@ -6699,6 +6721,9 @@ async function step9SafeRunV31817(kind){
       return;
     }
     if(!finalQAPassedV31820()){alert('Production Package is locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');return}
+    renderStep9LiveStateV3193();
+    const liveItems=step9LiveItemsV3193();
+    if(!liveItems.length){alert('Step 9 cannot see a persisted running order yet. Return to Step 7 only if ICS explicitly says assembly is incomplete; do not rebuild a green Step 7.');return}
     const text=assemblyDraft();
     E('preview-text').value=text;
     await persistProductionReadyV319(text);
@@ -6849,13 +6874,12 @@ function applyWorkflowLayoutV312C(step){
     const qa=E('qa-report-panel'); if(qa)qa.style.display='block';
   }
   if(step===9){
-    const c=getCanvas();
-    const blocks=Array.isArray(c?.blocks)?c.blocks:[];
-    const masters=blocks.filter(b=>String(b.type||'').toUpperCase()==='MASTER ARTICLE').length;
-    if(E('pr-sections-v312c'))E('pr-sections-v312c').textContent=String(blocks.length||0);
-    if(E('pr-masters-v312c'))E('pr-masters-v312c').textContent=String(masters||0);
-    if(E('pr-status-v312c'))E('pr-status-v312c').textContent=String(val(S.issue?.fields,'Issue Status')||'CHECK').replace('READY FOR LETTERMAN','PRODUCTION READY');
+    renderStep9LiveStateV3193();
   }
+  const researchRepair=E('repair-research-queue-v3189');
+  if(researchRepair)researchRepair.style.display=step<=4?'inline-flex':'none';
+  const masterAssets=E('pr-assets-v3181');
+  if(masterAssets)masterAssets.style.display=step===9?'none':'inline-flex';
   // Assembly controls become explicit "Show" controls rather than ambiguous Hide controls.
   if(E('toggle-canvas-library'))E('toggle-canvas-library').textContent='Show Content Library';
   if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').textContent='Show Selected Section';
