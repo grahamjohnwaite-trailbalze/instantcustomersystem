@@ -134,6 +134,10 @@ body[data-workflow-step="4"] #view-build #production-progress{display:block!impo
 body[data-workflow-step="3"] #view-build .workflow-actions{display:grid!important}
 body[data-workflow-step="3"] #view-build #run-next-production{background:var(--accent);color:#fff;border-color:var(--accent);font-size:14px;padding:12px}
 body[data-workflow-step="4"] #view-build #run-production{font-size:14px;padding:12px}
+/* v3.20.2 — if a locked plan reaches Research/Produce without its approved queue markers,
+   the recovery action is visible on the same screen instead of hiding in legacy controls. */
+body[data-workflow-step="3"] #view-build #reconcile-smart-queue,
+body[data-workflow-step="4"] #view-build #reconcile-smart-queue{display:block!important;background:#fff7ed!important;border-color:#fb923c!important;color:#9a3412!important;font-weight:800!important}
 /* Clear labels and bigger running-order cards */
 .canvas-panel{border-radius:14px}
 #assembly-order .canvas-card{padding:14px 12px}
@@ -326,7 +330,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 .operator-rule-v319{background:#f3f7fd;border-radius:9px;padding:9px}.operator-rule-v319 span{font-size:11px;color:#475467;line-height:1.35}.operator-sop-v319{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.operator-sop-v319 summary{cursor:pointer;font-size:11px;font-weight:800;color:#475467}.operator-matrix-row-v319{display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #edf0f4;font-size:10px}.operator-matrix-row-v319 b{font-size:10px}.operator-matrix-row-v319 span{color:#667085}.workflow-step-v312.done[data-flow-step="9"]{background:#15803d!important;border-color:#15803d!important;color:#fff!important}
 @media(max-width:1100px){.operator-guide-v319{grid-template-columns:1fr 1fr}.operator-rule-v319,.operator-sop-v319{grid-column:1/-1}.operator-matrix-row-v319{grid-template-columns:70px 1fr}}
 @media(max-width:700px){.operator-guide-v319{grid-template-columns:1fr}.operator-rule-v319,.operator-sop-v319{grid-column:auto}.operator-matrix-row-v319{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.1<br><strong>Publication URL + SEO Slug</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-12 · lean package</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.2<br><strong>Persistent Issue Context + Queue Carryover</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-12 · lean package</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -335,7 +339,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 <button class="btn secondary" id="copy-issue-map" style="width:100%;margin-bottom:8px">Open production map</button>
 <button class="btn secondary" id="apply-editorial-plan" style="width:100%;margin-bottom:8px">Apply current editorial plan</button>
 <button class="btn" id="build-issue" style="width:100%;margin-bottom:8px">Build issue</button>
-<button class="btn secondary" id="repair-build-briefs" style="width:100%;margin-bottom:8px">Repair issue briefs</button> <button class="btn secondary" id="reconcile-smart-queue" style="width:100%;margin-bottom:8px">Reconcile Approved Queue</button>
+<button class="btn secondary" id="repair-build-briefs" style="width:100%;margin-bottom:8px">Repair issue briefs</button> <button class="btn secondary" id="reconcile-smart-queue" style="width:100%;margin-bottom:8px">Repair Approved Queue</button>
 <button class="btn secondary" id="test-openai" style="width:100%;margin-bottom:8px">Test OpenAI connection</button>
 <div id="article-workflow" class="workflow-card" style="margin-bottom:12px"><strong>Current article workflow</strong><div class="muted" style="margin-top:6px">Select an article to see the next required action.</div></div>
 <button class="btn" id="run-production" style="width:100%;margin-bottom:8px">Write Publishable Masters</button>
@@ -975,7 +979,7 @@ async function repairLegacyPublishabilityReviewsV31826(){
   if(repaired)E('save-state').textContent=`v3.18.26 repaired ${repaired} false publishability review${repaired===1?'':'s'} without rewriting or rerunning research.`;
   return {repaired,remaining};
 }
-async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);await Promise.all([loadSections(),loadArticleLibrary()]);await ensureIssuePromiseSourceV31824();await repairLegacyPublishabilityReviewsV31826();restorePersistedAssemblyV31821();show('assemble');renderAssembly()}
+async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);localStorage.setItem('ics:activeIssueId',id);await Promise.all([loadSections(),loadArticleLibrary()]);await ensureIssuePromiseSourceV31824();await repairLegacyPublishabilityReviewsV31826();restorePersistedAssemblyV31821();show('assemble');renderAssembly()}
 function sectionOrderValue(s){const n=Number(val(s.fields,'Section Order'));return Number.isFinite(n)?n:999999}
 function sortSections(){S.sections=[...S.sections].sort((a,b)=>sectionOrderValue(a)-sectionOrderValue(b)||(a.createdTime||'').localeCompare(b.createdTime||''))}
 function sectionOrderDiagnostic(){
@@ -1194,6 +1198,46 @@ async function reconcileApprovedSmartQueue({quiet=false}={}){
   if(!quiet)alert(`Approved queue reconciled.\n${activeRows.length} active approved briefs · ${superseded} superseded briefs preserved · ${changed} records updated.\n${clean?'Stable identity clean ✓':`STOP — duplicates: ${duplicates.join(', ')||'none'} · missing: ${missing.join(', ')||'none'}`}`);
   return {active:activeRows.length,superseded,changed,clean,duplicates,missing};
 }
+// v3.20.2 — preserve the selected issue and materialise/reconcile the locked queue
+// before Research/Produce. This is deliberately idempotent: completed records are kept.
+async function restoreActiveIssueContextV3202(){
+  if(S.issue?.id)return S.issue;
+  const id=String(localStorage.getItem('ics:activeIssueId')||localStorage.getItem('ics:lastIssue')||'').trim();
+  if(!id)return null;
+  const issue=(S.issues||[]).find(i=>i.id===id);
+  if(!issue)return null;
+  S.issue=issue;
+  localStorage.setItem('ics:lastIssue',id);
+  localStorage.setItem('ics:activeIssueId',id);
+  if(E('no-issue'))E('no-issue').hidden=true;
+  if(E('builder'))E('builder').hidden=false;
+  if(E('build-title'))E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;
+  if(E('build-meta'))E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;
+  try{await loadSections()}catch(e){console.warn('v3.20.2 issue-context section restore failed',e)}
+  try{await loadArticleLibrary()}catch(e){console.warn('v3.20.2 article-library restore failed',e)}
+  return S.issue;
+}
+async function ensureApprovedQueueV3202({materialize=true,quiet=true}={}){
+  const issue=await restoreActiveIssueContextV3202();
+  if(!issue)throw new Error('No active issue is available. Re-open the issue once from Issues.');
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length||!smartPlanLocked(plan))throw new Error('Lock the approved 15-candidate plan first.');
+  let st=await approvedBriefStatusV3131();
+  if(st.clean)return {...st,repaired:false};
+  setWorkflowActionStatusV312(workflowSelectedStepV312||3,workflowSelectedStepV312===4?'Produce':'Research',`Repairing approved queue ${st.active}/${st.expected}…`,'ICS is restoring the locked plan into the current issue. Existing research and written Masters are preserved.');
+  if(materialize){
+    await applySmartPlanToBuild({quiet:true});
+    st=await approvedBriefStatusV3131();
+  }
+  if(!st.clean){
+    await reconcileApprovedSmartQueue({quiet:true});
+    st=await approvedBriefStatusV3131();
+  }
+  if(!st.clean)throw new Error(`Approved queue is still not clean: ${st.active}/${st.expected} active · duplicate orders ${st.duplicates?.join(', ')||'none'} · missing ${st.missing?.join(', ')||'none'}.`);
+  sortSections();renderSections();renderForm();render();
+  if(!quiet)alert(`Approved queue restored: ${st.active}/${st.expected} active · missing none.`);
+  return {...st,repaired:true};
+}
 async function productionSections(){
  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
  S.sections=r.records||[];
@@ -1333,7 +1377,14 @@ async function runProduction({one=false,mode="generate"}={}){
    work=[selected];
  }else{
    let queue;
-   try{queue=await productionSections()}catch(e){alert(e.message);return}
+   try{
+     await ensureApprovedQueueV3202({materialize:true,quiet:true});
+     queue=await productionSections();
+   }catch(e){
+     E('production-progress').className='warning';
+     E('production-progress').innerHTML=`<strong>PRODUCTION STOP GATE</strong><div class="muted">${esc(e.message||e)}</div><div class="muted" style="margin-top:6px">Use Repair Approved Queue below. Do not rebuild the issue or go back to planning.</div>`;
+     alert(e.message);return
+   }
    const pending=mode==='research'
      ? queue.filter(x=>!researchPackPresent(x.s.fields||{}))
      : queue.filter(x=>{
@@ -4673,7 +4724,7 @@ function runWorkflowPrimaryV312(){
    }).catch(()=>openResearchWorkspaceV3131());
    return
  }
- if(step===4){show('build');setTimeout(()=>E('run-production')?.click(),80);return}
+ if(step===4){show('build');ensureApprovedQueueV3202({materialize:true,quiet:true}).then(st=>{setWorkflowActionStatusV312(4,'Produce',`${st.active}/${st.expected} approved Masters are attached to this issue.`,`Queue identity clean. Write only Masters with publishable saved Research Packs; completed work is preserved.`);setTimeout(()=>E('run-production')?.click(),80)}).catch(e=>{E('production-progress').className='warning';E('production-progress').innerHTML=`<strong>PRODUCTION STOP GATE</strong><div class="muted">${esc(e.message||e)}</div><div class="muted" style="margin-top:6px">Click Repair Approved Queue on this screen. Do not go backwards.</div>`;setWorkflowActionStatusV312(4,'Produce','Approved queue needs repair.',String(e.message||e));});return}
  if(step===5){
    show('assemble');
    refreshMasterSelectionDataV314().then(()=>{
@@ -6965,7 +7016,7 @@ E('assembly-order').ondrop=e=>dropOnCanvas(e);
 E('assembly-clear').onclick=()=>{if(confirm('Clear the entire issue canvas?')){canvasSelectedUid=null;saveCanvas([])}};
 E('assembly-auto').onclick=collectSmartSignals;E('assembly-build-plan').onclick=buildSmartPlanFromSavedSignals;E('assembly-smart-assemble').onclick=smartAssembleIssue;document.addEventListener('click',e=>{if(e.target?.id==='copy-smart-audit')copyIssueBalanceAudit()});
 document.addEventListener('click',e=>{if(e.target?.id==='copy-commercial-completion')copyCommercialCompletion()});
-E('reconcile-smart-queue')?.addEventListener('click',()=>reconcileApprovedSmartQueue().catch(e=>alert('Could not reconcile queue: '+e.message)));
+E('reconcile-smart-queue')?.addEventListener('click',async()=>{const b=E('reconcile-smart-queue'),old=b.textContent;b.disabled=true;b.textContent='Repairing Approved Queue…';try{const st=await ensureApprovedQueueV3202({materialize:true,quiet:false});E('production-progress').className='philosophy-box';E('production-progress').innerHTML=`<strong>Approved queue ready ✓</strong><div class="muted">Active ${st.active}/${st.expected} · duplicate order none · missing none.</div>`;updateWorkflowShellV312(workflowSelectedStepV312);}catch(e){alert('Could not repair approved queue: '+e.message)}finally{b.disabled=false;b.textContent=old}});
 E('smart-commercial-completion')?.addEventListener('click',()=>{
   const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the Issue Plan first.');return}
   renderCommercialCompletionPanel(plan);
@@ -7008,6 +7059,20 @@ function focusWorkflowStepV312B(step,{scroll=true}={}){
   document.body.dataset.workflowStep=String(step);
   workflowSelectedStepV312=step;
   if(step===3||step===4)show('build');else show('assemble');
+  if(step===3||step===4){
+    restoreActiveIssueContextV3202().then(()=>ensureApprovedQueueV3202({materialize:true,quiet:true})).then(st=>{
+      if(Number(document.body.dataset.workflowStep)===step){
+        E('production-progress').className='philosophy-box';
+        E('production-progress').innerHTML=`<strong>Approved queue attached ✓</strong><div class="muted">Active ${st.active}/${st.expected} · duplicate order none · missing none.</div>`;
+        renderSections();
+      }
+    }).catch(e=>{
+      if(Number(document.body.dataset.workflowStep)===step){
+        E('production-progress').className='warning';
+        E('production-progress').innerHTML=`<strong>${step===4?'PRODUCTION':'RESEARCH'} STOP GATE</strong><div class="muted">${esc(e.message||e)}</div><div class="muted" style="margin-top:6px">Click Repair Approved Queue on this screen. Do not go backwards.</div>`;
+      }
+    });
+  }
   updateWorkflowShellV312(step);
   // updateWorkflowShell can auto-select during show(); force the operator-selected step back on screen.
   workflowSelectedStepV312=step;
@@ -7152,5 +7217,5 @@ async function rerunSelectedResearchV3188(){
     alert('Selected re-research did not complete cleanly: '+String(e.message||e));
   }finally{if(b){b.disabled=false;b.textContent=old}}
 }
-E('create-workspace-report-v3186').onclick=createWorkspaceReportV3186;E('repair-research-queue-v3189').onclick=runRepairLockedResearchQueueV3189;E('rerun-selected-research-v3188').onclick=rerunSelectedResearchV3188;E('copy-workspace-report-v3186').onclick=copyWorkspaceReportV3186;E('download-workspace-report-v3186').onclick=downloadWorkspaceReportV3186;E('save-canvas-theme').onclick=saveCanvasPromiseV31824;E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('add-publication').onclick=()=>{E('pub-area').value='';E('pub-family').value='Taste Trail';E('pub-name').value='';E('pub-name').dataset.auto='1';E('pub-code').value='';E('pub-code').dataset.auto='1';E('pub-status').value='Active';syncPublicationSetupV3184(true);E('publication-dialog').showModal()};E('pub-area').oninput=()=>syncPublicationSetupV3184();E('pub-family').onchange=()=>syncPublicationSetupV3184();E('pub-name').oninput=()=>{E('pub-name').dataset.auto='0';if(E('pub-code').dataset.auto==='1'){E('pub-code').value=publicationCodeFromNameV3184(E('pub-name').value)}};E('pub-code').oninput=()=>{E('pub-code').dataset.auto='0'};E('create-publication').onclick=createPublicationV3184;E('new-issue').onclick=prepareNewIssueV31824;E('new-publication').onchange=syncNewIssuePromiseV31824;E('new-theme').oninput=()=>{E('new-theme').dataset.auto='0'};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>researchAllApprovedMastersV3131();E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('pr-assets-v3181').onclick=()=>step9SafeRunV31817('assets');E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
+E('create-workspace-report-v3186').onclick=createWorkspaceReportV3186;E('repair-research-queue-v3189').onclick=runRepairLockedResearchQueueV3189;E('rerun-selected-research-v3188').onclick=rerunSelectedResearchV3188;E('copy-workspace-report-v3186').onclick=copyWorkspaceReportV3186;E('download-workspace-report-v3186').onclick=downloadWorkspaceReportV3186;E('save-canvas-theme').onclick=saveCanvasPromiseV31824;E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if((v==='build'||v==='assemble')&&!S.issue)await restoreActiveIssueContextV3202();if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('add-publication').onclick=()=>{E('pub-area').value='';E('pub-family').value='Taste Trail';E('pub-name').value='';E('pub-name').dataset.auto='1';E('pub-code').value='';E('pub-code').dataset.auto='1';E('pub-status').value='Active';syncPublicationSetupV3184(true);E('publication-dialog').showModal()};E('pub-area').oninput=()=>syncPublicationSetupV3184();E('pub-family').onchange=()=>syncPublicationSetupV3184();E('pub-name').oninput=()=>{E('pub-name').dataset.auto='0';if(E('pub-code').dataset.auto==='1'){E('pub-code').value=publicationCodeFromNameV3184(E('pub-name').value)}};E('pub-code').oninput=()=>{E('pub-code').dataset.auto='0'};E('create-publication').onclick=createPublicationV3184;E('new-issue').onclick=prepareNewIssueV31824;E('new-publication').onchange=syncNewIssuePromiseV31824;E('new-theme').oninput=()=>{E('new-theme').dataset.auto='0'};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>researchAllApprovedMastersV3131();E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('pr-assets-v3181').onclick=()=>step9SafeRunV31817('assets');E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:activeIssueId')||localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});
 </script></body></html>

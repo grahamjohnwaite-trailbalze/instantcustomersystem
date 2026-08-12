@@ -1,0 +1,18 @@
+ICS v3.20.2 — Persistent Issue Context + Approved Queue Carryover
+Build: 2026-08-12
+
+Fixes the PBS #51 Step 4 stop-gate discovered in live production.
+
+Changes
+- Persists the active issue ID separately and restores it when opening Build Issue / Issue Canvas.
+- Research/Produce now materialise the locked 15-candidate plan into the active issue automatically when approved briefs are missing.
+- Missing running-order identity is reconciled automatically before production.
+- Adds a visible “Repair Approved Queue” action on Steps 3 and 4 instead of hiding recovery in legacy issue controls.
+- Produce All Approved Masters now refuses to run against an ambiguous queue, repairs safely first, and preserves completed research/writing.
+- Directly clicking Step 3 or Step 4 no longer strands the operator on an empty 0/15 queue.
+
+Pass condition
+Active 15/15 · duplicate order none · missing none.
+
+Operator rule
+Never go backwards for this fault. Repair the approved queue in place; the locked plan remains authoritative.
