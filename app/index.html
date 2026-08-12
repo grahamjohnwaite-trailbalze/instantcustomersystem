@@ -326,7 +326,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 .operator-rule-v319{background:#f3f7fd;border-radius:9px;padding:9px}.operator-rule-v319 span{font-size:11px;color:#475467;line-height:1.35}.operator-sop-v319{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.operator-sop-v319 summary{cursor:pointer;font-size:11px;font-weight:800;color:#475467}.operator-matrix-row-v319{display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #edf0f4;font-size:10px}.operator-matrix-row-v319 b{font-size:10px}.operator-matrix-row-v319 span{color:#667085}.workflow-step-v312.done[data-flow-step="9"]{background:#15803d!important;border-color:#15803d!important;color:#fff!important}
 @media(max-width:1100px){.operator-guide-v319{grid-template-columns:1fr 1fr}.operator-rule-v319,.operator-sop-v319{grid-column:1/-1}.operator-matrix-row-v319{grid-template-columns:70px 1fr}}
 @media(max-width:700px){.operator-guide-v319{grid-template-columns:1fr}.operator-rule-v319,.operator-sop-v319{grid-column:auto}.operator-matrix-row-v319{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.19.4<br><strong>Letterman Reconciliation</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-12 · lean package</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.0<br><strong>Article Bank + Predictive Letterman URLs</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-12 · lean package</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -426,7 +426,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 </div><div class="toolbar"><button class="btn" id="smart-edit-save">Save this change</button><button class="btn secondary" id="smart-edit-cancel">Cancel</button></div></div>
 <div id="smart-plan-list" class="checklist"></div>
 </section>
-<section class="master-selection-panel-v312" id="master-selection-panel-v312" style="display:none"><div class="section-head" style="margin:0"><div><h2 style="margin:0">Step 5 — Select Masters For This Issue</h2><div class="muted" id="master-selection-summary-v312">Produce the 15 candidates first, then choose the strongest publication-fit set for this issue. Unselected READY articles stay available for later.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn secondary" id="repair-master-integrity-v316" type="button">Repair Produced Masters</button><button class="btn secondary" id="master-selection-save-v312" type="button">Save Selection</button></div></div><div id="master-selection-grid-v312" class="master-selection-grid-v312"></div></section>
+<section class="card" id="article-bank-panel-v320" style="display:none;margin-bottom:14px"><div class="section-head" style="margin:0"><div><div class="eyebrow">After Step 4 — Content Production Engine</div><h2 style="margin:4px 0">Article Bank</h2><div class="muted" id="article-bank-summary-v320">READY Masters are banked before Step 5 selects the issue.</div></div><div class="toolbar"><button class="btn secondary" id="article-bank-prepare-v320" type="button">Prepare All READY Masters</button><button class="btn" id="article-bank-confirm-v320" type="button">Confirm Selected Published</button></div></div><div class="production-ready-grid" style="margin-top:12px"><div><strong id="bank-ready-v320">0</strong><span>READY / bankable</span></div><div><strong id="bank-published-v320">0</strong><span>Confirmed in Letterman</span></div><div><strong id="bank-unused-v320">0</strong><span>Unused in newsletter</span></div></div><div class="muted" style="margin:10px 0">ICS generates the expected Letterman URL from the publication + article slug before publication. Tick only articles you have actually published; no URL pasting is needed when Letterman keeps the planned slug.</div><div id="article-bank-list-v320"></div></section><section class="master-selection-panel-v312" id="master-selection-panel-v312" style="display:none"><div class="section-head" style="margin:0"><div><h2 style="margin:0">Step 5 — Select Masters For This Issue</h2><div class="muted" id="master-selection-summary-v312">Produce the 15 candidates first, then choose the strongest publication-fit set for this issue. Unselected READY articles stay available for later.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn secondary" id="repair-master-integrity-v316" type="button">Repair Produced Masters</button><button class="btn secondary" id="master-selection-save-v312" type="button">Save Selection</button></div></div><div id="master-selection-grid-v312" class="master-selection-grid-v312"></div></section>
 <section id="production-ready-panel-v312c"><div class="eyebrow">Step 9 — Production Ready</div><h2 style="margin:5px 0 6px">Canonical Letterman Build Package</h2><div class="muted">One top-to-bottom handoff in the exact newsletter order. Each Master carries its full article copy, publishing metadata, CTA, useful links and social copy in the same section.</div><div class="production-ready-grid"><div><strong id="pr-sections-v312c">—</strong><span>Sections</span></div><div><strong id="pr-masters-v312c">—</strong><span>Master Articles</span></div><div><strong id="pr-status-v312c">CHECK</strong><span>Issue Status</span></div></div><div class="toolbar"><button class="btn" id="pr-generate-v312c" type="button">Open Canonical Build Package</button><button class="btn secondary" id="pr-copy-v312c" type="button">Open / Copy Package</button><button class="btn secondary" id="pr-reconcile-v3194" type="button">Reconcile Letterman Articles</button><button class="btn secondary" id="pr-assets-v3181" type="button">Master-Only Asset View</button></div><div class="warning" style="margin-top:14px"><strong>Operator rule:</strong> build Letterman from this package from Section 1 downward. You should not need to hunt between separate component, article and social exports.</div></section>
 <section id="step6-status-panel-v3151" class="panel" style="display:none;margin-bottom:14px">
   <div class="section-head" style="margin:0 0 8px">
@@ -3575,6 +3575,7 @@ function renderMasterSelectionV312(){
   const plan=getSmartPlan(),profile=engineProfileForPublication();
   if(!plan?.articles?.length){panel.style.display='none';return}
   panel.style.display='block';
+  renderArticleBankV320();
   const min=profile.targetMasters?.[0]||8,max=profile.targetMasters?.[1]||10;
   const ready=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').length;
   const review=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='WRITTEN REVIEW').length;
@@ -4545,7 +4546,7 @@ function workflowStepInfoV312(step){
  2:['Approve',!plan?.articles?.length?'Finish Step 1 first.':(!locked?'Review the 15-candidate slate. Locking will name only genuine production blockers; candidate balance remains advisory.':'Plan locked. Create or update all 15 Master briefs.'),!locked?'Lock Approved Plan':'Create / Update 15 Briefs'],
  3:['Research','Open the approved research queue. ICS will create/update the 15 locked Master briefs automatically if needed; no manual article entry.','Open Research Workspace'],
  4:['Produce','Use the existing production pipeline to research/write the 15 Master candidates. Production is resumable and completed work is preserved.','Produce All Approved Masters'],
- 5:['Select',`Choose ${min}–${max} strongest READY Masters for this issue. ICS recommends from the actual Step 4 production states and editorial grades; remaining READY candidates stay bankable.`,`Review Master Selection`],
+ 5:['Select',`Bank all READY Masters first, then choose ${min}–${max} strongest for this issue. Unselected READY Masters remain available for later issues.`,`Review Master Selection`],
  6:['Components',`Build the supporting and partner components needed to complete this issue. ICS calculates the missing count from the saved Step 5 selection and publication target.`,`Build / Resume Supporting Components`],
  7:['Assemble','Rebuild the running order from the current saved Step 5 Masters and persistent Step 6 support/partner blocks. The old browser assembly is discarded.','Assemble Selected Issue'],
  8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.',(()=>{try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');return window.__finalQARunningV31736?'Running Final QA…':(q?.qaVersion==='3.17.3.7'&&q?.summary?.fix>0?'Fix QA Exceptions':'Run Final QA')}catch{return 'Run Final QA'}})()],
@@ -6447,6 +6448,75 @@ function unresolvedInteractiveCtasV31818(items,publication){
   return out;
 }
 
+// v3.20.0 — Article Bank + predictive Letterman URLs. No new Airtable columns required.
+const ARTICLE_BANK_MARKER_RE_V320=/\n?ARTICLE BANK v1\n[\s\S]*?\nEND ARTICLE BANK\s*/gi;
+function articleBankStateV320(recordOrFields){
+  const f=recordOrFields?.fields||recordOrFields||{},notes=String(val(f,'Notes')||'');
+  const blocks=[...notes.matchAll(/ARTICLE BANK v1\n([\s\S]*?)\nEND ARTICLE BANK/gi)];
+  if(!blocks.length)return {masterId:'',classification:'',expectedUrl:'',bankedDate:''};
+  const body=blocks[blocks.length-1][1],get=k=>{const m=body.match(new RegExp('^'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+':\\s*(.*)$','mi'));return m?String(m[1]||'').trim():''};
+  return {masterId:get('Master ID'),classification:get('Classification'),expectedUrl:get('Expected URL'),bankedDate:get('Banked Date')};
+}
+function withoutArticleBankMarkerV320(notes){return String(notes||'').replace(ARTICLE_BANK_MARKER_RE_V320,'\n').replace(/\n{3,}/g,'\n\n').trim()}
+function articleBankClassificationV320(record){
+  const f=record?.fields||{},p=masterArticlePackage(f)||{},txt=[val(f,'Section Title'),val(f,'Section Final Copy'),p.article_subhead,p.summary_content].join(' ').toLowerCase();
+  if(/\b(?:today|tomorrow|this week|this weekend|until|deadline|closes?|opens?|2026|offer|discount|summer rewards|holiday heroes)\b/.test(txt))return 'TIME-SENSITIVE';
+  if(/\b(?:summer|winter|spring|autumn|christmas|easter|halloween|valentine|seasonal)\b/.test(txt))return 'SEASONAL';
+  return 'EVERGREEN';
+}
+function expectedArticleUrlV320(record,publication=currentPublicationName()){
+  const f=record?.fields||{},p=masterArticlePackage(f)||{},slug=String(p.url_path||'').replace(/^\/+|\/+$/g,'').trim();
+  return articlePublishedUrlV31816(publication,slug);
+}
+function articleBankMarkerV320(record){
+  const prior=articleBankStateV320(record),expected=expectedArticleUrlV320(record),classification=prior.classification||articleBankClassificationV320(record);
+  return ['ARTICLE BANK v1',`Master ID: ${record.id}`,`Classification: ${classification}`,`Expected URL: ${expected}`,`Banked Date: ${prior.bankedDate||new Date().toISOString().slice(0,10)}`,'END ARTICLE BANK'].join('\n');
+}
+function bankCandidatesV320(){
+  const all=[...(S.articleLibrary||[]),...(S.sections||[])],seen=new Set(),out=[];
+  for(const r of all){if(!r?.id||seen.has(r.id)||masterArticleState(r)!=='complete')continue;seen.add(r.id);out.push(r)}
+  return out.sort((a,b)=>String(val(a.fields||{},'Section Title')||'').localeCompare(String(val(b.fields||{},'Section Title')||'')));
+}
+function renderArticleBankV320(){
+  const panel=E('article-bank-panel-v320'),list=E('article-bank-list-v320');if(!panel||!list||!S.issue)return;
+  const rows=bankCandidatesV320();panel.style.display=workflowSelectedStepV312===5?'block':'none';if(panel.style.display==='none')return;
+  const published=rows.filter(r=>/^https?:\/\//i.test(lettermanArticleStateV3194(r).publishedUrl)).length;
+  const unused=rows.filter(r=>!recordUsedInNewsletterV319(r)).length;
+  E('bank-ready-v320').textContent=rows.length;E('bank-published-v320').textContent=published;E('bank-unused-v320').textContent=unused;
+  E('article-bank-summary-v320').textContent=`${rows.length} READY Masters across ${currentPublicationName()} · ${published} confirmed in Letterman · ${unused} not yet used in a newsletter.`;
+  list.innerHTML=rows.length?rows.map(r=>{
+    const f=r.fields||{},title=String(val(f,'Section Title')||'Untitled'),lm=lettermanArticleStateV3194(r),bank=articleBankStateV320(r),expected=bank.expectedUrl||expectedArticleUrlV320(r),used=recordUsedInNewsletterV319(r),confirmed=/^https?:\/\//i.test(lm.publishedUrl);
+    return `<label class="master-selection-row-v312" style="grid-template-columns:auto 1fr auto"><input type="checkbox" data-bank-publish-v320="${esc(r.id)}" ${confirmed?'checked disabled':''}><span><strong>${esc(title)}</strong><small>${esc(bank.classification||articleBankClassificationV320(r))} · ${used?'USED IN NEWSLETTER':'BANKED · UNUSED'}</small><small>${expected?`Expected Letterman URL: ${esc(expected)}`:'No publication base URL available yet — manual reconciliation will be required.'}</small></span><span class="selection-status-v312">${confirmed?'PUBLISHED ✓':bank.masterId?'BANKED':'READY'}</span></label>`;
+  }).join(''):'<div class="empty">No READY Master Articles are available for this publication yet.</div>';
+}
+async function prepareArticleBankV320(){
+  const rows=bankCandidatesV320();if(!rows.length){alert('No READY Masters are available to bank.');return}
+  const btn=E('article-bank-prepare-v320');if(btn){btn.disabled=true;btn.textContent='Banking…'}
+  try{
+    let saved=0;
+    for(const r of rows){
+      const notes=String(val(r.fields||{},'Notes')||''),next=[withoutArticleBankMarkerV320(notes),articleBankMarkerV320(r)].filter(Boolean).join('\n\n');
+      if(next===notes)continue;
+      const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:r.id,fields:{Notes:next}})});if(d?.record){S.sections=S.sections.map(x=>x.id===r.id?d.record:x);S.articleLibrary=S.articleLibrary.map(x=>x.id===r.id?d.record:x);saved++;}
+    }
+    renderArticleBankV320();alert(`${saved} READY Master${saved===1?'':'s'} prepared in the Article Bank. Expected Letterman URLs are now known before issue selection.`);
+  }catch(e){alert('Could not prepare Article Bank: '+(e?.message||e))}finally{if(btn){btn.disabled=false;btn.textContent='Prepare All READY Masters'}}
+}
+async function confirmBankPublishedV320(){
+  const ids=[...document.querySelectorAll('[data-bank-publish-v320]:checked:not(:disabled)')].map(x=>x.dataset.bankPublishV320);
+  if(!ids.length){alert('Tick the articles you have actually published in Letterman.');return}
+  const btn=E('article-bank-confirm-v320');if(btn){btn.disabled=true;btn.textContent='Confirming…'}
+  try{
+    for(const id of ids){
+      const r=bankCandidatesV320().find(x=>String(x.id)===String(id));if(!r)continue;const expected=articleBankStateV320(r).expectedUrl||expectedArticleUrlV320(r);if(!expected)throw new Error(`${val(r.fields||{},'Section Title')}: ICS cannot predict the Letterman URL because this publication has no known base URL.`);
+      const prior=lettermanArticleStateV3194(r),clean=withoutLettermanMarkerV3194(val(r.fields||{},'Notes'));
+      const state={publishedUrl:expected,ctaDestination:prior.ctaDestination||'',canonical:prior.canonical||'ICS',publishedDate:prior.publishedDate||new Date().toISOString().slice(0,10),status:'PUBLISHED'};
+      const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:r.id,fields:{Notes:[clean,lettermanMarkerV3194(state)].filter(Boolean).join('\n\n')}})});if(d?.record){S.sections=S.sections.map(x=>x.id===r.id?d.record:x);S.articleLibrary=S.articleLibrary.map(x=>x.id===r.id?d.record:x);}
+    }
+    renderArticleBankV320();renderAssembly();alert(`${ids.length} Letterman article${ids.length===1?'':'s'} confirmed using the pre-generated URL. No retrospective URL entry was needed.`);
+  }catch(e){alert('Could not confirm Letterman publishing: '+(e?.message||e))}finally{if(btn){btn.disabled=false;btn.textContent='Confirm Selected Published'}}
+}
+
 // v3.19.4 — Letterman reconciliation is persisted on the Master record without requiring new Airtable columns.
 const LETTERMAN_MARKER_RE_V3194=/\n?LETTERMAN ARTICLE v1\n[\s\S]*?\nEND LETTERMAN ARTICLE\s*/gi;
 function lettermanArticleStateV3194(recordOrFields){
@@ -6593,15 +6663,24 @@ function closingCopyV3183(publication){
   return `Before You Go\n\nThat’s it for this issue. If we missed something worth knowing, trying, questioning or talking about in ${publication||'your area'}, tell us. The best future issues usually start with something a reader spots before we do.\n\nSee You Next Issue.`;
 }
 function publicationDefaultCtaDestinationV3182(publication){
-  const p=String(publication||'').toLowerCase();
+  const raw=String(publication||'').trim(),p=raw.toLowerCase();
   const known=[
     ['cambridgeshire spotlight','https://cambridgeshirespotlight.co.uk/'],
     ['peterborough spotlight','https://peterboroughspotlight.co.uk/'],
     ['norfolk spotlight','https://norfolkspotlight.co.uk/'],
-    ['peterborough taste trail','https://peterboroughtastetrail.co.uk/']
+    ['peterborough taste trail','https://peterboroughtastetrail.co.uk/'],
+    ['cambridge taste trail','https://cambridge.tastetrail.co.uk/'],
+    ['norwich taste trail','https://norwich.tastetrail.co.uk/'],
+    ['north norfolk taste trail','https://northnorfolk.tastetrail.co.uk/']
   ];
   const hit=known.find(([name])=>p.includes(name));
-  return hit?hit[1]:'';
+  if(hit)return hit[1];
+  // v3.20: future Taste Trail city editions use the agreed subdomain pattern.
+  if(/taste trail/i.test(raw)){
+    const area=publicationAreaV31816(raw).toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'');
+    if(area)return `https://${area}.tastetrail.co.uk/`;
+  }
+  return '';
 }
 function articlePublishingMetaV3182(block){
   if(!block||block.kind!=='article')return null;
@@ -6885,7 +6964,7 @@ E('create-component-copy').onclick=createStarterCopy;E('produce-selected-compone
 E('jump-next-component').onclick=jumpToNextIncompleteComponent;
 E('command-open-build').onclick=()=>show('build');
 
-if(E('pr-reconcile-v3194'))E('pr-reconcile-v3194').onclick=renderLettermanReconcileV3194;if(E('save-letterman-reconcile-v3194'))E('save-letterman-reconcile-v3194').onclick=saveLettermanReconcileV3194;
+if(E('pr-reconcile-v3194'))E('pr-reconcile-v3194').onclick=renderLettermanReconcileV3194;if(E('save-letterman-reconcile-v3194'))E('save-letterman-reconcile-v3194').onclick=saveLettermanReconcileV3194;if(E('article-bank-prepare-v320'))E('article-bank-prepare-v320').onclick=prepareArticleBankV320;if(E('article-bank-confirm-v320'))E('article-bank-confirm-v320').onclick=confirmBankPublishedV320;
 E('assembly-export').onclick=exportCanvasBackup;if(E('smart-copy-status'))E('smart-copy-status').onclick=copyPlannerStatus;
 if(E('workflow-copy-status-v312e'))E('workflow-copy-status-v312e').onclick=copyWorkflowStatusV312E;
 if(E('step6-rebuild-mix-v31812'))E('step6-rebuild-mix-v31812').onclick=rebuildComponentMixV31813;

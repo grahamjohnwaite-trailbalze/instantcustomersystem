@@ -1,0 +1,10 @@
+ICS v3.20.0 — Article Bank + Predictive Letterman URLs
+
+- Adds an Article Bank panel at Step 5.
+- Banks every READY Master rather than only the 5–7 selected for the current issue.
+- Generates expected Letterman article URLs from publication + saved article slug before publication.
+- Adds bulk confirmation for articles actually published in Letterman; no retrospective URL paste is needed when the planned slug is retained.
+- Tracks immutable Airtable record ID as Master ID, content classification, expected URL, banked date, confirmed Letterman URL and newsletter usage through persistent markers.
+- Adds Cambridge / Norwich / North Norfolk Taste Trail URL patterns and a generic Taste Trail subdomain fallback.
+- Keeps Letterman reconciliation for legacy/external exceptions.
+- Step 5 continues to select the strongest issue set while unselected READY Masters remain in the bank.
