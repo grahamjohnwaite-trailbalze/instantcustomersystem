@@ -3397,42 +3397,86 @@ async function apiFeaturePlanV3205(payload,btn){
   }
   throw last||new Error('Feature planner did not return a completed plan.');
 }
+function featureResearchCompleteV3207(r){
+  const f=r?.fields||{},notes=String(val(f,'Notes')||'');
+  if(/State:\s*RESEARCH_COMPLETE/i.test(notes)||/RESEARCH PACK v1/i.test(notes))return true;
+  const ev=String(val(f,'Evidence Status')||'').toLowerCase();
+  const qa=String(val(f,'Section QA Result')||'').toLowerCase();
+  return ['verified','reported — attribution required','reported - attribution required'].includes(ev)||qa==='fix required';
+}
+async function waitForFeatureStateV3207(sectionId,stage,btn,{timeoutMs=75000}={}){
+  const started=Date.now();
+  while(Date.now()-started<timeoutMs){
+    await sleep(2500);
+    await loadSections();
+    const r=(S.sections||[]).find(x=>x.id===sectionId);
+    if(!r)continue;
+    if(stage==='research'&&featureResearchCompleteV3207(r))return {ok:true,record:r,recoveredFrom202:true};
+    if(stage==='generate'&&featureArticleReadyV3204(r))return {ok:true,record:r,recoveredFrom202:true};
+    if(stage==='generate'&&String(val(r.fields||{},'Section QA Result')||'').toLowerCase()==='fix required')return {ok:true,record:r,recoveredFrom202:true,blocked:true};
+    if(btn)btn.textContent=`${stage==='research'?'Research':'Writing'} accepted — checking saved state…`;
+  }
+  return null;
+}
+async function featureProduceCallV3207(sectionId,mode,btn){
+  const label=mode==='research'?'research':'writing';
+  const payload={sectionId,publicationName:currentPublicationName(),mode,contentType:'feature'};
+  for(let attempt=1;attempt<=2;attempt++){
+    const response=await fetch('/.netlify/functions/produce-section',{method:'POST',headers:{'content-type':'application/json',accept:'application/json'},body:JSON.stringify(payload)});
+    const raw=await response.text();let data;try{data=raw?JSON.parse(raw):{}}catch{data={}}
+    if(response.ok&&response.status!==202&&data?.ok)return data;
+    if(response.status===202){
+      if(btn)btn.textContent=`Feature ${label} accepted (202) — waiting for saved result…`;
+      const recovered=await waitForFeatureStateV3207(sectionId,mode,btn,{timeoutMs:attempt===1?75000:45000});
+      if(recovered)return recovered;
+      if(attempt<2){if(btn)btn.textContent=`No saved result yet — retrying Feature ${label} once…`;continue}
+      throw new Error(`Feature ${label} was accepted (202) but no saved ${label} result appeared. Endpoint: produce-section.`);
+    }
+    throw new Error(`Feature ${label} failed at produce-section (${response.status}): ${data?.error||raw.slice(0,180)||'No response body'}`);
+  }
+}
 async function buildFeatureArticlesV3204(){
   if(!S.issue){alert('Open an issue first.');return}
-  const btn=E('step6-build-features-v3204'),old=btn?.textContent||'';if(btn){btn.disabled=true;btn.textContent='Building Features…'}
+  const btn=E('step6-build-features-v3204');if(btn){btn.disabled=true;btn.textContent='Building Features…'}
+  let currentStage='initialising',currentFeature=0;
   try{
     await Promise.all([loadSections(),loadArticleLibrary()]);
     let rows=featureArticleRecordsV3204();
     if(rows.length<FEATURE_TARGET_V3204){
+      currentStage='planning Feature briefs';
       const plan=getSmartPlan()||{},selected=new Set(getMasterSelectionV312().map(Number));
       const selectedTitles=(plan.articles||[]).filter(a=>selected.has(Number(a.order))).map(a=>a.title);
       const allTitles=(plan.articles||[]).map(a=>a.title);
-      const resp=await apiFeaturePlanV3205({publicationName:currentPublicationName(),issuePromise:String(val(S.issue.fields||{},'Main Theme')||''),selectedMasterTitles:selectedTitles,allMasterTitles:allTitles,count:FEATURE_TARGET_V3204},btn);
+      const resp=await apiFeaturePlanV3206({publicationName:currentPublicationName(),issuePromise:String(val(S.issue.fields||{},'Main Theme')||''),selectedMasterTitles:selectedTitles,allMasterTitles:allTitles,count:FEATURE_TARGET_V3204},btn);
       const briefs=(resp.features||[]).slice(0,FEATURE_TARGET_V3204);
+      currentStage='creating Feature records';
       for(let i=rows.length;i<FEATURE_TARGET_V3204;i++){
-        const b=briefs[i]||{};
+        currentFeature=i+1;const b=briefs[i]||{};
         const fields={Issues:[S.issue.id],'Section Title':b.title||`Short Feature ${i+1}`,'Section Type':'Feature Article','Section Status':'Planned','Section Order':201+i,'Core Reader Question':b.question||'What is one specific local thing worth knowing?','Reader Value':b.reader_value||'Give the reader one tight, entertaining, standalone local feature.','Local Proof Needed':b.local_proof||`Named, current ${currentPublicationName()} proof that makes the feature genuinely local.`,'Evidence Required':b.evidence||'Current primary/local evidence for every material claim.','Commercial Lane':b.life_lane||'Open','CTA Text':b.cta_text||'','Notes':featureMarkerNotesV3204(i,b)};
         const d=await api('sections',{method:'POST',body:JSON.stringify({fields})});if(d?.record)S.sections.push(d.record);
       }
       await loadSections();rows=featureArticleRecordsV3204();
     }
     for(let i=0;i<Math.min(rows.length,FEATURE_TARGET_V3204);i++){
-      let r=rows[i];if(featureArticleReadyV3204(r))continue;
-      if(btn)btn.textContent=`Researching Feature ${i+1}/${FEATURE_TARGET_V3204}…`;
-      const research=await api('produce-section',{method:'POST',body:JSON.stringify({sectionId:r.id,publicationName:currentPublicationName(),mode:'research',contentType:'feature'})});
-      if(research?.record){r=research.record;const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=r}
-      if(String(val(r.fields||{},'Section Status')||'').toLowerCase()==='researching'&&String(val(r.fields||{},'Section QA Result')||'').toLowerCase()==='fix required')continue;
-      if(btn)btn.textContent=`Writing Feature ${i+1}/${FEATURE_TARGET_V3204}…`;
-      const gen=await api('produce-section',{method:'POST',body:JSON.stringify({sectionId:r.id,publicationName:currentPublicationName(),mode:'generate',contentType:'feature'})});
-      if(gen?.record){const idx=S.sections.findIndex(x=>x.id===gen.record.id);if(idx>=0)S.sections[idx]=gen.record}
+      currentFeature=i+1;let r=rows[i];if(featureArticleReadyV3204(r))continue;
+      if(!featureResearchCompleteV3207(r)){
+        currentStage='research';if(btn)btn.textContent=`Researching Feature ${i+1}/${FEATURE_TARGET_V3204}…`;
+        const research=await featureProduceCallV3207(r.id,'research',btn);
+        if(research?.record){r=research.record;const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=r}
+      }
+      if(String(val(r.fields||{},'Section QA Result')||'').toLowerCase()==='fix required')continue;
+      currentStage='writing';if(btn)btn.textContent=`Writing Feature ${i+1}/${FEATURE_TARGET_V3204}…`;
+      const gen=await featureProduceCallV3207(r.id,'generate',btn);
+      if(gen?.record){r=gen.record;const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=r}
       renderFeatureSummaryV3204();
     }
     await Promise.all([loadSections(),loadArticleLibrary()]);
     renderFeatureSummaryV3204();renderStep6StatusV3151();renderArticleBankV320();
     const ready=readyFeatureArticlesV3204().length;
     alert(ready>=FEATURE_TARGET_V3204?`${ready} Feature Articles are READY. They are permanent Article Bank assets and will be distributed through Step 7.`:`${ready}/${FEATURE_TARGET_V3204} Feature Articles are READY. Any blocked Feature has been preserved for review; do not lower the evidence bar.`);
-  }catch(e){alert('Feature Article build failed: '+String(e?.message||e))}
-  finally{if(btn){btn.disabled=false;btn.textContent='Build / Resume 4 Feature Articles'}renderFeatureSummaryV3204()}
+  }catch(e){
+    alert(`Feature Article build stopped at ${currentStage}${currentFeature?` (Feature ${currentFeature})`:''}: ${String(e?.message||e)}`);
+  }finally{if(btn){btn.disabled=false;btn.textContent='Build / Resume 4 Feature Articles'}renderFeatureSummaryV3204()}
 }
 
 const SUPPORT_MARKER_V3153='ICS SUPPORT COMPONENT V3.15.3';
