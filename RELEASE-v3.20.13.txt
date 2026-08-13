@@ -1,0 +1,11 @@
+ICS v3.20.13 — Stability Lock
+
+Purpose: stop stale downstream state and finish the builder rather than adding more features.
+
+- Any Feature build/repair or supporting-component rebuild invalidates Steps 7, 8 and 9.
+- Persisted running-order markers are cleared when upstream content changes.
+- QA is valid only for the exact current content/assembly fingerprint.
+- Old QA or READY lifecycle state cannot jump an edited issue straight to Step 9.
+- Published/Archived issues remain trusted.
+- Step 9 operator language now says Final Letterman Build Package.
+- Lean package: current release note only.

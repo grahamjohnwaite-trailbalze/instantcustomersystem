@@ -331,7 +331,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 .operator-rule-v319{background:#f3f7fd;border-radius:9px;padding:9px}.operator-rule-v319 span{font-size:11px;color:#475467;line-height:1.35}.operator-sop-v319{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.operator-sop-v319 summary{cursor:pointer;font-size:11px;font-weight:800;color:#475467}.operator-matrix-row-v319{display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #edf0f4;font-size:10px}.operator-matrix-row-v319 b{font-size:10px}.operator-matrix-row-v319 span{color:#667085}.workflow-step-v312.done[data-flow-step="9"]{background:#15803d!important;border-color:#15803d!important;color:#fff!important}
 @media(max-width:1100px){.operator-guide-v319{grid-template-columns:1fr 1fr}.operator-rule-v319,.operator-sop-v319{grid-column:1/-1}.operator-matrix-row-v319{grid-template-columns:70px 1fr}}
 @media(max-width:700px){.operator-guide-v319{grid-template-columns:1fr}.operator-rule-v319,.operator-sop-v319{grid-column:auto}.operator-matrix-row-v319{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.12<br><strong>True Feature Recommission Engine</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-13 · active duplicate retirement + fresh Feature commissions + lean deploy</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.13<br><strong>True Feature Recommission Engine</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-13 · active duplicate retirement + fresh Feature commissions + lean deploy</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -4048,7 +4048,7 @@ async function recommissionBlockedFeatureV3208(r,slot,btn){
   return r;
 }
 
-// v3.20.12 — True Feature Recommission Engine.
+// v3.20.13 — True Feature Recommission Engine.
 // Distinctiveness is checked against every completed Master in the active issue plus current support copy.
 // This intentionally does NOT depend on browser-only Step 5 selection state.
 function normTokensV3211(v){
@@ -4107,7 +4107,7 @@ function featureExclusionTextsV3212(currentId=''){
 }
 async function markFeatureRecommissionRequiredV3212(r,slot,reasons=[]){
   const f=r.fields||{}, notes=String(val(f,'Notes')||'');
-  const fields={'Section Status':'Planned','Evidence Status':'Not Started','Evidence Checked Date':'','Source / Reference Link 1':'','Section Final Copy':'','Section QA Result':'Not Checked','CTA Text':'','Notes':[notes.replace(/FEATURE STATUS:\s*[^\n]*/gi,'').trim(),`FEATURE RECOMMISSION REQUIRED v3.20.12`,`OLD TITLE: ${String(val(f,'Section Title')||'')}`,`REASON: ${(reasons||[]).join(' | ')||'Did not add distinct reader value.'}`,`FEATURE STATUS: RECOMMISSION REQUIRED`].filter(Boolean).join('\n')};
+  const fields={'Section Status':'Planned','Evidence Status':'Not Started','Evidence Checked Date':'','Source / Reference Link 1':'','Section Final Copy':'','Section QA Result':'Not Checked','CTA Text':'','Notes':[notes.replace(/FEATURE STATUS:\s*[^\n]*/gi,'').trim(),`FEATURE RECOMMISSION REQUIRED v3.20.13`,`OLD TITLE: ${String(val(f,'Section Title')||'')}`,`REASON: ${(reasons||[]).join(' | ')||'Did not add distinct reader value.'}`,`FEATURE STATUS: RECOMMISSION REQUIRED`].filter(Boolean).join('\n')};
   const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:r.id,fields})});
   if(d?.record){const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=d.record;return d.record}return r;
 }
@@ -4123,7 +4123,7 @@ async function recommissionDistinctFeatureV3211(r,slot,btn){
   const b=candidates.find(x=>featureCandidateDistinctV3212(x,excludeTexts));
   if(!b)throw new Error(`Feature ${slot+1} needs recommissioning, but ICS could not find a sufficiently distinct replacement. Keep it blocked rather than recycling an existing story.`);
   if(btn)btn.textContent=`Recommissioning Feature ${slot+1} with a fresh subject…`;
-  const fields={'Section Title':b.title||`Distinct Local Feature ${slot+1}`,'Section Type':'Feature Article','Section Status':'Planned','Core Reader Question':b.question||'What different local thing is genuinely worth knowing?','Reader Value':b.reader_value||'A standalone local article with a different reader job from every Master and support block.','Local Proof Needed':b.local_proof||`Named current ${currentPublicationName()} proof.`,'Evidence Required':(b.evidence||'Current primary/local evidence.')+' Use a different central evidence package from every Master/support block in this issue.','Evidence Status':'Not Started','Evidence Checked Date':'','Source / Reference Link 1':'','Commercial Lane':b.life_lane||'Open','CTA Text':'','Section Final Copy':'','Section QA Result':'Not Checked','Notes':[featureMarkerNotesV3204(slot,b),'FEATURE RECOMMISSIONED v3.20.12','RULE: Fresh subject + fresh reader question + fresh evidence package. Same-story reframing is forbidden.'].join('\n')};
+  const fields={'Section Title':b.title||`Distinct Local Feature ${slot+1}`,'Section Type':'Feature Article','Section Status':'Planned','Core Reader Question':b.question||'What different local thing is genuinely worth knowing?','Reader Value':b.reader_value||'A standalone local article with a different reader job from every Master and support block.','Local Proof Needed':b.local_proof||`Named current ${currentPublicationName()} proof.`,'Evidence Required':(b.evidence||'Current primary/local evidence.')+' Use a different central evidence package from every Master/support block in this issue.','Evidence Status':'Not Started','Evidence Checked Date':'','Source / Reference Link 1':'','Commercial Lane':b.life_lane||'Open','CTA Text':'','Section Final Copy':'','Section QA Result':'Not Checked','Notes':[featureMarkerNotesV3204(slot,b),'FEATURE RECOMMISSIONED v3.20.13','RULE: Fresh subject + fresh reader question + fresh evidence package. Same-story reframing is forbidden.'].join('\n')};
   const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:r.id,fields})});
   if(d?.record){const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=d.record;return d.record}return r;
 }
@@ -4134,6 +4134,7 @@ async function buildFeatureArticlesV3204(){
   let currentStage='initialising',currentFeature=0;
   try{
     await Promise.all([loadSections(),loadArticleLibrary()]);
+    await invalidateDownstreamV3213('Feature Article build/repair started',6);
     let rows=featureArticleRecordsV3204();
     if(rows.length<FEATURE_TARGET_V3204){
       currentStage='planning Feature briefs';
@@ -4418,6 +4419,7 @@ async function buildSupportBatchV315(){
       phase:'Step 6 — Checking Saved State'
     });
     await refreshPersistentSupportV3153();
+    await invalidateDownstreamV3213('Supporting component build/resume started',6);
 
     const alreadySaved=persistentSupportRecordsV3153().length;
     const alreadyReady=persistentSupportRecordsV3153().filter(supportReadyRecordV3153).length;
@@ -4733,6 +4735,7 @@ async function rebuildComponentMixV31813(){
   const btn=E('step6-rebuild-mix-v31812');const old=btn?.textContent;if(btn){btn.disabled=true;btn.textContent='Rebuilding Mix…'}
   try{
     await refreshPersistentSupportV3153();
+    await invalidateDownstreamV3213('Supporting component mix was rebuilt',6);
     const recipes={
       SPOTLIGHT:[
         ['OPENING NOTE','Opening Note','OPEN'],['NEWS BRIEF','News Brief','LOCAL LIFE'],['LOCAL TRIVIA','Did You Know?','FUN & CURIOSITY'],['FOOD FIND','Food / Drink Find','FOOD & HOSPITALITY'],
@@ -4967,6 +4970,44 @@ function renderStep9LiveStateV3193(){
   if(E('pr-masters-v312c'))E('pr-masters-v312c').textContent=String(masters||0);
   if(E('pr-status-v312c'))E('pr-status-v312c').textContent=step9LiveStatusV3193();
 }
+// v3.20.13 — Stability Lock: downstream state is valid only for the exact content that was QA'd.
+// This deliberately prefers one quick QA rerun over ever showing a stale green Step 9.
+function hashTextV3213(text=''){
+  let h=2166136261>>>0;for(const ch of String(text)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)>>>0;}return h.toString(16).padStart(8,'0');
+}
+function currentContentFingerprintV3213(){
+  const plan=getSmartPlan()||{}, selected=new Set(getMasterSelectionV312().map(Number));
+  const masters=(plan.articles||[]).filter(a=>selected.has(Number(a.order))).map(a=>{
+    const r=planArticleRecordV312(a),f=r?.fields||{};
+    return ['M',r?.id||a.order,String(val(f,'Section Title')||a.title||''),String(val(f,'Section Status')||''),String(val(f,'Section QA Result')||''),String(val(f,'Section Final Copy')||'')].join('|');
+  });
+  const features=featureArticleRecordsV3204().slice(0,FEATURE_TARGET_V3204).map(r=>{const f=r.fields||{};return ['F',r.id,String(val(f,'Section Title')||''),String(val(f,'Section Status')||''),String(val(f,'Section QA Result')||''),String(val(f,'Section Final Copy')||'')].join('|')});
+  const supports=supportRecordsForTargetV3204().map(r=>{const f=r.fields||{};return ['S',r.id,String(val(f,'Section Title')||''),String(val(f,'Section Status')||''),String(val(f,'Section Final Copy')||'')].join('|')});
+  const assembly=persistedAssemblyItemsV31821().map((b,i)=>['A',i+1,b.refId||'',b.type||'',b.title||''].join('|'));
+  return hashTextV3213([...masters,...features,...supports,...assembly].join('\n'));
+}
+async function invalidateDownstreamV3213(reason='Upstream content changed',returnStep=6){
+  // Browser state first: it must never overrule current Airtable content.
+  localStorage.removeItem(qaKey());
+  localStorage.removeItem(assemblyKey());
+  // Remove persisted running-order markers so Step 7 must rebuild from current content.
+  const changes=[];
+  for(const sec of (S.sections||[])){
+    const old=String(val(sec.fields||{},'Notes')||'');
+    if(!ASSEMBLY_MARKER_RE_V31821.test(old))continue;
+    changes.push({sec,next:stripAssemblyMarkerV31821(old)});
+  }
+  for(const {sec,next} of changes){
+    try{const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next}})});const i=S.sections.findIndex(x=>x.id===sec.id);if(i>=0&&d?.record)S.sections[i]=d.record;}catch(e){console.warn('Downstream assembly invalidation failed for section',sec.id,e);}
+  }
+  const current=String(val(S.issue?.fields||{},'Issue Status')||'').trim().toUpperCase();
+  if(['QA','READY FOR LETTERMAN'].includes(current)){
+    try{const d=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Issue Status':'BUILDING'}})});if(d?.record){S.issue=d.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);}}catch(e){console.warn('Downstream lifecycle invalidation failed',e);}
+  }
+  workflowSelectedStepV312=returnStep;document.body.dataset.workflowStep=String(returnStep);
+  setWorkflowActionStatusV312(returnStep,returnStep===6?'Components':'Workflow','Downstream steps reset safely.',`${reason}. Step 7 assembly, Step 8 QA and Step 9 handoff must now be regenerated from current saved content.`);
+  updateWorkflowShellV312(returnStep);
+}
 // v3.18.20 — Final QA completion must survive browser refreshes and new deploys.
 // A zero-hard-fix QA run persists the issue lifecycle as QA in Airtable. Step 9 can
 // therefore trust the issue record even when the browser-local report is unavailable.
@@ -4977,9 +5018,11 @@ function persistedQAPassedV31820(){
 function finalQAPassedV31820(){
   try{
     const q=JSON.parse(localStorage.getItem(qaKey())||'null');
-    if(q?.qaVersion==='3.17.3.7'&&q?.summary&&Number(q.summary.fix||0)===0)return true;
+    if(q?.summary&&Number(q.summary.fix||0)===0&&q?.contentFingerprint&&q.contentFingerprint===currentContentFingerprintV3213())return true;
   }catch{}
-  return persistedQAPassedV31820();
+  // Published/archive lifecycle may remain trusted; QA/READY must match the exact current content fingerprint.
+  const status=String(val(S.issue?.fields||{},'Issue Status')||'').trim().toUpperCase();
+  return ['PUBLISHED','ARCHIVED'].includes(status);
 }
 async function persistQALifecycleV31820(passed){
   if(!S.issue?.id)return;
@@ -5003,10 +5046,10 @@ function workflowStepInfoV312(step){
  3:['Research','Open the approved research queue. ICS will create/update the 15 locked Master briefs automatically if needed; no manual article entry.','Open Research Workspace'],
  4:['Produce','Use the existing production pipeline to research/write the 15 Master candidates. Production is resumable and completed work is preserved.','Produce All Approved Masters'],
  5:['Select',`Bank all READY Masters first, then choose ${min}–${max} strongest for this issue. Unselected READY Masters remain available for later issues.`,`Review Master Selection`],
- 6:['Components',`Build the supporting and partner components needed to complete this issue. ICS calculates the missing count from the saved Step 5 selection and publication target.`,`Build / Resume Supporting Components`],
+ 6:['Features + Components',`Build/repair the Feature Article layer first, then the supporting and partner components. Any change here automatically invalidates stale Steps 7–9.`,`Build / Resume Features + Components`],
  7:['Assemble','Rebuild the running order from the current saved Step 5 Masters and persistent Step 6 support/partner blocks. The old browser assembly is discarded.','Assemble Selected Issue'],
- 8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.',(()=>{try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');return window.__finalQARunningV31736?'Running Final QA…':(q?.qaVersion==='3.17.3.7'&&q?.summary?.fix>0?'Fix QA Exceptions':'Run Final QA')}catch{return 'Run Final QA'}})()],
- 9:['Production Ready','Generate the ordered production package after QA. It can then be sent to Letterman or any other publishing platform.','Generate Production Package']
+ 8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.',(()=>{try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');return window.__finalQARunningV31736?'Running Final QA…':(q?.summary?.fix>0?'Fix QA Exceptions':'Run Final QA')}catch{return 'Run Final QA'}})()],
+ 9:['Production Ready','Open the Final Letterman Build Package only after a fresh QA pass for the exact current assembly.','Open Final Build Package']
  };return info[step]||info[1]
 }
 function operatorGuideDataV319(step){
@@ -5174,7 +5217,7 @@ function runWorkflowPrimaryV312(){
    show('assemble');
    const primary=E('workflow-primary-v312');
    if(primary){primary.disabled=true;primary.textContent='Running Final QA…';}
-   try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');if(q?.qaVersion==='3.17.3.7'&&q?.summary?.fix>0){if(primary)primary.disabled=false;fixQAExceptionsV317();return}}catch{}
+   try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');if(q?.summary?.fix>0){if(primary)primary.disabled=false;fixQAExceptionsV317();return}}catch{}
    E('assembly-qa').click();return
  }
  if(step===9){show('assemble');E('assembly-generate').click();return}
@@ -6064,7 +6107,7 @@ function deterministicQA(items){
   if(featureCount<featureMinimum)add('FIX','FEATURE_LAYER',`Only ${featureCount}/${featureTarget} Feature Articles are in the running order. At least ${featureMinimum} READY Features are required before the short-feature layer can carry enough editorial weight.`);
   else if(featureCount<featureTarget)add('WARNING','FEATURE_LAYER',`${featureCount}/${featureTarget} planned Feature Articles are in the running order. This is acceptable when the missing Feature is not READY and the assembly-rhythm gate passes; do not lower the evidence bar merely to reach the target.`);
   else add('PASS','FEATURE_LAYER',`${featureCount} permanent Feature Articles add mid-weight editorial anchors.`);
-  // v3.20.11: a Feature that duplicates a selected Master is a publishing defect because it wastes an indexed article slot and harms issue rhythm.
+  // v3.20.13: a Feature that duplicates a selected Master is a publishing defect because it wastes an indexed article slot and harms issue rhythm.
   for(const b of items.filter(x=>String(x.type||'').toUpperCase()==='FEATURE ARTICLE')){
     const rec=(S.sections||[]).find(r=>r.id===b.refId);
     const probs=featureDistinctivenessProblemsV3211(rec);
@@ -6335,7 +6378,7 @@ async function runFinalQA(){
       warning:findings.filter(f=>f.severity==='WARNING').length,
       pass:findings.filter(f=>f.severity==='PASS').length
     };
-    const report={qaVersion:'3.20.11',createdAt:new Date().toISOString(),summary,findings};
+    const report={qaVersion:'3.20.13',createdAt:new Date().toISOString(),contentFingerprint:currentContentFingerprintV3213(),summary,findings};
     localStorage.setItem(qaKey(),JSON.stringify(report));
     await persistQALifecycleV31820(summary.fix===0);
     showQAReport(report,true);
@@ -6453,7 +6496,7 @@ async function evaluateIssueQAV3173(items){
     findings.push({severity:'WARNING',code:'AI_QA_UNAVAILABLE',message:`Editorial AI review was unavailable, so deterministic QA only was used: ${error.message}`,blocks:[],safeFix:false});
   }
   return {
-    qaVersion:'3.20.11',createdAt:new Date().toISOString(),
+    qaVersion:'3.20.13',createdAt:new Date().toISOString(),
     summary:{
       fix:findings.filter(f=>f.severity==='FIX').length,
       warning:findings.filter(f=>f.severity==='WARNING').length,
@@ -6538,8 +6581,8 @@ async function fixQAExceptionsV317(){
   if(!originalItems.length)return;
 
   const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
-  if(!saved||saved.qaVersion!=='3.20.11'){
-    setWorkflowActionStatusV312(8,'QA','Fresh QA required.','This QA report came from an older Step 8 build. Run Final QA in v3.20.11 before repairing exceptions.');
+  if(!saved||saved.qaVersion!=='3.20.13'){
+    setWorkflowActionStatusV312(8,'QA','Fresh QA required.','This QA report came from an older Step 8 build. Run Final QA in v3.20.13 before repairing exceptions.');
     localStorage.removeItem(qaKey());
     updateWorkflowShellV312(8);
     return;
@@ -6557,7 +6600,7 @@ async function fixQAExceptionsV317(){
   const failed=[];
   try{
     setWorkflowActionStatusV312(8,'QA','Testing QA hard-fix repairs…',
-      'v3.20.11 works on a temporary copy first. Support repairs are written back to persistent Step 6 records only if fresh whole-issue QA reduces the hard-fix count without introducing a new hard-fix class.');
+      'v3.20.13 works on a temporary copy first. Support repairs are written back to persistent Step 6 records only if fresh whole-issue QA reduces the hard-fix count without introducing a new hard-fix class.');
 
     // Deterministic Master truncation remains a direct upstream repair from the saved Research Pack.
     const masters=originalItems.filter(looksTruncatedMasterV317);
