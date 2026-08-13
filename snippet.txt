@@ -1,0 +1,446 @@
+        bar=E('step6-progress-bar-v3152'),count=E('step6-live-count-v3152');
+  if(box)box.style.display=show?'block':'none';
+  if(head)head.textContent=phase;
+  if(cur)cur.textContent=current||'';
+  const pct=total?Math.max(0,Math.min(100,Math.round(done/total*100))):0;
+  if(bar)bar.style.width=pct+'%';
+  if(count)count.textContent=`${done}/${total} processed · ${ready} ready · ${failed} failed · ${pct}%`;
+  const detail=current?`${phase}: ${current}`:phase;
+  const label=/Saving Component Records|Checking Saved State|Saved State Checked/.test(phase)
+    ? `${done}/${total} records saved · ${ready} ready · ${failed} failed`
+    : `${done}/${total} processed · ${ready} ready · ${failed} failed`;
+  setWorkflowActionStatusV312(6,'Components',label,detail);
+}
+
+function supportAllocationPlanV31814(profile, recipe, plan, selectedOrders){
+  const norm=s=>String(s||'').toLowerCase();
+  const records=(plan?.articles||[]).filter(a=>!selectedOrders.includes(Number(a.order))).map(a=>{
+    const rec=typeof planArticleRecordV312==='function'?planArticleRecordV312(a):null;
+    const f=rec?.fields||{};
+    const ready=String(val(f,'Section Status')||'').toUpperCase()==='READY' || String(val(f,'Section QA Result')||'').toUpperCase()==='PASS';
+    if(!ready)return null;
+    return {
+      id:`MASTER_${Number(a.order)||0}`,
+      title:String(a.title||'').trim(),
+      source:String(val(f,'Source / Reference Link 1')||val(f,'Primary source')||'').trim(),
+      copy:String(val(f,'Section Final Copy')||'').replace(/\s+/g,' ').trim().slice(0,650)
+    };
+  }).filter(Boolean);
+  const used=new Set();
+  const score=(type,c)=>{
+    const t=norm(type),b=norm(`${c.title} ${c.copy}`);
+    let n=1;
+    if(/price|value|money|saver/.test(t))n+=/(price|value|cheap|free|deal|voucher|clubcard|cost|bill|£)/.test(b)?8:-4;
+    if(/event|what's on|weekend/.test(t)){
+      const eventWords=/(event|festival|live music|gig|concert|show|fair|tasting|supper club|ticket|tickets|opening night|launch night|market day)/.test(b);
+      const timeWords=/(today|tomorrow|this week|this weekend|tonight|next week|august|september|october|november|december|january|february|march|april|may|june|july|2026|2027)/.test(b);
+      const historicOpeningOnly=/(reopened|reopening|opened in|opened on|former .* closed|closed in)/.test(b) && !eventWords;
+      n+=(eventWords&&timeWords&&!historicOpeningOnly)?12:-12;
+    }
+    if(/business|hospitality|expert|producer/.test(t))n+=/(owner|chef|producer|brewer|grower|bakery|cafe|café|restaurant|pub|bar|smokehouse|business|opened|opening)/.test(b)?6:-2;
+    if(/trivia|history/.test(t))n+=/(former|old|history|historic|first|reopen|reopened|years|quirky)/.test(b)?7:-3;
+    if(/food find|worth the drive|discovery/.test(t))n+=/(food|cafe|café|restaurant|pub|bar|smokehouse|lounge|detour|dish|coffee)/.test(b)?6:0;
+    return n;
+  };
+  const factual=t=>!/opening note|reader poll|quick quiz|reader recommendation|before you go|this or that|reader question|local debate/i.test(String(t||''));
+  const allocations=[];
+  for(let i=0;i<recipe.length;i++){
+    let [type,label,lane]=recipe[i];
+    let candidate=null;
+    if(factual(type)){
+      const ranked=records.filter(c=>!used.has(c.id)).map(c=>({c,n:score(type,c)})).sort((a,b)=>b.n-a.n);
+      if(ranked.length && ranked[0].n>0){candidate=ranked[0].c;used.add(candidate.id)}
+      if(/event|what's on|weekend/i.test(type) && (!candidate || score(type,candidate)<5)){
+        if(candidate)used.delete(candidate.id);
+        const alt=records.filter(c=>!used.has(c.id)).map(c=>({c,n:score('WORTH THE DRIVE?',c)})).sort((a,b)=>b.n-a.n)[0];
+        if(alt){candidate=alt.c;used.add(candidate.id);type='WORTH THE DRIVE?';label='Worth The Trip?';lane='PLACES & DISCOVERY'}
+      }
+      if(/hospitality person|producer/i.test(label) && candidate && !/(owner|chef|producer|brewer|grower|person|people)/i.test(`${candidate.title} ${candidate.copy}`)){
+        type='LOCAL BUSINESS FIND';label='Local Business Find';
+      }
+      if(!candidate){type='EDITORIAL BRIDGE';label='Quick Breather';lane=lane||'OPEN'}
+    }
+    allocations.push({type,label,lane,candidate});
+  }
+  return allocations;
+}
+
+async function buildSupportBatchV315(){
+  const t=supportTargetV315();
+  if(!t.selectedMasters){
+    const m='STEP 6 BLOCKED — Save the Step 5 Master selection first.';
+    setWorkflowActionStatusV312(6,'Components','Cannot build support yet.',m);return;
+  }
+
+  const btn=E('workflow-primary-v312'),dedicated=E('step6-build-v3151');
+  [btn,dedicated].filter(Boolean).forEach(b=>{b.disabled=true;b.textContent='Building Supporting Components…';});
+
+  try{
+    setStep6LiveProgressV3152({
+      show:true,
+      done:0,
+      total:t.supportNeeded,
+      ready:0,
+      failed:0,
+      current:'Checking Airtable for previously saved supporting components…',
+      phase:'Step 6 — Checking Saved State'
+    });
+    await refreshPersistentSupportV3153();
+
+    const alreadySaved=persistentSupportRecordsV3153().length;
+    const alreadyReady=persistentSupportRecordsV3153().filter(supportReadyRecordV3153).length;
+    setStep6LiveProgressV3152({
+      show:true,
+      done:alreadySaved,
+      total:t.supportNeeded,
+      ready:alreadyReady,
+      failed:0,
+      current:alreadySaved
+        ? `Found ${alreadySaved}/${t.supportNeeded} saved component records.`
+        : 'No saved component records found yet. Starting persistent build…',
+      phase:'Step 6 — Saved State Checked'
+    });
+
+    const profile=engineProfileForPublication();
+    const recipes={
+      SPOTLIGHT:[
+        ['OPENING NOTE','Opening Note','READER VOICE'],['NEWS BRIEF','News Brief','LOCAL LIFE'],['READER POLL','Reader Poll','READER VOICE'],["WHAT'S ON","What's On","WHAT'S ON"],
+        ['QUICK QUIZ','Quick Quiz','FUN & CURIOSITY'],['FOOD FIND','Food Find','FOOD & HOSPITALITY'],['SALLY SAVERS','Sally Savers','MONEY & CONSUMER'],['LOCAL BUSINESS FIND','Local Business Find','BUSINESS & PEOPLE'],
+        ['FAMILY ACTIVITY','Family Activity','FAMILY & COMMUNITY'],['THIS OR THAT','This Or That','FUN & CURIOSITY'],['MOTORING QUICK CHECK','Motoring Quick Check','MOTORING & TRAVEL'],['COMMUNITY VOICE','Community Voice','FAMILY & COMMUNITY'],
+        ['HUMOUR','Quick Breather','FUN & CURIOSITY'],['WORTH THE DRIVE?','Worth The Drive?','PLACES & DISCOVERY'],['HOME QUICK CHECK','Home Quick Check','HOME & PROPERTY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],
+        ['LOCAL DEBATE','Local Debate','READER VOICE'],['QUICK UPDATE','Quick Update','LOCAL LIFE'],['BEFORE YOU GO','Before You Go','READER VOICE']
+      ],
+      TASTE_TRAIL:[
+        ['OPENING NOTE','Opening Note','OPEN'],
+        ['FOOD FIND','Morning / Daytime Find','BREAKFAST & BRUNCH'],
+        ['QUICK PRICE CHECK','Worth The Money?','VALUE'],
+        ['LOCAL BUSINESS FIND','Hospitality Person / Place','HOSPITALITY PEOPLE'],
+        ['EVENT PICK',"What's On / Going Out Pick",'EVENTS & EXPERIENCES'],
+        ['LOCAL TRIVIA','Local Food & Drink Curiosity','FUN & CURIOSITY'],
+        ['WORTH THE DRIVE?','Wider-Area Discovery','PLACES & DISCOVERY'],
+        ['PUB / RESTAURANT QUESTION','One Table Question','READER VOICE'],
+        ['READER POLL','One Quick Vote','READER VOICE'],
+        ['QUICK QUIZ','Quick Taste Trail Quiz','READER VOICE'],
+        ['READER RECOMMENDATION','Your Recommendation','READER VOICE'],
+        ['BEFORE YOU GO',"That's All For This Week — But Before You Go…",'OPEN']
+      ],
+      HOME_SELLER:[['OPENING NOTE','Opening Note','READER VOICE'],['READER POLL','Reader Poll','READER VOICE'],['QUICK PRICE CHECK','Quick Price Check','PRICING & VALUATION'],['READER QUESTION','Reader Question','READER VOICE'],['MYTH V FACT','Myth v Fact','FUN & CURIOSITY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']],
+      PET_INSIDER:[['OPENING NOTE','Opening Note','READER VOICE'],['READER POLL','Reader Poll','READER VOICE'],['READER PETS','Reader Pets','READER PETS'],['LOCAL TRIVIA','Local Trivia','FUN & CURIOSITY'],['WEEKEND IDEA','Weekend Idea','WALKS & PLACES'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['HUMOUR','Quick Breather','FUN & CURIOSITY'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']]
+    };
+    const recipe=recipes[profile.key]||recipes.SPOTLIGHT;
+
+    let existing=persistentSupportRecordsV3153();
+
+    // Create missing support records in Airtable first so progress survives refresh/deploy.
+    // IMPORTANT: this phase must be visible from the very first network request.
+    const createFrom=existing.length;
+    const createNeed=Math.max(0,t.supportNeeded-createFrom);
+
+    if(createNeed){
+      setStep6LiveProgressV3152({
+        show:true,
+        done:createFrom,
+        total:t.supportNeeded,
+        ready:existing.filter(supportReadyRecordV3153).length,
+        failed:0,
+        current:`Saving support component ${createFrom+1} of ${t.supportNeeded} to Airtable…`,
+        phase:'Step 6 — Saving Component Records'
+      });
+
+      for(let i=createFrom;i<t.supportNeeded;i++){
+        const [type,title,lane]=recipe[i%recipe.length];
+
+        setStep6LiveProgressV3152({
+          show:true,
+          done:i,
+          total:t.supportNeeded,
+          ready:existing.filter(supportReadyRecordV3153).length,
+          failed:0,
+          current:`Saving ${i+1} of ${t.supportNeeded}: ${title}`,
+          phase:'Step 6 — Saving Component Records'
+        });
+
+        const d=await api('sections',{
+          method:'POST',
+          body:JSON.stringify({fields:{
+            Issues:[S.issue.id],
+            'Section Title':title,
+            'Section Type':'Short',
+            'Section Status':'Planned',
+            'Section Order':100+i+1,
+            'Reader Value':`Deliver one concise ${title} supporting job for this issue without repeating a Master Article.`,
+            'Evidence Status':'Question Only',
+            'Commercial Lane':'None',
+            'Section QA Result':'Not Checked',
+            'Notes':supportNotesV3153({type,lifeLane:lane})
+          }})
+        });
+
+        S.sections.push(d.record);
+        existing.push(d.record);
+
+        setStep6LiveProgressV3152({
+          show:true,
+          done:i+1,
+          total:t.supportNeeded,
+          ready:existing.filter(supportReadyRecordV3153).length,
+          failed:0,
+          current:`Saved ${i+1} of ${t.supportNeeded}: ${title}`,
+          phase:i+1===t.supportNeeded?'Step 6 — Component Records Saved':'Step 6 — Saving Component Records'
+        });
+
+        // Yield so status/progress paints between Airtable writes.
+        await new Promise(r=>setTimeout(r,0));
+      }
+    }
+
+    await refreshPersistentSupportV3153();
+    existing=persistentSupportRecordsV3153();
+    const pending=existing.filter(s=>!supportReadyRecordV3153(s));
+    const total=t.supportNeeded;
+    let readyNow=existing.filter(supportReadyRecordV3153).length;
+    const failed=[];
+
+    if(!pending.length){
+      const integrity=supportMixIntegrityV31827(existing,t.supportNeeded,profile.key);
+      setStep6LiveProgressV3152({show:true,done:total,total,ready:readyNow,failed:0,current:integrity.ok?'All supporting components are saved, ready and structurally distinct.':'All supporting copy is saved, but the component mix needs repair: '+integrity.errors.join(' '),phase:integrity.ok?'Step 6 complete':'Step 6 — Mix Integrity Failed'});
+      await renderStep6StatusV3151();
+      return;
+    }
+
+    setStep6LiveProgressV3152({
+      show:true,done:readyNow,total,ready:readyNow,failed:0,
+      current:`Persistent component records saved. Producing ${pending.length} unfinished components…`,
+      phase:'Step 6 production running'
+    });
+
+    const theme=String(E('assembly-theme')?.value||val(S.issue.fields,'Main Theme')||'').trim();
+    const selectedOrdersV31813=(typeof getMasterSelectionV312==='function'?getMasterSelectionV312():[]).map(Number);
+    const planV31813=typeof getSmartPlan==='function'?getSmartPlan():null;
+    const selectedArticlesV31813=(planV31813?.articles||[]).filter(a=>selectedOrdersV31813.includes(Number(a.order)));
+    const selectedEvidenceV31813=selectedArticlesV31813.map(a=>{
+      const rec=typeof planArticleRecordV312==='function'?planArticleRecordV312(a):null;
+      const f=rec?.fields||{};
+      const src=String(val(f,'Source / Reference Link 1')||val(f,'Primary source')||'').trim();
+      const copy=String(val(f,'Section Final Copy')||'').replace(/\s+/g,' ').trim().slice(0,360);
+      return `- ${a.title}${src?` | SOURCE: ${src}`:''}${copy?` | COPY EXTRACT: ${copy}`:''}`;
+    }).join('\n')||'- No selected-Master evidence context available.';
+
+    // Generic support-novelty evidence bank: completed but unselected Masters are valuable source material
+    // for short supports. They add new subjects without repeating the seven headline Masters.
+    const unusedEvidenceV31813=(planV31813?.articles||[]).filter(a=>!selectedOrdersV31813.includes(Number(a.order))).map(a=>{
+      const rec=typeof planArticleRecordV312==='function'?planArticleRecordV312(a):null;
+      const f=rec?.fields||{};
+      const ready=String(val(f,'Section Status')||'').toUpperCase()==='READY' || String(val(f,'Section QA Result')||'').toUpperCase()==='PASS';
+      if(!ready)return '';
+      const src=String(val(f,'Source / Reference Link 1')||val(f,'Primary source')||'').trim();
+      const copy=String(val(f,'Section Final Copy')||'').replace(/\s+/g,' ').trim().slice(0,420);
+      return `- ${a.title}${src?` | SOURCE: ${src}`:''}${copy?` | COPY EXTRACT: ${copy}`:''}`;
+    }).filter(Boolean).slice(0,8).join('\n')||'- No unused completed Master evidence available.';
+
+    const discoverySignalsV31813=(typeof getSmartSignals==='function'?getSmartSignals():[]).slice(0,18).map(x=>`- ${String(x.signal||'').trim()}${x.source_url?` | SOURCE: ${x.source_url}`:''}`).join('\n')||'- No extra discovery signals available.';
+    const masterSubjectsV31813=selectedArticlesV31813.map(a=>`- ${a.title}`).join('\n')||'- None';
+
+    // v3.18.14 generic subject allocator: assign one primary evidence subject to each factual support slot
+    // before writing begins, so a strong unused Master cannot be recycled into several different components.
+    const allSupportsV31814=existing.slice(0,t.supportNeeded);
+    const recipeV31814=allSupportsV31814.map(x=>{const m=supportMetaV3153(x);return [m.type,String(val(x.fields||{},'Section Title')||m.type),m.lifeLane]});
+    const allocationsV31814=supportAllocationPlanV31814(profile,recipeV31814,planV31813,selectedOrdersV31813);
+    const allocationByIdV31814=new Map(allSupportsV31814.map((x,idx)=>[x.id,allocationsV31814[idx]||null]));
+
+    for(let i=0;i<pending.length;i++){
+      const s=pending[i],f=s.fields||{},originalMeta=supportMetaV3153(s),allocation=allocationByIdV31814.get(s.id)||{};
+      const meta={...originalMeta,type:allocation.type||originalMeta.type,lifeLane:allocation.lane||originalMeta.lifeLane};
+      const title=String(allocation.label||val(f,'Section Title')||meta.type);
+      const assigned=allocation.candidate?`ASSIGNED PRIMARY SUBJECT — use this subject in THIS component only:
+- ${allocation.candidate.title}${allocation.candidate.source?` | SOURCE: ${allocation.candidate.source}`:''}${allocation.candidate.copy?` | COPY EXTRACT: ${allocation.candidate.copy}`:''}`:'ASSIGNED PRIMARY SUBJECT: None. Do not borrow a named subject already allocated to another support.';
+
+      setStep6LiveProgressV3152({
+        show:true,done:readyNow+failed.length,total,ready:readyNow,failed:failed.length,
+        current:`Producing ${readyNow+failed.length+1} of ${total}: ${title}`,
+        phase:'Step 6 production running'
+      });
+
+      try{
+        const prompt=`You are producing ONE finished supporting component for ${currentPublicationName()}.
+
+ISSUE PROMISE: ${theme}
+COMPONENT TYPE: ${meta.type}
+LABEL: ${title}
+LIFE LANE: ${meta.lifeLane}
+${assigned}
+RECENT SUPPORT COMPONENTS: ${persistentSupportRecordsV3153().filter(x=>x.id!==s.id&&supportReadyRecordV3153(x)).slice(-3).map(x=>`${val(x.fields,'Section Title')}: ${String(val(x.fields,'Section Final Copy')||'').slice(0,180)}`).join(' | ')||'None yet'}
+
+SELECTED MASTER SUBJECTS — NOVELTY EXCLUSION LIST:
+${masterSubjectsV31813}
+
+SELECTED MASTER EVIDENCE CONTEXT — reference only. Do NOT make these same venues/people/topics the subject of the support unless the component adds a clearly different reader job:
+${selectedEvidenceV31813}
+
+UNUSED COMPLETED MASTER EVIDENCE — prefer this bank for factual support because it adds new local subjects without wasting completed research:
+${unusedEvidenceV31813}
+
+OTHER CURRENT DISCOVERY SIGNALS — secondary idea bank; do not state unverified detail as fact:
+${discoverySignalsV31813}
+
+Write ONLY finished newsletter copy.
+- Normally 45–120 words; shorter is fine.
+- One clear reader job.
+- Natural UK English, conversational and locally knowledgeable. Give it personality; it should sound like a lively local publication, not a council guide, business article, brochure or AI explainer.
+- Vary the format and sentence shape from the recent support components. Do not create another checklist/question/explainer if the recent blocks already use that structure.
+- GENERIC SUPPORT NOVELTY GUARD: Masters carry the big stories; supports should normally introduce a new named venue, person, event, product, fact, place or reader job. Do not miniaturise or summarise a selected Master.
+- SUBJECT ALLOCATION GUARD: if an ASSIGNED PRIMARY SUBJECT is supplied, that is the only named evidence-bank subject this component may centre on. Do not switch to another unused Master merely because it is easier to write.
+- A named evidence-bank subject is normally allocated to ONE support only. Do not recycle a venue/person/topic that another support already used.
+- The declared COMPONENT TYPE, LABEL and LIFE LANE above are final for this run. The copy must actually perform that job; do not write an event block about a non-event or a people block about a venue.
+- Prefer the ASSIGNED PRIMARY SUBJECT over the general UNUSED COMPLETED MASTER EVIDENCE bank. The general bank is context only and must not be mined for extra named subjects.
+- If no primary subject is assigned, keep the block non-factual/editorial/reader-facing as appropriate and do not import a named venue from another support.
+- For Taste Trail, the support set must feel like a local hospitality day-and-night circuit: breakfast/coffee/daytime, lunch/afternoon, dinner, pubs/bars, nightlife/live, hotels/stays, markets/stalls/takeaways, events and wider-area discoveries. Use named place/dish/person/event/value/discovery where evidence supports it, not generic lifestyle advice.
+- For factual Taste Trail components (daytime find, price check, hospitality person/place, What's On pick, wider-area discovery), use at least one named local proof point from the supplied evidence context when possible. Where a venue/business is named, prefer a current official website, booking/menu page or official social page as the reader route and status double-check. If the context does not support the requested factual component, write a short clearly non-factual editorial bridge instead of inventing facts.
+- Reader-voice formats are limited: do not turn a factual/discovery component into another poll, nomination, recommendation request or question merely because evidence is thin.
+- Do not invent facts, prices, dates, quotes, businesses, services, events, people or reader comments.
+- One CTA maximum. CTA/button wording must be Title Case.
+- Do not repeat a Master Article or recycle the same reader prompt.
+- Capitalise Every Word in any heading/subhead.
+- NEVER use these filler words/phrases in reader-facing copy: useful, practical, meaningful, key question, important distinction, straightforward, crucial, navigate, 'in plain English'. Avoid 'whether' unless grammatically unavoidable.`;
+
+        const data=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
+        const copy=String(data.text||'').trim();
+        if(!copy)throw new Error('No component copy returned.');
+
+        const d=await api('sections',{
+          method:'PATCH',
+          body:JSON.stringify({id:s.id,fields:{
+            'Section Title':title,
+            'Section Final Copy':copy,
+            'Section Status':'Ready',
+            'Evidence Status':'Question Only',
+            'Section QA Result':'Not Checked',
+            'Notes':supportNotesV3153(meta)
+          }})
+        });
+        s.fields=d.record.fields;
+      }catch(e){
+        const message=String(e.message||e);
+        failed.push(`${title}: ${message}`);
+        try{
+          const d=await api('sections',{
+            method:'PATCH',
+            body:JSON.stringify({id:s.id,fields:{
+              'Section Status':'Needs Production',
+              'Notes':supportNotesV3153({...meta,error:message})
+            }})
+          });
+          s.fields=d.record.fields;
+        }catch{}
+      }
+
+      await refreshPersistentSupportV3153();
+      readyNow=persistentSupportRecordsV3153().filter(supportReadyRecordV3153).length;
+      setStep6LiveProgressV3152({
+        show:true,
+        done:Math.min(total,readyNow+failed.length),
+        total,
+        ready:readyNow,
+        failed:failed.length,
+        current:failed.length && failed[failed.length-1].startsWith(title)?`Exception on ${title}`:`Completed ${title}`,
+        phase:readyNow===total?'Step 6 complete':'Step 6 production running'
+      });
+      await renderStep6StatusV3151();
+      await new Promise(r=>setTimeout(r,0));
+    }
+
+    await refreshPersistentSupportV3153();
+    readyNow=persistentSupportRecordsV3153().filter(supportReadyRecordV3153).length;
+    const detail=failed.length
+      ? `${readyNow}/${total} supporting components are persistently READY in Airtable. ${failed.length} production exception${failed.length===1?'':'s'} remain:\n- ${failed.join('\n- ')}`
+      : `${readyNow}/${total} supporting components are persistently READY in Airtable. These will survive refreshes and new deployments.`;
+
+    setStep6LiveProgressV3152({
+      show:true,done:total,total,ready:readyNow,failed:failed.length,
+      current:failed.length?'Batch finished with exceptions.':'All supporting components are saved and ready.',
+      phase:failed.length?'Step 6 finished with exceptions':'Step 6 complete'
+    });
+    setWorkflowActionStatusV312(6,'Components',`${readyNow}/${total} persistently ready · ${failed.length} failed`,detail);
+    await renderStep6StatusV3151();
+
+  }catch(e){
+    const ready=persistentSupportRecordsV3153().filter(supportReadyRecordV3153).length;
+    setStep6LiveProgressV3152({show:true,done:ready,total:t.supportNeeded,ready,failed:1,current:String(e.message||e),phase:'Step 6 batch failed'});
+    setWorkflowActionStatusV312(6,'Components','Component batch failed.','Saved component records and Masters are preserved. '+String(e.message||e));
+  }finally{
+    [btn,dedicated].filter(Boolean).forEach(b=>{b.disabled=false;b.textContent='Build / Resume Supporting Components';});
+  }
+}
+
+function step6ReadyCountV3151(){
+  return persistentSupportRecordsV3153().filter(supportReadyRecordV3153).length;
+}
+async function rebuildComponentMixV31813(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const profile=engineProfileForPublication();
+  const t=supportTargetV315();
+  if(!t.selectedMasters){alert('Save the Step 5 Master selection first.');return}
+  if(!confirm(`Rebuild the ${t.supportNeeded} supporting components using the ${profile.name} publication profile plus the generic subject-allocation/novelty guard? Selected Master Articles are preserved.`))return;
+  const btn=E('step6-rebuild-mix-v31812');const old=btn?.textContent;if(btn){btn.disabled=true;btn.textContent='Rebuilding Mix…'}
+  try{
+    await refreshPersistentSupportV3153();
+    const recipes={
+      SPOTLIGHT:[
+        ['OPENING NOTE','Opening Note','OPEN'],['NEWS BRIEF','News Brief','LOCAL LIFE'],['READER POLL','Reader Poll','READER VOICE'],["WHAT'S ON","What's On","WHAT'S ON"],
+        ['QUICK QUIZ','Quick Quiz','FUN & CURIOSITY'],['FOOD FIND','Food Find','FOOD & HOSPITALITY'],['SALLY SAVERS','Sally Savers','MONEY & CONSUMER'],['LOCAL BUSINESS FIND','Local Business Find','BUSINESS & PEOPLE'],
+        ['FAMILY ACTIVITY','Family Activity','FAMILY & COMMUNITY'],['THIS OR THAT','This Or That','FUN & CURIOSITY'],['MOTORING QUICK CHECK','Motoring Quick Check','MOTORING & TRAVEL'],['COMMUNITY VOICE','Community Voice','FAMILY & COMMUNITY'],
+        ['HUMOUR','Quick Breather','FUN & CURIOSITY'],['WORTH THE DRIVE?','Worth The Drive?','PLACES & DISCOVERY'],['HOME QUICK CHECK','Home Quick Check','HOME & PROPERTY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],
+        ['LOCAL DEBATE','Local Debate','READER VOICE'],['QUICK UPDATE','Quick Update','LOCAL LIFE'],['BEFORE YOU GO','Before You Go','OPEN']
+      ],
+      TASTE_TRAIL:[
+        ['OPENING NOTE','Opening Note','OPEN'],['FOOD FIND','Morning / Daytime Find','BREAKFAST & BRUNCH'],['QUICK PRICE CHECK','Worth The Money?','VALUE'],['LOCAL BUSINESS FIND','Hospitality Person / Place','HOSPITALITY PEOPLE'],
+        ['EVENT PICK',"What's On / Going Out Pick",'EVENTS & EXPERIENCES'],['LOCAL TRIVIA','Local Food & Drink Curiosity','FUN & CURIOSITY'],['WORTH THE DRIVE?','Wider-Area Discovery','PLACES & DISCOVERY'],['PUB / RESTAURANT QUESTION','One Table Question','READER VOICE'],
+        ['READER POLL','One Quick Vote','READER VOICE'],['QUICK QUIZ','Quick Taste Trail Quiz','READER VOICE'],['READER RECOMMENDATION','Your Recommendation','READER VOICE'],['BEFORE YOU GO',"That's All For This Week — But Before You Go…",'OPEN']
+      ],
+      HOME_SELLER:[['OPENING NOTE','Opening Note','OPEN'],['READER POLL','Reader Poll','READER VOICE'],['QUICK PRICE CHECK','Quick Price Check','PRICING & VALUATION'],['READER QUESTION','Reader Question','READER VOICE'],['MYTH V FACT','Myth v Fact','FUN & CURIOSITY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','OPEN']],
+      PET_INSIDER:[['OPENING NOTE','Opening Note','OPEN'],['READER POLL','Reader Poll','READER VOICE'],['READER PETS','Reader Pets','READER PETS'],['LOCAL TRIVIA','Local Trivia','FUN & CURIOSITY'],['WEEKEND IDEA','Weekend Idea','WALKS & PLACES'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['EXPERT QUICK CHECK','Expert Quick Check','EXPERT'],['HUMOUR','Quick Breather','FUN & CURIOSITY'],['BEFORE YOU GO','Before You Go','OPEN']]
+    };
+    const recipe=recipes[profile.key]||recipes.SPOTLIGHT;
+    let supports=persistentSupportRecordsV3153();
+    for(let i=0;i<Math.min(supports.length,t.supportNeeded);i++){
+      const rec=supports[i],r=recipe[i%recipe.length];
+      await api('sections',{method:'PATCH',body:JSON.stringify({id:rec.id,fields:{
+        'Section Title':r[1],
+        'Section Status':'Planned',
+        'Section Final Copy':'',
+        'Evidence Status':'Needs Update',
+        'Section QA Result':'Not Checked',
+        'Notes':`PERSISTENT SUPPORT COMPONENT | Type: ${r[0]} | Life lane: ${r[2]} | v3.18.14 publication-profile mix + generic support subject allocation guard`
+      }})});
+    }
+    await refreshPersistentSupportV3153();
+    setStep6LiveProgressV3152({show:true,done:0,total:t.supportNeeded,ready:0,failed:0,current:`${profile.name} component mix reset. Allocating distinct support subjects, then producing varied components…`,phase:'Step 6 — Rebuilding Component Mix'});
+    await buildSupportBatchV315();
+  }catch(e){alert('Component mix rebuild failed: '+String(e.message||e))}
+  finally{if(btn){btn.disabled=false;btn.textContent=old||'Rebuild Component Mix'}}
+}
+
+
+function supportMixIntegrityV31827(records,needed,profileKey){
+  const rows=(records||[]).slice(0,needed).map(r=>{
+    const f=r?.fields||{},m=supportMetaV3153(r);
+    return {id:r.id,type:String(m.type||'').trim().toUpperCase(),title:String(val(f,'Section Title')||'').trim(),copy:String(val(f,'Section Final Copy')||'').trim(),ready:supportReadyRecordV3153(r)};
+  });
+  const errors=[];
+  if(rows.length!==needed)errors.push(`Component count ${rows.length}/${needed}.`);
+  const counts={};for(const r of rows)counts[r.type]=(counts[r.type]||0)+1;
+  const dupes=Object.entries(counts).filter(([type,n])=>type&&n>1).map(([type,n])=>`${type} ×${n}`);
+  if(dupes.length)errors.push(`Duplicate functional roles: ${dupes.join(', ')}.`);
+  if((counts['OPENING NOTE']||0)>1)errors.push('More than one Opening Note.');
+  if((counts['BEFORE YOU GO']||0)>1)errors.push('More than one closing component.');
+  if(String(profileKey||'').toUpperCase()==='TASTE_TRAIL'){
+    const ev=rows.find(r=>r.type==='EVENT PICK');
+    if(ev&&ev.ready){
+      const b=(ev.title+' '+ev.copy).toLowerCase();
+      const eventWords=/(event|festival|live music|gig|concert|show|fair|tasting|supper club|ticket|tickets|opening night|launch night|market day)/.test(b);
+      const timeWords=/(today|tomorrow|this week|this weekend|tonight|next week|august|september|october|november|december|january|february|march|april|may|june|july|2026|2027)/.test(b);
+      if(!(eventWords&&timeWords))errors.push('Event Pick is not visibly a current/dated event; it should fall back to a different discovery role.');
+    }
+  }
+  return {ok:errors.length===0,errors,rows,dupes};
+}
