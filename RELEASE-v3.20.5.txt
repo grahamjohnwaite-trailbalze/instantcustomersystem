@@ -1,0 +1,13 @@
+ICS v3.20.5 — Feature Builder 202 Recovery
+
+Fixes the Step 6A Feature Article builder failure: “Request failed (202)”.
+
+Changes:
+- Treats HTTP 202 from the Feature planner as a transient accepted/queued state rather than a hard content failure.
+- Retries Feature planning automatically up to four times with visible operator progress.
+- Uses the configured OpenAI model directly when available, avoiding an unnecessary model-discovery round trip.
+- Preserves all existing Masters, selections, components and issue state.
+- No changes to the v3.20.4 Feature Article or rhythm rules.
+
+Operator action:
+Deploy over v3.20.4, reopen the same issue at Step 6, and click Build / Resume 4 Feature Articles once.

@@ -3905,6 +3905,30 @@ function renderFeatureSummaryV3204(){
   box.innerHTML=`<strong>${ready.length}/${FEATURE_TARGET_V3204} Feature Articles ready</strong><div class="muted" style="margin-top:5px">${all.length?all.slice(0,FEATURE_TARGET_V3204).map((r,i)=>`${i+1}. ${esc(val(r.fields||{},'Section Title')||'Feature')} — ${featureArticleReadyV3204(r)?'READY':'IN PROGRESS'}`).join('<br>'):'ICS will plan four distinct short features around the issue without duplicating the selected Masters.'}</div>${pending.length?'<div class="muted" style="margin-top:5px">Finish Features before building the final component count.</div>':''}`;
   const b=E('step6-build-features-v3204');if(b)b.textContent=ready.length>=FEATURE_TARGET_V3204?'Feature Articles Ready ✓':'Build / Resume 4 Feature Articles';
 }
+async function apiFeaturePlanV3205(payload,btn){
+  let last;
+  for(let attempt=1;attempt<=4;attempt++){
+    try{
+      const r=await fetch('/.netlify/functions/plan-features',{method:'POST',headers:{'content-type':'application/json',accept:'application/json'},body:JSON.stringify(payload)});
+      const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={}}
+      if(r.ok&&d?.ok&&Array.isArray(d.features)&&d.features.length)return d;
+      if(r.status===202){
+        last=new Error('Feature planner is still being accepted by the server.');
+        if(btn)btn.textContent=`Planner accepted — retrying ${attempt}/4…`;
+        await sleep(1200*attempt);
+        continue;
+      }
+      const err=new Error(d?.error||`Request failed (${r.status})`);err.details=d?.details;throw err;
+    }catch(e){
+      last=e;
+      const transient=/202|accepted|408|429|500|502|503|504|timeout|timed out|failed to fetch|network|gateway|temporarily/i.test(String(e?.message||e));
+      if(!transient||attempt>=4)throw e;
+      if(btn)btn.textContent=`Feature planner retry ${attempt}/4…`;
+      await sleep(1200*attempt);
+    }
+  }
+  throw last||new Error('Feature planner did not return a completed plan.');
+}
 async function buildFeatureArticlesV3204(){
   if(!S.issue){alert('Open an issue first.');return}
   const btn=E('step6-build-features-v3204'),old=btn?.textContent||'';if(btn){btn.disabled=true;btn.textContent='Building Features…'}
@@ -3915,7 +3939,7 @@ async function buildFeatureArticlesV3204(){
       const plan=getSmartPlan()||{},selected=new Set(getMasterSelectionV312().map(Number));
       const selectedTitles=(plan.articles||[]).filter(a=>selected.has(Number(a.order))).map(a=>a.title);
       const allTitles=(plan.articles||[]).map(a=>a.title);
-      const resp=await api('plan-features',{method:'POST',body:JSON.stringify({publicationName:currentPublicationName(),issuePromise:String(val(S.issue.fields||{},'Main Theme')||''),selectedMasterTitles:selectedTitles,allMasterTitles:allTitles,count:FEATURE_TARGET_V3204})});
+      const resp=await apiFeaturePlanV3205({publicationName:currentPublicationName(),issuePromise:String(val(S.issue.fields||{},'Main Theme')||''),selectedMasterTitles:selectedTitles,allMasterTitles:allTitles,count:FEATURE_TARGET_V3204},btn);
       const briefs=(resp.features||[]).slice(0,FEATURE_TARGET_V3204);
       for(let i=rows.length;i<FEATURE_TARGET_V3204;i++){
         const b=briefs[i]||{};

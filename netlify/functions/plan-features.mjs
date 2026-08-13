@@ -43,7 +43,8 @@ COMMISSIONING RULES
 
 Return JSON only:
 {"features":[{"title":"clickable natural headline","question":"one precise reader question","reader_value":"what the reader gets","local_proof":"specific proof the research stage should seek","evidence":"what must be verified","life_lane":"Local Life|Food & Hospitality|Places & Discovery|Money & Consumer|Home & Property|Family & Community|Motoring & Travel|Fun & Curiosity|Business & People","writing_mode":"NEWS EXPLAINER|RECOMMENDATION / DISCOVERY|COMPARISON / VALUE|PRACTICAL SERVICE|HUMAN / COMMUNITY|DEBATE / READER VOICE","cta_text":"optional natural CTA or blank"}]}`;
-    const response=await createResponse({input:prompt,useWeb:false,timeoutMs:50000});
+    const pinned=String(process.env.OPENAI_MODEL||'').trim();
+    const response=await createResponse({input:prompt,useWeb:false,model:pinned,timeoutMs:40000});
     const parsed=parseJsonText(outputText(response));
     const features=(Array.isArray(parsed?.features)?parsed.features:[]).slice(0,count).map((x,i)=>({
       title:clean(x.title)||`Short Feature ${i+1}`,
