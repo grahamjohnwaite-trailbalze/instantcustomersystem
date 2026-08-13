@@ -331,7 +331,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 .operator-rule-v319{background:#f3f7fd;border-radius:9px;padding:9px}.operator-rule-v319 span{font-size:11px;color:#475467;line-height:1.35}.operator-sop-v319{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.operator-sop-v319 summary{cursor:pointer;font-size:11px;font-weight:800;color:#475467}.operator-matrix-row-v319{display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #edf0f4;font-size:10px}.operator-matrix-row-v319 b{font-size:10px}.operator-matrix-row-v319 span{color:#667085}.workflow-step-v312.done[data-flow-step="9"]{background:#15803d!important;border-color:#15803d!important;color:#fff!important}
 @media(max-width:1100px){.operator-guide-v319{grid-template-columns:1fr 1fr}.operator-rule-v319,.operator-sop-v319{grid-column:1/-1}.operator-matrix-row-v319{grid-template-columns:70px 1fr}}
 @media(max-width:700px){.operator-guide-v319{grid-template-columns:1fr}.operator-rule-v319,.operator-sop-v319{grid-column:auto}.operator-matrix-row-v319{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.11<br><strong>Content Distinctiveness Gate</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-13 · distinct Features + local/value-first support + lean deploy</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.12<br><strong>True Feature Recommission Engine</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-13 · active duplicate retirement + fresh Feature commissions + lean deploy</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -4048,43 +4048,84 @@ async function recommissionBlockedFeatureV3208(r,slot,btn){
   return r;
 }
 
-// v3.20.11 — Content Distinctiveness Gate.
-// READY Features must add a genuinely different indexed asset, not a shortened Master or recycled source.
+// v3.20.12 — True Feature Recommission Engine.
+// Distinctiveness is checked against every completed Master in the active issue plus current support copy.
+// This intentionally does NOT depend on browser-only Step 5 selection state.
 function normTokensV3211(v){
   const stop=new Set('the a an and or but to of in on for with from is are was were be been being this that what why how could should would can may might peterborough cambridge cambridgeshire norfolk spotlight feature article master'.split(' '));
   return new Set(String(v||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(x=>x.length>2&&!stop.has(x)));
 }
 function jaccardV3211(a,b){const A=normTokensV3211(a),B=normTokensV3211(b);if(!A.size||!B.size)return 0;let n=0;for(const x of A)if(B.has(x))n++;return n/(A.size+B.size-n)}
+function sourceHostV3212(v){try{return new URL(String(v||'')).hostname.replace(/^www\./,'').toLowerCase()}catch{return ''}}
+function allIssueMasterRecordsV3212(){
+  return (S.sections||[]).filter(r=>!isFeatureArticleV3204(r)&&masterArticleState(r)==='complete'&&approvedPlanIdentity(r));
+}
 function selectedMasterRecordsV3211(){
+  // Kept for older callers, but Feature distinctiveness now uses all produced Masters so localStorage can never hide a duplicate.
+  const all=allIssueMasterRecordsV3212();
   const selected=new Set(getMasterSelectionV312().map(Number));
-  const plan=getSmartPlan()||{}, byTitle=new Map((plan.articles||[]).filter(a=>selected.has(Number(a.order))).map(a=>[String(a.title||'').trim().toLowerCase(),a]));
-  return (S.sections||[]).filter(r=>!isFeatureArticleV3204(r)&&masterArticleState(r)==='complete'&&byTitle.has(String(val(r.fields||{},'Section Title')||'').trim().toLowerCase()));
+  if(!selected.size)return all;
+  const hit=all.filter(r=>selected.has(Number(val(r.fields||{},'Section Order')||0)));
+  return hit.length?hit:all;
+}
+function currentSupportRecordsV3212(){return (S.sections||[]).filter(isPersistentSupportSectionV3153)}
+function featureComparableTextV3212(r){const f=r?.fields||{};return [val(f,'Section Title'),val(f,'Core Reader Question'),val(f,'Reader Value'),String(val(f,'Section Final Copy')||'').slice(0,1400)].filter(Boolean).join(' ')}
+function overlapSignalsV3212(a,b){
+  const A=normTokensV3211(a),B=normTokensV3211(b),common=[...A].filter(x=>B.has(x));
+  return {score:jaccardV3211(a,b),common};
 }
 function featureDistinctivenessProblemsV3211(r){
   if(!r)return [];
-  const f=r.fields||{}, title=String(val(f,'Section Title')||''), q=String(val(f,'Core Reader Question')||''), body=String(val(f,'Section Final Copy')||'').slice(0,1200), src=String(val(f,'Source / Reference Link 1')||'').trim();
-  const problems=[];
-  for(const m of selectedMasterRecordsV3211()){
-    const mf=m.fields||{}, mt=String(val(mf,'Section Title')||''), mq=String(val(mf,'Core Reader Question')||''), mb=String(val(mf,'Section Final Copy')||'').slice(0,1200), ms=String(val(mf,'Source / Reference Link 1')||'').trim();
-    const titleScore=jaccardV3211(title+' '+q,mt+' '+mq), bodyScore=jaccardV3211(body,mb);
-    if(src&&ms&&src===ms)problems.push(`shares the same primary source as selected Master “${mt}”`);
-    else if(titleScore>=0.42||bodyScore>=0.48)problems.push(`substantially overlaps selected Master “${mt}”`);
+  const f=r.fields||{}, title=String(val(f,'Section Title')||''), q=String(val(f,'Core Reader Question')||''), body=String(val(f,'Section Final Copy')||'').slice(0,1400), src=String(val(f,'Source / Reference Link 1')||'').trim();
+  const featureText=[title,q,body].join(' '), problems=[];
+  for(const m of allIssueMasterRecordsV3212()){
+    const mf=m.fields||{}, mt=String(val(mf,'Section Title')||''), mq=String(val(mf,'Core Reader Question')||''), mb=String(val(mf,'Section Final Copy')||'').slice(0,1400), ms=String(val(mf,'Source / Reference Link 1')||'').trim();
+    const headline=overlapSignalsV3212(title+' '+q,mt+' '+mq), copy=overlapSignalsV3212(featureText,[mt,mq,mb].join(' '));
+    const sameHost=src&&ms&&sourceHostV3212(src)&&sourceHostV3212(src)===sourceHostV3212(ms);
+    const strongSubject=headline.common.length>=2 && headline.score>=0.20;
+    if((src&&ms&&src===ms)||(sameHost&&strongSubject))problems.push(`reuses the same source/subject package as Master “${mt}”`);
+    else if(headline.score>=0.30||copy.score>=0.36||strongSubject)problems.push(`substantially overlaps Master “${mt}”`);
+  }
+  for(const c of currentSupportRecordsV3212()){
+    const cf=c.fields||{}, ct=String(val(cf,'Section Title')||''), cc=String(val(cf,'Section Final Copy')||'').slice(0,900);
+    const ov=overlapSignalsV3212(title+' '+q,ct+' '+cc);
+    if(ov.score>=0.34 && ov.common.length>=3)problems.push(`duplicates supporting block “${ct||'support component'}”`);
   }
   return [...new Set(problems)];
 }
 function featureDistinctV3211(r){return featureDistinctivenessProblemsV3211(r).length===0}
-async function recommissionDistinctFeatureV3211(r,slot,btn){
-  const payload={publicationName:currentPublicationName(),issuePromise:String(val(S.issue?.fields||{},'Main Theme')||''),count:4};
-  const fallback=fallbackFeaturePlanV3206(payload).features||[];
-  const selected=selectedMasterRecordsV3211().map(m=>String(val(m.fields||{},'Section Title')||''));
-  let choices=fallback.filter(b=>selected.every(t=>jaccardV3211((b.title||'')+' '+(b.question||''),t)<0.34));
-  if(!choices.length)choices=fallback;
-  const b=choices[slot%choices.length]||fallback[slot%fallback.length]||{};
-  if(btn)btn.textContent=`Recommissioning Feature ${slot+1} for distinct value…`;
-  const fields={'Section Title':b.title||`Distinct Local Feature ${slot+1}`,'Section Status':'Planned','Core Reader Question':b.question||'What different local thing is genuinely worth knowing?','Reader Value':b.reader_value||'A standalone local article with a different reader job from every selected Master.','Local Proof Needed':b.local_proof||`Named current ${currentPublicationName()} proof.`,'Evidence Required':(b.evidence||'Current primary/local evidence.')+' Do not use the same primary source or central evidence package as a selected Master unless the reader question and evidence set are demonstrably different.','Evidence Status':'Not Started','Evidence Checked Date':'','Source / Reference Link 1':'','Commercial Lane':b.life_lane||'Open','CTA Text':'','Section Final Copy':'','Section QA Result':'Not Checked','Notes':[featureMarkerNotesV3204(slot,b),'FEATURE DISTINCTIVENESS RESET: 1','RULE: Must add a different reader question, evidence set and useful outcome from every selected Master.'].join('\n')};
+function featureCandidateDistinctV3212(b,excludeTexts=[]){
+  const t=[b?.title,b?.question,b?.reader_value].filter(Boolean).join(' ');
+  if(!t.trim())return false;
+  return excludeTexts.every(x=>{const ov=overlapSignalsV3212(t,x);return !(ov.score>=0.26&&ov.common.length>=2)});
+}
+function featureExclusionTextsV3212(currentId=''){
+  const masters=allIssueMasterRecordsV3212().map(featureComparableTextV3212);
+  const features=featureArticleRecordsV3204().filter(x=>x.id!==currentId).map(featureComparableTextV3212);
+  const supports=currentSupportRecordsV3212().map(featureComparableTextV3212);
+  return [...masters,...features,...supports].filter(Boolean);
+}
+async function markFeatureRecommissionRequiredV3212(r,slot,reasons=[]){
+  const f=r.fields||{}, notes=String(val(f,'Notes')||'');
+  const fields={'Section Status':'Planned','Evidence Status':'Not Started','Evidence Checked Date':'','Source / Reference Link 1':'','Section Final Copy':'','Section QA Result':'Not Checked','CTA Text':'','Notes':[notes.replace(/FEATURE STATUS:\s*[^\n]*/gi,'').trim(),`FEATURE RECOMMISSION REQUIRED v3.20.12`,`OLD TITLE: ${String(val(f,'Section Title')||'')}`,`REASON: ${(reasons||[]).join(' | ')||'Did not add distinct reader value.'}`,`FEATURE STATUS: RECOMMISSION REQUIRED`].filter(Boolean).join('\n')};
   const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:r.id,fields})});
-  if(d?.record){const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=d.record;return d.record}
-  return r;
+  if(d?.record){const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=d.record;return d.record}return r;
+}
+async function recommissionDistinctFeatureV3211(r,slot,btn){
+  const excludeTexts=featureExclusionTextsV3212(r.id);
+  const masterTitles=allIssueMasterRecordsV3212().map(m=>String(val(m.fields||{},'Section Title')||''));
+  const supportTitles=currentSupportRecordsV3212().map(c=>String(val(c.fields||{},'Section Title')||''));
+  const payload={publicationName:currentPublicationName(),issuePromise:String(val(S.issue?.fields||{},'Main Theme')||''),selectedMasterTitles:masterTitles,allMasterTitles:masterTitles,supportTitles,count:FEATURE_TARGET_V3204,strictRecommission:true,instruction:'Commission genuinely different permanent 300–450 word Feature Articles. Do not reuse the subject, central entity, primary source, reader question or evidence package of any Master or support block supplied. A different headline on the same story is not distinct.'};
+  let candidates=[];
+  try{const resp=await apiFeaturePlanV3206(payload,btn);candidates=(resp?.features||[])}catch{}
+  const fallback=(fallbackFeaturePlanV3206(payload).features||[]);
+  candidates=[...candidates,...fallback];
+  const b=candidates.find(x=>featureCandidateDistinctV3212(x,excludeTexts));
+  if(!b)throw new Error(`Feature ${slot+1} needs recommissioning, but ICS could not find a sufficiently distinct replacement. Keep it blocked rather than recycling an existing story.`);
+  if(btn)btn.textContent=`Recommissioning Feature ${slot+1} with a fresh subject…`;
+  const fields={'Section Title':b.title||`Distinct Local Feature ${slot+1}`,'Section Type':'Feature Article','Section Status':'Planned','Core Reader Question':b.question||'What different local thing is genuinely worth knowing?','Reader Value':b.reader_value||'A standalone local article with a different reader job from every Master and support block.','Local Proof Needed':b.local_proof||`Named current ${currentPublicationName()} proof.`,'Evidence Required':(b.evidence||'Current primary/local evidence.')+' Use a different central evidence package from every Master/support block in this issue.','Evidence Status':'Not Started','Evidence Checked Date':'','Source / Reference Link 1':'','Commercial Lane':b.life_lane||'Open','CTA Text':'','Section Final Copy':'','Section QA Result':'Not Checked','Notes':[featureMarkerNotesV3204(slot,b),'FEATURE RECOMMISSIONED v3.20.12','RULE: Fresh subject + fresh reader question + fresh evidence package. Same-story reframing is forbidden.'].join('\n')};
+  const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:r.id,fields})});
+  if(d?.record){const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=d.record;return d.record}return r;
 }
 
 async function buildFeatureArticlesV3204(){
@@ -4113,7 +4154,10 @@ async function buildFeatureArticlesV3204(){
     for(let i=0;i<Math.min(rows.length,FEATURE_TARGET_V3204);i++){
       currentFeature=i+1;let r=rows[i];
       if(featureArticleReadyV3204(r)&&!featureDistinctV3211(r)){
-        currentStage='repairing Feature distinctiveness';
+        currentStage='retiring duplicate Feature';
+        const reasons=featureDistinctivenessProblemsV3211(r);
+        r=await markFeatureRecommissionRequiredV3212(r,i,reasons);
+        currentStage='recommissioning Feature with fresh subject';
         r=await recommissionDistinctFeatureV3211(r,i,btn);
       }
       if(featureArticleReadyV3204(r)&&featureDistinctV3211(r))continue;
@@ -4134,6 +4178,11 @@ async function buildFeatureArticlesV3204(){
       currentStage='writing';if(btn)btn.textContent=`Writing Feature ${i+1}/${FEATURE_TARGET_V3204}…`;
       const gen=await featureProduceCallV3207(r.id,'generate',btn);
       if(gen?.record){r=gen.record;const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=r}
+      if(featureArticleReadyV3204(r)&&!featureDistinctV3211(r)){
+        const reasons=featureDistinctivenessProblemsV3211(r);
+        currentStage='blocking replacement Feature that still overlaps';
+        r=await markFeatureRecommissionRequiredV3212(r,i,reasons);
+      }
       renderFeatureSummaryV3204();
     }
     await Promise.all([loadSections(),loadArticleLibrary()]);

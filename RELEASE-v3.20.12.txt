@@ -1,0 +1,10 @@
+ICS v3.20.12 — True Feature Recommission Engine
+Build: 2026-08-13
+
+- Retires an already-READY Feature when it duplicates any completed Master in the active issue or materially duplicates a support block.
+- Distinctiveness no longer depends on browser-only Step 5 selection state.
+- Duplicate Features are marked RECOMMISSION REQUIRED before a replacement is commissioned.
+- Replacements must use a fresh subject, reader question and evidence package; same-story reframing is forbidden.
+- Rechecks the replacement after writing and blocks it again if overlap remains.
+- Evidence standards are unchanged.
+- Lean deploy: current release note only.
