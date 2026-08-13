@@ -5336,7 +5336,12 @@ function deterministicQA(items){
   else add('PASS','ISSUE_SIZE',`${items.length} sections is within the normal ${minSections}-${maxSections} ${qaProfile.name} range.`);
   if(articleCount<minMasters||articleCount>maxMasters)add('WARNING','ARTICLE_COUNT',`${qaProfile.name} normally uses around ${minMasters}-${maxMasters} Master Articles; this canvas has ${articleCount}. Judge the finished issue by value and rhythm rather than count alone.`);
   else add('PASS','ARTICLE_COUNT',`${articleCount} Master Articles is within the normal ${minMasters}-${maxMasters} ${qaProfile.name} range.`);
-  if(featureCount<featureTargetForIssueV3204())add('FIX','FEATURE_LAYER',`Only ${featureCount}/${featureTargetForIssueV3204()} Feature Articles are in the running order. The short-feature layer is required to stop the issue collapsing into a lightweight support tail.`);
+  // v3.20.10 — four Features are the production target, not an unconditional QA quota.
+  // Three READY Features may pass when the structural rhythm gate remains healthy; evidence-blocked work is never forced into publication.
+  const featureTarget=featureTargetForIssueV3204();
+  const featureMinimum=featureMinimumForIssueV3209();
+  if(featureCount<featureMinimum)add('FIX','FEATURE_LAYER',`Only ${featureCount}/${featureTarget} Feature Articles are in the running order. At least ${featureMinimum} READY Features are required before the short-feature layer can carry enough editorial weight.`);
+  else if(featureCount<featureTarget)add('WARNING','FEATURE_LAYER',`${featureCount}/${featureTarget} planned Feature Articles are in the running order. This is acceptable when the missing Feature is not READY and the assembly-rhythm gate passes; do not lower the evidence bar merely to reach the target.`);
   else add('PASS','FEATURE_LAYER',`${featureCount} permanent Feature Articles add mid-weight editorial anchors.`);
   const issuePromise=qaIssuePromiseV31815();
   if(!issuePromise)add('WARNING','ISSUE_PROMISE','The saved issue promise is blank, so the running order has no defined editorial promise to guide the edition.');
