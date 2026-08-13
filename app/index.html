@@ -331,7 +331,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 .operator-rule-v319{background:#f3f7fd;border-radius:9px;padding:9px}.operator-rule-v319 span{font-size:11px;color:#475467;line-height:1.35}.operator-sop-v319{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.operator-sop-v319 summary{cursor:pointer;font-size:11px;font-weight:800;color:#475467}.operator-matrix-row-v319{display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #edf0f4;font-size:10px}.operator-matrix-row-v319 b{font-size:10px}.operator-matrix-row-v319 span{color:#667085}.workflow-step-v312.done[data-flow-step="9"]{background:#15803d!important;border-color:#15803d!important;color:#fff!important}
 @media(max-width:1100px){.operator-guide-v319{grid-template-columns:1fr 1fr}.operator-rule-v319,.operator-sop-v319{grid-column:1/-1}.operator-matrix-row-v319{grid-template-columns:70px 1fr}}
 @media(max-width:700px){.operator-guide-v319{grid-template-columns:1fr}.operator-rule-v319,.operator-sop-v319{grid-column:auto}.operator-matrix-row-v319{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.13<br><strong>True Feature Recommission Engine</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-13 · active duplicate retirement + fresh Feature commissions + lean deploy</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.14<br><strong>Stability Cut — Optional Features</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-13 · core newsletter path prioritised · Feature layer optional until freeze</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -438,7 +438,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
     <div>
       <div class="eyebrow">Step 6A — Feature Articles</div>
       <h2 style="margin:4px 0">Short Feature Bank</h2>
-      <div class="muted">Create four permanent 300–450 word Feature Articles to give the issue extra editorial weight. They get their own Letterman URL, SEO package and Article Bank record — they are not filler components.</div>
+      <div class="muted">Optional enhancement: up to four permanent 300–450 word Feature Articles. They may add editorial weight, but they do not block assembly or QA. Core production must remain viable with Masters + components alone.</div>
     </div>
     <button class="btn" id="step6-build-features-v3204" type="button">Build / Resume 4 Feature Articles</button>
   </div>
@@ -3900,7 +3900,7 @@ function featureMarkerNotesV3204(index,brief={}){return [FEATURE_MARKER_V3204,`F
 function featureTypeLabelV3204(record){return isFeatureArticleV3204(record)?'FEATURE ARTICLE':'MASTER ARTICLE'}
 function featureTargetForIssueV3204(){return FEATURE_TARGET_V3204}
 // v3.20.9 — four Features remain the production target, but a single evidence-blocked Feature must not stall a healthy issue.
-function featureMinimumForIssueV3209(){return Math.min(3,featureTargetForIssueV3204())}
+function featureMinimumForIssueV3209(){return 0}
 function featureLayerReadyV3209(){return readyFeatureArticlesV3204().length>=featureMinimumForIssueV3209()}
 function featureBlockReasonV3208(r){
   const f=r?.fields||{},notes=String(val(f,'Notes')||'');
@@ -3914,7 +3914,7 @@ function renderFeatureSummaryV3204(){
   const panel=E('step6-feature-panel-v3204'),box=E('step6-feature-summary-v3204');if(panel)panel.style.display=workflowSelectedStepV312===6?'block':'none';if(!box)return;
   const all=featureArticleRecordsV3204(),ready=all.filter(featureArticleReadyV3204),pending=all.filter(x=>!featureArticleReadyV3204(x));
   box.innerHTML=`<strong>${ready.length}/${FEATURE_TARGET_V3204} Feature Articles ready</strong><div class="muted" style="margin-top:5px">${all.length?all.slice(0,FEATURE_TARGET_V3204).map((r,i)=>{const blocked=featureBlockReasonV3208(r);return `${i+1}. ${esc(val(r.fields||{},'Section Title')||'Feature')} — ${featureArticleReadyV3204(r)?'READY':blocked?'BLOCKED · '+esc(blocked):'IN PROGRESS'}`}).join('<br>'):'ICS will plan four distinct short features around the issue without duplicating the selected Masters.'}</div>${pending.length?'<div class="muted" style="margin-top:5px">Build / Repair also recommissions any Feature that duplicates a selected Master. Evidence quality is never lowered.</div>':''}`;
-  const b=E('step6-build-features-v3204');if(b)b.textContent=ready.length>=FEATURE_TARGET_V3204?'Feature Articles Ready ✓':'Build / Repair 4 Feature Articles';
+  const b=E('step6-build-features-v3204');if(b)b.textContent=ready.length>=FEATURE_TARGET_V3204?'Optional Features Ready ✓':'Build Optional Features (Not Required)';
 }
 function fallbackFeaturePlanV3206(payload={}){
   const pub=String(payload.publicationName||'Local').trim();
@@ -4192,7 +4192,7 @@ async function buildFeatureArticlesV3204(){
     alert(ready>=FEATURE_TARGET_V3204?`${ready} Feature Articles are READY. They are permanent Article Bank assets and will be distributed through Step 7.`:`${ready}/${FEATURE_TARGET_V3204} Feature Articles are READY. Any blocked Feature has been preserved for review; do not lower the evidence bar.`);
   }catch(e){
     alert(`Feature Article build stopped at ${currentStage}${currentFeature?` (Feature ${currentFeature})`:''}: ${String(e?.message||e)}`);
-  }finally{if(btn){btn.disabled=false;btn.textContent='Build / Repair 4 Feature Articles'}renderFeatureSummaryV3204()}
+  }finally{if(btn){btn.disabled=false;btn.textContent='Build Optional Features (Not Required)'}renderFeatureSummaryV3204()}
 }
 
 const SUPPORT_MARKER_V3153='ICS SUPPORT COMPONENT V3.15.3';
@@ -4812,7 +4812,7 @@ async function renderStep6StatusV3151(){
   if(detail){
     detail.textContent=
       `Selected Masters: ${t.selectedMasters}\n`+
-      `Feature Articles ready: ${t.featureArticles}/${featureTargetForIssueV3204()} (minimum ${featureMinimumForIssueV3209()} to assemble)\n`+
+      `Feature Articles ready: ${t.featureArticles}/${featureTargetForIssueV3204()} (optional in stability build)\n`+
       `Target issue size: ${t.issueTarget}\n`+
       `Supporting / partner components required: ${t.supportNeeded}\n`+
       `Built: ${built}\n`+
@@ -5502,6 +5502,7 @@ function buildSmartCanvas(articles,persistentSupports=null){
   const masters=articles.filter(x=>String(x.type||'').toUpperCase()==='MASTER ARTICLE');
   const features=articles.filter(x=>String(x.type||'').toUpperCase()==='FEATURE ARTICLE');
   const anchors=[];let mi=0,fi=0;
+  // Mix optional Features through Masters when available, but never require them.
   while(mi<masters.length||fi<features.length){
     if(mi<masters.length)anchors.push(masters[mi++]);
     if(mi<masters.length)anchors.push(masters[mi++]);
@@ -5509,19 +5510,18 @@ function buildSmartCanvas(articles,persistentSupports=null){
   }
   while(fi<features.length)anchors.push(features[fi++]);
   const items=[];if(opening)items.push(opening);
-  const extraSupport=Math.max(0,supports.length-anchors.length),extraAt=new Set();
-  for(let j=1;j<=extraSupport;j++)extraAt.add(Math.max(0,Math.min(anchors.length-1,Math.round(j*anchors.length/(extraSupport+1))-1)));
+  if(!anchors.length){items.push(...supports);if(closing)items.push(closing);return items.slice(0,profile.targetSections[1]);}
+  // Rhythm-first distribution: spread lightweight supports across the gaps around article anchors.
+  // This keeps the core builder viable even with zero Feature Articles and prevents support-only tails.
+  const gapCount=anchors.length+1;
+  const base=Math.floor(supports.length/gapCount),remainder=supports.length%gapCount;
+  const gapSizes=Array.from({length:gapCount},(_,i)=>base+(i>=gapCount-remainder?1:0));
+  // Prefer at most two lightweight blocks in a row; current Spotlight geometry (8 Masters + 19 supports) fits this exactly.
   let si=0;
-  anchors.forEach((a,i)=>{
-    a.lifeLane=editorialLaneFor(a,profile);items.push(a);
-    if(si<supports.length)items.push(supports[si++]);
-    if(extraAt.has(i)&&si<supports.length)items.push(supports[si++]);
-  });
-  while(si<supports.length){
-    // Insert any residue before the final third's last article anchor rather than creating a support-only tail.
-    const lastArticle=Math.max(1,items.map((x,i)=>x.kind==='article'?i:-1).reduce((a,b)=>Math.max(a,b),-1));
-    items.splice(Math.min(items.length,lastArticle+1),0,supports[si++]);
-  }
+  const pushGap=(n)=>{for(let j=0;j<n&&si<supports.length;j++)items.push(supports[si++])};
+  pushGap(gapSizes[0]);
+  anchors.forEach((a,i)=>{a.lifeLane=editorialLaneFor(a,profile);items.push(a);pushGap(gapSizes[i+1])});
+  while(si<supports.length)items.splice(Math.max(1,items.length-1),0,supports[si++]);
   if(closing)items.push(closing);
   return items.slice(0,profile.targetSections[1]);
 }
@@ -5650,10 +5650,7 @@ async function smartAssembleIssue(){
   }
 
   const features=readyFeatureArticlesV3204().map(makeArticleBlock);
-  if(features.length<featureMinimumForIssueV3209()){
-    setStep7StatusV3164('Step 7 blocked — Feature layer too thin.',`${features.length}/${featureTargetForIssueV3204()} Feature Articles are READY. At least ${featureMinimumForIssueV3209()} are required to create a balanced running order; finish or recommission Step 6A.`);
-    return;
-  }
+  // v3.20.14 Stability Cut: Features are optional; rhythm, not Feature count, decides whether Step 7 can proceed.
   setStep7StatusV3164('Rebuilding Running Order…',
     `${chosen.length} clean READY Masters + ${features.length} READY Feature Articles + ${requiredSupport} persistent support components. Discarding the old browser running order.`);
 
@@ -6104,8 +6101,8 @@ function deterministicQA(items){
   // Three READY Features may pass when the structural rhythm gate remains healthy; evidence-blocked work is never forced into publication.
   const featureTarget=featureTargetForIssueV3204();
   const featureMinimum=featureMinimumForIssueV3209();
-  if(featureCount<featureMinimum)add('FIX','FEATURE_LAYER',`Only ${featureCount}/${featureTarget} Feature Articles are in the running order. At least ${featureMinimum} READY Features are required before the short-feature layer can carry enough editorial weight.`);
-  else if(featureCount<featureTarget)add('WARNING','FEATURE_LAYER',`${featureCount}/${featureTarget} planned Feature Articles are in the running order. This is acceptable when the missing Feature is not READY and the assembly-rhythm gate passes; do not lower the evidence bar merely to reach the target.`);
+  if(featureCount===0)add('PASS','FEATURE_LAYER',`Feature Articles are optional in the stability build. This issue is using the core Master + component path; rhythm integrity remains the deciding gate.`);
+  else if(featureCount<featureTarget)add('WARNING','FEATURE_LAYER',`${featureCount}/${featureTarget} optional Feature Articles are in the running order. Keep only Features that are genuinely distinct and READY; never manufacture one to satisfy a quota.`);
   else add('PASS','FEATURE_LAYER',`${featureCount} permanent Feature Articles add mid-weight editorial anchors.`);
   // v3.20.13: a Feature that duplicates a selected Master is a publishing defect because it wastes an indexed article slot and harms issue rhythm.
   for(const b of items.filter(x=>String(x.type||'').toUpperCase()==='FEATURE ARTICLE')){
