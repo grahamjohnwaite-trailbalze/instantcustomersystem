@@ -3367,10 +3367,18 @@ function readyFeatureArticlesV3204(){return featureArticleRecordsV3204().filter(
 function featureMarkerNotesV3204(index,brief={}){return [FEATURE_MARKER_V3204,`FEATURE SLOT: ${index+1}`,`Writing mode: ${brief.writing_mode||'PRACTICAL SERVICE'}`,`FEATURE PURPOSE: ${brief.reader_value||''}`,'FEATURE STATUS: PLANNED'].join('\n')}
 function featureTypeLabelV3204(record){return isFeatureArticleV3204(record)?'FEATURE ARTICLE':'MASTER ARTICLE'}
 function featureTargetForIssueV3204(){return FEATURE_TARGET_V3204}
+function featureBlockReasonV3208(r){
+  const f=r?.fields||{},notes=String(val(f,'Notes')||'');
+  const qa=String(val(f,'Section QA Result')||'').toLowerCase();
+  if(qa!=='fix required')return '';
+  const miss=(notes.match(/^Missing:\s*(.+)$/mi)||notes.match(/^Missing evidence:\s*(.+)$/mi)||[])[1]||'';
+  const decision=(notes.match(/^Decision:\s*(.+)$/mi)||notes.match(/^Exception:\s*(.+)$/mi)||[])[1]||'';
+  return String(miss||decision||'Evidence check blocked this Feature.').trim().slice(0,220);
+}
 function renderFeatureSummaryV3204(){
   const panel=E('step6-feature-panel-v3204'),box=E('step6-feature-summary-v3204');if(panel)panel.style.display=workflowSelectedStepV312===6?'block':'none';if(!box)return;
   const all=featureArticleRecordsV3204(),ready=all.filter(featureArticleReadyV3204),pending=all.filter(x=>!featureArticleReadyV3204(x));
-  box.innerHTML=`<strong>${ready.length}/${FEATURE_TARGET_V3204} Feature Articles ready</strong><div class="muted" style="margin-top:5px">${all.length?all.slice(0,FEATURE_TARGET_V3204).map((r,i)=>`${i+1}. ${esc(val(r.fields||{},'Section Title')||'Feature')} — ${featureArticleReadyV3204(r)?'READY':'IN PROGRESS'}`).join('<br>'):'ICS will plan four distinct short features around the issue without duplicating the selected Masters.'}</div>${pending.length?'<div class="muted" style="margin-top:5px">Finish Features before building the final component count.</div>':''}`;
+  box.innerHTML=`<strong>${ready.length}/${FEATURE_TARGET_V3204} Feature Articles ready</strong><div class="muted" style="margin-top:5px">${all.length?all.slice(0,FEATURE_TARGET_V3204).map((r,i)=>{const blocked=featureBlockReasonV3208(r);return `${i+1}. ${esc(val(r.fields||{},'Section Title')||'Feature')} — ${featureArticleReadyV3204(r)?'READY':blocked?'BLOCKED · '+esc(blocked):'IN PROGRESS'}`}).join('<br>'):'ICS will plan four distinct short features around the issue without duplicating the selected Masters.'}</div>${pending.length?'<div class="muted" style="margin-top:5px">Build / Resume now automatically recommissions a blocked Feature once from a verified local evidence seed. The evidence bar is not lowered.</div>':''}`;
   const b=E('step6-build-features-v3204');if(b)b.textContent=ready.length>=FEATURE_TARGET_V3204?'Feature Articles Ready ✓':'Build / Resume 4 Feature Articles';
 }
 async function apiFeaturePlanV3205(payload,btn){
@@ -3435,6 +3443,38 @@ async function featureProduceCallV3207(sectionId,mode,btn){
     throw new Error(`Feature ${label} failed at produce-section (${response.status}): ${data?.error||raw.slice(0,180)||'No response body'}`);
   }
 }
+
+function featureRecoveryUsedV3208(r){return /FEATURE RECOVERY:\s*1/i.test(String(val(r?.fields||{},'Notes')||''))}
+function featureEvidenceSeedsV3208(){
+  const selected=new Set(getMasterSelectionV312().map(Number));
+  const plan=getSmartPlan()||{},titleToOrder=new Map((plan.articles||[]).map(a=>[String(a.title||'').trim().toLowerCase(),Number(a.order)]));
+  return (S.sections||[]).filter(r=>!isFeatureArticleV3204(r)&&masterArticleState(r)==='complete'&&String(val(r.fields||{},'Source / Reference Link 1')||'').trim()).sort((a,b)=>{
+    const ao=titleToOrder.get(String(val(a.fields||{},'Section Title')||'').trim().toLowerCase()),bo=titleToOrder.get(String(val(b.fields||{},'Section Title')||'').trim().toLowerCase());
+    const as=selected.has(ao)?1:0,bs=selected.has(bo)?1:0;return as-bs||Number(val(a.fields||{},'Section Order')||999)-Number(val(b.fields||{},'Section Order')||999)
+  });
+}
+function recoveryBriefFromSeedV3208(seed,slot){
+  const f=seed?.fields||{},title=String(val(f,'Section Title')||'Local story').trim(),q=String(val(f,'Core Reader Question')||'').trim();
+  const source=String(val(f,'Source / Reference Link 1')||'').trim(),proof=String(val(f,'Local Proof Needed')||'').trim();
+  const place=(currentPublicationName().replace(/\b(?:Spotlight|Taste Trail|Pet Insider|Home Seller Insider|Business Pulse)\b/gi,'').trim()||currentPublicationName());
+  const shapes=[
+    {prefix:'The Bit Worth Knowing:',mode:'PRACTICAL SERVICE',lane:'Local Life'},
+    {prefix:'In Three Minutes:',mode:'NEWS EXPLAINER',lane:'Places & Discovery'},
+    {prefix:'What This Changes:',mode:'PRACTICAL SERVICE',lane:'Money & Consumer'},
+    {prefix:'The Local Detail Behind:',mode:'HUMAN / COMMUNITY',lane:'Fun & Curiosity'}
+  ],shape=shapes[slot%shapes.length];
+  return {title:`${shape.prefix} ${title}`,question:q||`What is the one specific ${place} detail here that a reader can use, notice or act on now?`,reader_value:'A tight standalone sidecar feature that uses verified local evidence for one narrower reader job. It must not summarise or duplicate the seed Master.',local_proof:proof||`Use the named ${place} facts already supported by the seed source; add only evidence that can be verified responsibly.`,evidence:`Start with this already-verified local source: ${source}. Verify every material claim; if a narrower angle cannot be supported, block rather than pad.`,life_lane:String(val(f,'Commercial Lane')||shape.lane),writing_mode:shape.mode,cta_text:'',seedSource:source,seedTitle:title};
+}
+async function recommissionBlockedFeatureV3208(r,slot,btn){
+  if(!r||featureRecoveryUsedV3208(r))return r;
+  const seeds=featureEvidenceSeedsV3208();if(!seeds.length)return r;
+  const seed=seeds[slot%seeds.length],b=recoveryBriefFromSeedV3208(seed,slot),oldNotes=String(val(r.fields||{},'Notes')||'');
+  if(btn)btn.textContent=`Recommissioning blocked Feature ${slot+1} from verified evidence…`;
+  const fields={'Section Title':b.title,'Section Status':'Planned','Core Reader Question':b.question,'Reader Value':b.reader_value,'Local Proof Needed':b.local_proof,'Evidence Required':b.evidence,'Evidence Status':'Not Started','Evidence Checked Date':'','Source / Reference Link 1':b.seedSource,'Commercial Lane':b.life_lane,'CTA Text':'','Section Final Copy':'','Section QA Result':'Not Checked','Notes':[featureMarkerNotesV3204(slot,b),`FEATURE RECOVERY: 1`,`SEED MASTER: ${b.seedTitle}`,`SEED SOURCE: ${b.seedSource}`].join('\n')};
+  const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:r.id,fields})});
+  if(d?.record){const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=d.record;return d.record}
+  return r;
+}
 async function buildFeatureArticlesV3204(){
   if(!S.issue){alert('Open an issue first.');return}
   const btn=E('step6-build-features-v3204');if(btn){btn.disabled=true;btn.textContent='Building Features…'}
@@ -3447,7 +3487,8 @@ async function buildFeatureArticlesV3204(){
       const plan=getSmartPlan()||{},selected=new Set(getMasterSelectionV312().map(Number));
       const selectedTitles=(plan.articles||[]).filter(a=>selected.has(Number(a.order))).map(a=>a.title);
       const allTitles=(plan.articles||[]).map(a=>a.title);
-      const resp=await apiFeaturePlanV3206({publicationName:currentPublicationName(),issuePromise:String(val(S.issue.fields||{},'Main Theme')||''),selectedMasterTitles:selectedTitles,allMasterTitles:allTitles,count:FEATURE_TARGET_V3204},btn);
+      const seedMasters=featureEvidenceSeedsV3208().slice(0,8).map(r=>({title:String(val(r.fields||{},'Section Title')||''),question:String(val(r.fields||{},'Core Reader Question')||''),source:String(val(r.fields||{},'Source / Reference Link 1')||''),reader_value:String(val(r.fields||{},'Reader Value')||'')}));
+      const resp=await apiFeaturePlanV3206({publicationName:currentPublicationName(),issuePromise:String(val(S.issue.fields||{},'Main Theme')||''),selectedMasterTitles:selectedTitles,allMasterTitles:allTitles,seedMasters,count:FEATURE_TARGET_V3204},btn);
       const briefs=(resp.features||[]).slice(0,FEATURE_TARGET_V3204);
       currentStage='creating Feature records';
       for(let i=rows.length;i<FEATURE_TARGET_V3204;i++){
@@ -3463,6 +3504,14 @@ async function buildFeatureArticlesV3204(){
         currentStage='research';if(btn)btn.textContent=`Researching Feature ${i+1}/${FEATURE_TARGET_V3204}…`;
         const research=await featureProduceCallV3207(r.id,'research',btn);
         if(research?.record){r=research.record;const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=r}
+      }
+      if(String(val(r.fields||{},'Section QA Result')||'').toLowerCase()==='fix required'){
+        currentStage='recommissioning blocked Feature';
+        const repaired=await recommissionBlockedFeatureV3208(r,i,btn);
+        if(repaired&&repaired.id===r.id&&!featureBlockReasonV3208(repaired)){
+          r=repaired;currentStage='research recovery';if(btn)btn.textContent=`Researching replacement Feature ${i+1}/${FEATURE_TARGET_V3204}…`;
+          const rr=await featureProduceCallV3207(r.id,'research',btn);if(rr?.record){r=rr.record;const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=r}
+        }else r=repaired||r;
       }
       if(String(val(r.fields||{},'Section QA Result')||'').toLowerCase()==='fix required')continue;
       currentStage='writing';if(btn)btn.textContent=`Writing Feature ${i+1}/${FEATURE_TARGET_V3204}…`;

@@ -12,6 +12,7 @@ export default async(request)=>{
     const selected=(Array.isArray(data.selectedMasterTitles)?data.selectedMasterTitles:[]).map(clean).filter(Boolean);
     const all=(Array.isArray(data.allMasterTitles)?data.allMasterTitles:[]).map(clean).filter(Boolean);
     const count=Math.max(4,Math.min(6,Number(data.count)||4));
+    const seeds=(Array.isArray(data.seedMasters)?data.seedMasters:[]).slice(0,10).map(x=>({title:clean(x?.title),question:clean(x?.question),source:clean(x?.source),reader_value:clean(x?.reader_value)})).filter(x=>x.title&&x.source);
     const prompt=`You are the commissioning editor for ${publication}.
 
 Plan exactly ${count} SHORT FEATURE ARTICLES for the same issue.
@@ -24,6 +25,9 @@ ${selected.map((x,i)=>`${i+1}. ${x}`).join('\n')||'None supplied'}
 
 OTHER MASTER TOPICS ALREADY PRODUCED / BANKED
 ${all.map((x,i)=>`${i+1}. ${x}`).join('\n')||'None supplied'}
+
+VERIFIED LOCAL EVIDENCE SEEDS AVAILABLE
+${seeds.map((x,i)=>`${i+1}. ${x.title} | ${x.question||'No question supplied'} | ${x.source}`).join('\n')||'None supplied'}
 
 A Feature Article is a permanent 300–450 word article with its own URL, SEO package and social use. It is not filler and not a long Master Article.
 
@@ -38,6 +42,7 @@ COMMISSIONING RULES
 - Prefer named local proof, prices, places, events, businesses, routes, quirks, comparisons or everyday tests that can be researched.
 - Avoid generic "city centre needs reasons to stay" style commentary and abstract editorial bridges.
 - Do not invent facts. This is only a brief; the production engine will research each Feature separately.
+- When verified evidence seeds are supplied, prefer feature angles that can start from those named sources, but do NOT summarise, shorten or duplicate the seed Master. Find a narrower sidecar reader job that the source can responsibly support.
 - Keep the Feature suitable for a permanent indexed article rather than a poll or tiny newsletter component.
 - One of the ${count} can be playful/amusing; one should be highly useful/saveable; one should be discovery/temptation led; one should invite conversation only after delivering real value.
 
