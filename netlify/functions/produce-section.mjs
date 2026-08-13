@@ -187,14 +187,16 @@ function stabiliseWriterPackage(fields,result){
   return out;
 }
 
-function writerPublishabilityGate(fields,result,research){
+function writerPublishabilityGate(fields,result,research,contentType='master'){
   const body=String(result?.article_body||'').trim();
   const mode=articleMode(fields);
   const reasons=[];
-  if(body.length<700)reasons.push('Article body is blank or too short for a Master Article.');
+  const isFeature=String(contentType||'').toLowerCase()==='feature';
+  const minChars=isFeature?1200:1800;
+  if(body.length<minChars)reasons.push(isFeature?'Feature Article body is blank or too short for the 300–450 word target.':'Master Article body is blank or too short for the substantive article target.');
   // v3.17: a Master Article must end like a finished article, not like a clipped model response.
   const terminal=body.slice(-1);
-  if(body.length>=700 && !/[.!?…"'’”\)\]]/.test(terminal))reasons.push(`Article body appears truncated or incomplete; it ends "${body.slice(-40)}".`);
+  if(body.length>=minChars && !/[.!?…"'’”\)\]]/.test(terminal))reasons.push(`Article body appears truncated or incomplete; it ends "${body.slice(-40)}".`);
   if(/\b(?:and|or|but|because|with|from|the|a|an|to|of|for|in|on|at|by|could|would|should|can|will|what|which|who|when|where)\s*$/i.test(body))reasons.push('Article body appears to end mid-sentence.');
   if(/FIX REQUIRED BEFORE PUBLICATION|before this article can go live|the editorial team (?:also )?needs|we are holding publication|holding publication until|needs? (?:local )?reader examples before deciding|research (?:is|was) insufficient|records still need checking before readers/i.test(body+' '+String(result?.article_subhead||'')))reasons.push('Reader-facing copy contains internal research/production language.');
   if(/like-for-like evidence|unsafe to treat as fact|latest available evidence|established in the evidence|the fair test is|for now, the honest answer|in plain English|our verdict|our view:|strong option|promising choice|worth considering|on balance/i.test(body+' '+String(result?.article_subhead||'')))reasons.push('Trail Blaze voice gate: research-room or defensive evidence language remains in reader-facing copy.');
@@ -1149,12 +1151,17 @@ function writerVoiceProfile(fields={}){
 - Local detail, curiosity, humour or challenge where earned. Never sound like a council press release or editorial board.`;
 }
 
-function promptFor(fields,cls,research){
+function promptFor(fields,cls,research,contentType='master'){
   const useEvidence=cls!=='A — Question Only';
   const sourcePack=JSON.stringify(research||{},null,2);
   const voice=writerVoiceProfile(fields);
   const publication=publicationContext(fields).name||'Trail Blaze publication';
-  return `You are the production editor for Trail Blaze. Build one complete MASTER ARTICLE PACKAGE for ${publication} ready for manual upload to Letterman.
+  const isFeature=String(contentType||'').toLowerCase()==='feature';
+  const articleClass=isFeature?'FEATURE ARTICLE':'MASTER ARTICLE';
+  const lengthRule=isFeature?'FEATURE LENGTH: Write a tight 300–450 word standalone article. One strong hook, one clear job, real local proof, no padding. It must feel substantial enough to deserve its own permanent URL but lighter than a Master.':'MASTER LENGTH: Write a substantive standalone article, normally 550–850 words when the question earns it. Do not pad; go shorter only when the answer is genuinely complete.';
+  return `You are the production editor for Trail Blaze. Build one complete ${articleClass} PACKAGE for ${publication} ready for manual upload to Letterman.
+
+${lengthRule}
 
 UNIVERSAL TRAIL BLAZE VOICE STANDARD
 Research deeply. Write simply. Sound like people actually talk.
@@ -1203,8 +1210,8 @@ STYLE, AUDIENCE AND SAFETY
 - DISCOVERY / COMPARISON / SERVICE MODE: match the structure to the reader job — recommendation, verified comparison, checklist, price/value test or useful local discovery — rather than repeating the same article formula. For lists/recommendations, give named examples and useful specifics. Venue menus, official pages, reputable review patterns and specialist/local coverage can be combined; never pretend one review is a consensus.
 - ILLUSTRATIVE PERSONA RULE: ordinary invented names, ages and everyday situations ARE allowed as storytelling devices for common scenarios (for example, 'Millie is three...'). They may add personality and specificity, but they are NEVER evidence. Never invent attributed quotes, testimony, credentials, business ownership, medical/legal/financial outcomes, survey results, reader consensus or factual claims. If the article could cause a reader to believe the persona supplied real testimony, reframe it as an illustrative scenario.
 - PARTNER MODEL: the editorial answer must work without a sponsor. Where a natural expert/partner lane exists, structure the question so a genuine named partner could later supply or replace the specialist commentary without changing the reader problem. Never invent that partner or their advice.
-- SPLIT TEST: if the brief naturally contains two or more questions that could each make a useful standalone 250-600 word article, answer only the approved core question here and return the other distinct questions in related_questions for the content bank. Do not cram them into this article.
-- Length is earned by the question: normally 250-600 words, with roughly 350-500 as the sweet spot. Go beyond 600 only when the reader genuinely needs the extra detail; a 1,000+ word cornerstone piece should be exceptional, not the default. Cut repetition rather than padding to a target.
+- SPLIT TEST: if the brief naturally contains two or more questions that could each make a standalone article, answer only the approved core question here and return the other distinct questions in related_questions for the content bank. Do not cram them into this article.
+- Follow the ${articleClass} length rule above. Length follows the idea; never stretch thin material just to hit a number.
 - SPOTLIGHT VOICE: keep personality, humour and an Unfiltered edge where the subject earns it. Do not manufacture outrage or clickbait, but do challenge lazy assumptions and bland official framing when evidence supports a sharper question.
 - SPOTLIGHT LOCAL WRITING LAYER: the finished copy must sound like a confident local publication, not a research memo. Research language stays backstage. Never use phrases such as "like-for-like evidence", "unsafe to treat as fact", "latest available evidence", "established in the evidence", "the fair test is", "the honest answer", "useful distinction" or "in plain English" as habitual editorial scaffolding. Rewrite them as normal human language.
 - ANSWER THEN EXPLAIN: open with the human/local consequence or the real reader question. Give the answer or tension early, then explain the evidence. Do not spend the opening describing verification limitations.
@@ -1456,9 +1463,9 @@ function editorialReadiness(result,publishGate,lockDecision,sources=[],fields={}
   return {status,grade,rationale,suggested_edits:status==='MINOR EDIT'?edits:[]};
 }
 
-function packageBlock(result,sources,model){
+function packageBlock(result,sources,model,contentType='master'){
   const payload={
-    version:'MASTER_ARTICLE_V1',model_used:model||'',
+    version:'MASTER_ARTICLE_V1',content_type:String(contentType||'master').toLowerCase()==='feature'?'FEATURE ARTICLE':'MASTER ARTICLE',model_used:model||'',
     article_subhead:String(result.article_subhead||'').trim(),
     editorial_stance:String(result.editorial_stance||'').trim(),
     editorial_strategy:(result.editorial_strategy&&typeof result.editorial_strategy==='object')?result.editorial_strategy:{},
@@ -1488,6 +1495,7 @@ export default async(request)=>{
     if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
     const data=await readJson(request);
     const mode=String(data.mode||'generate').toLowerCase()==='research'?'research':'generate';
+    const contentType=String(data.contentType||'master').toLowerCase()==='feature'?'feature':'master';
     runId=String(data.runId||runId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80)||runId;
     log('request_parsed',{sectionId:data.sectionId||'',requestedClass:data.productionClass||''});
     if(!data.sectionId)return json(400,{ok:false,error:'sectionId is required.'});
@@ -1836,7 +1844,7 @@ export default async(request)=>{
       traceLine('Writer model','DONE',writerModel||'auto-select');
       await saveTrace();
       log('openai_started',{productionClass:cls,useWeb:false,model:writerModel||'auto-select'});
-      response=await stage('Writer request',()=>createResponse({input:promptFor(fields,cls,research),useWeb:false,model:writerModel,timeoutMs:50000}),52000);
+      response=await stage('Writer request',()=>createResponse({input:promptFor(fields,cls,research,contentType),useWeb:false,model:writerModel,timeoutMs:50000}),52000);
       writerRaw=outputText(response);
       log('openai_completed',{model:response._model_used||'',outputChars:writerRaw.length});
       const checkpoint=writerCheckpointBlock(key,activeResearchKey,writerRaw,response._model_used||writerModel);
@@ -1858,15 +1866,15 @@ export default async(request)=>{
     }
     log('json_parse_started');
     let result=stabiliseWriterPackage(fields,parseJsonText(writerRaw));
-    let publishGate=writerPublishabilityGate(fields,result,research);
+    let publishGate=writerPublishabilityGate(fields,result,research,contentType);
     if(!publishGate.pass){
       traceLine('Publishability gate','FAIL',publishGate.reasons.join(' | ').slice(0,220));
-      const repairPrompt=`${promptFor(fields,cls,research)}\n\nREPAIR PASS — the previous draft failed the publishability gate.\nProblems: ${publishGate.reasons.join('; ')}\nRewrite the COMPLETE JSON package. Do not discuss research methodology, missing checks or internal editorial process in reader-facing fields. Answer the reader question directly with the strongest supported local examples. Previous draft for diagnosis only:\n${JSON.stringify(result).slice(0,12000)}`;
+      const repairPrompt=`${promptFor(fields,cls,research,contentType)}\n\nREPAIR PASS — the previous draft failed the publishability gate.\nProblems: ${publishGate.reasons.join('; ')}\nRewrite the COMPLETE JSON package. Do not discuss research methodology, missing checks or internal editorial process in reader-facing fields. Answer the reader question directly with the strongest supported local examples. Previous draft for diagnosis only:\n${JSON.stringify(result).slice(0,12000)}`;
       const repaired=await stage('Automatic writer repair',()=>createResponse({input:repairPrompt,useWeb:false,model:writerModel,timeoutMs:42000}),44000);
       writerRaw=outputText(repaired);
       response._model_used=repaired._model_used||response._model_used||writerModel;
       result=stabiliseWriterPackage(fields,parseJsonText(writerRaw));
-      publishGate=writerPublishabilityGate(fields,result,research);
+      publishGate=writerPublishabilityGate(fields,result,research,contentType);
       if(!publishGate.pass){
         result.qa_result='Fix Required';
         result.exception=[String(result.exception||'').trim(),`Publishability gate failed: ${publishGate.reasons.join('; ')}`].filter(Boolean).join(' ');
@@ -1891,7 +1899,7 @@ export default async(request)=>{
     }
     result.editorial_readiness=editorialReadiness(result,publishGate,lockDecision,sources,fields);
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
-    const block=packageBlock(result,sources,response._model_used);
+    const block=packageBlock(result,sources,response._model_used,contentType);
     const serviceNotes=[block,'',`PRODUCTION SERVICE v3.9.0`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':titleCaseAllWords(result.article_title||value(fields,'Section Title')),

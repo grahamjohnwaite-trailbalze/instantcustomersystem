@@ -1,0 +1,39 @@
+ICS v3.20.4 — Feature Article + Rhythm-Aware Assembly Engine
+13 August 2026
+
+PURPOSE
+Fix the repeated CTT / CBS / PBS failure where Step 7 front-loaded substantial articles and left a long tail of lightweight components.
+
+WHAT CHANGED
+1. New permanent FEATURE ARTICLE content class.
+   - Step 6A builds 4 short Feature Articles per issue.
+   - Target length: 300–450 words.
+   - Each Feature is independently researched through the existing evidence pipeline.
+   - Each gets the normal Letterman article package: SEO, slug, expected URL, image brief, newsletter teaser and socials.
+   - Features are Article Bank assets, not disposable newsletter filler.
+
+2. Three editorial weights now exist.
+   - MASTER ARTICLE: substantive permanent article.
+   - FEATURE ARTICLE: 300–450 word permanent mid-weight article.
+   - COMPONENT: short pace/personality/interaction block.
+
+3. Step 6 component count is now calculated AFTER READY Feature Articles.
+   Example Spotlight issue: 8 Masters + 4 Features + 15 components = 27 sections.
+   Existing surplus component records are preserved but only the active target set is used; opening/closing roles are retained.
+
+4. Step 7 is rhythm-aware.
+   - Masters and Features are distributed across the whole issue.
+   - Maximum two lightweight components in a row.
+   - A substantial article anchor must appear in every third of the issue.
+   - No support-only tail is allowed.
+   - Step 7 cannot go green if the rhythm gate fails.
+
+5. Universal reader standard remains locked.
+   If it does not entertain, reward, surprise, help, tempt, amuse or make people want to read on, it does not get in.
+   Earn attention before asking for comments, votes, replies or shares.
+
+6. Article Bank now recognises both Masters and Feature Articles as permanent assets.
+
+OPERATOR PATH FOR AN EXISTING ISSUE
+Step 6 -> Build / Resume 4 Feature Articles -> let all four research/write -> build/repair remaining supporting components if required -> Step 7 Assemble.
+Do not alter the saved Step 5 Master selection unless ICS identifies a specific Master defect.
