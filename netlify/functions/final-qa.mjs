@@ -35,6 +35,7 @@ ISSUE PROMISE: ${data.issuePromise||''}
 Review the complete running order below. Detect ONLY meaningful issue-level problems that a deterministic checker may miss:
 - semantically repeated questions/angles even when wording differs;
 - a supporting component that gives away or repeats a nearby Master Article;
+- FEATURE DISTINCTIVENESS: a Feature Article that substantially repeats, shortens or uses essentially the same evidence/question as a Master Article is a hard publishing defect. Report FIX code FEATURE_DISTINCTIVENESS. Features are permanent indexed assets and must add a genuinely different reader job;
 - excessive concentration on one theme;
 - repeated partner exposure that feels editorially excessive (warning only);
 - if a paid partner already has a Master Article in the issue, its Partner Presence must complement it with a distinct action/service/insight rather than summarise the article;
@@ -70,7 +71,7 @@ Also check for over-polished/AI-ish language across the whole issue. An article 
 
 Do not report a Master Article as truncated merely because a preview, excerpt or context field is shortened. Only flag incomplete copy when the actual supplied reader-facing content visibly ends mid-word, mid-sentence or with a clear missing continuation. A complete concluding sentence is not truncation.
 
-Internal/commercial leakage and genuinely incomplete reader-facing copy are publication blockers. Format fulfilment for News Brief / Quick Update / What's On is decided deterministically by the application. If you notice a problem there, report it as WARNING only; do not create a FIX for it. Repetition, semantic overlap, generic supporting copy, rhythm, theme concentration, duplicated reader prompts, localisation strength, partner overexposure and human-voice concerns are WARNING-level editorial issues, not hard FIXes. Never escalate those editorial concerns to FIX merely because they are widespread.
+Internal/commercial leakage and genuinely incomplete reader-facing copy are publication blockers. Format fulfilment for News Brief / Quick Update / What's On is decided deterministically by the application. If you notice a problem there, report it as WARNING only; do not create a FIX for it. General repetition, generic supporting copy, rhythm, theme concentration, duplicated reader prompts, localisation strength, partner overexposure and human-voice concerns are WARNING-level editorial issues. EXCEPTION: FEATURE_DISTINCTIVENESS is a hard FIX because a permanent Feature must not duplicate a Master. Never escalate other editorial concerns to FIX merely because they are widespread.
 
 Do not emit generic PASS findings; if there are no extra editorial problems return {"findings":[]}.
 
@@ -95,6 +96,7 @@ ${JSON.stringify(compact)}`;
       if(/partner tip/.test(blob)&&/(no named partner|no partner|unnamed partner)/.test(blob))return true;
       if(/entity_identity_mismatch|entity identity mismatch|different (?:venue|business|development|person|story)|title.*(?:seo|slug|body).*(?:conflict|contradict|different)/.test(blob))return true;
       if(/wrong_family_language|wrong family|family leakage|tell spotlight/.test(blob))return true;
+      if(/feature_distinctiveness|feature distinctiveness|feature article.*(?:repeat|duplicate|shorten)|repeats.*master article|same evidence.*master/.test(blob))return true;
       return false;
     };
     const findings=raw.map(f=>{

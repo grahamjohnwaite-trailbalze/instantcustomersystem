@@ -331,7 +331,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 .operator-rule-v319{background:#f3f7fd;border-radius:9px;padding:9px}.operator-rule-v319 span{font-size:11px;color:#475467;line-height:1.35}.operator-sop-v319{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.operator-sop-v319 summary{cursor:pointer;font-size:11px;font-weight:800;color:#475467}.operator-matrix-row-v319{display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #edf0f4;font-size:10px}.operator-matrix-row-v319 b{font-size:10px}.operator-matrix-row-v319 span{color:#667085}.workflow-step-v312.done[data-flow-step="9"]{background:#15803d!important;border-color:#15803d!important;color:#fff!important}
 @media(max-width:1100px){.operator-guide-v319{grid-template-columns:1fr 1fr}.operator-rule-v319,.operator-sop-v319{grid-column:1/-1}.operator-matrix-row-v319{grid-template-columns:70px 1fr}}
 @media(max-width:700px){.operator-guide-v319{grid-template-columns:1fr}.operator-rule-v319,.operator-sop-v319{grid-column:auto}.operator-matrix-row-v319{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.10<br><strong>Feature QA Tolerance + Rhythm Gate</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-13 · 3-of-4 Feature tolerance when evidence-blocked + rhythm-safe</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.11<br><strong>Content Distinctiveness Gate</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-13 · distinct Features + local/value-first support + lean deploy</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -3913,8 +3913,8 @@ function featureBlockReasonV3208(r){
 function renderFeatureSummaryV3204(){
   const panel=E('step6-feature-panel-v3204'),box=E('step6-feature-summary-v3204');if(panel)panel.style.display=workflowSelectedStepV312===6?'block':'none';if(!box)return;
   const all=featureArticleRecordsV3204(),ready=all.filter(featureArticleReadyV3204),pending=all.filter(x=>!featureArticleReadyV3204(x));
-  box.innerHTML=`<strong>${ready.length}/${FEATURE_TARGET_V3204} Feature Articles ready</strong><div class="muted" style="margin-top:5px">${all.length?all.slice(0,FEATURE_TARGET_V3204).map((r,i)=>{const blocked=featureBlockReasonV3208(r);return `${i+1}. ${esc(val(r.fields||{},'Section Title')||'Feature')} — ${featureArticleReadyV3204(r)?'READY':blocked?'BLOCKED · '+esc(blocked):'IN PROGRESS'}`}).join('<br>'):'ICS will plan four distinct short features around the issue without duplicating the selected Masters.'}</div>${pending.length?'<div class="muted" style="margin-top:5px">Build / Resume now automatically recommissions a blocked Feature once from a verified local evidence seed. The evidence bar is not lowered.</div>':''}`;
-  const b=E('step6-build-features-v3204');if(b)b.textContent=ready.length>=FEATURE_TARGET_V3204?'Feature Articles Ready ✓':'Build / Resume 4 Feature Articles';
+  box.innerHTML=`<strong>${ready.length}/${FEATURE_TARGET_V3204} Feature Articles ready</strong><div class="muted" style="margin-top:5px">${all.length?all.slice(0,FEATURE_TARGET_V3204).map((r,i)=>{const blocked=featureBlockReasonV3208(r);return `${i+1}. ${esc(val(r.fields||{},'Section Title')||'Feature')} — ${featureArticleReadyV3204(r)?'READY':blocked?'BLOCKED · '+esc(blocked):'IN PROGRESS'}`}).join('<br>'):'ICS will plan four distinct short features around the issue without duplicating the selected Masters.'}</div>${pending.length?'<div class="muted" style="margin-top:5px">Build / Repair also recommissions any Feature that duplicates a selected Master. Evidence quality is never lowered.</div>':''}`;
+  const b=E('step6-build-features-v3204');if(b)b.textContent=ready.length>=FEATURE_TARGET_V3204?'Feature Articles Ready ✓':'Build / Repair 4 Feature Articles';
 }
 function fallbackFeaturePlanV3206(payload={}){
   const pub=String(payload.publicationName||'Local').trim();
@@ -4047,6 +4047,46 @@ async function recommissionBlockedFeatureV3208(r,slot,btn){
   if(d?.record){const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=d.record;return d.record}
   return r;
 }
+
+// v3.20.11 — Content Distinctiveness Gate.
+// READY Features must add a genuinely different indexed asset, not a shortened Master or recycled source.
+function normTokensV3211(v){
+  const stop=new Set('the a an and or but to of in on for with from is are was were be been being this that what why how could should would can may might peterborough cambridge cambridgeshire norfolk spotlight feature article master'.split(' '));
+  return new Set(String(v||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(x=>x.length>2&&!stop.has(x)));
+}
+function jaccardV3211(a,b){const A=normTokensV3211(a),B=normTokensV3211(b);if(!A.size||!B.size)return 0;let n=0;for(const x of A)if(B.has(x))n++;return n/(A.size+B.size-n)}
+function selectedMasterRecordsV3211(){
+  const selected=new Set(getMasterSelectionV312().map(Number));
+  const plan=getSmartPlan()||{}, byTitle=new Map((plan.articles||[]).filter(a=>selected.has(Number(a.order))).map(a=>[String(a.title||'').trim().toLowerCase(),a]));
+  return (S.sections||[]).filter(r=>!isFeatureArticleV3204(r)&&masterArticleState(r)==='complete'&&byTitle.has(String(val(r.fields||{},'Section Title')||'').trim().toLowerCase()));
+}
+function featureDistinctivenessProblemsV3211(r){
+  if(!r)return [];
+  const f=r.fields||{}, title=String(val(f,'Section Title')||''), q=String(val(f,'Core Reader Question')||''), body=String(val(f,'Section Final Copy')||'').slice(0,1200), src=String(val(f,'Source / Reference Link 1')||'').trim();
+  const problems=[];
+  for(const m of selectedMasterRecordsV3211()){
+    const mf=m.fields||{}, mt=String(val(mf,'Section Title')||''), mq=String(val(mf,'Core Reader Question')||''), mb=String(val(mf,'Section Final Copy')||'').slice(0,1200), ms=String(val(mf,'Source / Reference Link 1')||'').trim();
+    const titleScore=jaccardV3211(title+' '+q,mt+' '+mq), bodyScore=jaccardV3211(body,mb);
+    if(src&&ms&&src===ms)problems.push(`shares the same primary source as selected Master “${mt}”`);
+    else if(titleScore>=0.42||bodyScore>=0.48)problems.push(`substantially overlaps selected Master “${mt}”`);
+  }
+  return [...new Set(problems)];
+}
+function featureDistinctV3211(r){return featureDistinctivenessProblemsV3211(r).length===0}
+async function recommissionDistinctFeatureV3211(r,slot,btn){
+  const payload={publicationName:currentPublicationName(),issuePromise:String(val(S.issue?.fields||{},'Main Theme')||''),count:4};
+  const fallback=fallbackFeaturePlanV3206(payload).features||[];
+  const selected=selectedMasterRecordsV3211().map(m=>String(val(m.fields||{},'Section Title')||''));
+  let choices=fallback.filter(b=>selected.every(t=>jaccardV3211((b.title||'')+' '+(b.question||''),t)<0.34));
+  if(!choices.length)choices=fallback;
+  const b=choices[slot%choices.length]||fallback[slot%fallback.length]||{};
+  if(btn)btn.textContent=`Recommissioning Feature ${slot+1} for distinct value…`;
+  const fields={'Section Title':b.title||`Distinct Local Feature ${slot+1}`,'Section Status':'Planned','Core Reader Question':b.question||'What different local thing is genuinely worth knowing?','Reader Value':b.reader_value||'A standalone local article with a different reader job from every selected Master.','Local Proof Needed':b.local_proof||`Named current ${currentPublicationName()} proof.`,'Evidence Required':(b.evidence||'Current primary/local evidence.')+' Do not use the same primary source or central evidence package as a selected Master unless the reader question and evidence set are demonstrably different.','Evidence Status':'Not Started','Evidence Checked Date':'','Source / Reference Link 1':'','Commercial Lane':b.life_lane||'Open','CTA Text':'','Section Final Copy':'','Section QA Result':'Not Checked','Notes':[featureMarkerNotesV3204(slot,b),'FEATURE DISTINCTIVENESS RESET: 1','RULE: Must add a different reader question, evidence set and useful outcome from every selected Master.'].join('\n')};
+  const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:r.id,fields})});
+  if(d?.record){const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=d.record;return d.record}
+  return r;
+}
+
 async function buildFeatureArticlesV3204(){
   if(!S.issue){alert('Open an issue first.');return}
   const btn=E('step6-build-features-v3204');if(btn){btn.disabled=true;btn.textContent='Building Features…'}
@@ -4071,7 +4111,12 @@ async function buildFeatureArticlesV3204(){
       await loadSections();rows=featureArticleRecordsV3204();
     }
     for(let i=0;i<Math.min(rows.length,FEATURE_TARGET_V3204);i++){
-      currentFeature=i+1;let r=rows[i];if(featureArticleReadyV3204(r))continue;
+      currentFeature=i+1;let r=rows[i];
+      if(featureArticleReadyV3204(r)&&!featureDistinctV3211(r)){
+        currentStage='repairing Feature distinctiveness';
+        r=await recommissionDistinctFeatureV3211(r,i,btn);
+      }
+      if(featureArticleReadyV3204(r)&&featureDistinctV3211(r))continue;
       if(!featureResearchCompleteV3207(r)){
         currentStage='research';if(btn)btn.textContent=`Researching Feature ${i+1}/${FEATURE_TARGET_V3204}…`;
         const research=await featureProduceCallV3207(r.id,'research',btn);
@@ -4097,7 +4142,7 @@ async function buildFeatureArticlesV3204(){
     alert(ready>=FEATURE_TARGET_V3204?`${ready} Feature Articles are READY. They are permanent Article Bank assets and will be distributed through Step 7.`:`${ready}/${FEATURE_TARGET_V3204} Feature Articles are READY. Any blocked Feature has been preserved for review; do not lower the evidence bar.`);
   }catch(e){
     alert(`Feature Article build stopped at ${currentStage}${currentFeature?` (Feature ${currentFeature})`:''}: ${String(e?.message||e)}`);
-  }finally{if(btn){btn.disabled=false;btn.textContent='Build / Resume 4 Feature Articles'}renderFeatureSummaryV3204()}
+  }finally{if(btn){btn.disabled=false;btn.textContent='Build / Repair 4 Feature Articles'}renderFeatureSummaryV3204()}
 }
 
 const SUPPORT_MARKER_V3153='ICS SUPPORT COMPONENT V3.15.3';
@@ -4540,6 +4585,10 @@ Write ONLY finished newsletter copy.
 - Natural UK English, conversational and locally knowledgeable. Give it personality; it should sound like a lively local publication, not a council guide, business article, brochure or AI explainer.
 - Vary the format and sentence shape from the recent support components. Do not create another checklist/question/explainer if the recent blocks already use that structure.
 - GENERIC SUPPORT NOVELTY GUARD: Masters carry the big stories; supports should normally introduce a new named venue, person, event, product, fact, place or reader job. Do not miniaturise or summarise a selected Master.
+- LOCAL PROOF GATE: if this is a local factual/service/discovery block, it must contain at least one genuinely local named proof point (place, venue, route, business, current price, event, rule or recognisable local detail). If it could run in another town by swapping the place name, rewrite it or choose a non-factual fun role instead.
+- ENGAGEMENT BUDGET: most blocks must GIVE without asking. Do not add a comment/vote/nomination/share CTA merely because the format allows one. Across the issue, asks should be sparse and clearly different from each other.
+- THEME SATURATION GATE: do not restate the issue promise or its central choice unless this block adds a new local fact, named example, joke, discovery or concrete reader win.
+- LANGUAGE FINGERPRINT GATE: avoid repeated assessment-template phrases such as “the real test”, “the fair test”, “the sensible answer”, “one piece of a bigger picture”, “what matters”, or close variants. Prefer a specific observation a local person might actually say.
 - SUBJECT ALLOCATION GUARD: if an ASSIGNED PRIMARY SUBJECT is supplied, that is the only named evidence-bank subject this component may centre on. Do not switch to another unused Master merely because it is easier to write.
 - A named evidence-bank subject is normally allocated to ONE support only. Do not recycle a venue/person/topic that another support already used.
 - The declared COMPONENT TYPE, LABEL and LIFE LANE above are final for this run. The copy must actually perform that job; do not write an event block about a non-event or a people block about a venue.
@@ -5966,6 +6015,12 @@ function deterministicQA(items){
   if(featureCount<featureMinimum)add('FIX','FEATURE_LAYER',`Only ${featureCount}/${featureTarget} Feature Articles are in the running order. At least ${featureMinimum} READY Features are required before the short-feature layer can carry enough editorial weight.`);
   else if(featureCount<featureTarget)add('WARNING','FEATURE_LAYER',`${featureCount}/${featureTarget} planned Feature Articles are in the running order. This is acceptable when the missing Feature is not READY and the assembly-rhythm gate passes; do not lower the evidence bar merely to reach the target.`);
   else add('PASS','FEATURE_LAYER',`${featureCount} permanent Feature Articles add mid-weight editorial anchors.`);
+  // v3.20.11: a Feature that duplicates a selected Master is a publishing defect because it wastes an indexed article slot and harms issue rhythm.
+  for(const b of items.filter(x=>String(x.type||'').toUpperCase()==='FEATURE ARTICLE')){
+    const rec=(S.sections||[]).find(r=>r.id===b.refId);
+    const probs=featureDistinctivenessProblemsV3211(rec);
+    if(probs.length)add('FIX','FEATURE_DISTINCTIVENESS',`${b.title}: ${probs.join('; ')}. Recommission this Feature with a different reader question/evidence set; do not shorten the Master.`,[b.uid],false);
+  }
   const issuePromise=qaIssuePromiseV31815();
   if(!issuePromise)add('WARNING','ISSUE_PROMISE','The saved issue promise is blank, so the running order has no defined editorial promise to guide the edition.');
   else add('PASS','ISSUE_PROMISE','A saved issue promise is present and available to Final QA.');
@@ -6231,7 +6286,7 @@ async function runFinalQA(){
       warning:findings.filter(f=>f.severity==='WARNING').length,
       pass:findings.filter(f=>f.severity==='PASS').length
     };
-    const report={qaVersion:'3.17.3.7',createdAt:new Date().toISOString(),summary,findings};
+    const report={qaVersion:'3.20.11',createdAt:new Date().toISOString(),summary,findings};
     localStorage.setItem(qaKey(),JSON.stringify(report));
     await persistQALifecycleV31820(summary.fix===0);
     showQAReport(report,true);
@@ -6349,7 +6404,7 @@ async function evaluateIssueQAV3173(items){
     findings.push({severity:'WARNING',code:'AI_QA_UNAVAILABLE',message:`Editorial AI review was unavailable, so deterministic QA only was used: ${error.message}`,blocks:[],safeFix:false});
   }
   return {
-    qaVersion:'3.17.3.7',createdAt:new Date().toISOString(),
+    qaVersion:'3.20.11',createdAt:new Date().toISOString(),
     summary:{
       fix:findings.filter(f=>f.severity==='FIX').length,
       warning:findings.filter(f=>f.severity==='WARNING').length,
@@ -6434,8 +6489,8 @@ async function fixQAExceptionsV317(){
   if(!originalItems.length)return;
 
   const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
-  if(!saved||saved.qaVersion!=='3.17.3.7'){
-    setWorkflowActionStatusV312(8,'QA','Fresh QA required.','This QA report came from an older Step 8 build. Run Final QA in v3.17.3.7 before fixing exceptions.');
+  if(!saved||saved.qaVersion!=='3.20.11'){
+    setWorkflowActionStatusV312(8,'QA','Fresh QA required.','This QA report came from an older Step 8 build. Run Final QA in v3.20.11 before repairing exceptions.');
     localStorage.removeItem(qaKey());
     updateWorkflowShellV312(8);
     return;
@@ -6453,7 +6508,7 @@ async function fixQAExceptionsV317(){
   const failed=[];
   try{
     setWorkflowActionStatusV312(8,'QA','Testing QA hard-fix repairs…',
-      'v3.17.3.7 works on a temporary copy first. Support repairs are written back to persistent Step 6 records only if fresh whole-issue QA reduces the hard-fix count without introducing a new hard-fix class.');
+      'v3.20.11 works on a temporary copy first. Support repairs are written back to persistent Step 6 records only if fresh whole-issue QA reduces the hard-fix count without introducing a new hard-fix class.');
 
     // Deterministic Master truncation remains a direct upstream repair from the saved Research Pack.
     const masters=originalItems.filter(looksTruncatedMasterV317);

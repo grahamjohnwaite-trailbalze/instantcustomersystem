@@ -36,14 +36,14 @@ If it does not entertain, reward, surprise, help, tempt, amuse or make people wa
 
 COMMISSIONING RULES
 - Every Feature must stand alone as something a reader might click, save, send to a friend or talk about.
-- Do NOT repeat, summarise or merely shorten any selected Master.
+- Do NOT repeat, summarise or merely shorten any selected Master. A different headline is not enough: the Feature must answer a different reader question and seek a meaningfully different evidence set/useful outcome.
 - The issue promise is an anchor, not the subject of every Feature. Bring in lighter local-life, food, places, money, family, nostalgia, humour, discovery or useful-service angles where they fit the publication.
 - Give each Feature ONE clear job and a distinct emotional flavour.
 - Prefer named local proof, prices, places, events, businesses, routes, quirks, comparisons or everyday tests that can be researched.
 - Avoid generic "city centre needs reasons to stay" style commentary and abstract editorial bridges.
 - Do not invent facts. This is only a brief; the production engine will research each Feature separately.
-- When verified evidence seeds are supplied, prefer feature angles that can start from those named sources, but do NOT summarise, shorten or duplicate the seed Master. Find a narrower sidecar reader job that the source can responsibly support.
-- Keep the Feature suitable for a permanent indexed article rather than a poll or tiny newsletter component.
+- When verified evidence seeds are supplied, they are idea context only. Do NOT default to the same source/evidence package as a selected Master. Prefer a fresh local source or a clearly different evidence set. If using the same organisation/source is unavoidable, the Feature must answer a materially different reader question and deliver a different useful outcome.
+- Keep the Feature suitable for a permanent indexed article rather than a poll or tiny newsletter component. Think asset library: would this still deserve its own URL if the selected Masters were already published beside it? If not, reject the idea.
 - One of the ${count} can be playful/amusing; one should be highly useful/saveable; one should be discovery/temptation led; one should invite conversation only after delivering real value.
 
 Return JSON only:
