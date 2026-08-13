@@ -331,7 +331,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 .operator-rule-v319{background:#f3f7fd;border-radius:9px;padding:9px}.operator-rule-v319 span{font-size:11px;color:#475467;line-height:1.35}.operator-sop-v319{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.operator-sop-v319 summary{cursor:pointer;font-size:11px;font-weight:800;color:#475467}.operator-matrix-row-v319{display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #edf0f4;font-size:10px}.operator-matrix-row-v319 b{font-size:10px}.operator-matrix-row-v319 span{color:#667085}.workflow-step-v312.done[data-flow-step="9"]{background:#15803d!important;border-color:#15803d!important;color:#fff!important}
 @media(max-width:1100px){.operator-guide-v319{grid-template-columns:1fr 1fr}.operator-rule-v319,.operator-sop-v319{grid-column:1/-1}.operator-matrix-row-v319{grid-template-columns:70px 1fr}}
 @media(max-width:700px){.operator-guide-v319{grid-template-columns:1fr}.operator-rule-v319,.operator-sop-v319{grid-column:auto}.operator-matrix-row-v319{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.3<br><strong>Reader Delight Component Engine</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-13 · lean package</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.20.6<br><strong>Feature Article + Rhythm Engine</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-13 · 202-safe fallback</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, Master Articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -3905,29 +3905,66 @@ function renderFeatureSummaryV3204(){
   box.innerHTML=`<strong>${ready.length}/${FEATURE_TARGET_V3204} Feature Articles ready</strong><div class="muted" style="margin-top:5px">${all.length?all.slice(0,FEATURE_TARGET_V3204).map((r,i)=>`${i+1}. ${esc(val(r.fields||{},'Section Title')||'Feature')} — ${featureArticleReadyV3204(r)?'READY':'IN PROGRESS'}`).join('<br>'):'ICS will plan four distinct short features around the issue without duplicating the selected Masters.'}</div>${pending.length?'<div class="muted" style="margin-top:5px">Finish Features before building the final component count.</div>':''}`;
   const b=E('step6-build-features-v3204');if(b)b.textContent=ready.length>=FEATURE_TARGET_V3204?'Feature Articles Ready ✓':'Build / Resume 4 Feature Articles';
 }
-async function apiFeaturePlanV3205(payload,btn){
+function fallbackFeaturePlanV3206(payload={}){
+  const pub=String(payload.publicationName||'Local').trim();
+  const place=(pub.replace(/\b(?:Spotlight|Taste Trail|Pet Insider|Home Seller Insider|Business Pulse)\b/gi,'').trim()||pub);
+  const promise=String(payload.issuePromise||'').trim();
+  const isTaste=/taste trail/i.test(pub),isPet=/pet insider/i.test(pub),isHome=/home seller/i.test(pub);
+  let features;
+  if(isTaste){
+    features=[
+      {title:`The £15 ${place} Taste Test: What Can You Actually Get?`,question:`What enjoyable food or drink can a reader genuinely get around ${place} for about £15?`,reader_value:'A saveable value challenge with named current venues and real prices.',local_proof:'At least three current named venues, menus/prices and opening information.',evidence:'Official venue menus/websites or current primary listings.',life_lane:'Food & Hospitality',writing_mode:'COMPARISON / VALUE',cta_text:''},
+      {title:`One ${place} Food Detour Worth Making`,question:`Which one current ${place} food or drink stop rewards going slightly out of the way?`,reader_value:'A tempting discovery with enough specifics to decide whether to go.',local_proof:'Named venue, exact location, signature item, current price and opening evidence.',evidence:'Official venue source plus current menu/listing.',life_lane:'Places & Discovery',writing_mode:'RECOMMENDATION / DISCOVERY',cta_text:''},
+      {title:`Before Or After? Build A Better ${place} Night Out`,question:`What can readers pair with a meal or drink in ${place} to turn it into a fuller outing?`,reader_value:'A practical mini-itinerary rather than another isolated venue mention.',local_proof:'Named nearby venue/activity pairings, walk/travel practicality and current opening/event proof.',evidence:'Official venue/event sources.',life_lane:'Places & Discovery',writing_mode:'PRACTICAL SERVICE',cta_text:''},
+      {title:`The ${place} Menu Detail People Argue About`,question:`What small food or drink detail around ${place} reliably divides opinion and what do local places actually offer?`,reader_value:'A fun, evidence-led talking point readers can share.',local_proof:'Named local examples and current menu evidence.',evidence:'Official menus/current primary sources.',life_lane:'Fun & Curiosity',writing_mode:'DEBATE / READER VOICE',cta_text:''}
+    ];
+  }else if(isPet){
+    features=[
+      {title:`The 10-Minute ${place} Pet Check Worth Doing This Week`,question:'What quick preventative pet check can an owner do safely at home and when should they seek professional help?',reader_value:'A practical, saveable checklist with clear limits.',local_proof:`A relevant ${place} service/resource plus authoritative veterinary guidance.`,evidence:'Authoritative veterinary/welfare source and current local service evidence.',life_lane:'Family & Community',writing_mode:'PRACTICAL SERVICE',cta_text:''},
+      {title:`A ${place} Pet-Friendly Place Worth Knowing`,question:`Which current ${place} place is genuinely useful or enjoyable for pet owners?`,reader_value:'A named local discovery readers can actually use.',local_proof:'Named place, access rules, current opening and pet policy.',evidence:'Official venue/site source.',life_lane:'Places & Discovery',writing_mode:'RECOMMENDATION / DISCOVERY',cta_text:''},
+      {title:'Pet Myth Or Money Saver?',question:'Which common pet-spending shortcut is genuinely sensible and which can backfire?',reader_value:'A money-saving comparison without false economy.',local_proof:`Current ${place} price/example where available plus authoritative care guidance.`,evidence:'Authoritative animal-care source and current local pricing where material.',life_lane:'Money & Consumer',writing_mode:'COMPARISON / VALUE',cta_text:''},
+      {title:`The ${place} Pet Question Owners Keep Asking`,question:`What recurring practical pet question around ${place} deserves a short evidence-led answer?`,reader_value:'A concise answer owners can share with another owner.',local_proof:'Current local route/resource and authoritative guidance.',evidence:'Primary/local plus authoritative welfare/veterinary source.',life_lane:'Fun & Curiosity',writing_mode:'NEWS EXPLAINER',cta_text:''}
+    ];
+  }else if(isHome){
+    features=[
+      {title:`The £500 ${place} Home-Sale Question`,question:'Which small pre-sale spend is most likely to improve presentation without pretending to guarantee a higher sale price?',reader_value:'A practical value comparison for sellers.',local_proof:`Current ${place} service/price examples where available.`,evidence:'Current local pricing plus authoritative property guidance.',life_lane:'Home & Property',writing_mode:'COMPARISON / VALUE',cta_text:''},
+      {title:`One ${place} Viewing Detail Buyers Notice Fast`,question:'What small viewing detail can change a buyer’s first impression and what can a seller realistically do about it?',reader_value:'A one-job practical fix.',local_proof:'Specific local housing context and credible guidance.',evidence:'Authoritative property source and local market context.',life_lane:'Home & Property',writing_mode:'PRACTICAL SERVICE',cta_text:''},
+      {title:`The ${place} Seller Myth Worth Dropping`,question:'Which common seller assumption sounds sensible but does not hold up well?',reader_value:'A memorable myth-buster with practical consequences.',local_proof:'Current local context/data where relevant.',evidence:'Authoritative housing/property source.',life_lane:'Money & Consumer',writing_mode:'NEWS EXPLAINER',cta_text:''},
+      {title:`What £20 Buys A ${place} Seller Before Photos`,question:'What can a seller do with a tiny budget before listing photos that is actually worth the effort?',reader_value:'A saveable micro-checklist.',local_proof:'Local/current examples where material.',evidence:'Credible property presentation guidance.',life_lane:'Home & Property',writing_mode:'PRACTICAL SERVICE',cta_text:''}
+    ];
+  }else{
+    features=[
+      {title:`The £10 ${place} Challenge: What Can You Actually Get?`,question:`What can someone genuinely do, eat, buy or enjoy around ${place} for about £10 right now?`,reader_value:'A fun, saveable local value test with named examples and real prices.',local_proof:`At least three current named ${place} examples with prices and practical details.`,evidence:'Official/current venue, retailer or service sources for prices and availability.',life_lane:'Money & Consumer',writing_mode:'COMPARISON / VALUE',cta_text:''},
+      {title:`One ${place} Detour Worth Making`,question:`What current local place, small attraction, shop, walk or experience around ${place} is worth a deliberate detour?`,reader_value:'A tempting discovery that gives the reader enough detail to decide whether to go.',local_proof:'Named place, exact location, current opening/access details and one distinctive reason to visit.',evidence:'Official venue/organisation source plus current access information.',life_lane:'Places & Discovery',writing_mode:'RECOMMENDATION / DISCOVERY',cta_text:''},
+      {title:`Remember This? A ${place} Detail Worth Bringing Back`,question:`What specific piece of ${place} local life, habit, place or tradition is worth remembering — and what exists there now?`,reader_value:'Nostalgia with a current payoff rather than vague reminiscing.',local_proof:'Named historical/local detail and a current status check.',evidence:'Credible local history/archive source plus current primary evidence.',life_lane:'Local Life',writing_mode:'HUMAN / COMMUNITY',cta_text:''},
+      {title:`The ${place} Shortcut That Is Actually Worth Knowing`,question:`What small local shortcut, service, route, saving or practical trick around ${place} can genuinely make everyday life easier?`,reader_value:'A useful tip readers may save or send to someone else.',local_proof:'Named current local service, route, price, rule or resource.',evidence:'Official/current primary source for the practical claim.',life_lane:'Local Life',writing_mode:'PRACTICAL SERVICE',cta_text:''}
+    ];
+  }
+  const count=Math.max(4,Math.min(6,Number(payload.count)||4));
+  return {ok:true,features:features.slice(0,count),fallback:true,reason:'Feature planner endpoint did not return a completed 200 response.'};
+}
+async function apiFeaturePlanV3206(payload,btn){
   let last;
-  for(let attempt=1;attempt<=4;attempt++){
+  for(let attempt=1;attempt<=2;attempt++){
     try{
       const r=await fetch('/.netlify/functions/plan-features',{method:'POST',headers:{'content-type':'application/json',accept:'application/json'},body:JSON.stringify(payload)});
       const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={}}
       if(r.ok&&d?.ok&&Array.isArray(d.features)&&d.features.length)return d;
-      if(r.status===202){
-        last=new Error('Feature planner is still being accepted by the server.');
-        if(btn)btn.textContent=`Planner accepted — retrying ${attempt}/4…`;
-        await sleep(1200*attempt);
-        continue;
+      last=new Error(d?.error||`Request failed (${r.status})`);
+      if([202,408,429,500,502,503,504].includes(r.status)){
+        if(btn)btn.textContent=`Planner unavailable (${r.status}) — using safe fallback…`;
+        break;
       }
-      const err=new Error(d?.error||`Request failed (${r.status})`);err.details=d?.details;throw err;
+      throw last;
     }catch(e){
       last=e;
       const transient=/202|accepted|408|429|500|502|503|504|timeout|timed out|failed to fetch|network|gateway|temporarily/i.test(String(e?.message||e));
-      if(!transient||attempt>=4)throw e;
-      if(btn)btn.textContent=`Feature planner retry ${attempt}/4…`;
-      await sleep(1200*attempt);
+      if(!transient)throw e;
+      if(attempt<2){if(btn)btn.textContent='Feature planner retry…';await sleep(800);continue}
     }
   }
-  throw last||new Error('Feature planner did not return a completed plan.');
+  console.warn('Feature planner fallback engaged',last);
+  return fallbackFeaturePlanV3206(payload);
 }
 async function buildFeatureArticlesV3204(){
   if(!S.issue){alert('Open an issue first.');return}
@@ -3939,7 +3976,7 @@ async function buildFeatureArticlesV3204(){
       const plan=getSmartPlan()||{},selected=new Set(getMasterSelectionV312().map(Number));
       const selectedTitles=(plan.articles||[]).filter(a=>selected.has(Number(a.order))).map(a=>a.title);
       const allTitles=(plan.articles||[]).map(a=>a.title);
-      const resp=await apiFeaturePlanV3205({publicationName:currentPublicationName(),issuePromise:String(val(S.issue.fields||{},'Main Theme')||''),selectedMasterTitles:selectedTitles,allMasterTitles:allTitles,count:FEATURE_TARGET_V3204},btn);
+      const resp=await apiFeaturePlanV3206({publicationName:currentPublicationName(),issuePromise:String(val(S.issue.fields||{},'Main Theme')||''),selectedMasterTitles:selectedTitles,allMasterTitles:allTitles,count:FEATURE_TARGET_V3204},btn);
       const briefs=(resp.features||[]).slice(0,FEATURE_TARGET_V3204);
       for(let i=rows.length;i<FEATURE_TARGET_V3204;i++){
         const b=briefs[i]||{};
