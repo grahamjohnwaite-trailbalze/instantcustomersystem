@@ -331,7 +331,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 .operator-rule-v319{background:#f3f7fd;border-radius:9px;padding:9px}.operator-rule-v319 span{font-size:11px;color:#475467;line-height:1.35}.operator-sop-v319{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.operator-sop-v319 summary{cursor:pointer;font-size:11px;font-weight:800;color:#475467}.operator-matrix-row-v319{display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #edf0f4;font-size:10px}.operator-matrix-row-v319 b{font-size:10px}.operator-matrix-row-v319 span{color:#667085}.workflow-step-v312.done[data-flow-step="9"]{background:#15803d!important;border-color:#15803d!important;color:#fff!important}
 @media(max-width:1100px){.operator-guide-v319{grid-template-columns:1fr 1fr}.operator-rule-v319,.operator-sop-v319{grid-column:1/-1}.operator-matrix-row-v319{grid-template-columns:70px 1fr}}
 @media(max-width:700px){.operator-guide-v319{grid-template-columns:1fr}.operator-rule-v319,.operator-sop-v319{grid-column:auto}.operator-matrix-row-v319{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.21.1<br><strong>Candidate Queue Integrity</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-16 · FULL + SHORT articles · coverage-aware components · reusable core subjects</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.21.3<br><strong>REUSE-Aware Research Queue</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-16 · FULL + SHORT articles · coverage-aware components · reusable core subjects</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -1142,12 +1142,19 @@ function activeIssueSections(){
   const rows=(S.sections||[]).filter(s=>!isSupersededSmartBrief(s));
   const plan=getSmartPlan();
   if(plan?.articles?.length&&smartPlanLocked(plan)){
-    const identified=rows.filter(approvedPlanIdentity);
-    if(identified.length)return identified;
+    // v3.21.2 — once a plan is locked, old template Issue Sections are never the
+    // active production queue. Until the approved briefs are materialised, show
+    // an empty queue rather than silently falling back to stale template rows.
+    return rows.filter(approvedPlanIdentity);
   }
   return rows;
 }
 
+// v3.21.3 — direct REUSE assets are already complete in the Article Bank.
+// They remain part of the 20-article plan and Step 5 selection, but are not duplicated
+// into the current issue's research/production queue.
+function researchPlanArticlesV3213(plan=getSmartPlan()){return (plan?.articles||[]).filter(a=>String(a.mode||'').toUpperCase()!=='REUSE')}
+function expectedResearchOrdersV3213(plan=getSmartPlan()){return researchPlanArticlesV3213(plan).map(a=>Number(a.order)).filter(Number.isFinite)}
 function approvedPlanIdentity(s){
   const f=s?.fields||{},order=Number(val(f,'Section Order')),notes=String(val(f,'Notes')||'');
   const m=notes.match(/PUBLISH NOW — Final Running Order (\d{2})\./);
@@ -1160,8 +1167,7 @@ function activeOrderDiagnostic(){
   const orders=rows.map(sectionOrderValue).filter(n=>n<999999);
   const duplicates=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
   const plan=getSmartPlan?.();
-  const targetCount=Math.max(orders.length,Number(plan?.articles?.length||0));
-  const expected=[...Array(targetCount)].map((_,i)=>i+1);
+  const expected=plan?.articles?.length?expectedResearchOrdersV3213(plan):orders;
   const missing=expected.filter(n=>!orders.includes(n));
   return {rows,orders,duplicates,missing};
 }
@@ -1170,7 +1176,8 @@ async function reconcileApprovedSmartQueue({quiet=false}={}){
   const plan=getSmartPlan();
   if(!plan?.articles?.length||!smartPlanLocked(plan))throw new Error('Lock the approved Smart Issue Plan first.');
   const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=r.records||[];
-  const approved=new Map((plan.articles||[]).map(a=>[Number(a.order),String(a.title||'').trim().toLowerCase()]));
+  const researchArticles=researchPlanArticlesV3213(plan);
+  const approved=new Map(researchArticles.map(a=>[Number(a.order),String(a.title||'').trim().toLowerCase()]));
   let active=0,superseded=0,changed=0;
   for(const order of [...approved.keys()].sort((a,b)=>a-b)){
     const candidates=S.sections.filter(sec=>Number(val(sec.fields||{},'Section Order'))===order);
@@ -1205,8 +1212,9 @@ async function reconcileApprovedSmartQueue({quiet=false}={}){
   const activeRows=S.sections.filter(approvedPlanIdentity);
   const orders=activeRows.map(s=>Number(val(s.fields,'Section Order')));
   const duplicates=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
-  const missing=[...Array(plan.articles.length)].map((_,i)=>i+1).filter(n=>!orders.includes(n));
-  const clean=activeRows.length===plan.articles.length&&!duplicates.length&&!missing.length;
+  const expectedOrders=expectedResearchOrdersV3213(plan);
+  const missing=expectedOrders.filter(n=>!orders.includes(n));
+  const clean=activeRows.length===expectedOrders.length&&!duplicates.length&&!missing.length;
   if(!quiet)alert(`Approved queue reconciled.\n${activeRows.length} active approved briefs · ${superseded} superseded briefs preserved · ${changed} records updated.\n${clean?'Stable identity clean ✓':`STOP — duplicates: ${duplicates.join(', ')||'none'} · missing: ${missing.join(', ')||'none'}`}`);
   return {active:activeRows.length,superseded,changed,clean,duplicates,missing};
 }
@@ -1258,9 +1266,9 @@ async function productionSections(){
    const active=S.sections.filter(approvedPlanIdentity);
    const orders=active.map(s=>Number(val(s.fields,'Section Order')));
    const dup=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
-   const expected=[...Array(plan.articles.length)].map((_,i)=>i+1);
+   const expected=expectedResearchOrdersV3213(plan);
    const missing=expected.filter(n=>!orders.includes(n));
-   if(active.length!==plan.articles.length||dup.length||missing.length)throw new Error(`PRODUCTION STOP GATE — approved queue identity is not clean. Active ${active.length}/${plan.articles.length} · duplicate order ${dup.join(', ')||'none'} · missing ${missing.join(', ')||'none'}. Reconcile Approved Queue only if the running-order markers themselves are missing.`);
+   if(active.length!==expected.length||dup.length||missing.length)throw new Error(`PRODUCTION STOP GATE — approved research queue identity is not clean. Active ${active.length}/${expected.length} · duplicate order ${dup.join(', ')||'none'} · missing ${missing.join(', ')||'none'}. REUSE articles stay linked in the Article Bank and are intentionally excluded from research/production.`);
    return active.map(s=>({s,run:Number(val(s.fields,'Section Order'))})).sort((a,b)=>a.run-b.run);
  }
  return S.sections.filter(s=>approvedPlanIdentity(s)).map(s=>({s,run:Number(val(s.fields,'Section Order'))})).sort((a,b)=>a.run-b.run)
@@ -3818,13 +3826,13 @@ function plannerRejectedTitlesFromMessageV312E(msg){
 
 async function approvedBriefStatusV3131(){
   if(!S.issue)return {active:0,expected:0,clean:false};
-  const plan=getSmartPlan(),expected=plan?.articles?.length||0;
+  const plan=getSmartPlan(),expectedOrders=expectedResearchOrdersV3213(plan),expected=expectedOrders.length;
   const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
   S.sections=r.records||[];
   const active=S.sections.filter(approvedPlanIdentity);
   const orders=active.map(s=>Number(val(s.fields,'Section Order')));
   const duplicates=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
-  const missing=[...Array(expected)].map((_,i)=>i+1).filter(n=>!orders.includes(n));
+  const missing=expectedOrders.filter(n=>!orders.includes(n));
   return {active:active.length,expected,clean:expected>0&&active.length===expected&&!duplicates.length&&!missing.length,duplicates,missing};
 }
 async function openResearchWorkspaceV3131(){
@@ -3840,7 +3848,7 @@ async function openResearchWorkspaceV3131(){
   try{
     let st=await approvedBriefStatusV3131();
     if(!st.clean){
-      setWorkflowActionStatusV312(3,'Research',`Preparing ${plan.articles.length} Master briefs…`,'The locked Step 2 slate is being materialised into the research queue. No manual article entry is required.');
+      setWorkflowActionStatusV312(3,'Research',`Preparing ${researchPlanArticlesV3213(plan).length} Master briefs…`,'The locked Step 2 slate is being materialised into the research queue. No manual article entry is required.');
       await applySmartPlanToBuild({quiet:true});
       st=await approvedBriefStatusV3131();
     }
@@ -5147,13 +5155,25 @@ function updateWorkflowShellV312(forcedStep){
  if(sig.length>=24&&plan?.articles?.length===(profile.defaultMasters||15))auto=2;
  if(locked)auto=3;
 
- const produced=(plan?.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').length;
+ // v3.21.2 — workflow progression must come from the persisted approved
+ // Airtable queue, not from candidate/library readiness. A REUSE candidate can
+ // already be READY in the library before this issue has researched anything;
+ // using that signal previously jumped a fresh issue from Step 3 to Step 4.
+ const approvedRows=(S.sections||[]).filter(approvedPlanIdentity);
+ const expectedApproved=expectedResearchOrdersV3213(plan).length;
+ const terminalResearchOutcomes=new Set(['VERIFIED_NOW','EDITORIAL','ATTRIBUTED_REPORT','BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED']);
+ const researchTerminal=approvedRows.filter(r=>{
+   const wf=articleWorkflowState(r),out=latestResearchServiceOutcome(r.fields||{});
+   return wf.researched||terminalResearchOutcomes.has(out);
+ }).length;
+ const step3Ready=locked&&expectedApproved>0&&approvedRows.length===expectedApproved&&researchTerminal===expectedApproved;
+ const written=approvedRows.filter(r=>articleWorkflowState(r).hasCopy).length;
  const minMasters=(profile.targetMasters?.[0]||5);
- if(locked&&produced>0)auto=4;
- if(locked&&produced>=minMasters)auto=5;
+ if(step3Ready)auto=4;
+ if(step3Ready&&written>=minMasters)auto=5;
 
  const selected=getMasterSelectionV312();
- const selectionReady=selected.length>=minMasters&&produced>=minMasters;
+ const selectionReady=selected.length>=minMasters&&written>=minMasters;
  const hasCanvas=canvas.length>0;
  const hasReadySupport=hasCanvas&&canvas.some(b=>b.kind==='component'&&String(b.status||'').toUpperCase()==='READY');
 
@@ -5239,7 +5259,23 @@ function runWorkflowPrimaryV312(){
    }).catch(()=>openResearchWorkspaceV3131());
    return
  }
- if(step===4){show('build');ensureApprovedQueueV3202({materialize:true,quiet:true}).then(st=>{setWorkflowActionStatusV312(4,'Produce',`${st.active}/${st.expected} approved Masters are attached to this issue.`,`Queue identity clean. Write only Masters with publishable saved Research Packs; completed work is preserved.`);setTimeout(()=>E('run-production')?.click(),80)}).catch(e=>{E('production-progress').className='warning';E('production-progress').innerHTML=`<strong>PRODUCTION STOP GATE</strong><div class="muted">${esc(e.message||e)}</div><div class="muted" style="margin-top:6px">Click Repair Approved Queue on this screen. Do not go backwards.</div>`;setWorkflowActionStatusV312(4,'Produce','Approved queue needs repair.',String(e.message||e));});return}
+ if(step===4){
+   show('build');
+   ensureApprovedQueueV3202({materialize:true,quiet:true}).then(st=>{
+     const rows=(S.sections||[]).filter(approvedPlanIdentity);
+     const terminalResearchOutcomes=new Set(['VERIFIED_NOW','EDITORIAL','ATTRIBUTED_REPORT','BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED']);
+     const terminal=rows.filter(r=>{const wf=articleWorkflowState(r),out=latestResearchServiceOutcome(r.fields||{});return wf.researched||terminalResearchOutcomes.has(out)}).length;
+     if(st.expected>0&&terminal<st.expected){
+       const msg=`Step 4 blocked because Step 3 research is not complete: ${terminal}/${st.expected} approved articles have a saved terminal research result. ICS is returning you to Research; no plan work is lost.`;
+       E('production-progress').className='warning';
+       E('production-progress').innerHTML=`<strong>STEP 4 STOP GATE</strong><div class="muted">${esc(msg)}</div>`;
+       setWorkflowActionStatusV312(3,'Research',`Research required · ${terminal}/${st.expected} complete.`,`Run Research All Approved Masters. Completed research is preserved.`);
+       setTimeout(()=>focusWorkflowStepV312B(3,{scroll:false}),60);
+       return;
+     }
+     setWorkflowActionStatusV312(4,'Produce',`${st.active}/${st.expected} approved Masters are attached to this issue.`,`Queue identity clean. Write only Masters with publishable saved Research Packs; completed work is preserved.`);
+     setTimeout(()=>E('run-production')?.click(),80)
+   }).catch(e=>{E('production-progress').className='warning';E('production-progress').innerHTML=`<strong>PRODUCTION STOP GATE</strong><div class="muted">${esc(e.message||e)}</div><div class="muted" style="margin-top:6px">Click Repair Approved Queue on this screen. Do not go backwards.</div>`;setWorkflowActionStatusV312(4,'Produce','Approved queue needs repair.',String(e.message||e));});return}
  if(step===5){
    show('assemble');
    refreshMasterSelectionDataV314().then(()=>{
@@ -7730,7 +7766,7 @@ async function repairLockedResearchQueueV3189(){
   const r=await api('sections?issueId='+encodeURIComponent(S.issue.id)+'&_ts='+Date.now());
   S.sections=r.records||[];
   let repaired=0;
-  for(const a of plan.articles){
+  for(const a of researchPlanArticlesV3213(plan)){
     const order=Number(a.order||0);
     if(!order)continue;
     const active=S.sections.filter(sec=>approvedPlanIdentity(sec)&&Number(val(sec.fields||{},'Section Order'))===order);
@@ -7749,11 +7785,12 @@ async function repairLockedResearchQueueV3189(){
   await refreshIssueSectionsForSummary();
   const active=S.sections.filter(approvedPlanIdentity);
   const orders=active.map(x=>Number(val(x.fields||{},'Section Order')));
-  const missing=[...Array(plan.articles.length)].map((_,i)=>i+1).filter(n=>!orders.includes(n));
+  const expectedOrders=expectedResearchOrdersV3213(plan);
+  const missing=expectedOrders.filter(n=>!orders.includes(n));
   const dup=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
-  const clean=active.length===plan.articles.length&&!missing.length&&!dup.length;
+  const clean=active.length===expectedOrders.length&&!missing.length&&!dup.length;
   renderSections();renderForm();updateWorkflowGuide();
-  return {repaired,active:active.length,expected:plan.articles.length,missing,dup,clean};
+  return {repaired,active:active.length,expected:expectedOrders.length,missing,dup,clean};
 }
 async function runRepairLockedResearchQueueV3189(){
   const b=E('repair-research-queue-v3189'); const old=b?.textContent||'Repair Research Queue';
