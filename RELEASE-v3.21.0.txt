@@ -1,0 +1,34 @@
+ICS v3.21.0 — Unified Article Bank
+Build date: 2026-08-16
+
+PURPOSE
+Structural reset after the PBS proof. FULL and SHORT are now one article pipeline. The old Feature sidecar is no longer part of the clean 1→9 workflow.
+
+WHAT CHANGED
+- Spotlight plans 20 article opportunities by default, rather than a fixed 15-Master model.
+- Planner carries Article Length Class = FULL | SHORT and Core Subject.
+- SHORT articles use the same plan → research → produce → QA → bank → select → assemble pipeline as FULL articles.
+- SHORT target is generally 300–450 words; FULL is generally 550–850 words. Quality overrides mechanical length.
+- Sally Savers is treated as a searchable SHORT article franchise, not a support component.
+- Step 5 is article-bank selection: bank every READY asset, then select the strongest FULL + SHORT mix for the issue.
+- Step 6 begins with a coverage check across Spotlight life lanes, then prioritises components that fill genuine gaps and issue rhythm.
+- Step 7 assembles only the current FULL + SHORT selection plus current persistent support components. It does not inject the old Feature layer.
+- QA reports the unified article mix and can warn when a SHORT article is wildly outside its intended proportion.
+- Article Bank visibly labels FULL / SHORT and keeps unselected READY articles as reusable assets.
+- Core Subject + Local Proof markers are saved into article records to support multi-location reuse without town-name substitution.
+- Added starter Life-Lane Intelligence Source Bank and INTELLIGENCE_RADAR signal pool for fast angle discovery from strong aggregators/industry sources.
+- Added universal down-to-earth expert voice rule. Sally Savers has a dedicated plain-English money-saving voice; research aggregators stay backstage unless their own analysis is the story.
+
+SCALING MODEL
+Reusable Core Subject → current research/radar → local proof pack → local expert/reader consequence → permanent article asset.
+The idea may travel across locations; the finished article must still be genuinely local.
+
+OPERATOR MODEL
+1 Plan → 2 Approve → 3 Research → 4 Produce → 5 Select/Bank → 6 Coverage + Components → 7 Assemble → 8 QA → 9 Final Letterman Build Package.
+Never go backwards unless ICS explicitly says a downstream blocker requires it.
+
+BACKWARD COMPATIBILITY
+Legacy Feature functions remain in source so older saved issues are not destructively migrated, but the clean v3.21.0 workflow does not require or auto-inject Features.
+
+FIRST PROOF
+Build the next Cambridgeshire Spotlight issue entirely through v3.21.0. Do not add another production feature until that proof shows a real blocker.

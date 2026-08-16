@@ -191,9 +191,9 @@ function writerPublishabilityGate(fields,result,research,contentType='master'){
   const body=String(result?.article_body||'').trim();
   const mode=articleMode(fields);
   const reasons=[];
-  const isFeature=String(contentType||'').toLowerCase()==='feature';
-  const minChars=isFeature?1200:1800;
-  if(body.length<minChars)reasons.push(isFeature?'Feature Article body is blank or too short for the 300–450 word target.':'Master Article body is blank or too short for the substantive article target.');
+  const isShort=['feature','short'].includes(String(contentType||'').toLowerCase());
+  const minChars=isShort?1050:1800;
+  if(body.length<minChars)reasons.push(isShort?'SHORT Article body is blank or too short for the 300–450 word target.':'FULL Article body is blank or too short for the substantive article target.');
   // v3.17: a Master Article must end like a finished article, not like a clipped model response.
   const terminal=body.slice(-1);
   if(body.length>=minChars && !/[.!?…"'’”\)\]]/.test(terminal))reasons.push(`Article body appears truncated or incomplete; it ends "${body.slice(-40)}".`);
@@ -1130,6 +1130,13 @@ Return 2-8 strongest sources. Do not pad with irrelevant generic sources.`;
 function writerVoiceProfile(fields={}){
   const name=String(fields.__publicationName||fields['Publication Name']||'').trim();
   const p=name.toLowerCase();
+  const title=String(fields['Section Title']||fields.title||'').toLowerCase();
+  if(title.includes('sally savers'))return `SALLY SAVERS VOICE
+- Sally is a money-saving expert, but she sounds like a smart friend at the kitchen table, not a finance site or compliance team.
+- Lead with the saving, the catch or the useful move. Use normal British English, concrete prices/examples and a little personality where earned.
+- Industry aggregators are backstage research radar. Do not name them in reader-facing copy unless their own analysis is itself material to the story.
+- Hard/high-stakes claims about tax, benefits, mortgages, legal rights or deadlines still need appropriate verification.
+- No finance-tech language, lecture tone or jargon without a one-line explanation.`;
   if(p.includes('taste trail'))return `TASTE TRAIL VOICE
 - This is a discovery-and-going-out publication, not primarily a review site. Tempt and entertain before evaluating.
 - Write so the reader can picture the outing: who they might go with, how the plan could unfold, what makes the place/event feel different and the small detail worth knowing before they go.
@@ -1156,9 +1163,9 @@ function promptFor(fields,cls,research,contentType='master'){
   const sourcePack=JSON.stringify(research||{},null,2);
   const voice=writerVoiceProfile(fields);
   const publication=publicationContext(fields).name||'Trail Blaze publication';
-  const isFeature=String(contentType||'').toLowerCase()==='feature';
-  const articleClass=isFeature?'FEATURE ARTICLE':'MASTER ARTICLE';
-  const lengthRule=isFeature?'FEATURE LENGTH: Write a tight 300–450 word standalone article. One strong hook, one clear job, real local proof, no padding. It must feel substantial enough to deserve its own permanent URL but lighter than a Master.':'MASTER LENGTH: Write a substantive standalone article, normally 550–850 words when the question earns it. Do not pad; go shorter only when the answer is genuinely complete.';
+  const isShort=['feature','short'].includes(String(contentType||'').toLowerCase());
+  const articleClass=isShort?'SHORT ARTICLE':'FULL ARTICLE';
+  const lengthRule=isShort?'SHORT LENGTH: Write a tight 300–450 word standalone permanent article. One strong hook, one clear job, real local proof, SEO value and no padding. It uses the same research and metadata standard as a FULL article.':'FULL LENGTH: Write a substantive standalone article, normally 550–850 words when the question earns it. Do not pad; go shorter only when the answer is genuinely complete.';
   return `You are the production editor for Trail Blaze. Build one complete ${articleClass} PACKAGE for ${publication} ready for manual upload to Letterman.
 
 ${lengthRule}
@@ -1171,6 +1178,9 @@ Research deeply. Write simply. Sound like people actually talk.
 - Explain, do not impress. Specific beats polished. Short concrete sentences beat abstract framing.
 - Do not repeatedly announce judgement with “our view”, “our verdict”, “strong option”, “promising choice”, “the evidence suggests”, “on balance”, “worth considering” or similar review-desk phrases. Say the thing directly.
 - Do not end every article with a generic reader question. Use a prompt only when a genuine answer could improve a follow-up story.
+
+EXPERT VOICE RULE
+When an expert or partner is used, keep the expertise but remove the industry performance. They should sound like a knowledgeable normal person explaining the issue across a kitchen table, in a café or at work. Translate jargon; do not make experts sound technical merely to prove expertise.
 
 PUBLICATION FLAVOUR
 ${voice}
@@ -1465,7 +1475,7 @@ function editorialReadiness(result,publishGate,lockDecision,sources=[],fields={}
 
 function packageBlock(result,sources,model,contentType='master'){
   const payload={
-    version:'MASTER_ARTICLE_V1',content_type:String(contentType||'master').toLowerCase()==='feature'?'FEATURE ARTICLE':'MASTER ARTICLE',model_used:model||'',
+    version:'MASTER_ARTICLE_V1',content_type:['feature','short'].includes(String(contentType||'master').toLowerCase())?'SHORT ARTICLE':'FULL ARTICLE',model_used:model||'',
     article_subhead:String(result.article_subhead||'').trim(),
     editorial_stance:String(result.editorial_stance||'').trim(),
     editorial_strategy:(result.editorial_strategy&&typeof result.editorial_strategy==='object')?result.editorial_strategy:{},
@@ -1495,7 +1505,7 @@ export default async(request)=>{
     if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
     const data=await readJson(request);
     const mode=String(data.mode||'generate').toLowerCase()==='research'?'research':'generate';
-    const contentType=String(data.contentType||'master').toLowerCase()==='feature'?'feature':'master';
+    const noteClass=/^ARTICLE LENGTH CLASS:\s*SHORT\s*$/mi.test(String(fields.Notes||'')); const requested=String(data.contentType||'master').toLowerCase(); const contentType=(requested==='feature'||requested==='short'||noteClass)?'short':'master';
     runId=String(data.runId||runId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80)||runId;
     log('request_parsed',{sectionId:data.sectionId||'',requestedClass:data.productionClass||''});
     if(!data.sectionId)return json(400,{ok:false,error:'sectionId is required.'});

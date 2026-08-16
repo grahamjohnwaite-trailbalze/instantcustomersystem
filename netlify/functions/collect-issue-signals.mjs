@@ -1,3 +1,4 @@
+import {radarDomains} from './_research-source-bank.mjs';
 const json=(status,body)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8'}});
 
 function decodeXml(s=''){
@@ -85,6 +86,11 @@ function tasteTrailQueryPack(area,issuePromise,sendDate,pool='CURRENT'){
 function queryPack(area,issuePromise,sendDate,publication='',pool='CURRENT'){
   if(publicationProfile(publication)==='TASTE_TRAIL')return tasteTrailQueryPack(area,issuePromise,sendDate,pool);
   const dateHint=sendDate?` ${sendDate}`:'';
+  if(String(pool||'').toUpperCase()==='INTELLIGENCE_RADAR'){
+    const domains=radarDomains();
+    const groups=[domains.slice(0,4),domains.slice(4,8),domains.slice(8,12)].filter(x=>x.length);
+    return groups.map((g,i)=>({scope:'intelligence-radar',q:`UK ${i===0?'money savings mortgage property lettings':i===1?'home health family pets consumer':'motoring small business household costs'} (${g.map(d=>`site:${d}`).join(' OR ')}) when:30d`}));
+  }
   return [
     {scope:'local',q:`${area} UK council transport housing health business local news when:14d`},
     {scope:'events',q:`${area} UK events festival theatre food attraction what's on${dateHint} when:30d`},
