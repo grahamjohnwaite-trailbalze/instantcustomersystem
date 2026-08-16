@@ -359,7 +359,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 <div class="form-grid"><div class="field full"><label>Issue status</label><select id="ih-status"><option>PLANNED</option><option>BUILDING</option><option>QA</option><option value="READY FOR LETTERMAN">PRODUCTION READY</option><option>PUBLISHED</option><option>ARCHIVED</option></select></div><div class="field full"><label>Main theme</label><textarea id="ih-theme"></textarea></div><div class="field full"><label>Subject line</label><input id="ih-subject"></div><div class="field full"><label>Preheader</label><textarea id="ih-preheader"></textarea></div><div class="field full"><label>Send date</label><input id="ih-date" type="date"></div></div><h3>Minimum section gate</h3><div id="gate" class="checklist"></div><div class="warning" style="margin-top:14px"><strong>Phase 1B discipline</strong><br>One primary Hot Button. One useful action. Named local proof. No unresolved placeholders in final copy.</div></aside></div></section><section class="view active" id="view-assemble">
 <div class="section-head planner-head"><div><h2>Issue Workflow</h2><div class="muted">One stage at a time. ICS shows only the work needed for the current production step.</div></div><div class="canvas-top-actions-v312"><button class="btn secondary" id="toggle-canvas-library" type="button">Hide Library</button><button class="btn secondary" id="toggle-canvas-inspector" type="button">Hide Inspector</button><details><summary>Advanced / Recovery Tools</summary><div class="toolbar" style="margin-top:8px"><button class="btn secondary" id="assembly-export">Export Canvas Backup</button><button class="btn secondary" id="assembly-clear">Clear Canvas</button><button class="btn secondary" id="assembly-fix">Apply Safe Fixes</button></div></details></div></div>
 <div class="workflow-shell-v312" id="workflow-shell-v312"><div class="workflow-steps-v312">
-<button class="workflow-step-v312" data-flow-step="1"><strong>1 Plan</strong><span>15 Candidates</span></button>
+<button class="workflow-step-v312" data-flow-step="1"><strong>1 Plan</strong><span>Candidate Bank</span></button>
 <button class="workflow-step-v312" data-flow-step="2"><strong>2 Approve</strong><span>Lock Plan</span></button>
 <button class="workflow-step-v312" data-flow-step="3"><strong>3 Research</strong><span>Research Masters</span></button>
 <button class="workflow-step-v312" data-flow-step="4"><strong>4 Produce</strong><span>Write Masters</span></button>
@@ -369,7 +369,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 <button class="workflow-step-v312" data-flow-step="8"><strong>8 QA</strong><span>Exceptions</span></button>
 <button class="workflow-step-v312" data-flow-step="9"><strong>9 Production Ready</strong><span>Build Package</span></button>
 </div><div class="workflow-guide-v312"><div><div class="eyebrow2">You Are Here</div><strong id="workflow-current-v312">Step 1 — Plan</strong></div><div class="guide-copy" id="workflow-instruction-v312">Open an issue, collect source signals and build the article candidate bank.</div><div class="workflow-actions-v312e"><button class="btn secondary" id="workflow-copy-status-v312e" type="button">Copy Status</button><button class="btn secondary" id="create-workspace-report-v3186" type="button">Create Report</button>
-<button class="btn secondary" id="repair-research-queue-v3189" type="button">Repair Research Queue</button><button class="btn secondary" id="workflow-reset-plan-v312j" type="button" style="display:none">Reset 15-Candidate Plan</button><button class="btn workflow-primary-v312" id="workflow-primary-v312" type="button">Start Planning</button></div></div></div>
+<button class="btn secondary" id="repair-research-queue-v3189" type="button">Repair Research Queue</button><button class="btn secondary" id="workflow-reset-plan-v312j" type="button" style="display:none">Reset Candidate Plan</button><button class="btn workflow-primary-v312" id="workflow-primary-v312" type="button">Start Planning</button></div></div></div>
 <div class="operator-guide-v319" id="operator-guide-v319">
   <div class="operator-rule-v319"><strong>Operator Rule</strong><span>Never go backwards unless ICS explicitly says a downstream blocker requires it.</span></div>
   <div><span class="operator-label-v319">NEXT ACTION</span><strong id="operator-next-v319">Open an issue.</strong></div>
@@ -402,7 +402,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
   <div class="section-head" style="margin-bottom:8px"><div><h2 style="margin:0">Smart Issue Plan</h2><div class="muted" id="smart-plan-status">Build the plan, then keep/edit/replace individual choices before locking it.</div></div><div class="toolbar"><button class="btn secondary" id="smart-plan-audit">Analyse Issue Balance</button><button class="btn secondary" id="smart-commercial-completion">Review Commercial Opportunities</button><button class="btn secondary" id="smart-copy-status" type="button">Copy planner status</button><button class="btn secondary" id="smart-plan-lock">Lock Approved Plan</button><button class="btn" id="smart-plan-apply" disabled>Create / Update Article Briefs</button><button class="btn secondary" id="smart-plan-hide">Hide Plan</button></div></div>
   <div id="smart-title-review-v312l" class="check" style="display:none;margin:10px 0">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-      <div><strong>15-Candidate Title Review</strong><div class="muted">Judge the mix quickly before opening detailed evidence.</div></div>
+      <div><strong>Candidate Title Review</strong><div class="muted">Judge the mix quickly before opening detailed evidence.</div></div>
       <div class="toolbar">
         <button class="btn secondary" id="smart-title-toggle-v312l" type="button">Hide Details</button>
         <button class="btn secondary" id="smart-title-copy-v312l" type="button">Copy 15 Titles</button>
@@ -1152,7 +1152,8 @@ function approvedPlanIdentity(s){
   const f=s?.fields||{},order=Number(val(f,'Section Order')),notes=String(val(f,'Notes')||'');
   const m=notes.match(/PUBLISH NOW — Final Running Order (\d{2})\./);
   const marker=m?Number(m[1]):NaN;
-  return Number.isInteger(order)&&order>=1&&order<=15&&marker===order&&!isSupersededSmartBrief(s);
+  const max=(typeof engineProfileForPublication==='function'?(engineProfileForPublication().defaultMasters||15):15);
+  return Number.isInteger(order)&&order>=1&&order<=max&&marker===order&&!isSupersededSmartBrief(s);
 }
 function activeOrderDiagnostic(){
   const rows=activeIssueSections();
@@ -1875,7 +1876,32 @@ function workspaceReportV3186(){
   out.push(`Pipeline: ${researched} researched · ${verified} verified · ${written} written · ${ready} QA ready`);
   out.push('States: '+Object.entries(states).map(([k,v])=>`${k} ${v}`).join(' · '));
   out.push('');
-  rows.forEach((r,i)=>{
+
+  // v3.21.1 — at Steps 1–2 the Smart Plan is the source of truth.
+  // Do not present pre-approval template rows as though they are the approved production queue.
+  const candidatePlan=(typeof getSmartPlan==='function'?getSmartPlan():null);
+  const reportCandidatePlan=!!(candidatePlan?.articles?.length && Number(step)<=2);
+  if(reportCandidatePlan){
+    out.push('STEP 1/2 — ARTICLE CANDIDATE PLAN');
+    out.push(`Candidates: ${candidatePlan.articles.length}/${engineProfileForPublication().defaultMasters||15}`);
+    out.push(`Plan status: ${smartPlanLocked(candidatePlan)?'LOCKED':'READY FOR REVIEW'}`);
+    out.push('');
+    (candidatePlan.articles||[]).slice().sort((a,b)=>Number(a.order||0)-Number(b.order||0)).forEach((a,i)=>{
+      out.push(`${a.order||i+1}. ${a.title||'Untitled'}`);
+      out.push(`Length: ${articleLengthClassV3210(a)} · Life lane: ${a.life_lane||'Open'} · Mode: ${a.mode||'CREATE NEW'}`);
+      if(a.question)out.push(`Question: ${a.question}`);
+      if(a.core_subject)out.push(`Core subject: ${a.core_subject}`);
+      if(a.local_proof)out.push(`Local proof needed: ${a.local_proof}`);
+      if(a.source_signal)out.push(`Current signal: ${a.source_signal}`);
+      out.push('');
+    });
+    if(rows.length){
+      out.push(`PRE-APPROVAL ISSUE-SECTION RECORDS: ${rows.length}`);
+      out.push('These are not the approved article production queue. Step 2 will create/reconcile the approved article briefs and exclude superseded template records.');
+      out.push('');
+    }
+  }
+  if(!reportCandidatePlan)rows.forEach((r,i)=>{
     const f=r.fields||{}, wf=articleWorkflowState(r), latest=latestProductionMarker(r), state=masterArticleState(r), outcome=masterArticleOutcome(r);
     const order=val(f,'Section Order')||i+1, title=val(f,'Section Title')||'Untitled';
     out.push(`${order}. ${title}`);
@@ -3575,7 +3601,7 @@ function commercialAuditHtml(plan){
 
 function smartTitleReviewTextV312l(plan=getSmartPlan()){
   const pub=currentPublicationName(),issue=String(val(S.issue?.fields,'Issue Number')||'').trim();
-  const lines=[`${pub}${issue?` · Issue #${issue}`:''} · 15-Candidate Review`,''];
+  const lines=[`${pub}${issue?` · Issue #${issue}`:''} · ${engineProfileForPublication().defaultMasters||15}-Candidate Review`,''];
   (plan?.articles||[]).forEach((a,i)=>{
     lines.push(`${i+1}. ${a.title}${a.editorDecision?` [${a.editorDecision}]`:''}`);
     if(a.question&&a.question!==a.title)lines.push(`   Question: ${a.question}`);

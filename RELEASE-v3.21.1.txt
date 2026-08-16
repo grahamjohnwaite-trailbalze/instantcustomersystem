@@ -1,0 +1,9 @@
+ICS v3.21.1 — Candidate Queue Integrity
+
+Fixes found during the first CBS #47 unified-article-bank proof:
+- Approved Smart Plan identity now honours each publication profile's candidate count instead of hard-coding 15. Spotlight can therefore carry all 20 planned articles into the production queue.
+- Workspace Report at Steps 1–2 now shows the actual Smart Issue candidate plan (headline, FULL/SHORT class, life lane, mode, question, core subject, local proof and current signal) instead of presenting legacy/template Issue Section rows as though they were the production queue.
+- Pre-approval template records are explicitly labelled as pre-approval records and are superseded/reconciled only when the approved article briefs are created.
+- Removed stale 15-candidate operator labels from the generic UI; candidate counts remain profile-driven.
+
+No CBS #47 planning work needs to be repeated. Saved signals and the completed 20-candidate plan remain in Airtable/browser persisted issue state and can be resumed after deployment.
