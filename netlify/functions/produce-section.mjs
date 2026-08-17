@@ -1625,7 +1625,11 @@ export default async(request)=>{
         if(research.open_question_verified && research.research_status==='Sufficient'){
           gate={pass:true,reasons:[]};
         }
-        if(research.research_status!=='Sufficient'||!gate.pass){
+        // v3.21.5: Step 3 is the FAST RESEARCH LANE. Do not hold the whole issue
+        // open while one article runs an expensive model/web recovery pass. Save the
+        // fast evidence pack and its honest claim-strength outcome first. Any item that
+        // is still insufficient can be deep-researched/replaced as an exception later.
+        if(mode!=='research' && (research.research_status!=='Sufficient'||!gate.pass)){
           traceLine('Targeted research recovery','START','fast pass insufficient');
           await saveTrace();
           log('research_recovery_started',{sourceCount:research.sources?.length||0,missing:research.missing_evidence?.length||0});
