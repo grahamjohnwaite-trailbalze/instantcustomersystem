@@ -64,6 +64,16 @@ body.smart-compact-review-v312l #smart-plan-list{display:none!important}
 .workflow-guide-v312 .eyebrow2{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#667085;font-weight:800}.workflow-guide-v312 strong{display:block;margin-top:2px}
 .workflow-guide-v312 .guide-copy{font-size:12px;color:#475467;line-height:1.4}.workflow-primary-v312{white-space:nowrap}
 .workflow-actions-v312e{display:flex;gap:8px;align-items:center;justify-content:flex-end}.workflow-actions-v312e .secondary{white-space:nowrap}
+
+/* v3.21.4 — persistent live action ticker */
+.workflow-live-v3214{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin-top:2px;padding:8px 10px;border-radius:8px;background:#f3f4f6;border:1px solid #d0d5dd;font-size:12px;font-weight:800}
+.workflow-live-v3214 .dot{width:10px;height:10px;border-radius:999px;background:#98a2b3;box-shadow:0 0 0 3px rgba(152,162,179,.14)}
+.workflow-live-v3214.waiting{background:#fff1f1;border-color:#f3b2b2;color:#8a1c1c}.workflow-live-v3214.waiting .dot{background:#d92d20}
+.workflow-live-v3214.running{background:#fff7e6;border-color:#f3c66b;color:#8a4b00}.workflow-live-v3214.running .dot{background:#f79009}
+.workflow-live-v3214.complete{background:#ecfdf3;border-color:#a6e3bd;color:#166534}.workflow-live-v3214.complete .dot{background:#12b76a}
+.workflow-live-v3214.review{background:#fff7e6;border-color:#f3c66b;color:#8a4b00}.workflow-live-v3214.review .dot{background:#f79009}
+.workflow-live-v3214 .timer{font-variant-numeric:tabular-nums;white-space:nowrap}
+@media(max-width:700px){.workflow-live-v3214{grid-template-columns:auto 1fr}.workflow-live-v3214 .timer{grid-column:2}}
 #workflow-instruction-v312{user-select:text;white-space:pre-wrap;cursor:text}
 #workflow-current-v312,#smart-scan-progress,#save-state,#production-progress,.planner-status-box,.smart-audit-panel,.check,.guide-copy{user-select:text!important;cursor:text}
 #smart-scan-progress,#save-state,#production-progress{white-space:pre-wrap}
@@ -331,7 +341,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 .operator-rule-v319{background:#f3f7fd;border-radius:9px;padding:9px}.operator-rule-v319 span{font-size:11px;color:#475467;line-height:1.35}.operator-sop-v319{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.operator-sop-v319 summary{cursor:pointer;font-size:11px;font-weight:800;color:#475467}.operator-matrix-row-v319{display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #edf0f4;font-size:10px}.operator-matrix-row-v319 b{font-size:10px}.operator-matrix-row-v319 span{color:#667085}.workflow-step-v312.done[data-flow-step="9"]{background:#15803d!important;border-color:#15803d!important;color:#fff!important}
 @media(max-width:1100px){.operator-guide-v319{grid-template-columns:1fr 1fr}.operator-rule-v319,.operator-sop-v319{grid-column:1/-1}.operator-matrix-row-v319{grid-template-columns:70px 1fr}}
 @media(max-width:700px){.operator-guide-v319{grid-template-columns:1fr}.operator-rule-v319,.operator-sop-v319{grid-column:auto}.operator-matrix-row-v319{grid-template-columns:1fr}}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.21.3<br><strong>REUSE-Aware Research Queue</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-16 · FULL + SHORT articles · coverage-aware components · reusable core subjects</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.21.4<br><strong>Live Research Control</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-16 · FULL + SHORT articles · coverage-aware components · reusable core subjects</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -369,7 +379,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 <button class="workflow-step-v312" data-flow-step="8"><strong>8 QA</strong><span>Exceptions</span></button>
 <button class="workflow-step-v312" data-flow-step="9"><strong>9 Production Ready</strong><span>Build Package</span></button>
 </div><div class="workflow-guide-v312"><div><div class="eyebrow2">You Are Here</div><strong id="workflow-current-v312">Step 1 — Plan</strong></div><div class="guide-copy" id="workflow-instruction-v312">Open an issue, collect source signals and build the article candidate bank.</div><div class="workflow-actions-v312e"><button class="btn secondary" id="workflow-copy-status-v312e" type="button">Copy Status</button><button class="btn secondary" id="create-workspace-report-v3186" type="button">Create Report</button>
-<button class="btn secondary" id="repair-research-queue-v3189" type="button">Repair Research Queue</button><button class="btn secondary" id="workflow-reset-plan-v312j" type="button" style="display:none">Reset Candidate Plan</button><button class="btn workflow-primary-v312" id="workflow-primary-v312" type="button">Start Planning</button></div></div></div>
+<button class="btn secondary" id="repair-research-queue-v3189" type="button">Repair Research Queue</button><button class="btn secondary" id="workflow-reset-plan-v312j" type="button" style="display:none">Reset Candidate Plan</button><button class="btn workflow-primary-v312" id="workflow-primary-v312" type="button">Start Planning</button></div><div class="workflow-live-v3214 waiting" id="workflow-live-v3214"><span class="dot"></span><span id="workflow-live-text-v3214">Action required — follow NEXT ACTION.</span><span class="timer" id="workflow-live-timer-v3214">00:00</span></div></div></div>
 <div class="operator-guide-v319" id="operator-guide-v319">
   <div class="operator-rule-v319"><strong>Operator Rule</strong><span>Never go backwards unless ICS explicitly says a downstream blocker requires it.</span></div>
   <div><span class="operator-label-v319">NEXT ACTION</span><strong id="operator-next-v319">Open an issue.</strong></div>
@@ -1281,7 +1291,7 @@ async function refreshProducedRecord(sectionId){
  S.sections=r.records||[];
  return S.sections.find(x=>x.id===sectionId)||null;
 }
-async function produceOne(item,mode="generate"){
+async function produceOne(item,mode="generate",opts={}){
  const cls=productionClassForFields(item.s.fields);
  const startedAt=Date.now();
  const runId='ma_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
@@ -1293,7 +1303,7 @@ async function produceOne(item,mode="generate"){
    const raw=await response.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={error:`Invalid server response (${response.status}). ${raw.slice(0,300)||'No response body.'}`}}
    throw new Error(d.error||`Unable to start background production (${response.status}).`);
  }
- const pollWindowMs=3*60*1000;const deadline=Date.now()+pollWindowMs;
+ const pollWindowMs=12*60*1000;const deadline=Date.now()+pollWindowMs;
  let polls=0;
  while(Date.now()<deadline){
    await sleep(polls<3?3000:5000);polls++;
@@ -1316,12 +1326,12 @@ async function produceOne(item,mode="generate"){
      const elapsedSec=Math.round((Date.now()-startedAt)/1000);
      const outcome=String((serviceBlockForRun.match(/Outcome:\s*([A-Z_]+)/)||[])[1]||'');
      const reviewText=outcome==='VERIFIED_NOW'?'Research complete — verified':outcome==='ATTRIBUTED_REPORT'?'Research complete — attribution required':outcome==='BLOCKED'?'Research blocked':outcome==='SOURCE_CHECK_REQUIRED'?'Source verification required':outcome==='RESEARCH_INCOMPLETE'?'Research incomplete':outcome==='EDITORIAL_REVIEW'?'Editorial review required':'Human review required';
-     E('production-progress').innerHTML=`<strong>${qa==='Pass'?'Master Article complete ✓':reviewText}</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">Finished in ${elapsedSec} seconds · ${qa==='Pass'?'Ready for Letterman':reviewText}</div>`;renderArticleWorkflow();
+     if(!opts.silentProgress)E('production-progress').innerHTML=`<strong>${qa==='Pass'?'Master Article complete ✓':reviewText}</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">Finished in ${elapsedSec} seconds · ${qa==='Pass'?'Ready for Letterman':reviewText}</div>`;renderArticleWorkflow();
      return {ok:true,record:current,productionClass:cls,qaResult:qa,outcome:outcome||'EDITORIAL_REVIEW',sources:[],background:true,runId,elapsedSec};
    }
    const traceMatches=[...notes.matchAll(/(?:✓|✖|▶) [^\n]+/g)];
    const latestTrace=traceMatches.length?traceMatches[traceMatches.length-1][0]:'';
-   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">${latestTrace?esc(latestTrace)+' · ':''}Background production is running · ${Math.round((Date.now()-(deadline-pollWindowMs))/1000)} seconds</div>`;
+   if(!opts.silentProgress)E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">${latestTrace?esc(latestTrace)+' · ':''}Background production is running · ${Math.round((Date.now()-(deadline-pollWindowMs))/1000)} seconds</div>`;
  }
  const latest=await refreshProducedRecord(item.s.id).catch(()=>null);
  if(latest){
@@ -1331,13 +1341,13 @@ async function produceOne(item,mode="generate"){
    if(hasWriter)throw new Error('Writer checkpoint saved. Click Produce selected Master Article again to resume at final package/save — research and writing will not be repeated.');
    if(hasResearch)throw new Error('Research checkpoint saved. Click Produce selected Master Article again to resume at Writer — research will not be repeated.');
  }
- throw new Error('Background production did not finish within 3 minutes. No resumable checkpoint was found yet; check the Airtable Notes trace for the last completed stage.');
+ throw new Error('Background research is still unresolved after 12 minutes. No terminal Research Pack or resumable checkpoint was found; review the saved run trace before retrying this article.');
 }
-async function produceOneReliablyV31825(item,mode='generate'){
+async function produceOneReliablyV31825(item,mode='generate',opts={}){
   const attempts=(mode==='generate'?2:1);
   let last;
   for(let attempt=1;attempt<=attempts;attempt++){
-    try{return await produceOne(item,mode)}catch(e){
+    try{return await produceOne(item,mode,opts)}catch(e){
       last=e;
       const msg=String(e?.message||e||'');
       const transient=/openai request timed out|timed out after|background production did not finish|failed to fetch|network|gateway|temporarily unavailable/i.test(msg);
@@ -1384,6 +1394,28 @@ async function refreshIssueSectionsForSummary(){
    S.sections=r.records||[];
  }catch(e){console.warn('Could not refresh persisted production summary',e)}
  return S.sections||[];
+}
+let workflowLiveStartedAtV3214=0;let workflowLiveTimerHandleV3214=null;
+function fmtElapsedV3214(ms){const total=Math.max(0,Math.floor(ms/1000)),m=Math.floor(total/60),sec=total%60;return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
+function setWorkflowLiveV3214(state,text,{start=false,stop=false}={}){
+ const box=E('workflow-live-v3214'),label=E('workflow-live-text-v3214'),timer=E('workflow-live-timer-v3214');if(!box||!label||!timer)return;
+ box.className=`workflow-live-v3214 ${state||'waiting'}`;label.textContent=text||'';
+ if(start||!workflowLiveStartedAtV3214)workflowLiveStartedAtV3214=Date.now();
+ if(workflowLiveTimerHandleV3214){clearInterval(workflowLiveTimerHandleV3214);workflowLiveTimerHandleV3214=null}
+ const tick=()=>{timer.textContent=fmtElapsedV3214(Date.now()-workflowLiveStartedAtV3214)};tick();
+ if(!stop)workflowLiveTimerHandleV3214=setInterval(tick,1000);
+}
+async function runResearchBatchV3214(work){
+ const total=work.length;let completed=0,failed=0,publishable=0,review=0,next=0;const failureDetails=[];const concurrency=Math.min(4,total);
+ const update=(current='')=>{const waiting=Math.max(0,total-completed-failed);setWorkflowLiveV3214('running',`RESEARCH RUNNING · ${completed}/${total} finished · ${failed} failed · ${waiting} remaining${current?` · ${current}`:''}`);const b=E('workflow-primary-v312');if(b){b.disabled=true;b.textContent=`Researching ${completed}/${total}…`}};
+ setWorkflowLiveV3214('running',`RESEARCH RUNNING · 0/${total} finished · 0 failed · ${total} remaining`,{start:true});update();
+ const worker=async()=>{while(true){const idx=next++;if(idx>=total)return;const item=work[idx];S.productionUi[item.s.id]={state:'running',error:''};renderSections();update(String(val(item.s.fields,'Section Title')||'Current article').slice(0,70));try{const d=await produceOneReliablyV31825(item,'research',{silentProgress:true});delete S.productionUi[item.s.id];completed++;if(['VERIFIED_NOW','EDITORIAL','ATTRIBUTED_REPORT'].includes(String(d.outcome||'')))publishable++;else review++;}catch(e){failed++;const msg=String(e?.message||e||'Research failed');S.productionUi[item.s.id]={state:'failed',error:msg};failureDetails.push({title:String(val(item.s.fields,'Section Title')||'Untitled'),error:msg});}renderSections();update();}}
+ await Promise.all(Array.from({length:concurrency},()=>worker()));
+ const refreshed=await refreshIssueSectionsForSummary();const persisted=persistedResearchSummary(refreshed);const state=failed?'review':'complete';setWorkflowLiveV3214(state,`RESEARCH FINISHED · ${persisted.total}/${total} Research Packs saved · ${persisted.publishable} publishable · ${failed} technical failures`,{stop:true});const b=E('workflow-primary-v312');if(b){b.disabled=false;b.textContent=failed?`Review ${failed} Research Failure${failed===1?'':'s'}`:`Research Complete ✓`}
+ const failedList=failureDetails.length?`<div class="muted" style="margin-top:6px">${failureDetails.map(x=>`Failed: ${esc(x.title)} — ${esc(x.error)}`).join('<br>')}</div>`:'';
+ E('production-progress').innerHTML=`<strong>Research run finished</strong><div class="muted">Research Packs ${persisted.total} · Publishable ${persisted.publishable} (${persisted.verified} verified/editorial · ${persisted.reported} attribution required) · Blocked ${persisted.blocked} · Technical failed ${failed}</div>${failedList}`;
+ E('save-state').textContent=`Research run complete. ${persisted.total} Research Packs saved · ${persisted.publishable} publishable · ${failed} technical failures.`;
+ return {failed,persisted};
 }
 async function runProduction({one=false,mode="generate"}={}){
  if(!S.issue){alert('Open an issue first.');return}
@@ -1436,6 +1468,11 @@ async function runProduction({one=false,mode="generate"}={}){
        E('save-state').textContent=`Writing mode auto-corrected: ${stored} → ${effective}.`;
      }catch(e){console.warn('Writing mode auto-correction could not be persisted',e)}
    }
+ }
+ if(!one&&mode==='research'){
+   E('run-production').disabled=true;E('run-next-production').disabled=true;E('generate-selected-production').disabled=true;
+   try{await runResearchBatchV3214(work)}finally{E('run-production').disabled=false;E('run-next-production').disabled=false;E('generate-selected-production').disabled=false;renderSections();renderForm()}
+   return;
  }
  let pass=0,sourceCheck=0,researchIncomplete=0,editorialReview=0,failed=0;
  const failureDetails=[];
@@ -2032,7 +2069,7 @@ function renderSections(){
   const workflowRows=activeRows.map(articleWorkflowState),researchedCount=workflowRows.filter(x=>x.researched).length,verifiedCount=workflowRows.filter(x=>x.verified).length,writtenCount=workflowRows.filter(x=>x.hasCopy).length,readyCount=workflowRows.filter(x=>x.ready).length,reviewCount=activeRows.filter(needsEditorialReview).length;
   const issuePct=activeRows.length?Math.round(workflowRows.reduce((sum,x)=>sum+x.steps.filter(Boolean).length,0)/(activeRows.length*4)*100):0;
   E('library-summary').innerHTML=`<div><strong>${produced}</strong><span>Produced</span></div><div><strong>${queue}</strong><span>Queue</span></div><div><strong>${warnings}</strong><span>Warnings</span></div><div><strong>${issuePct}%</strong><span>Issue ready</span></div><div class="issue-progress-note"><b>Pipeline: ${researchedCount} researched · ${verifiedCount} verified · ${writtenCount} written · ${readyCount} QA ready</b><span>${activeRows.length?`${reviewCount} need editorial review · ${readyCount} QA-ready`:'No active articles yet'}</span></div>`;
-  const rows=filteredSections().filter(s=>!isSupersededSmartBrief(s));
+  const activeIds=new Set(activeRows.map(x=>x.id));const lockedPlan=smartPlanLocked(getSmartPlan());const rows=filteredSections().filter(s=>!isSupersededSmartBrief(s)).filter(s=>!lockedPlan||activeIds.has(s.id));
   const ad=activeOrderDiagnostic();const diagnostic=activeRows.length?`<div class="muted" style="padding:4px 2px 10px">${activeRows.length} active records${ad.duplicates.length?` · duplicate order: ${ad.duplicates.join(', ')}`:''}${ad.missing.length?` · missing order: ${ad.missing.join(', ')}`:' · numbering clean ✓'}</div>`:'';
   E('section-list').innerHTML=diagnostic+(rows.length?rows.map((s,n)=>{
     const flags=qaFlags(s),state=masterArticleState(s),isComplete=state==='complete',isReview=state==='review',isRunning=state==='running',isFailed=state==='failed',isBlocked=state==='blocked';
