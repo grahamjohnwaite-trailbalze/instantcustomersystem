@@ -1,0 +1,22 @@
+ICS v3.22.0 — CLEAN PRODUCTION CORE
+
+ACTIVE PATH
+Plan → Approve → Research → Produce → Bank + Select → Coverage + Components → Assemble → QA → Letterman.
+
+CORE RULES
+- One active article type with Article Length Class FULL or SHORT.
+- One persisted current-issue queue derived from the locked plan; REUSE assets stay in the Article Bank and are excluded from duplicate research/production.
+- Evidence is a separate axis: VERIFIED / ATTRIBUTED / EDITORIAL / NEEDS_EVIDENCE.
+- VERIFIED, ATTRIBUTED and EDITORIAL Research Packs are writeable; evidence exceptions are isolated.
+- Legacy Feature sidecar is removed from the active workflow/UI.
+- Evidence repair reruns only exception articles and forces fresh research; successful Research Packs are never rerun.
+- Step 4 writes only from saved writeable Research Packs and never reruns research.
+- Bulk writer uses a bounded two-worker pool, with a persistent live ticker and up to 14 minutes for a background writer to persist a terminal result.
+- If fewer than the publication minimum can be written, Step 4 explicitly returns to the evidence exceptions as a named downstream blocker.
+- No transient confirmation dialog before bulk writing; the persistent action/status strip is the operator control.
+
+TESTS
+- 20 approved with one REUSE => exactly 19 research jobs.
+- VERIFIED / ATTRIBUTED / EDITORIAL => WRITEABLE.
+- BLOCKED => NEEDS_EVIDENCE.
+- QA-ready and next-step state transitions tested.

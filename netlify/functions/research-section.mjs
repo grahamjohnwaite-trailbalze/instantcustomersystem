@@ -1571,7 +1571,7 @@ export default async(request)=>{
     // research prompt version. Older checkpoints and legacy locked research packs may
     // contain source-selection behaviour that newer safety/geography gates are meant
     // to replace, so they must trigger a fresh research pass instead of being silently reused.
-    const reusableResearch=checkpointCompatible(savedResearch,fields,cls,key,record.id)
+    const reusableResearch=!data.forceResearch && checkpointCompatible(savedResearch,fields,cls,key,record.id)
       ? savedResearch
       : null;
     const writerCandidate=(savedWriter?.brief_key===key)?savedWriter:null;
