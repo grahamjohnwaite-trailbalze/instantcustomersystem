@@ -10,5 +10,5 @@ must(research.includes("'vocabulary.com'"),'dictionary drift host missing');
 must(research.includes("h==='three.com'"),'Three.com count-word drift guard missing');
 for(const key of ['food: [','events: [','telecoms: [','safety: [','community: [','planning: [','local: ['])must(bank.includes(key),`source bank missing ${key}`);
 for(const domain of ['ofcom.org.uk','bt.com','visitcambridge.org','cambs.police.uk','magpas.org.uk','cambridgeindependent.co.uk'])must(bank.includes(domain),`source bank missing ${domain}`);
-must(app.includes('v3.23.0'),'UI version not bumped');
+must(app.includes('v3.23.1'),'UI version not bumped');
 console.log('research-yield-engine: PASS');
