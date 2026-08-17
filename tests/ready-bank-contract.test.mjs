@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const html=fs.readFileSync(new URL('../app/index.html', import.meta.url),'utf8');
+assert(html.includes('function weeklyReadyBankTargetV3225()'));
+assert(html.includes("return 20;"));
+assert(html.includes('WEEKLY READY BANK'));
+assert(html.includes('Build READY Bank — ${mix.total}/${bankTarget}'));
+assert(html.includes("mix.total>=bankTarget"));
+assert(html.includes("bankStillShort=mix.total<bankTarget"));
+assert(html.includes("if(step===5)"));
+console.log('v3.22.5 READY-bank contract tests passed');

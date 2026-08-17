@@ -1,13 +1,14 @@
 import {TABLES,airtableRequest,cleanRecord,json,publicError,readJson} from './_airtable.mjs';
 const titleCaseAllWords=v=>String(v||'').trim().replace(/(^|[\s—–:/([{])([a-z])/g,(m,p,c)=>p+c.toUpperCase());
 import {cleanUrl,createResponse,outputText,parseJsonText} from './_openai.mjs';
+import {RESEARCH_SOURCE_BANK} from './_research-source-bank.mjs';
 
 const ALLOWED_CLASSES=new Set(['A — Question Only','B — Light Proof','C — Evidence Heavy']);
 const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=65000;
-const RELEASE_VERSION='3.9.4';
+const RELEASE_VERSION='3.9.2-CLAIM-STRENGTH';
 const WRITER_PROMPT_VERSION='TRAIL-BLAZE-HUMAN-VOICE-v1';
 
 function publicationContext(fields={}){
@@ -330,7 +331,7 @@ function lockedResearchFromNotes(notes){
   }
   return null;
 }
-const CURRENT_RESEARCH_PROMPT_VERSION='PRODUCTION-YIELD-v4';
+const CURRENT_RESEARCH_PROMPT_VERSION='GEOGRAPHY-HARD-GATE-v3';
 function researchCheckpointBlock(key,research,model,sectionRecordId=''){
   return `MASTER ARTICLE RESEARCH CHECKPOINT v2\n${JSON.stringify({brief_key:key,section_record_id:String(sectionRecordId||''),research_prompt_version:CURRENT_RESEARCH_PROMPT_VERSION,saved_at:new Date().toISOString(),model:model||'',research},null,2)}\nEND MASTER ARTICLE RESEARCH CHECKPOINT`;
 }
@@ -439,12 +440,19 @@ function sameStory(a,b){
   return overlap/Math.min(A.size,B.size)>=0.72;
 }
 
-const GENERIC_HOSTS=new Set(['wikipedia.org','simple.wikipedia.org','mayoclinic.org','britannica.com','dictionary.com','merriam-webster.com','wiktionary.org']);
+const GENERIC_HOSTS=new Set(['wikipedia.org','simple.wikipedia.org','mayoclinic.org','britannica.com','dictionary.com','merriam-webster.com','wiktionary.org','vocabulary.com']);
 function genericDriftSource(x){
   const h=hostOf(x.url||'').toLowerCase();
   if([...GENERIC_HOSTS].some(g=>h===g||h.endsWith('.'+g)))return true;
   const blob=[x.title,x.description].join(' ').toLowerCase();
   return /definition of|simple english wikipedia|symptoms and causes|dictionary|encyclopedia/.test(blob);
+}
+function topicDriftSource(x,fields={}){
+  if(genericDriftSource(x))return true;
+  const h=hostOf(x.url||'').toLowerCase();
+  const article=[value(fields,'Section Title'),value(fields,'Core Reader Question')].join(' ').toLowerCase();
+  if((h==='three.com'||h.endsWith('.three.com'))&&!/phone|mobile|broadband|telecom/.test(article))return true;
+  return false;
 }
 function wrongGeographySource(x,fields){
   const article=[value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Local Proof Needed'),value(fields,'Notes')].join(' ').toLowerCase();
@@ -549,6 +557,70 @@ function precisionPass(x,fields){
   if(topicHits>=2)return true;
   return false;
 }
+
+function sourceBankKeysForFields(fields={}){
+  const lane=String(value(fields,'Life Lane')||value(fields,'Category')||value(fields,'Section Type')||'').toLowerCase();
+  const blob=[lane,value(fields,'Section Title'),value(fields,'Core Reader Question'),value(fields,'Local Proof Needed'),value(fields,'Evidence Required')].join(' ').toLowerCase();
+  const keys=['local'];
+  if(/money|saving|mortgage|cost|bill|consumer|finance|pension|benefit/.test(blob))keys.push('money');
+  if(/letting|landlord|tenant|renting|rental/.test(blob))keys.push('lettings');
+  if(/property|house|home buyer|home seller|estate|housing/.test(blob))keys.push('property');
+  if(/planning|development|new homes|application|council decision/.test(blob))keys.push('planning');
+  if(/home|garden|energy|security|valuables|household/.test(blob))keys.push('home');
+  if(/health|mental|dental|wellbeing|nhs|medical/.test(blob))keys.push('health');
+  if(/pet|dog|cat|animal|vet/.test(blob))keys.push('pets');
+  if(/road|motoring|car|parking|transport|a10|journey|crash|collision/.test(blob))keys.push('motoring','safety');
+  if(/business|work|job|employer|recruit|company|opportunity|footballer/.test(blob))keys.push('business');
+  if(/restaurant|pub|food|cafe|café|lunch|dinner|drink|menu/.test(blob))keys.push('food');
+  if(/event|weekend|things to do|attraction|day trip|walk|coffee|pint/.test(blob))keys.push('events');
+  if(/phone|landline|digital voice|broadband|telecom/.test(blob))keys.push('telecoms');
+  if(/ambulance|fundraiser|charity|community/.test(blob))keys.push('community');
+  return [...new Set(keys)];
+}
+function sourceBankDomainsForFields(fields={}){
+  return [...new Set(sourceBankKeysForFields(fields).flatMap(k=>(RESEARCH_SOURCE_BANK[k]||[]).map(x=>x.domain)).filter(Boolean))].slice(0,12);
+}
+function sourceBankBriefForFields(fields={}){
+  return sourceBankKeysForFields(fields).flatMap(k=>(RESEARCH_SOURCE_BANK[k]||[]).map(x=>`${x.name} (${x.role}; ${x.best_for})`)).slice(0,12).join('; ');
+}
+function deliveryContractForFields(fields={}){
+  const title=String(value(fields,'Section Title')||'');
+  const q=String(value(fields,'Core Reader Question')||'');
+  const proof=String(value(fields,'Local Proof Needed')||'');
+  const evidence=String(value(fields,'Evidence Required')||'');
+  const blob=`${title} ${q} ${proof} ${evidence}`.toLowerCase();
+  const wordNums={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+  let count=0;
+  const digit=blob.match(/\b(\d{1,2})\b/); if(digit)count=Number(digit[1]);
+  if(!count)for(const [w,n] of Object.entries(wordNums))if(new RegExp(`\\b${w}\\b`).test(blob)){count=n;break}
+  let kind='GENERAL';
+  if(/restaurant|pub|food|cafe|café|lunch|dinner|drink|menu/.test(blob))kind='FOOD_VENUES';
+  else if(/things to do|event|weekend|attraction|day trip/.test(blob))kind='ACTIVITIES';
+  else if(/walk/.test(blob))kind='WALKS';
+  else if(/planning|new homes|development|application/.test(blob))kind='PLANNING';
+  else if(/road|a10|crash|collision/.test(blob))kind='ROAD_SAFETY';
+  else if(/phone|landline|digital voice|broadband/.test(blob))kind='TELECOMS';
+  const needsPrice=/£|under \d+|price|cost|menu/.test(blob);
+  const needsDate=/weekend|today|this week|august|date|opening/.test(blob);
+  return {kind,count:Math.min(count||0,10),needsPrice,needsDate,summary:`${kind}${count?` · ${count} distinct examples`:''}${needsPrice?' · current price/cost required':''}${needsDate?' · current date/opening detail required':''}`};
+}
+function trustedDiscoveryLead(src={},fields={}){
+  if(!src?.seeded_discovery||!cleanUrl(src.url))return false;
+  if(wrongGeographySource(src,fields))return false;
+  const title=String(src.title||'');
+  const current=String(value(fields,'Notes')||'').match(/Current signal:\s*([^\n]+)/i)?.[1]||'';
+  // A locked Smart Plan lead is allowed to establish that a story is being reported.
+  // It does not become official truth; downstream wording remains attributed/qualified.
+  return Boolean(title.trim()&&current.trim());
+}
+function guideEvidenceEligible(src={},fields={}){
+  if(!cleanUrl(src.url)||wrongGeographySource(src,fields)||genericDriftSource(src))return false;
+  const strategy=researchStrategy(fields||{},'B — Light Proof');
+  if(!['MULTI_CANDIDATE','EDITORIAL_FRAME'].includes(strategy.route))return false;
+  const rel=Number(src.relevance||relevanceScore(src,fields));
+  return rel>=2;
+}
+
 function articleSearchTerms(fields){
   const title=String(value(fields,'Section Title')||'').trim();
   const q=String(value(fields,'Core Reader Question')||'').trim();
@@ -558,22 +630,38 @@ function articleSearchTerms(fields){
   const current=(notes.match(/Current signal:\s*([^\n]+)/i)||[])[1]||'';
   const compact=s=>String(s||'').replace(/[—–:?!(),"']/g,' ').replace(/\s+/g,' ').trim();
   const ctx=publicationContext(fields), area=ctx.area;
-  const key=[title,q].join(' ').match(/\b[A-Z]\d{1,3}\b|\bNorfolk\b|\bPeterborough\b|\bCambridgeshire\b|\bCambridge\b|\bSEND\b|\bGigabit\b|\bpothole\w*\b|\bhousing\b|\btravel hub\b|\bobesity\b|\blibrar\w*\b|\bspeeding\b|\bsurvey\b/gi)||[];
-  const base=[...new Set(key.map(x=>x.toLowerCase()))].join(' ');
-  const editorUrl=editorAuthoritativeSourceUrl(fields);
-  const queries=[compact(title),compact(`${base} ${q}`).slice(0,180),compact(current).slice(0,180)];
-  if(ctx.councilDomain)queries.push(compact(`site:${ctx.councilDomain} ${base} ${title}`).slice(0,180));
-  queries.push(compact(`site:gov.uk ${base} ${title}`).slice(0,180));
-  if(editorUrl){try{const h=new URL(editorUrl).hostname.replace(/^www\./,'');queries.unshift(compact(`site:${h} ${title}`));}catch{}}
-  if(/nhs|obesity|health|send/i.test(title+' '+q+' '+evidence))queries.push(compact(`site:nhs.uk ${area} ${title}`).slice(0,180));
-  if(/police|speed/i.test(title+' '+q)&&ctx.policeDomain)queries.push(compact(`site:${ctx.policeDomain} ${area} ${title}`).slice(0,180));
-  if(/planning|housing|a\d+|self-build/i.test(title+' '+q+' '+proof))queries.push(compact(`${area} planning ${title}`).slice(0,180));
-  if(/pothole|road repair|highway repair/i.test(title+' '+q+' '+proof+' '+current)){
-    queries.unshift(compact(`"${current.replace(/\|.*$/,'').replace(/^Lead\s+\d+:\s*/i,'').trim()}"`).slice(0,180));
-    if(ctx.councilDomain)queries.push(compact(`site:${ctx.councilDomain} ${area} pothole repair trial techniques`).slice(0,180));
-    queries.push('site:gov.uk pothole repair reporting repeat repairs council 2026');
+  const contract=deliveryContractForFields(fields);
+  const stop=/^(one|two|three|four|five|six|seven|eight|nine|ten|which|what|why|how|is|are|can|could|should|worth|the|a|an)$/i;
+  const core=compact(`${title} ${q}`).split(/\s+/).filter(w=>w.length>2&&!stop.test(w)).slice(0,14).join(' ');
+  const queries=[];
+  const add=x=>{x=compact(x).slice(0,180);if(x&&!queries.includes(x))queries.push(x)};
+
+  // Intent-first query plans stop count words such as “Three” becoming the search subject.
+  if(contract.kind==='FOOD_VENUES'){
+    add(`${area} restaurants pubs current menu 2026`); add(`${area} best restaurant pub local independent 2026`);
+    if(ctx.visitDomain)add(`site:${ctx.visitDomain} ${area} food drink restaurants pubs`);
+  }else if(contract.kind==='ACTIVITIES'){
+    add(`${area} events attractions August 2026 prices`); add(`${area} things to do this weekend August 2026`);
+    if(ctx.visitDomain)add(`site:${ctx.visitDomain} ${area} events August 2026`);
+    if(ctx.councilDomain)add(`site:${ctx.councilDomain} ${area} events August 2026`);
+  }else if(contract.kind==='WALKS'){
+    add(`${area} walks cafe pub route parking`); add(`${area} walking routes coffee lunch pub`);
+    if(ctx.visitDomain)add(`site:${ctx.visitDomain} ${area} walks`);
+  }else if(contract.kind==='ROAD_SAFETY'){
+    add(`${area} A10 crash collision road safety 2026`);
+    if(ctx.policeDomain)add(`site:${ctx.policeDomain} A10 Cambridgeshire collision crash`);
+    if(ctx.councilDomain)add(`site:${ctx.councilDomain} A10 road safety collision`);
+  }else if(contract.kind==='TELECOMS'){
+    add(`site:ofcom.org.uk landline digital voice migration 2026`); add(`site:bt.com digital voice landline migration 2026`);
+  }else if(contract.kind==='PLANNING'){
+    add(`${area} planning ${core}`); if(ctx.councilDomain)add(`site:${ctx.councilDomain} planning ${core}`);
   }
-  return [...new Set(queries.filter(Boolean))].slice(0,9);
+
+  add(`${area} ${core}`); add(title); add(q); if(current)add(current);
+  for(const domain of sourceBankDomainsForFields(fields))add(`site:${domain} ${area} ${core}`);
+  if(/health|nhs|mental|dental/i.test(`${title} ${q} ${evidence}`))add(`site:nhs.uk ${area} ${core}`);
+  if(/planning|housing|self-build/i.test(`${title} ${q} ${proof}`))add(`${area} planning ${core}`);
+  return queries.slice(0,14);
 }
 function isHardCurrentDecisionBrief(fields){
   const title=String(value(fields,'Section Title')||'');
@@ -632,7 +720,7 @@ async function fastEvidencePack(fields,cls){
   const editorSource=await editorAuthoritativeSource(fields);
   if(editorSource)raw.unshift(editorSource);
   // Reject off-topic and wrong-country results before they ever reach Writer. An editor-supplied URL is deliberately retained for qualification.
-  raw=raw.map(x=>({...x,relevance:Number(x.relevance||relevanceScore(x,fields))})).filter(x=>x.seeded_editor||(!wrongGeographySource(x,fields)&&(x.relevance>=3&&precisionPass(x,fields))));
+  raw=raw.map(x=>({...x,relevance:Number(x.relevance||relevanceScore(x,fields))})).filter(x=>x.seeded_editor||trustedDiscoveryLead(x,fields)||guideEvidenceEligible(x,fields)||(!wrongGeographySource(x,fields)&&(x.relevance>=3&&precisionPass(x,fields))));
   raw.sort((a,b)=>b.relevance-a.relevance);
   const seen=new Set(),dedup=[];
   for(const x of raw){
@@ -650,7 +738,7 @@ async function fastEvidencePack(fields,cls){
     title:String(x.title||x.source||'').slice(0,220),
     url:cleanUrl(x.url),
     supports:String(x.description||`Discovery result for: ${x.query}`).slice(0,700),
-    source_type:x.seeded_discovery?'discovery':x.seeded_editor?(sourceTypeFor(x.url,x.source)==='other'?'primary':sourceTypeFor(x.url,x.source)):sourceTypeFor(x.url,x.source),
+    source_type:x.seeded_discovery?'discovery':x.seeded_editor?(sourceTypeFor(x.url,x.source)==='other'?'primary':sourceTypeFor(x.url,x.source)):(sourceBankDomainsForFields(fields).some(d=>hostOf(x.url).endsWith(d))?'industry':sourceTypeFor(x.url,x.source)),
     relevance:x.relevance
   })).filter(x=>x.url);
   const official=chosen.filter(x=>x.source_type==='official').length;
@@ -718,7 +806,7 @@ async function fastIndependentQuestionPack(fields,cls){
   for(const q of queries.slice(0,2))jobs.push(fetchTextFast(googleNewsUrl(q)).then(r=>parseRssEvidence(r.text,q,'Google News RSS')));
   const settled=await Promise.allSettled(jobs);
   let raw=settled.flatMap(x=>x.status==='fulfilled'?x.value:[]);
-  raw=raw.filter(x=>!genericDriftSource(x)&&!wrongGeographySource(x,fields));
+  raw=raw.filter(x=>!topicDriftSource(x,fields)&&!wrongGeographySource(x,fields));
   raw=raw.map(x=>({...x,relevance:Number(x.relevance||relevanceScore(x,fields))})).filter(x=>x.relevance>=2);
   raw.sort((a,b)=>b.relevance-a.relevance);
   const seen=new Set(),chosen=[];
@@ -784,13 +872,17 @@ Local proof needed: ${proof||'Not supplied'}
 Evidence needed: ${evidence||'Not supplied'}
 Class: ${cls}
 
+CURATED SOURCE ROUTE
+Use these pre-selected intelligence/authority sources first where relevant: ${sourceBankBriefForFields(fields)||'No lane-specific bank match; use authoritative local sources.'}
+Delivery contract: ${deliveryContractForFields(fields).summary}
+
 FAST PASS
 ${JSON.stringify(firstPass||{},null,2)}
 
 TASK
 1. Resolve the exact real-world subject first. Do not substitute a different project when the article is about a specific company, decision, incident, scheme or named event.
 2. QUESTION-FIRST RECOVERY: if the discovery article itself is unavailable but the approved brief is a guide/advice/recommendation question rather than a specific breaking-news claim, you MAY abandon the discovery article as the spine and answer the approved reader question independently from credible primary, official and genuinely local sources. In that case, do not write a meta-story about the source being unavailable.
-3. For guide/list/event briefs, it is acceptable to build a fresh verified set of examples that answers the reader question; do not require proof that those examples appeared in the original discovery article. Verify every example directly and state only supported details.
+3. For guide/list/event briefs, build a fresh verified set of examples that answers the reader question; do not require proof that those examples appeared in the original discovery article. DELIVERY CONTRACT IS HARD: if the brief promises a number of examples, named venues/places, a price ceiling, current dates, opening information or a practical route, research must return enough distinct current examples and the material details needed to fulfil that promise. Do not convert a failed list into a generic how-to guide.
 4. If enough independent evidence cannot answer the approved question well, return Insufficient so the item can be RETRY / REPLACE. Do not invent an article about failed research.
 5. This publication is ${ctx.name}. The required geography is ${ctx.location}. Reject same-name places outside the UK publication area.
 3. For roads/potholes, identify the accountable highway authority and find the most direct official council, committee, contract, scheme or GOV.UK source.
@@ -804,8 +896,6 @@ TASK
 8. If the exact subject cannot be verified, return Insufficient and say what identity or official confirmation is missing.
 9. CURRENT PLANNING / APPROVAL STORIES: resolve the applicant/business/person, exact site/address or settlement, planning authority and application/decision reference where possible. Search the relevant UK council planning/decision material. Do not return Sufficient for an approval explainer from a single newspaper/RSS headline alone. Require direct official/primary confirmation of the decision or, if that is genuinely unavailable, at least two independent article-specific local sources plus a clearly resolved subject and authority. CURRENT-NEWS ENTITY LOCK: do not substitute an older planning case merely because it shares the same category (for example another dog groomer, gym or housing scheme). A current lead must resolve to current-year or recent decision evidence that matches the place, proposal and authority; if only an older lookalike case can be found, return Insufficient and say the current entity still needs resolving.
 10. Geography is hard-gated to ${ctx.location}. Remove results from same-name places outside the UK. For Norfolk specifically, reject Norfolk, Virginia and US property/university/company results.
-
-11. PRODUCTION-YIELD CHECK: do not return Sufficient just because you found related material. The pack must satisfy the approved Local Proof Needed and Evidence Required strongly enough for the writer to deliver the promised article without turning it into a generic guide. Generic homepages/category pages are discovery leads, not article-specific proof. For named-list promises, verify the named examples and practical details directly.
 
 Return ONLY valid JSON:
 {"research_status":"Sufficient or Insufficient","editorial_state":"VERIFIED|ATTRIBUTED|EDITORIAL|BLOCKED","resolved_subject":{"name":"","location":"","responsible_body":"","reference":"","confidence":"high/medium/low"},"research_summary":"","sources":[{"title":"","url":"","supports":"","source_type":"official/primary/local/discovery/other","reader_facing":true}],"required_now_missing":[],"future_tests":[],"optional_missing":[],"missing_evidence":[]}`;
@@ -825,7 +915,7 @@ async function recoverEvidencePack(fields,cls,firstPass,model){
     source_type:String(x.source_type||sourceTypeFor(x.url,x.title)).trim()||'other',
     relevance:Math.max(5,Number(x.relevance||0))
   })).filter(x=>x.url);
-  const merged=mergeEvidenceSources(recoveredSources,firstPass?.sources||[]).filter(x=>!genericDriftSource(x)&&!wrongGeographySource({title:x.title,description:x.supports,source:x.source_type,url:x.url},fields));
+  const merged=mergeEvidenceSources(recoveredSources,firstPass?.sources||[]).filter(x=>!topicDriftSource({title:x.title,description:x.supports,source:x.source_type,url:x.url},fields)&&!wrongGeographySource({title:x.title,description:x.supports,source:x.source_type,url:x.url},fields));
   const requiredNow=Array.isArray(recovered.required_now_missing)?recovered.required_now_missing.map(x=>String(x||'').trim()).filter(Boolean):[];
   const futureTests=Array.isArray(recovered.future_tests)?recovered.future_tests.map(x=>String(x||'').trim()).filter(Boolean):[];
   const optionalMissing=Array.isArray(recovered.optional_missing)?recovered.optional_missing.map(x=>String(x||'').trim()).filter(Boolean):[];
@@ -1032,7 +1122,8 @@ function researchLockDecision(fields,research){
   const sources=Array.isArray(research?.sources)?research.sources:[];
   const strategy=researchStrategy(fields||{},'B — Light Proof');
   const declared=String(research?.editorial_state||'').toUpperCase();
-  if(declared==='EDITORIAL'&&sources.length>=2)return {code:'EDITORIAL',humanReview:false,reason:'Multiple credible sources support an editorial/recommendation treatment; no objective winner or invented consensus may be claimed.'};
+  const hardCurrentDecision=isHardCurrentDecisionBrief(fields||{});
+  if(declared==='EDITORIAL'&&sources.length>=2&&!hardCurrentDecision)return {code:'EDITORIAL',humanReview:false,reason:'Multiple credible sources support an editorial/recommendation treatment; no objective winner or invented consensus may be claimed.'};
   if(declared==='ATTRIBUTED'&&sources.length>=1)return {code:'ATTRIBUTED_REPORT',humanReview:false,reason:'Credible reporting supports publication with proportionate qualification where a material detail remains unconfirmed.'};
   const combined=[
     String(research?.research_status||''),
@@ -1054,8 +1145,11 @@ function researchLockDecision(fields,research){
   if(directlyVerifyingOfficial.length>=1&&!directVerificationMissing){
     return {code:'VERIFIED_NOW',humanReview:false,reason:'An official or primary source directly verifies the article premise.'};
   }
-  if(reported.length>=1){
+  if(reported.length>=1&&!hardCurrentDecision){
     return {code:'ATTRIBUTED_REPORT',humanReview:false,reason:'Credible reporting supports the article premise. Keep uncertain material claims qualified; source naming is needed only when editorially relevant.'};
+  }
+  if(reported.length>=1&&hardCurrentDecision){
+    return {code:'RESEARCH_INCOMPLETE',humanReview:true,reason:'A current planning/decision story has credible reporting, but direct official or primary confirmation is still required before stating the decision as fact.'};
   }
   if((strategy.route==='MULTI_CANDIDATE'||strategy.route==='EDITORIAL_FRAME')&&sources.length>=2){
     return {code:'EDITORIAL',humanReview:false,reason:'Credible local examples are sufficient for an editorial recommendation, list or reader-debate article.'};
@@ -1118,13 +1212,6 @@ ${routeRule}
 - HOSPITALITY STATUS DOUBLE-CHECK: when an article names a restaurant, pub, bar, cafe, takeaway, hotel, accommodation provider, market, stall, nightclub, venue or hospitality business, actively look for a current official website, booking/menu page or official social page. Use it to confirm the business still appears to be trading under that identity, at that location, and that the relevant offer/service is current. A live but obviously stale page is not enough on its own when newer evidence suggests closure, sale, relaunch or rebrand.
 - Do not invent a source or claim.
 - If adequate evidence cannot be found, say so explicitly.
-
-PRODUCTION-YIELD CONTRACT
-- The goal is not merely to find a related source; it is to create a Research Pack strong enough for a finished local article to pass QA first time.
-- A generic homepage, generic council landing page, generic TripAdvisor category page or broad tourist guide does NOT verify a specific article premise. Use the specific decision page, named venue page/menu, event page, planning record, service page, official guidance page or article-specific report.
-- If the headline promises named choices (for example three walks, a market, a food find, a pub/restaurant, things under £20), return the named choices and verify the material practical details the reader needs. Do not downgrade the promise into a generic decision guide.
-- For FULL articles, normally retain at least 3 distinct article-specific sources when the subject supports it. For SHORT articles, normally retain at least 2. One strong primary source can be sufficient only when it directly supports the whole narrow premise.
-- Treat the Local Proof Needed and Evidence Required fields as acceptance criteria, not optional suggestions. If they are not met, return Insufficient rather than falsely marking the article VERIFIED.
 
 Return ONLY valid JSON:
 {
@@ -1514,7 +1601,9 @@ export default async(request)=>{
     if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
     const data=await readJson(request);
     const mode=String(data.mode||'generate').toLowerCase()==='research'?'research':'generate';
-    const requested=String(data.contentType||'master').toLowerCase();
+    // v3.21.7: do not inspect Airtable fields before the selected section has been loaded.
+    // The v3.21.6 synchronous fast lane referenced `fields` here before declaration,
+    // causing every Step 3 request to fail immediately with a technical error.
     runId=String(data.runId||runId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80)||runId;
     log('request_parsed',{sectionId:data.sectionId||'',requestedClass:data.productionClass||''});
     if(!data.sectionId)return json(400,{ok:false,error:'sectionId is required.'});
@@ -1526,10 +1615,8 @@ export default async(request)=>{
     const record=cleanRecord(rawRecord);
     log('airtable_lookup_completed',{recordId:record.id,title:String(record.fields?.['Section Title']||'')});
     const fields={...(record.fields||{}),__publicationName:String(data.publicationName||'').trim()};
-    // v3.22.2: length classification can only inspect Notes after the Airtable record exists.
-    // Keeping this below `fields` prevents the Step 4 runtime ReferenceError that caused
-    // every synchronous writer request to fail before writing even began.
     const noteClass=/^ARTICLE LENGTH CLASS:\s*SHORT\s*$/mi.test(String(fields.Notes||''));
+    const requested=String(data.contentType||'master').toLowerCase();
     const contentType=(requested==='feature'||requested==='short'||noteClass)?'short':'master';
     const cls=ALLOWED_CLASSES.has(data.productionClass)?data.productionClass:productionClass(fields);
     const sourceNotes=String(value(fields,'Notes')||'');
@@ -1542,7 +1629,7 @@ export default async(request)=>{
     // research prompt version. Older checkpoints and legacy locked research packs may
     // contain source-selection behaviour that newer safety/geography gates are meant
     // to replace, so they must trigger a fresh research pass instead of being silently reused.
-    const reusableResearch=checkpointCompatible(savedResearch,fields,cls,key,record.id)
+    const reusableResearch=!data.forceResearch && checkpointCompatible(savedResearch,fields,cls,key,record.id)
       ? savedResearch
       : null;
     const writerCandidate=(savedWriter?.brief_key===key)?savedWriter:null;
@@ -1765,7 +1852,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel,record.id);
-      const service=[`PRODUCTION SERVICE v3.9.4`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.9.2`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Decision: ${decision.reason||'No decision detail recorded.'}`,`Missing: ${(research.missing_evidence||[]).join('; ')||'None recorded'}`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1928,7 +2015,7 @@ export default async(request)=>{
     result.editorial_readiness=editorialReadiness(result,publishGate,lockDecision,sources,fields);
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used,contentType);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.9.4`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.9.0`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':titleCaseAllWords(result.article_title||value(fields,'Section Title')),
       'Section Final Copy':String(result.article_body||'').trim(),
@@ -1985,3 +2072,8 @@ export default async(request)=>{
 };
 
 
+// Step 3 fast research runs synchronously so the browser receives a real terminal
+// response/error instead of an opaque 202 background acknowledgement. The fast lane
+// is bounded to short RSS/primary-source collection and is designed to finish well
+// inside the synchronous function window.
+export const config={};

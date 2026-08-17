@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+const research=fs.readFileSync(new URL('../netlify/functions/research-section.mjs',import.meta.url),'utf8');
+const bank=fs.readFileSync(new URL('../netlify/functions/_research-source-bank.mjs',import.meta.url),'utf8');
+const app=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
+const must=(ok,msg)=>{if(!ok)throw new Error(msg)};
+must(research.includes('deliveryContractForFields'),'delivery contract missing');
+must(research.includes('CURATED SOURCE ROUTE'),'source-bank route not injected into recovery prompt');
+must(research.includes('Do not convert a failed list into a generic how-to guide.'),'list-contract guard missing');
+must(research.includes("'vocabulary.com'"),'dictionary drift host missing');
+must(research.includes("h==='three.com'"),'Three.com count-word drift guard missing');
+for(const key of ['food: [','events: [','telecoms: [','safety: [','community: [','planning: [','local: ['])must(bank.includes(key),`source bank missing ${key}`);
+for(const domain of ['ofcom.org.uk','bt.com','visitcambridge.org','cambs.police.uk','magpas.org.uk','cambridgeindependent.co.uk'])must(bank.includes(domain),`source bank missing ${domain}`);
+must(app.includes('v3.23.0'),'UI version not bumped');
+console.log('research-yield-engine: PASS');
