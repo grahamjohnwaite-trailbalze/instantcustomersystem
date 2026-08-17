@@ -1,0 +1,11 @@
+ICS v3.20.8 — Evidence-First Feature Recovery
+Build: 2026-08-13
+
+Fixes the 0/4 Feature dead-end without lowering the evidence bar.
+- Step 6A now shows the blocker reason for each failed Feature.
+- Build / Resume automatically recommissions each blocked Feature once from a verified local Master source.
+- Recovery Feature is a narrower sidecar article, not a summary/duplicate of the seed Master.
+- Recovery clears stale blocked state and reruns research before writing.
+- A FEATURE RECOVERY marker prevents retry loops.
+- Future feature planning receives verified local evidence seeds when available.
+- Existing Masters, selection and components are preserved.

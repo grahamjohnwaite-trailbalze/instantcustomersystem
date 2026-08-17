@@ -1,0 +1,8 @@
+ICS v3.10.15 — Recovered Evidence Open-Question Fix
+
+Fixes the remaining Article 04 research block:
+- Re-applies the open-question evidence relaxation AFTER successful targeted recovery.
+- Reader submissions are not required to seed an open reader-question article when credible local examples exist.
+- Editorial confirmation of one exact focus is not a research blocker for a compare/several-examples framing.
+- Keeps factual claims constrained to the verified sources; no invented failures, consensus or winner.
+- Production Service v3.7.8.

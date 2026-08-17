@@ -1,0 +1,17 @@
+ICS v3.10.11 — Open Question Research Gate
+
+Purpose
+Fix research blocking on genuine Spotlight nomination/debate/conversation articles.
+
+Changes
+- Adds an open-reader-question evidence exception for briefs that explicitly ask readers to nominate, compare, recommend or debate.
+- When at least two credible sources and at least one official/primary/local source provide Norfolk examples, pre-existing reader nominations, resident quotes, a single declared winner or a single resolved subject are not required.
+- Moves those items to optional/follow-up evidence instead of blocking writing.
+- Writer is instructed to use verified examples as starting points only and never invent reader consensus, testimony or a winner.
+- Genuine hard factual premises still require verification and remain blockable.
+- Production Service label bumped to v3.7.4.
+
+Acceptance tests
+1. Article 03 — Norfolk place changed most: should pass research as an open-question feature using verified examples, without claiming a reader-selected winner.
+2. Article 04 — Norfolk everyday service frustration: should pass research using verified local service examples, without claiming countywide failure or invented complaints.
+3. Hard factual/breaking claims must still block when core evidence is missing.

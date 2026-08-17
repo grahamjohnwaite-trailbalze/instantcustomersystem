@@ -1,0 +1,16 @@
+ICS v3.22.1 — Synchronous Writer Runtime
+
+Purpose
+- Fix Step 4 at the runtime layer rather than adding another timeout.
+
+Changes
+- produce-section is now a normal synchronous Netlify function, matching the reliable Step 3 research architecture.
+- Step 4 waits for the real writer response and confirms the saved Airtable record before counting an article finished.
+- Removed the 14-minute browser polling loop and background-function dependency from Step 4.
+- Existing Research Packs are preserved; writer research remains disabled.
+- Two-worker bulk pool remains, with live Finished / Active / Waiting / Failed ticker.
+- A writer failure now returns the real backend error instead of an opaque 14-minute timeout.
+
+Migration
+- CBS #47 can resume from its existing 19 saved Research Packs.
+- Do not rerun research.

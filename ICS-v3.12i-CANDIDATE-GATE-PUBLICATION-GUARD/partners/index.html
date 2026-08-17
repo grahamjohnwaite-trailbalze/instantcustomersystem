@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spotlight HQ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { margin: 0; background: #030712; }
+    .icon { display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    const SS = [
+      { id:1, lead:'Unitary council reform debate', loc:'Countywide', reg:'Cambridgeshire', sig:'Big structural change with strong reader opinions', hl:'Fewer councils, less control?', pri:'High', sec:'Local Government', src:'' },
+      { id:2, lead:'Greater Cambridge traffic proposals', loc:'Cambridge', reg:'Cambridgeshire', sig:'Can Cambridge breathe easier without pushing people out?', hl:'Car-Light Cambridge: Dream or Daily Headache?', pri:'High', sec:'Transport', src:'' },
+      { id:3, lead:'Energy costs and cost-of-living pressure', loc:'Cambridgeshire', reg:'Cambridgeshire', sig:'Businesses experimenting with creative promotions', hl:'How local independents are surviving rising costs', pri:'High', sec:'Money & Cost of Living', src:'' },
+      { id:4, lead:'Micro-business resilience', loc:'Countywide', reg:'Cambridgeshire', sig:'Community capitalism with opening hours', hl:'Community Capitalism', pri:'High', sec:'Business', src:'' },
+      { id:5, lead:'Ely level crossing delays', loc:'Ely', reg:'Cambridgeshire', sig:'Excellent local-routine disruption story', hl:'The Ely level crossing: the delay most people underestimate', pri:'High', sec:'Transport', src:'' },
+      { id:6, lead:'Phone theft and poor security', loc:'Cambridge', reg:'Cambridgeshire', sig:'Excellent practical digital-hygiene story', hl:'Your phone is a £1,200 liability', pri:'High', sec:'Digital / Consumer', src:'' },
+      { id:7, lead:'Poo Corner road signage', loc:'B1040 Woodhurst', reg:'Cambridgeshire', sig:'Confusing signage at known accident blackspot', hl:'Poo Corner: When Road Safety Theatre Replaces Actual Safety', pri:'High', sec:'Transport', src:'' },
+      { id:8, lead:'Station Quarter Jobs Gap', loc:'Peterborough', reg:'Peterborough', sig:'Is the job boom real?', hl:"Is Peterborough's Job Boom Real Yet?", pri:'High', sec:'Money & Business', src:'Feb 12 2026 PBS' },
+      { id:9, lead:'Pool funding gap and trust crisis', loc:'Peterborough', reg:'Peterborough', sig:'Trust and the missing £18m', hl:"Peterborough's Pool Problem Isn't Just Size — It's Trust", pri:'High', sec:'Local Government', src:'Feb 3 2026 PBS' },
+      { id:10, lead:'Rents settled high', loc:'Peterborough', reg:'Peterborough', sig:'Not spiking but permanently high', hl:"Rents Haven't Spiked — They've Settled High", pri:'High', sec:'Homes & Property', src:'Feb 3 2026 PBS' },
+      { id:11, lead:'Millfield beyond the reputation', loc:'Millfield', reg:'Peterborough', sig:'Written off underpaid area', hl:'Millfield: Written Off, Underpaid, Still Expected to Cope', pri:'High', sec:'Community / Housing', src:'Jan 23 2026 PBS' },
+      { id:12, lead:'Healthcare workaround economy', loc:'Peterborough', reg:'Peterborough', sig:'GP access frustration', hl:"If You've Given Up Phoning the GP, You're Not Alone", pri:'High', sec:'Health & Wellbeing', src:'Jan 15 2026 PBS' },
+      { id:13, lead:'Keyless car theft explained', loc:'Peterborough', reg:'Peterborough', sig:'Security story with practical angle', hl:'How Thieves Are Stealing Cars Without Breaking In', pri:'High', sec:'Motoring / Security', src:'Jan 15 2026 PBS' },
+      { id:14, lead:'Holiday Lets vs Local Homes', loc:'North Norfolk', reg:'Norfolk', sig:'Housing pressure from holiday lets', hl:'Who Actually Gets to Live on the North Norfolk Coast?', pri:'High', sec:'Housing', src:'Norfolk Issue 1' },
+      { id:15, lead:'Great Yarmouth Comeback', loc:'Great Yarmouth', reg:'Norfolk', sig:'Regeneration momentum', hl:'Is Great Yarmouth Actually on the Up?', pri:'High', sec:'Development', src:'Norfolk Issue 1' },
+      { id:16, lead:'Happisburgh Erosion', loc:'Happisburgh', reg:'Norfolk', sig:'Coastal erosion concern', hl:"Norfolk's Disappearing Coastline: How Worried Should We Be?", pri:'High', sec:'Environment', src:'Norfolk Issue 1' },
+      { id:17, lead:'Independent Business Loyalty', loc:'Stamford', reg:'Stamford', sig:'Independent retail resilience', hl:'Why Stamford Still Supports Its Independents', pri:'High', sec:'Retail', src:'Stamford Issue 1' },
+      { id:18, lead:'Fuel price surge', loc:'Countywide', reg:'Cambridgeshire', sig:'Rising fuel costs for commuters', hl:'Are rising fuel prices about to hit local commuters again?', pri:'High', sec:'Money / Cost of Living', src:'2026 Watch' },
+      { id:19, lead:'Heating oil spike for rural homes', loc:'Fenland Villages', reg:'Cambridgeshire', sig:'Rural heating cost shock', hl:'Why rural households could face another heating bill shock', pri:'High', sec:'Money / Cost of Living', src:'2026 Watch' },
+      { id:20, lead:'Fly-tipping victims foot the bill', loc:'Rural Cambs', reg:'Cambridgeshire', sig:'Landowner liability issue', hl:'Fly-tipping: why the victims foot the bill', pri:'High', sec:'Environment', src:'' },
+      { id:21, lead:'Eddington build-to-rent model', loc:'Cambridge', reg:'Cambridgeshire', sig:'Major shift in housing model', hl:'Is this the future of Cambridgeshire?', pri:'High', sec:'Homes & Property', src:'' },
+      { id:22, lead:'GP appointment Olympics', loc:'Countywide', reg:'Cambridgeshire', sig:'8am phone queues and triage frustration', hl:'The great GP appointment Olympics', pri:'High', sec:'Health & Wellbeing', src:'' },
+      { id:23, lead:'Pothole frustration', loc:'Cambridgeshire', reg:'Cambridgeshire', sig:'Complaints at record levels', hl:'The Pothole Conversation Everyone Is Having', pri:'High', sec:'Transport', src:'CBS Archive' },
+      { id:24, lead:'ISA savings rate surge', loc:'UK', reg:'National', sig:'ISA rates hitting 6 percent', hl:'ISA Rates Hit 6 Percent — Should Savers Switch?', pri:'High', sec:'Money & Savings', src:'Inoreader' },
+      { id:25, lead:'Mortgage rates rising again', loc:'UK', reg:'National', sig:'Lenders increasing rates', hl:'Mortgage Rates Rising Again — Should Borrowers Act?', pri:'High', sec:'Homes & Property', src:'Inoreader' },
+      { id:26, lead:'Pothole funding increase', loc:'Peterborough', reg:'Peterborough', sig:'£2.7m repair plan announced', hl:'£2.7m Pothole Repair Plan Announced', pri:'High', sec:'Transport', src:'Inoreader' },
+      { id:27, lead:'Life expectancy below average', loc:'Peterborough', reg:'Peterborough', sig:'Health inequality', hl:'Why Life Expectancy In Peterborough Is Lower Than Average', pri:'High', sec:'Health', src:'Inoreader' },
+      { id:28, lead:'Cresset theatre popularity', loc:'Bretton', reg:'Peterborough', sig:'Arts venue thriving', hl:"The Cresset's Comeback: Bretton's Theatre Is Thriving", pri:'Medium', sec:'Arts', src:'Oct 10 2025' },
+      { id:29, lead:'Cosy Cafe Economy', loc:'Sheringham / Wells', reg:'Norfolk', sig:'Cafes as winter community hubs', hl:"Norfolk's Cafes Are Becoming Winter Community Hubs", pri:'Medium', sec:'Hospitality', src:'Norfolk Demo 2' },
+      { id:30, lead:'Stamford Cost-of-Living', loc:'Stamford', reg:'Stamford', sig:'Cost squeeze in market town', hl:'Is Stamford Feeling the Cost Squeeze?', pri:'Medium', sec:'Cost of Living', src:'Stamford Issue 1' },
+      { id:31, lead:'The A14 shared trauma', loc:'Countywide', reg:'Cambridgeshire', sig:'Ongoing congestion and road memory', hl:'The A14: Where Patience Goes to Die', pri:'High', sec:'Transport', src:'' },
+      { id:32, lead:'Childcare maths', loc:'Cambourne', reg:'Cambridgeshire', sig:'Wraparound and holiday costs', hl:'Childcare maths that never adds up', pri:'High', sec:'Family & Education', src:'' },
+      { id:33, lead:'Woodburner emissions debate', loc:'Villages near Ely', reg:'Cambridgeshire', sig:'Lifestyle vs environment debate', hl:'Woodburners: cosy vibes or village smog?', pri:'Medium', sec:'Environment', src:'' },
+      { id:34, lead:'Hilton project stalls at Fletton Quays', loc:'Peterborough', reg:'Peterborough', sig:'Half-built regeneration flashpoint', hl:"Fletton Quays Hilton: Peterborough's Half-Built Tower", pri:'High', sec:'Development', src:'Oct 4 2025' },
+      { id:35, lead:'Lincoln Road night food scene', loc:'Peterborough', reg:'Peterborough', sig:'Multicultural food corridor', hl:"Lincoln Road After Dark: Peterborough's Real Food Mile", pri:'High', sec:'Food & Culture', src:'Oct 4 2025' },
+    ];
+
+    const VV = [
+      { id:1, reg:'Cambridgeshire', town:'Ely', name:'Peacocks Tea Rooms', cat:'Cafe', sub:'Tea Room', desc:'Riverside tea room for afternoon tea', hi:true },
+      { id:2, reg:'Cambridgeshire', town:'Cambridge', name:'Fitzbillies', cat:'Cafe', sub:'Bakery', desc:'Famous bakery for Chelsea buns', hi:true },
+      { id:3, reg:'Cambridgeshire', town:'Cambridge', name:'The Eagle', cat:'Pub', sub:'Historic Pub', desc:'Famous pub where DNA discovery was announced', hi:true },
+      { id:4, reg:'Cambridgeshire', town:'St Ives', name:"The Teller's Table", cat:'Restaurant', sub:'Modern British', desc:'New restaurant in former Di Ritas location', hi:true },
+      { id:5, reg:'Cambridgeshire', town:'Cambridge', name:'Hot Numbers Coffee', cat:'Cafe', sub:'Craft Coffee', desc:'Independent roaster and cafe hosting events', hi:true },
+      { id:6, reg:'Peterborough', town:'Peterborough', name:'Bean Around Coffee', cat:'Cafe', sub:'Independent', desc:'Cathedral Square cafe for espresso and pastries', hi:true },
+      { id:7, reg:'Peterborough', town:'Glinton', name:'The Blue Bell', cat:'Pub', sub:'Restaurant', desc:'Village pub known for Sunday roasts', hi:true },
+      { id:8, reg:'Peterborough', town:'Peterborough', name:'Ferry Meadows', cat:'Park', sub:'Country Park', desc:'Major park for walking cycling and families', hi:true },
+      { id:9, reg:'Peterborough', town:'Wansford', name:'Nene Valley Railway', cat:'Heritage', sub:'Steam Railway', desc:'Heritage railway with steam experiences', hi:true },
+      { id:10, reg:'Peterborough', town:'Woodston', name:'Coalheavers Arms', cat:'Pub', sub:'Traditional', desc:'Historic pub with CAMRA recognition', hi:true },
+      { id:11, reg:'Norfolk', town:'Holt', name:'Byfords', cat:'Cafe', sub:'Cafe / Hotel', desc:'Popular hospitality venue in Holt', hi:true },
+      { id:12, reg:'Norfolk', town:'Brancaster', name:'The White Horse', cat:'Pub', sub:'Gastro Pub', desc:'Marsh-view dining with dressed crab', hi:true },
+      { id:13, reg:'Norfolk', town:'Norwich', name:'Norwich Market', cat:'Market', sub:'Open Market', desc:'Historic city market with modern food', hi:true },
+      { id:14, reg:'Stamford', town:'Stamford', name:"Mama Liz's", cat:'Venue', sub:'Music Venue', desc:'Local venue hosting folk music nights', hi:true },
+      { id:15, reg:'Cambridgeshire', town:'Fenstanton', name:'Little Piggy', cat:'Cafe', sub:'Brunch', desc:'Popular comfort-food brunch venue', hi:true },
+      { id:16, reg:'Peterborough', town:'Bretton', name:'The Cresset', cat:'Theatre', sub:'Events', desc:'Venue hosting comedy and shows', hi:true },
+      { id:17, reg:'Cambridgeshire', town:'Ely', name:'Ely Cathedral', cat:'Heritage', sub:'Cathedral', desc:'Major tourist draw and event venue', hi:true },
+      { id:18, reg:'Peterborough', town:'Peterborough', name:'Lotus', cat:'Restaurant', sub:'Indian', desc:'Modern Indian in former Banyan Tree unit', hi:true },
+      { id:19, reg:'Peterborough', town:'Peterborough', name:'The Brewery Tap', cat:'Pub', sub:'Thai / Craft Beer', desc:'Oakham Ales venue known for Thai food', hi:true },
+      { id:20, reg:'Cambridgeshire', town:'Bourn', name:'Bamboo Sky', cat:'Restaurant', sub:'Asian', desc:'Far-East flavours in countryside setting', hi:true },
+    ];
+
+    const AA = [
+      { id:1, name:'Taste Trail', type:'Feature', freq:'Monthly', cat:'Food Discovery', desc:'Curated trail of cafes or restaurants', val:'£300' },
+      { id:2, name:"Mother's Day Guide", type:'Seasonal', freq:'Annual', cat:'Dining & Gifts', desc:'Guide to local Mother\'s Day experiences', val:'£400' },
+      { id:3, name:'Sunday Roast Guide', type:'Feature', freq:'Seasonal', cat:'Food & Hospitality', desc:'Best pubs for Sunday roasts', val:'£350' },
+      { id:4, name:'Expert Q&A', type:'Authority', freq:'Monthly', cat:'Expert Advice', desc:'Local professional answers reader questions', val:'£300' },
+      { id:5, name:'First Time Buyer Guide', type:'Editorial', freq:'Quarterly', cat:'Property', desc:'Guide for buyers with expert commentary', val:'£400' },
+      { id:6, name:'Half-Term Survival Guide', type:'Seasonal', freq:'Holidays', cat:'Family / Leisure', desc:'Practical family guide with local venues', val:'£300' },
+      { id:7, name:'Dog Training Tips', type:'Niche', freq:'Monthly', cat:'Pets', desc:'Advice column by local dog trainer', val:'£250' },
+      { id:8, name:'Cafe Comeback', type:'Community', freq:'Monthly', cat:'Food & Hospitality', desc:'Regulars returning and cafes filling up', val:'£300' },
+      { id:9, name:'Mortgage Check-In', type:'Expert', freq:'Monthly', cat:'Property', desc:'Practical mortgage-planning feature', val:'£350' },
+      { id:10, name:'Coffee Trail', type:'Reader Guide', freq:'Monthly', cat:'Food & Drink', desc:'County coffee map from reader suggestions', val:'£250' },
+      { id:11, name:"Sally's Savers", type:'Reader Tips', freq:'Weekly', cat:'Cost of Living', desc:'Local saving hacks that actually work', val:'£150' },
+      { id:12, name:'Rescue Pet of the Week', type:'Community', freq:'Weekly', cat:'Pets', desc:'Showcase rescue animals for adoption', val:'£200' },
+      { id:13, name:'Local Hero Spotlight', type:'Community', freq:'Weekly', cat:'Community', desc:'Highlight volunteers and heroes', val:'£200' },
+      { id:14, name:'Burger Wars Vote', type:'Reader Poll', freq:'Seasonal', cat:'Food & Dining', desc:'Public vote on best burger venues', val:'£500' },
+      { id:15, name:'GP Access Guide', type:'Service', freq:'Occasional', cat:'Health', desc:'How GP booking systems actually work', val:'£250' },
+      { id:16, name:'Parking Friction Debate', type:'Reader Poll', freq:'Occasional', cat:'Town Centre', desc:'Reader debate on parking deterring shopping', val:'£250' },
+      { id:17, name:'Winter Comfort Food Guide', type:'Seasonal', freq:'Annual', cat:'Food & Drink', desc:'Local warm food favourites', val:'£300' },
+      { id:18, name:'EV Charger Finder', type:'Local Guide', freq:'Quarterly', cat:'Transport', desc:'Guide to public EV charging locations', val:'£500' },
+    ];
+
+    const HH = [
+      { id:'H001', type:'Question', template:'Why Is ___ So Hard Right Now?', ex:'Why Is It So Hard To See A GP In Peterborough?', rate:'Very High' },
+      { id:'H002', type:'Numbers', template:'The £___ Problem', ex:'The £80 Petrol Tank Drivers Are Watching Again', rate:'Very High' },
+      { id:'H004', type:'Debate', template:'___ vs ___', ex:'Growth vs Infrastructure In Peterborough', rate:'Very High' },
+      { id:'H006', type:'Reality Check', template:'The Reality Behind ___', ex:"The Reality Behind Peterborough's Housing Boom", rate:'High' },
+      { id:'H017', type:'Decision', template:'Is ___ Actually Working?', ex:'Is The GP Booking System Actually Working?', rate:'Very High' },
+      { id:'H018', type:'Local Problem', template:'The ___ Problem', ex:'The Pothole Problem Drivers Keep Talking About', rate:'High' },
+      { id:'H042', type:'Community', template:'Where Locals Actually Go', ex:'Where Locals Actually Go For Coffee', rate:'Medium' },
+      { id:'H055', type:'Explainer', template:'Why ___ Costs More Than You Think', ex:'Why Food Shopping Costs More Than You Think', rate:'High' },
+      { id:'H066', type:'Warning', template:'The Everyday Mistake Costing Locals £___', ex:'The Everyday Mistake Costing Locals £200 A Year', rate:'High' },
+      { id:'H083', type:'Trend', template:"Everyone's Talking About ___ — Here's Why", ex:"Everyone's Talking About Grocery Prices — Here's Why", rate:'High' },
+      { id:'H101', type:'Question', template:'Why Is Finding A Home So Hard Right Now?', ex:'Why Is Finding A Home In Ely So Hard Right Now?', rate:'Very High' },
+      { id:'H141', type:'Numbers', template:'The £___ Grocery Gap', ex:'The £75 Grocery Gap Families Now Face Each Week', rate:'Very High' },
+      { id:'H178', type:'Warning', template:'Why Digital Scams Are So Convincing Now', ex:'Why Digital Scams Are So Convincing Now For Older Residents', rate:'High' },
+    ];
+
+    const NN = [
+      { brand:'Smart Money News', ed:'Manchester', niche:'Finance', sub:'Personal Finance', freq:'Weekly', status:'Active' },
+      { brand:'Smart Property News', ed:'Peterborough', niche:'Property', sub:'Renters', freq:'Weekly', status:'Active' },
+      { brand:'Property Investor Insider', ed:'Peterborough', niche:'Property', sub:'Investors', freq:'Weekly', status:'Active' },
+      { brand:'Home Seller Insider', ed:'Peterborough', niche:'Property', sub:'Sellers', freq:'Weekly', status:'Active' },
+      { brand:'Taste Trail', ed:'Peterborough', niche:'Food', sub:'Going Out', freq:'Weekly', status:'Active' },
+      { brand:'Pet Insider', ed:'Cambridgeshire', niche:'Pets', sub:'Advice', freq:'Weekly', status:'Active' },
+    ];
+
+    const REGIONS = ['All','Cambridgeshire','Peterborough','Norfolk','Stamford','National'];
+    const PRIORITIES = ['All','High','Medium','Low'];
+    const CATS = ['All','Cafe','Pub','Restaurant','Market','Heritage','Theatre','Park','Venue','Retail'];
+
+    const GUIDE_STEPS = [
+      { num:1, icon:'📋', title:'Browse the Story Bank', desc:'Search and filter 700+ editorial signals by region, priority, and section. Hit + to add stories to your Issue Builder.' },
+      { num:2, icon:'📍', title:'Check Venues & Activations', desc:'Browse Venues for sponsor-ready locations. Check Activations for monetisable content formats like Taste Trail, Expert Q&A, and seasonal guides.' },
+      { num:3, icon:'🪝', title:'Pick Your Hooks', desc:'Go to Hooks to find headline templates. 360 proven formats — Questions, Numbers, Debates, Warnings — each with real examples.' },
+      { num:4, icon:'📡', title:'Feed From Inoreader', desc:'Paste headlines or snippets from your Inoreader feeds. Assign a lifelane and they join the queue as candidate topics.' },
+      { num:5, icon:'🧩', title:'Build Your Issue', desc:'Use the Issue Builder on the Dashboard. Selected stories appear here with suggested activations. This becomes your editorial plan.' },
+      { num:6, icon:'📰', title:'Manage Niche Editions', desc:'Go to Niche Hub to see all newsletter brands, cross-pollination opportunities, and the expansion pipeline.' },
+    ];
+
+    const PriBadge = ({p}) => {
+      const c = p==='High'?'bg-red-900 text-red-300':p==='Medium'?'bg-yellow-900 text-yellow-300':p==='Very High'?'bg-red-800 text-red-200':'bg-green-900 text-green-300';
+      return <span className={"text-xs px-2 py-0.5 rounded-full font-medium " + c}>{p}</span>;
+    };
+
+    function SpotlightHQ() {
+      const [tab, setTab] = useState('dashboard');
+      const [q, setQ] = useState('');
+      const [regF, setRegF] = useState('All');
+      const [priF, setPriF] = useState('All');
+      const [catF, setCatF] = useState('All');
+      const [ino, setIno] = useState([]);
+      const [inoInput, setInoInput] = useState('');
+      const [inoLane, setInoLane] = useState('Money & Cost of Living');
+      const [picked, setPicked] = useState([]);
+      const [hookQ, setHookQ] = useState('');
+      const [venQ, setVenQ] = useState('');
+      const [actQ, setActQ] = useState('');
+      const [showGuide, setShowGuide] = useState(() => {
+        try { return localStorage.getItem('spotlightHQ_guideDismissed') !== 'true'; } catch(e) { return true; }
+      });
+
+      const dismissGuide = () => {
+        setShowGuide(false);
+        try { localStorage.setItem('spotlightHQ_guideDismissed', 'true'); } catch(e) {}
+      };
+      const reopenGuide = () => {
+        setShowGuide(true);
+        try { localStorage.removeItem('spotlightHQ_guideDismissed'); } catch(e) {}
+      };
+
+      const filteredStories = useMemo(() => {
+        return SS.filter(s => {
+          if (regF !== 'All' && s.reg !== regF) return false;
+          if (priF !== 'All' && s.pri !== priF) return false;
+          if (q) { const low = q.toLowerCase(); return (s.lead+s.hl+s.sec+s.loc+s.sig).toLowerCase().includes(low); }
+          return true;
+        });
+      }, [q, regF, priF]);
+
+      const filteredVenues = useMemo(() => {
+        return VV.filter(v => {
+          if (regF !== 'All' && v.reg !== regF) return false;
+          if (catF !== 'All' && v.cat !== catF) return false;
+          if (venQ) { const low = venQ.toLowerCase(); return (v.name+v.town+v.cat+v.desc).toLowerCase().includes(low); }
+          return true;
+        });
+      }, [venQ, regF, catF]);
+
+      const filteredActs = useMemo(() => {
+        if (!actQ) return AA;
+        const low = actQ.toLowerCase();
+        return AA.filter(a => (a.name+a.cat+a.desc+a.type).toLowerCase().includes(low));
+      }, [actQ]);
+
+      const filteredHooks = useMemo(() => {
+        if (!hookQ) return HH;
+        const low = hookQ.toLowerCase();
+        return HH.filter(h => (h.template+h.ex+h.type).toLowerCase().includes(low));
+      }, [hookQ]);
+
+      const addIno = () => {
+        if (!inoInput.trim()) return;
+        setIno(p => [...p, { id: Date.now(), text: inoInput.trim(), lane: inoLane, added: new Date().toLocaleDateString(), used: false }]);
+        setInoInput('');
+      };
+      const removeIno = (id) => setIno(p => p.filter(i => i.id !== id));
+      const togglePick = (id) => setPicked(p => p.includes(id) ? p.filter(x=>x!==id) : [...p, id]);
+
+      const tabs = [
+        { key:'dashboard', label:'Dashboard', icon:'📊' },
+        { key:'stories', label:'Story Bank', icon:'🗃️' },
+        { key:'venues', label:'Venues', icon:'📍' },
+        { key:'activations', label:'Activations', icon:'⚡' },
+        { key:'hooks', label:'Hooks', icon:'💡' },
+        { key:'inoreader', label:'Inoreader', icon:'📡' },
+        { key:'niche', label:'Niche Hub', icon:'📰' },
+      ];
+
+      return (
+        <div className="min-h-screen bg-gray-950 text-gray-100">
+          {/* Header */}
+          <div className="border-b border-gray-800 bg-gray-900">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-sm">🌐</div>
+                <div>
+                  <h1 className="text-lg font-bold text-white">Spotlight HQ</h1>
+                  <p className="text-xs text-gray-400">Integrated Editorial Intelligence</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-gray-400">
+                <span>🗃️ {SS.length} signals</span>
+                <span>📍 {VV.length} venues</span>
+                <span>⚡ {AA.length} activations</span>
+                <span>📡 {ino.length} feed items</span>
+                {!showGuide && (
+                  <button onClick={reopenGuide} className="text-amber-500 hover:text-amber-400 text-base" title="Show welcome guide">❓</button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Tab Bar */}
+          <div className="border-b border-gray-800 bg-gray-900">
+            <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
+              {tabs.map(t => (
+                <button key={t.key} onClick={() => setTab(t.key)} className={"flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap " + (tab===t.key ? 'border-amber-500 text-amber-400' : 'border-transparent text-gray-400 hover:text-gray-200')}>
+                  <span>{t.icon}</span> {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 py-6">
+
+            {/* Welcome Guide */}
+            {showGuide && (
+              <div className="mb-6 bg-gray-900 border border-gray-700 rounded-xl p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-amber-400">👋 Welcome to Spotlight HQ</h2>
+                    <p className="text-sm text-gray-400 mt-1">Here's how to use this system, step by step:</p>
+                  </div>
+                  <button onClick={dismissGuide} className="text-gray-500 hover:text-gray-300 text-xl leading-none">✕</button>
+                </div>
+                <div className="space-y-4">
+                  {GUIDE_STEPS.map(step => (
+                    <div key={step.num} className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-600 text-white text-sm font-bold flex items-center justify-center">{step.num}</div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-white">{step.icon} {step.title}</h3>
+                        <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{step.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-5 pt-4 border-t border-gray-700">
+                  <button onClick={dismissGuide} className="text-xs text-gray-500 hover:text-gray-300 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2">Got it — dismiss</button>
+                </div>
+              </div>
+            )}
+
+            {/* DASHBOARD */}
+            {tab === 'dashboard' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label:'High Priority Stories', val: SS.filter(s=>s.pri==='High').length, color:'text-red-400', icon:'🔴' },
+                    { label:'Venues Ready', val: VV.length, color:'text-emerald-400', icon:'📍' },
+                    { label:'Activations Available', val: AA.length, color:'text-blue-400', icon:'⚡' },
+                    { label:'Inoreader Queue', val: ino.filter(i=>!i.used).length, color:'text-purple-400', icon:'📡' },
+                  ].map((c,i) => (
+                    <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span>{c.icon}</span>
+                        <span className="text-xs text-gray-400">{c.label}</span>
+                      </div>
+                      <div className={"text-2xl font-bold " + c.color}>{c.val}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                    <h3 className="text-sm font-semibold text-amber-400 mb-4">⭐ Smart Suggestions This Week</h3>
+                    <div className="space-y-3">
+                      {SS.filter(s=>s.pri==='High').slice(0,5).map(s => (
+                        <div key={s.id} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-white truncate">{s.hl}</p>
+                              <p className="text-xs text-gray-400 mt-1">{s.reg} · {s.sec}</p>
+                            </div>
+                            <button onClick={() => togglePick(s.id)} className={"flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs " + (picked.includes(s.id) ? 'bg-amber-600 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600')}>
+                              {picked.includes(s.id) ? '✓' : '+'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                    <h3 className="text-sm font-semibold text-amber-400 mb-4">📄 Issue Builder ({picked.length} selected)</h3>
+                    {picked.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <p className="text-2xl mb-2">📋</p>
+                        <p className="text-sm">Add stories from suggestions or the Story Bank</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {picked.map(id => {
+                          const s = SS.find(x=>x.id===id);
+                          if (!s) return null;
+                          return (
+                            <div key={id} className="flex items-center gap-2 bg-gray-800 rounded-lg p-2 border border-gray-700">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-white truncate">{s.hl}</p>
+                                <p className="text-xs text-gray-500">{s.sec}</p>
+                              </div>
+                              <button onClick={() => togglePick(id)} className="text-gray-500 hover:text-red-400 text-xs">✕</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div className="mt-4 pt-4 border-t border-gray-700">
+                      <h4 className="text-xs font-semibold text-gray-400 mb-2">Suggested Activations</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {AA.slice(0,4).map(a => (
+                          <span key={a.id} className="text-xs bg-gray-800 border border-gray-700 rounded-full px-3 py-1 text-gray-300">{a.name}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-amber-400 mb-4">📈 Coverage by Region</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {['Cambridgeshire','Peterborough','Norfolk','Stamford'].map(r => {
+                      const ct = SS.filter(s=>s.reg===r).length;
+                      const vc = VV.filter(v=>v.reg===r).length;
+                      return (
+                        <div key={r} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+                          <p className="text-sm font-medium text-white">{r}</p>
+                          <p className="text-xs text-gray-400 mt-1">{ct} stories · {vc} venues</p>
+                          <div className="mt-2 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-amber-500 rounded-full" style={{width: Math.min(100, ct*3) + '%'}}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STORIES */}
+            {tab === 'stories' && (
+              <div className="space-y-4">
+                <div className="flex flex-col md:flex-row gap-3">
+                  <div className="flex-1 relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
+                    <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search stories, headlines, sections..." className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500" />
+                  </div>
+                  <select value={regF} onChange={e=>setRegF(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-amber-500">
+                    {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                  <select value={priF} onChange={e=>setPriF(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-amber-500">
+                    {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <p className="text-xs text-gray-500">{filteredStories.length} stories found</p>
+                <div className="space-y-2">
+                  {filteredStories.map(s => (
+                    <div key={s.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-600 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <PriBadge p={s.pri} />
+                            <span className="text-xs text-gray-500">{s.reg}</span>
+                            {s.src && <span className="text-xs text-gray-600">· {s.src}</span>}
+                          </div>
+                          <h4 className="text-sm font-semibold text-white">{s.hl || s.lead}</h4>
+                          <p className="text-xs text-gray-400 mt-1">{s.sig}</p>
+                          <div className="flex items-center gap-3 mt-2">
+                            <span className="text-xs text-gray-500">📍 {s.loc}</span>
+                            <span className="text-xs text-gray-500">🏷️ {s.sec}</span>
+                          </div>
+                        </div>
+                        <button onClick={() => togglePick(s.id)} className={"flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm " + (picked.includes(s.id) ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700')}>
+                          {picked.includes(s.id) ? '✓' : '+'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* VENUES */}
+            {tab === 'venues' && (
+              <div className="space-y-4">
+                <div className="flex flex-col md:flex-row gap-3">
+                  <div className="flex-1 relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
+                    <input value={venQ} onChange={e=>setVenQ(e.target.value)} placeholder="Search venues, towns..." className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500" />
+                  </div>
+                  <select value={regF} onChange={e=>setRegF(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-300 focus:outline-none">
+                    {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                  <select value={catF} onChange={e=>setCatF(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-300 focus:outline-none">
+                    {CATS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <p className="text-xs text-gray-500">{filteredVenues.length} venues shown</p>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {filteredVenues.map(v => (
+                    <div key={v.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-600 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="text-sm font-semibold text-white">{v.name}</h4>
+                          <p className="text-xs text-gray-400 mt-0.5">{v.town}, {v.reg}</p>
+                        </div>
+                        <span className="text-xs bg-gray-800 border border-gray-700 rounded-full px-2 py-0.5 text-gray-400">{v.cat}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">{v.desc}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs text-gray-600">{v.sub}</span>
+                        {v.hi && <span className="text-xs text-emerald-500">⭐ Sponsor Ready</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ACTIVATIONS */}
+            {tab === 'activations' && (
+              <div className="space-y-4">
+                <div className="relative max-w-md">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
+                  <input value={actQ} onChange={e=>setActQ(e.target.value)} placeholder="Search activations..." className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500" />
+                </div>
+                <p className="text-xs text-gray-500">{filteredActs.length} activations shown</p>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filteredActs.map(a => (
+                    <div key={a.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-amber-800 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="text-xs bg-amber-900 text-amber-300 rounded-full px-2 py-0.5">{a.type}</span>
+                        <span className="text-xs text-emerald-400 font-medium">{a.val}</span>
+                      </div>
+                      <h4 className="text-sm font-semibold text-white">{a.name}</h4>
+                      <p className="text-xs text-gray-400 mt-1">{a.desc}</p>
+                      <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
+                        <span>🕐 {a.freq}</span>
+                        <span>🏷️ {a.cat}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* HOOKS */}
+            {tab === 'hooks' && (
+              <div className="space-y-4">
+                <div className="relative max-w-md">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
+                  <input value={hookQ} onChange={e=>setHookQ(e.target.value)} placeholder="Search hook templates..." className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500" />
+                </div>
+                <p className="text-xs text-gray-500">{filteredHooks.length} hooks shown</p>
+                <div className="space-y-3">
+                  {filteredHooks.map(h => (
+                    <div key={h.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-600 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs bg-purple-900 text-purple-300 rounded-full px-2 py-0.5">{h.type}</span>
+                            <PriBadge p={h.rate} />
+                            <span className="text-xs text-gray-600">{h.id}</span>
+                          </div>
+                          <p className="text-sm font-mono text-amber-300">{h.template}</p>
+                          <p className="text-xs text-gray-400 mt-1.5 italic">"{h.ex}"</p>
+                        </div>
+                        <span className="text-amber-600">💡</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* INOREADER */}
+            {tab === 'inoreader' && (
+              <div className="space-y-6">
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-amber-400 mb-4">📡 Add From Inoreader</h3>
+                  <p className="text-xs text-gray-400 mb-4">Paste article titles, URLs or snippets from your Inoreader feed. Assign a lifelane and they'll appear as candidate topics.</p>
+                  <div className="space-y-3">
+                    <textarea value={inoInput} onChange={e=>setInoInput(e.target.value)} placeholder="Paste headline, URL or snippet here..." rows={3} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 resize-none" />
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <select value={inoLane} onChange={e=>setInoLane(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none">
+                        {['Money & Cost of Living','Homes & Property','Health & Wellbeing','Family & Education','Food & Hospitality','Transport','Business','Community','Pets','Environment','Retail','Local Government'].map(l => (
+                          <option key={l} value={l}>{l}</option>
+                        ))}
+                      </select>
+                      <button onClick={addIno} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-lg text-sm font-medium">+ Add to Queue</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-gray-300 mb-4">📄 Feed Queue ({ino.length} items)</h3>
+                  {ino.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <p className="text-2xl mb-2">📡</p>
+                      <p className="text-sm">No items in queue yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {ino.map(item => (
+                        <div key={item.id} className="flex items-start gap-3 bg-gray-800 rounded-lg p-3 border border-gray-700">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white">{item.text}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs bg-blue-900 text-blue-300 rounded-full px-2 py-0.5">{item.lane}</span>
+                              <span className="text-xs text-gray-500">Added {item.added}</span>
+                            </div>
+                          </div>
+                          <button onClick={() => removeIno(item.id)} className="w-7 h-7 rounded-lg bg-gray-700 text-gray-400 hover:bg-red-700 hover:text-white flex items-center justify-center text-xs">✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-gray-300 mb-3">🌐 Suggested Inoreader Feeds</h3>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {[
+                      { name:'BBC Business', desc:'Daily business roundups', tags:['Money','Business'] },
+                      { name:'Google News – Peterborough', desc:'Peterborough local news alerts', tags:['Community'] },
+                      { name:'Rightmove Blog', desc:'Property market commentary', tags:['Property'] },
+                      { name:'This is Money', desc:'Personal finance updates', tags:['Money'] },
+                      { name:'Inoreader – EV News', desc:'EV and charging infrastructure', tags:['Transport'] },
+                      { name:'Cambridgeshire Live', desc:'County news and community', tags:['Community'] },
+                    ].map((f,i) => (
+                      <div key={i} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+                        <p className="text-sm font-medium text-white">{f.name}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{f.desc}</p>
+                        <div className="flex gap-1 mt-2">
+                          {f.tags.map(t => <span key={t} className="text-xs bg-gray-700 text-gray-400 rounded px-1.5 py-0.5">{t}</span>)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* NICHE HUB */}
+            {tab === 'niche' && (
+              <div className="space-y-6">
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-amber-400 mb-4">📰 Niche Newsletter Editions</h3>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {NN.map((n,i) => (
+                      <div key={i} className="bg-gray-800 border border-gray-700 rounded-xl p-4 hover:border-amber-700 transition-colors">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="text-sm font-bold text-white">{n.brand}</h4>
+                            <p className="text-xs text-gray-400">{n.ed} Edition</p>
+                          </div>
+                          <span className="text-xs bg-emerald-900 text-emerald-300 rounded-full px-2 py-0.5">{n.status}</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-xs"><span className="text-gray-500">Niche</span><span className="text-gray-300">{n.niche}</span></div>
+                          <div className="flex justify-between text-xs"><span className="text-gray-500">Sub-niche</span><span className="text-gray-300">{n.sub}</span></div>
+                          <div className="flex justify-between text-xs"><span className="text-gray-500">Frequency</span><span className="text-gray-300">{n.freq}</span></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-gray-300 mb-4">🔗 Cross-Pollination Opportunities</h3>
+                  <div className="space-y-3">
+                    {[
+                      { from:'Pet Insider', to:'Cambridgeshire Spotlight', topic:'Rescue Pet of the Week feeds both newsletters', type:'Content Share' },
+                      { from:'Taste Trail', to:'Peterborough Spotlight', topic:'Restaurant reviews in both with different angles', type:'Content Share' },
+                      { from:'Home Seller Insider', to:'Smart Property News', topic:'Seller tips repurposed as buyer warnings', type:'Reframe' },
+                      { from:'Smart Money News', to:'All Spotlights', topic:'ISA and savings stories localised per region', type:'Localise' },
+                    ].map((x,i) => (
+                      <div key={i} className="flex items-center gap-3 bg-gray-800 rounded-lg p-3 border border-gray-700 flex-wrap">
+                        <span className="text-xs bg-blue-900 text-blue-300 rounded px-2 py-1">{x.from}</span>
+                        <span className="text-gray-600">→</span>
+                        <span className="text-xs bg-purple-900 text-purple-300 rounded px-2 py-1">{x.to}</span>
+                        <span className="text-xs text-gray-400 flex-1 min-w-0">{x.topic}</span>
+                        <span className="text-xs text-gray-600">{x.type}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-gray-300 mb-4">🚀 Expansion Pipeline</h3>
+                  <div className="grid md:grid-cols-3 gap-3">
+                    {[
+                      { brand:'Smart Money News', region:'Peterborough', status:'Planned', color:'text-yellow-400' },
+                      { brand:'Taste Trail', region:'Cambridge', status:'Planned', color:'text-yellow-400' },
+                      { brand:'Pet Insider', region:'Peterborough', status:'Planned', color:'text-yellow-400' },
+                      { brand:'Home Seller Insider', region:'Cambridge', status:'Research', color:'text-blue-400' },
+                      { brand:'Smart Property News', region:'Norfolk', status:'Research', color:'text-blue-400' },
+                      { brand:'Renter Insider', region:'Cambridgeshire', status:'Concept', color:'text-gray-400' },
+                    ].map((e,i) => (
+                      <div key={i} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+                        <p className="text-sm font-medium text-white">{e.brand}</p>
+                        <p className="text-xs text-gray-400">{e.region} Edition</p>
+                        <span className={"text-xs font-medium " + e.color}>{e.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<SpotlightHQ />);
+  </script>
+</body>
+</html>

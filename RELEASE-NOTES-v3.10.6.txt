@@ -1,0 +1,17 @@
+ICS v3.10.6 — CORE SPONSOR LANE COVERAGE + FEATURE ROTATION
+
+Built from v3.10.5.
+
+Changes
+- Every Spotlight issue is now checked for visibility across 13 core sponsor opportunity lanes.
+- A sponsor lane may be satisfied by a Master Article, short component, or implied editorial opportunity; it does not need to become an advert.
+- Added Property Desk, Pet Quick Check and Health & Wellness Quick Check supporting components.
+- Property Desk can keep mortgage, estate agency/lettings, conveyancing and surveying lanes visible without forcing four separate Master Articles.
+- Spotlight support recipe now deliberately includes property, pet, health, motoring, home, food, events, retail and community routes.
+- Added lane caps, including a Food & Hospitality concentration warning above 4 primary sections and Reader Voice above 5.
+- Planning audit replaces misleading “commercial coverage 9/9 Masters” with a Core Sponsor Opportunity Matrix.
+- Matrix reports MASTER, IMPLIED / SHORT or NONE treatment for each core category.
+- Commercial rule shown in the audit: every core sponsor lane visible each issue; substantial feature approximately 1–2 times per month per category.
+- Unsold categories remain editorial-first implied opportunities; paid/featured categories can later receive stronger cadence.
+
+This is a planning/coverage guard. Historical feature-rotation dates still need to be wired to the persistent archive/data layer for automatic overdue-by-date tracking.

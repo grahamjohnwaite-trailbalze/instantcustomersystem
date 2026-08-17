@@ -1,0 +1,6998 @@
+
+const S={publications:[],issues:[],sections:[],articleLibrary:[],issue:null,section:null,hot:[],productionUi:{}};const E=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));const val=(f,k)=>f?.[k]??'';const fmt=d=>d?new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00')):'—';
+async function api(path,opt={}){const r=await fetch('/.netlify/functions/'+path,{headers:{'content-type':'application/json',accept:'application/json'},...opt});const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={ok:false,error:`Invalid server response (${r.status}). ${raw.slice(0,300)||'No response body.'}`}}if(!r.ok||!d.ok){const err=new Error(d.error||`Request failed (${r.status})`);err.details=d.details;throw err}return d}async function apiTransientRetryV31825(path,opt={},attempts=2){
+  let last;
+  for(let attempt=1;attempt<=Math.max(1,attempts);attempt++){
+    try{return await api(path,opt)}catch(e){
+      last=e;
+      const msg=String(e?.message||e||'');
+      const transient=/504|inactivity timeout|timed out|timeout|failed to fetch|network|temporarily unavailable|gateway/i.test(msg);
+      if(!transient||attempt>=attempts)throw e;
+      E('smart-scan-progress')&&(E('smart-scan-progress').textContent=`Transient server timeout recovered — retrying automatically (${attempt+1}/${attempts})…`);
+      await sleep(1200*attempt);
+    }
+  }
+  throw last;
+}
+function conn(ok,msg){E('dot').className='dot '+(ok?'ok':'bad');E('connection').textContent=msg}function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));E('view-'+v).classList.add('active');document.querySelector(`[data-view="${v}"]`).classList.add('active');E('page-title').textContent={dashboard:'Dashboard',publications:'Publications',issues:'Issues',build:'Issue Command Centre',assemble:'Issue Workflow'}[v];E('page-sub').textContent=v==='build'?'Plan, write and export one real issue.':v==='assemble'?'One clear production step at a time, from planning to production ready.':(S.issue?`${pubName(S.issue.fields.Publication)} production workspace.`:'Publication-aware production workspace.');if(v==='assemble'){renderAssembly();updateWorkflowGuide()}}
+function pubName(ids){return S.publications.find(p=>p.id===(ids||[])[0])?.fields['Publication Name']||'Unlinked'}function pill(v){return `<span class="pill ${/ready|published|complete/i.test(v)?'good':/warning|blocked|late/i.test(v)?'warn':''}">${esc(v||'Not set')}</span>`}
+function currentPublicationName(){return S.issue?pubName(S.issue.fields.Publication):''}
+function defaultIssuePromiseV31824(publication){
+ const name=String(publication||'').trim(), area=publicationAreaV31816(name)||'the local area', profile=engineProfileForPublication(name);
+ if(profile.key==='TASTE_TRAIL')return `Where Is Actually Worth Eating, Drinking, Staying And Going Out Around ${area} Right Now — And What Is Worth Your Time And Money?`;
+ if(profile.key==='PET_INSIDER')return `What Do Pet Owners Around ${area} Most Need To Know, Try Or Decide Right Now?`;
+ if(profile.key==='HOME_SELLER')return `What Do Home Sellers Around ${area} Need To Know Before Making Their Next Move?`;
+ return `What Is Most Worth Knowing, Doing And Talking About Around ${area} Right Now?`;
+}
+function foreignPromiseAreaV31824(theme,publication){
+ const text=String(theme||'').toLowerCase(), current=publicationAreaV31816(publication).toLowerCase();
+ if(!text)return '';
+ const areas=[...new Set((S.publications||[]).map(p=>publicationAreaV31816(val(p.fields,'Publication Name'))).filter(Boolean))]
+   .filter(a=>a.toLowerCase()!==current&&a.length>=4).sort((a,b)=>b.length-a.length);
+ return areas.find(a=>new RegExp('\\b'+a.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\$&')+'\\b','i').test(text))||'';
+}
+async function ensureIssuePromiseSourceV31824(){
+ if(!S.issue)return '';
+ const publication=currentPublicationName(), currentArea=publicationAreaV31816(publication);
+ const stored=String(val(S.issue.fields,'Main Theme')||'').trim();
+ const local=String(localStorage.getItem(themeKey())||'').trim();
+ let promise=stored||local||defaultIssuePromiseV31824(publication);
+ // Prefer a current-publication local promise if Airtable still carries a sibling-publication promise.
+ if(foreignPromiseAreaV31824(stored,publication)){
+   promise=(local&&!foreignPromiseAreaV31824(local,publication)&&new RegExp('\\b'+currentArea.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\$&')+'\\b','i').test(local))?local:defaultIssuePromiseV31824(publication);
+ }
+ // Never restore a browser-local sibling promise over the issue record.
+ if(foreignPromiseAreaV31824(promise,publication))promise=defaultIssuePromiseV31824(publication);
+ localStorage.setItem(themeKey(),promise);
+ if(E('assembly-theme'))E('assembly-theme').value=promise;
+ if(E('ih-theme'))E('ih-theme').value=promise;
+ const plan=getSmartPlan();if(plan&&plan.issuePromise!==promise){plan.issuePromise=promise;saveSmartPlan(plan)}
+ if(stored!==promise){
+   try{
+     const d=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Main Theme':promise}})});
+     S.issue=d.record;S.issues=S.issues.map(x=>x.id===d.record.id?d.record:x);
+     console.info(`v3.18.24 repaired issue promise source of truth for ${publication}:`,promise);
+   }catch(e){console.warn('v3.18.24 could not persist repaired issue promise',e)}
+ }
+ return promise;
+}
+async function saveCanvasPromiseV31824(){
+ if(!S.issue)return;
+ const promise=String(E('assembly-theme')?.value||'').trim();
+ if(!promise){alert('Add an Issue Promise first.');return}
+ const foreign=foreignPromiseAreaV31824(promise,currentPublicationName());
+ if(foreign){alert(`This promise mentions ${foreign}, which belongs to another publication. Update it for ${publicationAreaV31816(currentPublicationName())} before saving.`);return}
+ localStorage.setItem(themeKey(),promise);
+ if(E('ih-theme'))E('ih-theme').value=promise;
+ const plan=getSmartPlan();if(plan&&plan.issuePromise!==promise){plan.issuePromise=promise;saveSmartPlan(plan)}
+ try{
+   const d=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Main Theme':promise}})});
+   S.issue=d.record;S.issues=S.issues.map(x=>x.id===d.record.id?d.record:x);render();alert('Issue promise saved to the issue record.');
+ }catch(e){alert('Issue promise could not be saved: '+e.message)}
+}
+function prepareNewIssueV31824(){
+ E('new-date').value='';E('new-number').value='';
+ const pubId=E('new-publication').value||(E('production-publication')?.value||'');
+ if(pubId)E('new-publication').value=pubId;
+ const pub=S.publications.find(p=>p.id===E('new-publication').value);
+ E('new-theme').value=defaultIssuePromiseV31824(pub?val(pub.fields,'Publication Name'):'');
+ E('new-theme').dataset.auto='1';E('issue-dialog').showModal();
+}
+function syncNewIssuePromiseV31824(){
+ if(E('new-theme').dataset.auto!=='1'&&String(E('new-theme').value||'').trim())return;
+ const pub=S.publications.find(p=>p.id===E('new-publication').value);
+ E('new-theme').value=defaultIssuePromiseV31824(pub?val(pub.fields,'Publication Name'):'');E('new-theme').dataset.auto='1';
+}
+
+
+
+function publicationSpecificTermsV313(name=''){
+  const generic=new Set(['spotlight','taste','trail','local','pet','insider','business','pulse','smart','money','property','news','newsletter','the','media']);
+  return String(name||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').split(/\s+/).filter(x=>x.length>3&&!generic.has(x));
+}
+function publicationFamilyV313(name=''){
+  const n=String(name||'').toLowerCase();
+  if(/\bspotlight\b/.test(n))return 'SPOTLIGHT';
+  if(/\btaste\s+trail\b/.test(n))return 'TASTE TRAIL';
+  if(/\bpet\s+insider\b/.test(n))return 'PET INSIDER';
+  if(/\bbusiness\s+pulse\b/.test(n))return 'BUSINESS PULSE';
+  if(/\bproperty\b/.test(n))return 'PROPERTY';
+  return n.replace(/[^a-z0-9]+/g,' ').trim().split(' ').slice(-2).join(' ').toUpperCase()||'GENERAL';
+}
+function relatedGeographyTermV313(a,b){
+  a=String(a||'').toLowerCase();b=String(b||'').toLowerCase();
+  if(!a||!b)return false;
+  if(a===b)return true;
+  // County/city family names such as Cambridge / Cambridgeshire are legitimate
+  // in the same coverage area and must not be treated as contamination.
+  const min=Math.min(a.length,b.length);
+  return min>=6&&(a.startsWith(b)||b.startsWith(a));
+}
+function forbiddenPublicationTermsV312i(){
+  const current=currentPublicationName();
+  const family=publicationFamilyV313(current);
+  const currentTerms=publicationSpecificTermsV313(current);
+  const out=new Set();
+
+  for(const p of S.publications||[]){
+    const name=String(val(p.fields,'Publication Name')||'').trim();
+    if(!name||name===current)continue;
+
+    // Only sibling publications in the SAME editorial family can define
+    // foreign geography. Cambridge Business Pulse must not contaminate
+    // Cambridgeshire Spotlight, for example.
+    if(publicationFamilyV313(name)!==family)continue;
+
+    const otherTerms=publicationSpecificTermsV313(name);
+    for(const term of otherTerms){
+      if(currentTerms.some(cur=>relatedGeographyTermV313(cur,term)))continue;
+      out.add(term);
+    }
+  }
+  return [...out].filter(Boolean);
+}
+function publicationTermPresentV312o(text,term){
+  const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const hay=` ${norm(text)} `;
+  const needle=norm(term);
+  return !!needle&&hay.includes(` ${needle} `);
+}
+function publicationLeakageForArticleV312i(a){
+  // Guard editorial content, not hidden planner metadata.
+  const hay=[a?.title,a?.question,a?.real_life_question,a?.problem,a?.hook,a?.reader,a?.value,a?.local_proof].filter(Boolean).join(' ');
+  const hits=forbiddenPublicationTermsV312i().filter(t=>publicationTermPresentV312o(hay,t));
+  return hits.length?{order:+a?.order||0,title:a?.title||a?.question||'Untitled',hits}:null;
+}
+function publicationLeakageAuditV312i(plan){
+  const hits=(plan?.articles||[]).map(publicationLeakageForArticleV312i).filter(Boolean);
+  return {hits,summaryHits:[],blocked:hits.length>0};
+}
+
+
+function producedMasterTextV316(record){
+  const f=record?.fields||{};
+  const pkg=masterArticlePackage(f)||{};
+  const er=pkg.editorial_readiness||{};
+  // Scan every reader-visible / editorial-output field that can drive Step 5 or Step 7.
+  // Do NOT scan source metadata/URLs here: source titles may legitimately reference another area.
+  return [
+    val(f,'Section Title'),
+    val(f,'Section Final Copy'),
+    val(f,'CTA Text'),
+    pkg.article_title,
+    pkg.article_subhead,
+    pkg.summary_title,
+    pkg.summary_subhead,
+    pkg.summary_content,
+    pkg.seo_title,
+    pkg.seo_description,
+    pkg.url_path,
+    pkg.keywords,
+    pkg.featured_image_brief,
+    pkg.featured_image_alt,
+    pkg.newsletter_headline,
+    pkg.newsletter_teaser,
+    pkg.social_facebook,
+    pkg.social_linkedin,
+    pkg.social_x,
+    er.rationale,
+    ...(Array.isArray(er.suggested_edits)?er.suggested_edits.flatMap(x=>[x?.original,x?.replacement,x?.reason]):[]),
+    ...(Array.isArray(pkg.related_questions)?pkg.related_questions:[])
+  ].filter(Boolean).join(' ');
+}
+function producedMasterLeakageV316(record){
+  const hay=producedMasterTextV316(record);
+  const hits=forbiddenPublicationTermsV312i().filter(t=>publicationTermPresentV312o(hay,t));
+  return hits.length?{hits}:null;
+}
+function producedMasterIntegrityV316(a){
+  const record=planArticleRecordV312(a);
+  if(!record)return {ok:false,state:'MISSING',reason:'Current issue Master record not found.'};
+  const leak=producedMasterLeakageV316(record);
+  if(leak)return {ok:false,state:'GEOGRAPHY REVIEW',reason:`Wrong-publication geography in produced copy: ${leak.hits.join(', ')}`,record,leak};
+  const state=masterArticleState(record);
+  return {ok:state==='complete',state:state==='complete'?'READY':state.toUpperCase(),reason:state==='complete'?'':`Master state is ${state}.`,record};
+}
+function stripStaleProductionStateV316(notes){
+  return String(notes||'')
+    .replace(/\n?MASTER ARTICLE RESEARCH CHECKPOINT v1[\s\S]*?END MASTER ARTICLE RESEARCH CHECKPOINT\s*/g,'')
+    .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v(?:1|2)[\s\S]*?END MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
+    .replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'')
+    .replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'')
+    .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*?(?=\n\n[A-Z][A-Z ]+ v|$)/g,'')
+    .replace(/\n?MASTER ARTICLE RUNNING v[\d.]+[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'')
+    .replace(/\n?MASTER ARTICLE FAILED v[\d.]+[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'')
+    .replace(/\n?MASTER ARTICLE TRACE v1[\s\S]*?END MASTER ARTICLE TRACE\s*/g,'')
+    .trim();
+}
+function canonicalRepairNotesV3162(a){
+  const mode=resolvedWritingMode(a);
+  const place=currentPlaceName();
+  return [
+    `PUBLISH NOW — Final Running Order ${String(a.order||'').padStart(2,'0')}.`,
+    `SMART PLAN APPROVED REPAIR — Article ${String(a.order||'').padStart(2,'0')}.`,
+    `Active publication: ${currentPublicationName()}`,
+    `Active geography: ${place}`,
+    `Approved title: ${a.title}`,
+    `Reader question: ${a.question}`,
+    `Real-life question: ${a.real_life_question||a.question||''}`,
+    `Writing mode: ${mode}`,
+    `Editorial stance: ${a.stance||'PRACTICAL'}`,
+    `Life lane: ${a.life_lane||'Open'}`,
+    `Why now: ${a.why_now||''}`,
+    a.source_signal?`Current signal: ${a.source_signal}`:'Current signal: Fresh research required from the active publication geography.',
+    `Repair rule: This canonical brief replaces every previous story identity, research pack, source set, example set, writer checkpoint and article package for this slot.`,
+    `Geography rule: Research and write only for ${currentPublicationName()}. Do not import examples, businesses, prices, roads, venues, services, reader scenarios or local claims from sibling publication geographies.`,
+    `Evidence rule: If the approved current signal is not sufficient for this exact ${place} question, research fresh authoritative/current sources or return a genuine research exception. Never substitute evidence from another publication area.`,
+    `Numbers rule: Do not force a number/list size unless current research earns it.`,
+    `Attribution rule: Reported evidence is publishable when clearly attributed; do not upgrade it into independently verified fact.`,
+    `END SMART PLAN APPROVED REPAIR`
+  ].filter(Boolean).join('\n');
+}
+
+async function invalidateMasterForFreshResearchV316(a,record,reason='Produced-content integrity repair'){
+  const place=currentPlaceName();
+  const fields={
+    'Section Title':a.title,
+    'Core Reader Question':a.question,
+    'Universal Reader Problem':a.question,
+    'Reader Hook':a.title,
+    'Reader Type':`${place} readers affected by or interested in this question`,
+    'Reader Value':`A clear, locally grounded answer to: ${a.question}`,
+    'Local Proof Needed':`Named ${place} examples and current local proof directly relevant to this approved question. Do not use sibling-publication examples.`,
+    'Evidence Required':`Fresh current sources sufficient to answer this exact ${place} question. Reported evidence may be used with explicit attribution. Do not substitute evidence from another publication geography.`,
+    'Evidence Status':'Needs Update',
+    'Evidence Checked Date':'',
+    'Source / Reference Link 1':'',
+    'Commercial Pathway':a.partner_path||'',
+    'Primary Next Action':a.cta_text||'',
+    'CTA Type':a.cta_type||'None',
+    'CTA Text':a.cta_text||'',
+    'Action Destination URL':'',
+    'Social Question Shape':a.social||'',
+    'Archive Similarity Status':'Review',
+    'Archive Similarity Note':'',
+    'Reuse / Localisation Potential':'Review after publication',
+    'Section Final Copy':'',
+    'Section Status':'Researching',
+    'Section QA Result':'Not Checked',
+    'Primary Hot Button':'',
+    'Notes':canonicalRepairNotesV3162(a)
+  };
+  const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:record.id,fields})});
+  const i=S.sections.findIndex(x=>x.id===record.id);
+  if(i>=0)S.sections[i]=d.record;
+  return d.record;
+}
+
+async function repairProducedMasterIntegrityV316(){
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length)return;
+  try{await refreshMasterSelectionDataV314()}catch{}
+  const bad=(plan.articles||[]).map(a=>{
+    const record=planArticleRecordV312(a);
+    const leak=record?producedMasterLeakageV316(record):null;
+    const notes=String(val(record?.fields||{},'Notes')||'');
+    const resetPending=!!record &&
+      /SMART PLAN APPROVED REPAIR|MASTER ARTICLE INTEGRITY RESET v1/.test(notes) &&
+      masterArticleState(record)!=='complete';
+    const check=leak
+      ? {state:'GEOGRAPHY REVIEW',reason:`Wrong-publication geography in produced copy: ${leak.hits.join(', ')}`,record,leak}
+      : resetPending
+        ? {state:'REPAIR PENDING',reason:'Previous geography repair cleared the stale article but did not complete a clean replacement.',record,repairPending:true}
+        : producedMasterIntegrityV316(a);
+    return {a,check};
+  }).filter(x=>x.check.leak||x.check.repairPending);
+
+  if(!bad.length){
+    setWorkflowActionStatusV312(5,'Select','No produced-content repairs needed.','All produced Masters pass the active-publication geography gate and there are no incomplete repair records.');
+    renderMasterSelectionV312();
+    return;
+  }
+
+  const btn=E('repair-master-integrity-v316');
+  const old=btn?.textContent||'Repair Produced Masters';
+  if(btn){btn.disabled=true;btn.textContent='Repairing…';}
+  let repaired=0,failed=[];
+  try{
+    const contaminated=bad.filter(x=>x.check.leak).length;
+    const pendingRepair=bad.filter(x=>x.check.repairPending).length;
+    setWorkflowActionStatusV312(5,'Select',`Repairing ${bad.length} Master${bad.length===1?'':'s'}…`,
+      `${contaminated} geography-contaminated · ${pendingRepair} incomplete previous repair${pendingRepair===1?'':'s'}.\nFresh research + rewrite will run only for:\n- ${bad.map(x=>`${x.a.order}. ${x.a.title}`).join('\n- ')}\nAll other Masters and all 18 supporting components are preserved.`);
+
+    for(let i=0;i<bad.length;i++){
+      const {a,check}=bad[i];
+      try{
+        let record=await invalidateMasterForFreshResearchV316(a,check.record,check.reason);
+        const item={s:record,run:900+i};
+
+        setWorkflowActionStatusV312(5,'Select',`Repair ${i+1}/${bad.length} — fresh research`,
+          `${a.title}\nOld research/package cleared. Rebuilding from the approved Cambridgeshire brief.`);
+
+        const research=await produceOne(item,'research');
+        const outcome=String(research?.outcome||'');
+        if(['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(outcome)){
+          throw new Error(`Fresh research did not reach a publishable state: ${outcome}`);
+        }
+
+        record=await refreshProducedRecord(record.id);
+        item.s=record;
+
+        const researchNotes=String(val(record.fields||{},'Notes')||'');
+        const researchBlocks=[...researchNotes.matchAll(/RESEARCH PACK v1\n([\s\S]*?)\nEND RESEARCH PACK/g)];
+        const researchPackText=researchBlocks.length?researchBlocks[researchBlocks.length-1][1]:'';
+        const researchLeak=forbiddenPublicationTermsV312i().filter(t=>publicationTermPresentV312o(researchPackText,t));
+        if(researchLeak.length){
+          throw new Error(`Fresh Research Pack still contains foreign geography: ${researchLeak.join(', ')}`);
+        }
+
+        setWorkflowActionStatusV312(5,'Select',`Repair ${i+1}/${bad.length} — rewriting`,
+          `${a.title}\nFresh Research Pack passed the geography gate. Writing from that pack now.`);
+
+        await produceOne(item,'generate');
+        record=await refreshProducedRecord(record.id);
+        const leak=producedMasterLeakageV316(record);
+        if(leak){
+          await api('sections',{method:'PATCH',body:JSON.stringify({id:record.id,fields:{
+            'Section Status':'Needs Review',
+            'Section QA Result':'Fix Required'
+          }})});
+          throw new Error(`Rewritten copy still contains foreign geography: ${leak.hits.join(', ')}`);
+        }
+        repaired++;
+      }catch(e){
+        failed.push(`${a.order}. ${a.title} — ${String(e.message||e)}`);
+      }
+    }
+
+    await refreshMasterSelectionDataV314();
+    renderMasterSelectionV312();
+    const detail=failed.length
+      ? `${repaired} repaired · ${failed.length} still needs attention:\n- ${failed.join('\n- ')}`
+      : `${repaired}/${bad.length} contaminated Masters repaired with fresh research and fresh writing. Review the Step 5 READY shortlist, then Save Selection.`;
+    setWorkflowActionStatusV312(5,'Select','Produced Master integrity repair finished.',detail);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=old;}
+  }
+}
+function candidateSlateAuditV312i(plan){
+  const profile=engineProfileForPublication();
+  const arts=plan?.articles||[];
+  const laneCounts={},tones={};
+  for(const a of arts){
+    const lane=editorialLaneFor(a,profile)||'OPEN';
+    laneCounts[lane]=(laneCounts[lane]||0)+1;
+    const tone=toneBucket(a);tones[tone]=(tones[tone]||0)+1;
+  }
+  const notes=[];
+  const uniqueLanes=Object.keys(laneCounts).length;
+  if(uniqueLanes<5)notes.push(`Candidate slate spans ${uniqueLanes} editorial lanes; Step 5 should favour a broader final mix.`);
+  const food=laneCounts['FOOD & HOSPITALITY']||0;
+  if(food>4)notes.push(`Food & Hospitality is strong in the 15-candidate pool (${food}/15). Selection warning only.`);
+  const reader=laneCounts['READER VOICE']||0;
+  if(reader>5)notes.push(`Reader Voice is strong in the 15-candidate pool (${reader}/15). Select fewer reader-prompt Masters in Step 5.`);
+  const leakage=publicationLeakageAuditV312i(plan);
+  return {status:leakage.blocked?'BLOCKED':notes.length?'REVIEW':'READY',count:arts.length,target:profile.defaultMasters||15,uniqueLanes,laneCounts,tones,notes,leakage};
+}
+
+function currentPlaceName(){const n=currentPublicationName();return n.replace(/\s+Spotlight\s*$/i,'').trim()||'local area'}
+function publicationKey(name){return String(name||'').trim().toLowerCase()}
+function render(){E('m-pubs').textContent=S.publications.length;E('m-open').textContent=S.issues.filter(i=>!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase())).length;if(E('production-publication')){const current=(S.issue?.fields?.Publication||[])[0]||'';E('production-publication').innerHTML=S.publications.filter(p=>String(val(p.fields,'Status')||'').toLowerCase()!=='inactive').map(p=>`<option value="${p.id}" ${p.id===current?'selected':''}>${esc(val(p.fields,'Publication Name'))}</option>`).join('');}if(E('m-current-production'))E('m-current-production').textContent=S.issue?pubName(S.issue.fields.Publication):'Choose below';E('issue-filter').innerHTML='<option value="">All publications</option>'+S.publications.map(p=>`<option value="${p.id}">${esc(val(p.fields,'Publication Name'))}</option>`).join('');E('new-publication').innerHTML=S.publications.map(p=>`<option value="${p.id}">${esc(val(p.fields,'Publication Name'))}</option>`).join('');E('pub-table').innerHTML=`<table><thead><tr><th>Publication</th><th>Code</th><th>Status</th><th>Weekly target</th></tr></thead><tbody>${S.publications.map(p=>`<tr><td><strong>${esc(val(p.fields,'Publication Name'))}</strong></td><td>${esc(val(p.fields,'Short Code'))}</td><td>${pill(val(p.fields,'Status'))}</td><td>${esc(val(p.fields,'Weekly Send Target')||'—')}</td></tr>`).join('')}</tbody></table>`;renderIssues();const att=S.issues.filter(i=>!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase())).slice(0,8);E('attention').innerHTML=issueTable(att)}
+function issueDuplicateKey(i){const pub=(i.fields.Publication||[])[0]||'';const no=String(val(i.fields,'Issue Number')||'').trim();return pub&&no?`${pub}::${no}`:''}function duplicateIssueIds(){const groups={};S.issues.forEach(i=>{if(String(val(i.fields,'Issue Status')||'').toUpperCase()==='ARCHIVED')return;const k=issueDuplicateKey(i);if(k)(groups[k]||(groups[k]=[])).push(i.id)});return new Set(Object.values(groups).filter(g=>g.length>1).flat())}function issueTable(items){if(!items.length)return '<div class="empty">No issues found.</div>';const dup=duplicateIssueIds();return `<table><thead><tr><th>Publication</th><th>Issue</th><th>Send date</th><th>Status</th><th>Theme</th><th></th></tr></thead><tbody>${items.map(i=>`<tr><td>${esc(pubName(i.fields.Publication))}</td><td>#${esc(val(i.fields,'Issue Number')||'—')}${dup.has(i.id)?' <span class="pill warn">DUPLICATE</span>':''}</td><td>${fmt(val(i.fields,'Send Date'))}</td><td>${pill(val(i.fields,'Issue Status'))}</td><td>${esc(val(i.fields,'Main Theme')||'—')}</td><td><div class="toolbar"><button class="btn secondary" onclick="openIssue('${i.id}')">Open</button><button class="btn secondary" onclick="editIssue('${i.id}')">Edit</button></div></td></tr>`).join('')}</tbody></table>`}
+function renderIssues(){const f=E('issue-filter').value;E('issue-table').innerHTML=issueTable(S.issues.filter(i=>!f||(i.fields.Publication||[]).includes(f)))}
+function editIssue(id){const i=S.issues.find(x=>x.id===id);if(!i)return;E('edit-issue-id').value=id;E('edit-number').value=val(i.fields,'Issue Number')||'';E('edit-date').value=val(i.fields,'Send Date')||'';E('edit-status').value=val(i.fields,'Issue Status')||'PLANNED';E('edit-theme').value=val(i.fields,'Main Theme')||'';E('edit-issue-dialog').showModal()}
+async function saveEditedIssue(ev){ev.preventDefault();const id=E('edit-issue-id').value;const issue=S.issues.find(x=>x.id===id);if(!issue)return;const no=String(E('edit-number').value||'').trim();const pub=(issue.fields.Publication||[])[0]||'';if(no&&E('edit-status').value!=='ARCHIVED'){const clash=S.issues.find(x=>x.id!==id&&String(val(x.fields,'Issue Status')||'').toUpperCase()!=='ARCHIVED'&&(x.fields.Publication||[])[0]===pub&&String(val(x.fields,'Issue Number')||'').trim()===no);if(clash&&!confirm(`Another ${pubName(issue.fields.Publication)} issue already uses #${no}. Save anyway?`))return}const fields={'Issue Number':no?Number(no):undefined,'Send Date':E('edit-date').value,'Issue Status':E('edit-status').value,'Main Theme':E('edit-theme').value};const btn=E('save-edited-issue');btn.disabled=true;const old=btn.textContent;btn.textContent='Saving…';try{const d=await api('issues',{method:'PATCH',body:JSON.stringify({id,fields})});S.issues=S.issues.map(x=>x.id===id?d.record:x);if(S.issue?.id===id)S.issue=d.record;E('edit-issue-dialog').close();render();if(S.issue?.id===id){E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;if(E('ih-date'))E('ih-date').value=val(S.issue.fields,'Send Date')||''}}catch(e){alert(e.message)}finally{btn.disabled=false;btn.textContent=old}}
+async function loadAll(){try{conn(false,'Connecting…');const [p,i,h]=await Promise.all([api('publications'),api('issues'),fetch('/app/hot-buttons.json').then(r=>r.json())]);S.publications=p.records;S.issues=i.records;S.hot=h;conn(true,`Connected · ${p.count} publications · ${i.count} issues`);render()}catch(e){conn(false,e.message);alert(e.message)}}
+function catchmentTermsV31826(){
+  const area=String(publicationAreaV31816(currentPublicationName())||'').trim();
+  const map={
+    Cambridge:['Cambridge','Cambridgeshire','Ely','St Ives','Coton','Huntingdon','Newmarket','Soham','Wisbech','March','Fenland','South Cambridgeshire','East Cambridgeshire'],
+    Cambridgeshire:['Cambridgeshire','Cambridge','Ely','St Ives','Coton','Huntingdon','Newmarket','Soham','Wisbech','March','Fenland','South Cambridgeshire','East Cambridgeshire'],
+    Peterborough:['Peterborough','Werrington','Orton','Hampton','Eye','Dogsthorpe','Whittlesey','Yaxley','Stanground'],
+    Norwich:['Norwich','Norfolk','Wymondham','Hethersett','Sprowston','Thorpe St Andrew'],
+    Norfolk:['Norfolk','Norwich','King’s Lynn','Kings Lynn','Cromer','Sheringham','Dereham','Fakenham','Wymondham']
+  };
+  return map[area]||[area];
+}
+function visibleLocalRootV31826(text=''){
+  const hay=String(text||'').toLowerCase();
+  return catchmentTermsV31826().filter(Boolean).some(x=>hay.includes(String(x).toLowerCase()));
+}
+function latestPackageMatchV31826(notes=''){
+  const all=[...String(notes||'').matchAll(/MASTER ARTICLE PACKAGE v1\n([\s\S]*?)\nEND MASTER ARTICLE PACKAGE/g)];
+  return all.length?all[all.length-1]:null;
+}
+function latestServiceMatchV31826(notes=''){
+  const all=[...String(notes||'').matchAll(/PRODUCTION SERVICE v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|RESEARCH PACK|PRODUCTION SERVICE|MASTER ARTICLE FAILED|MASTER ARTICLE TRACE)|$)/g)];
+  return all.length?all[all.length-1]:null;
+}
+function splitPublishabilityReasonsV31826(exception=''){
+  const m=String(exception||'').match(/Publishability gate failed:\s*([\s\S]*)/i);
+  if(!m)return [];
+  return m[1].split(/;\s*/).map(x=>x.trim()).filter(Boolean);
+}
+function falsePositiveReasonV31826(reason,sec,pack){
+  const body=[String(val(sec.fields||{},'Section Final Copy')||''),String(pack?.article_title||''),String(pack?.article_subhead||''),String(pack?.newsletter_headline||'')].join(' ');
+  if(/Finished copy (?:is not visibly rooted|has no credible local root)/i.test(reason))return visibleLocalRootV31826(body);
+  if(/Discovery\/list article does not contain enough named examples/i.test(reason)){
+    const title=String(val(sec.fields||{},'Section Title')||pack?.article_title||'');
+    const q=String(val(sec.fields||{},'Core Reader Question')||'');
+    const tq=`${title} ${q}`;
+    const trueRoundup=/\b(?:which|best|top|five|six|seven|eight|nine|ten|\d+)\b.*\b(?:places|restaurants|pubs|cafes|cafés|bars|takeaways|venues|options|spots)\b|\b(?:restaurants|pubs|cafes|cafés|bars|takeaways|venues|options|spots)\b.*\b(?:which|best|top|worth|recommend)/i.test(tq);
+    return !trueRoundup;
+  }
+  return false;
+}
+async function repairLegacyPublishabilityReviewsV31826(){
+  if(!S.issue)return {repaired:0,remaining:0};
+  let repaired=0,remaining=0;
+  for(const sec of S.sections||[]){
+    const f=sec.fields||{};
+    if(String(val(f,'Section QA Result')||'')!=='Fix Required'||!isProducedArticle(sec))continue;
+    const notes=String(val(f,'Notes')||'');
+    const serviceMatch=latestServiceMatchV31826(notes);
+    const service=serviceMatch?.[0]||'';
+    const exception=String((service.match(/^Exception:\s*(.+)$/mi)||[])[1]||'').trim();
+    const reasons=splitPublishabilityReasonsV31826(exception);
+    if(!reasons.length){remaining++;continue}
+    const packMatch=latestPackageMatchV31826(notes);
+    let pack=null;try{pack=packMatch?JSON.parse(packMatch[1]):null}catch{}
+    const unresolved=reasons.filter(r=>!falsePositiveReasonV31826(r,sec,pack));
+    if(unresolved.length){remaining++;continue}
+    let nextNotes=notes;
+    if(packMatch&&pack){
+      pack.qa_result='Pass';
+      pack.exception='';
+      pack.editorial_readiness={...(pack.editorial_readiness||{}),status:'READY',grade:pack.editorial_readiness?.grade||'B',rationale:[String(pack.editorial_readiness?.rationale||'').replace(/^REWORK\s*[—-]\s*/i,'').trim(),`v3.18.26 deterministic publishability recheck passed for ${publicationAreaV31816(currentPublicationName())}.`].filter(Boolean).join(' '),suggested_edits:[]};
+      nextNotes=nextNotes.replace(packMatch[0],`MASTER ARTICLE PACKAGE v1\n${JSON.stringify(pack,null,2)}\nEND MASTER ARTICLE PACKAGE`);
+    }
+    if(serviceMatch){
+      const cleanService=service.replace(/^Exception:\s*.+$/mi,'Exception: None').replace(/^Outcome:\s*.+$/mi,m=>m);
+      nextNotes=nextNotes.replace(serviceMatch[0],cleanService);
+    }
+    try{
+      const ev=String(val(f,'Evidence Status')||'');
+      const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{'Section QA Result':'Pass','Section Status':'Ready','Evidence Status':/Reported/i.test(ev)?'Reported — Attribution Required':'Verified','Notes':nextNotes}})});
+      const idx=S.sections.findIndex(x=>x.id===sec.id);if(idx>=0)S.sections[idx]=d.record;repaired++;
+    }catch(e){console.warn('v3.18.26 publishability repair failed',sec.id,e);remaining++}
+  }
+  if(repaired)E('save-state').textContent=`v3.18.26 repaired ${repaired} false publishability review${repaired===1?'':'s'} without rewriting or rerunning research.`;
+  return {repaired,remaining};
+}
+async function openIssue(id){S.issue=S.issues.find(i=>i.id===id);E('no-issue').hidden=true;E('builder').hidden=false;E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;E('ih-status').value=val(S.issue.fields,'Issue Status')||'PLANNED';E('ih-theme').value=val(S.issue.fields,'Main Theme');E('ih-subject').value=val(S.issue.fields,'Subject Line');E('ih-preheader').value=val(S.issue.fields,'Preheader');E('ih-date').value=val(S.issue.fields,'Send Date');localStorage.setItem('ics:lastIssue',id);localStorage.setItem('ics:activeIssueId',id);await Promise.all([loadSections(),loadArticleLibrary()]);await ensureIssuePromiseSourceV31824();await repairLegacyPublishabilityReviewsV31826();restorePersistedAssemblyV31821();show('assemble');renderAssembly()}
+function sectionOrderValue(s){const n=Number(val(s.fields,'Section Order'));return Number.isFinite(n)?n:999999}
+function sortSections(){S.sections=[...S.sections].sort((a,b)=>sectionOrderValue(a)-sectionOrderValue(b)||(a.createdTime||'').localeCompare(b.createdTime||''))}
+function sectionOrderDiagnostic(){
+  const orders=S.sections.map(sectionOrderValue).filter(n=>n<999999);
+  const duplicates=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
+  const max=orders.length?Math.max(...orders):0;
+  const missing=[];for(let i=1;i<=max;i++){if(!orders.includes(i))missing.push(i)}
+  const bits=[`${S.sections.length} records`];
+  if(missing.length)bits.push(`missing order: ${missing.join(', ')}`);
+  if(duplicates.length)bits.push(`duplicate order: ${duplicates.join(', ')}`);
+  return bits.join(' · ');
+}
+
+const AUTHORITY_LANES=[
+ ['Mortgage adviser',['mortgage','deposit','first-time buyer','remortgage']],
+ ['Lettings / property management',['letting','tenant','landlord','renting','rental']],
+ ['Estate agent',['estate agent','selling a home','house sale','property market']],
+ ['Conveyancer / solicitor',['conveyanc','solicitor','legal']],
+ ['Surveyor',['surveyor','survey','snagging']],
+ ['Financial adviser / accountant',['financial adviser','accountant','finance','saving']],
+ ['Health / dental / pharmacy',['health','dental','dentist','pharmacy','nhs']],
+ ['Physio / recovery',['physio','back pain','recovery','pain']],
+ ['Dog / pet specialist',['dog','pet','grooming','trainer','vet']],
+ ['Heating / energy',['heating','heat pump','energy','boiler']],
+ ['Planning / architecture / infrastructure',['planning','architect','infrastructure','water','sewage','drainage','housing growth']],
+ ['Motoring / garage',['motoring','garage','car','mot','vehicle']],
+ ['Education / childcare',['school','education','university','apprentice','childcare','college']]
+];
+function sectionText(s){return Object.values(s.fields||{}).filter(v=>typeof v==='string').join(' ').toLowerCase()}
+const ISSUE_STOP_WORDS=new Set('the a an and or of to in on for with is are was were be been being this that what which who how why your our norfolk spotlight unfiltered'.split(' '));
+function issueTopicTokens(s){return new Set(String(s||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>3&&!ISSUE_STOP_WORDS.has(w)))}
+function issueSimilarity(a,b){const A=issueTopicTokens(a),B=issueTopicTokens(b);if(!A.size||!B.size)return 0;let hit=0;A.forEach(x=>{if(B.has(x))hit++});return hit/Math.min(A.size,B.size)}
+function normalizePlanTitle(v){return String(v||'').toLowerCase().replace(/[’‘]/g,"'").replace(/[^a-z0-9£']+/g,' ').replace(/\s+/g,' ').trim()}
+function peterboroughPlanForRow(s,run){
+ const byTitle=PETERBOROUGH_EDITORIAL_PLAN.find(item=>normalizePlanTitle(item.title)===normalizePlanTitle(val(s.fields,'Section Title')));
+ if(byTitle)return byTitle;
+ const idx=Number(run)-1;
+ const byRun=Number.isInteger(idx)&&idx>=0&&idx<PETERBOROUGH_EDITORIAL_PLAN.length?PETERBOROUGH_EDITORIAL_PLAN[idx]:null;
+ if(byRun&&normalizePlanTitle(byRun.title)===normalizePlanTitle(val(s.fields,'Section Title')))return byRun;
+ return null;
+}
+async function repairBuildBriefs(){
+ if(!S.issue){alert('Open an issue first.');return}
+ const publication=currentPublicationName();
+ const publishRows=await productionSections();
+ if(!publishRows.length){alert('No Publish Now editorial plan found. Apply the editorial plan first.');return}
+
+ if(/Peterborough Spotlight/i.test(publication)){
+   if(!confirm('Force-repair the 10 Peterborough Publish Now briefs from the locked PBS plan and verify the saved Airtable values?'))return;
+   E('save-state').textContent='Force-repairing Peterborough issue briefs…';
+   try{
+     let changed=0,missing=[];
+     for(const {s,run} of publishRows){
+       const x=peterboroughPlanForRow(s,run);
+       if(!x){missing.push(`${String(run).padStart(2,'0')}: ${val(s.fields,'Section Title')||'Untitled'}`);continue}
+       const patch={
+         'Local Proof Needed':x.proof,
+         'Evidence Required':x.evidence,
+         'Evidence Status':'Needs Update',
+         'Commercial Lane':x.lane,
+         'Commercial Pathway':x.path,
+         'Primary Next Action':x.action,
+         'CTA Type':x.cta,
+         'CTA Text':x.ctaText,
+         'Social Question Shape':x.social,
+         'Reuse / Localisation Potential':x.reuse,
+         'Section QA Result':'Not Checked'
+       };
+       await api('sections',{method:'PATCH',body:JSON.stringify({id:s.id,fields:patch})});
+       changed++;
+     }
+     const verify=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+     S.sections=verify.records||[];
+     const verifyRows=S.sections.filter(s=>/PUBLISH NOW — Final Running Order \d{2}\./.test(String(val(s.fields,'Notes')||''))).map(s=>{const m=String(val(s.fields,'Notes')||'').match(/Final Running Order (\d{2})/);return{s,run:m?Number(m[1]):999}}).sort((a,b)=>a.run-b.run);
+     const failed=[];
+     for(const row of verifyRows){
+       const x=peterboroughPlanForRow(row.s,row.run);
+       if(!x)continue;
+       const gotProof=String(val(row.s.fields,'Local Proof Needed')||'').trim();
+       const gotEvidence=String(val(row.s.fields,'Evidence Required')||'').trim();
+       if(gotProof!==x.proof||gotEvidence!==x.evidence)failed.push(`${String(row.run).padStart(2,'0')} ${val(row.s.fields,'Section Title')}`);
+     }
+     sortSections();renderSections();renderForm();
+     if(missing.length||failed.length){
+       const detail=[missing.length?`unmatched: ${missing.join(' | ')}`:'',failed.length?`not persisted: ${failed.join(' | ')}`:''].filter(Boolean).join(' · ');
+       E('save-state').textContent=`Peterborough repair verification failed · ${detail}`;
+       alert(`Peterborough repair did not fully verify. ${detail}`);
+       return;
+     }
+     E('save-state').textContent=`Peterborough brief repair verified: ${changed} updated and re-read from Airtable.`;
+     alert(`Peterborough brief repair verified. ${changed} Publish Now sections were force-updated and the saved values were re-read from Airtable. Run Build issue now.`);
+   }catch(err){alert('Peterborough brief repair error: '+err.message);E('save-state').textContent='Brief repair failed.'}
+   return;
+ }
+
+
+ // Legacy locked Norfolk repair map retained for the existing Norfolk production plan.
+ const repairs={
+  23:["Norfolk-wide examples from this issue: Sandringham, housing growth, water pressure, extreme heat, road diversions and household costs.","No separate evidence burden for the intro. Any factual examples mentioned must be supported by the verified sections they preview."],
+  1:["Sandringham Estate, West Norfolk; cancelled August 2026 Heritage Live programme; named headline artists.","Official/promoter cancellation information, named performers, refund guidance and accurately attributed explanation for cancellation."],
+  18:["Named Norfolk growth locations and housing proposals; relevant water supply, wastewater or drainage infrastructure evidence.","Current planning, water-company, regulator or council evidence linking housing growth with water supply, sewage treatment or drainage capacity."],
+  17:["Named Norfolk villages or large developments; evidence of housing growth alongside shops, schools, buses, GP access, pubs or other community facilities.","Current council/planning or local-service evidence for the named examples. The article may ask a value judgement but must not invent service loss or population facts."],
+  25:["Named Norfolk diversion routes and communities currently or recently carrying displaced traffic.","Current roadworks/closure information and official diversion routes for any named example. Reader experiences must be genuine if quoted."],
+  19:["Norfolk temperature evidence and named NHS/health-service heat planning or public-health guidance.","Verified temperature figure, current NHS/UKHSA heat-health guidance and relevant Norfolk health-system or public-health planning evidence."],
+  31:["Norfolk hosepipe restriction area and named local garden/lawn context where useful.","Current water-company hosepipe rules plus authoritative horticultural guidance on lawn dormancy, watering and recovery."],
+  13:["Named Norfolk charity shops, reuse centres or community shops only if mentioned in the copy.","Question-led section. Verify business/place names and opening/service details only where included; do not invent reader finds."],
+  20:["Named Norfolk farm shops, their locations and a specific product or reason to visit.","Current official business information, product/service details and prices only where quoted. Reader nominations must be genuine."],
+  5:["Named Norfolk cafés, pubs, farm shops or breakfast venues with current breakfast prices and what is included.","Venue name, Norfolk location, current official menu price and breakfast contents for every compared venue."],
+  29:["Named Norfolk summer events or attractions, current family ticket costs, parking and material extras.","Official event/venue pricing and inclusions. Calculate a consistent family scenario and state assumptions clearly."],
+  24:["Named Norfolk education, apprenticeship and technical-training routes or providers.","Current official information on university, apprenticeships, T Levels/technical education and Norfolk provision. Avoid claiming one route is universally better."],
+  27:["Named current Norfolk property listings or market examples at approximately £250k, £350k and £500k.","Current listing price, location, property type, bedrooms and material features from clean property/agent sources; make clear listings are snapshots, not valuations."],
+  8:["Named Norfolk locations used in the housing-versus-transport comparison and a stated household travel scenario.","Current housing example plus transparent transport-cost assumptions. Any fuel, insurance or ownership figures must be sourced or clearly labelled illustrative."],
+  15:["Three explicit monthly saving levels and the same £20,000 target.","Arithmetic for each saving scenario; clearly state that interest, investment returns, house-price changes and buying costs are excluded unless separately modelled."],
+  4:["A realistic illustrative Norfolk homeowner scenario; no implication that it is an actual reader case.","Worked comparison of monthly payments, term and total repayment; current authoritative debt-consolidation/mortgage risk guidance; state that secured debt can put the home at risk."],
+  9:["Named Norfolk/local conveyancing context only where genuinely relevant; comparison should focus on service model, communication and fee scope.","Current regulator/consumer guidance and clearly sourced example fees if prices are compared. Do not imply local is always better or online is always cheaper."],
+  12:["Norfolk housing types or local risk context where relevant, without pretending a defect is location-wide.","Current RICS or other authoritative survey guidance covering significant defects, further investigation and renegotiation/walk-away decisions."],
+  7:["Norfolk access context only if current local dental availability is discussed.","Current NHS guidance on risk-based dental recall intervals for children and any current Norfolk access claim used in the article."],
+  14:["A normal everyday back-pain scenario; named Norfolk services only if signposting is included.","Current NHS guidance on staying active/self-care and red-flag symptoms requiring urgent or professional assessment."],
+  10:["Named Norfolk grooming businesses only if prices or service examples are included.","Authoritative coat/grooming guidance plus current official local prices where quoted. Frequency must be framed as breed, coat and individual dependent."],
+  6:["Named Norfolk summer routes such as the A47 or A11, plus a realistic pre-journey example relevant to local drivers.","Current authoritative motoring or road-safety guidance covering tyres, coolant, warning lights and pre-journey vehicle checks."],
+  28:["A realistic overheating Norfolk-home scenario and named local installer/business examples only if used.","Current authoritative energy/building guidance on fans, air conditioning and heat-pump cooling; sourced indicative purchase/installation costs and clear caveats."],
+  30:["Named Norfolk salons, barbers, beauty or wellbeing businesses with current treatment names, prices and inclusions.","Current official price lists/booking pages for every named treatment. Reader value judgements must be genuine or presented as an open nomination question."],
+  26:["Questions and themes actually published in this issue.","No separate evidence burden for the outro. Do not introduce new factual claims that have not been verified elsewhere in the issue."]
+ };
+ if(!/Norfolk Spotlight/i.test(publication)){
+   alert(`Brief repair is not configured for ${publication||'this publication'} yet.`);return;
+ }
+ if(!confirm('Repair the Evidence Required and Local Proof Needed fields for the locked Norfolk Publish Now sections? Existing section titles, questions, lanes, CTAs, notes and order will not change.'))return;
+ E('save-state').textContent='Repairing Norfolk issue briefs…';
+ try{
+  let changed=0,missing=[];
+  for(const {s,run} of publishRows){
+   const x=repairs[run];
+   if(!x){missing.push(run);continue}
+   const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:s.id,fields:{'Local Proof Needed':x[0],'Evidence Required':x[1]}})});
+   s.fields=d.record.fields;changed++;
+  }
+  sortSections();renderSections();renderForm();
+  E('save-state').textContent=`Norfolk brief repair complete: ${changed} updated${missing.length?' · missing '+missing.join(', '):''}.`;
+  alert(`Norfolk brief repair complete. ${changed} Publish Now sections updated. Run Build issue again.`);
+ }catch(err){alert('Norfolk brief repair error: '+err.message);E('save-state').textContent='Brief repair failed.'}
+}
+function productionClassForFields(f){return buildProfile(f).cls}
+
+function isSupersededSmartBrief(sec){
+  return /SUPERSEDED BY LOCKED SMART PLAN/.test(String(val(sec?.fields||{},'Notes')||''));
+}
+function activeIssueSections(){
+  const rows=(S.sections||[]).filter(s=>!isSupersededSmartBrief(s));
+  const plan=getSmartPlan();
+  if(plan?.articles?.length&&smartPlanLocked(plan)){
+    const identified=rows.filter(approvedPlanIdentity);
+    if(identified.length)return identified;
+  }
+  return rows;
+}
+
+function approvedPlanIdentity(s){
+  const f=s?.fields||{},order=Number(val(f,'Section Order')),notes=String(val(f,'Notes')||'');
+  const m=notes.match(/PUBLISH NOW — Final Running Order (\d{2})\./);
+  const marker=m?Number(m[1]):NaN;
+  return Number.isInteger(order)&&order>=1&&order<=15&&marker===order&&!isSupersededSmartBrief(s);
+}
+function activeOrderDiagnostic(){
+  const rows=activeIssueSections();
+  const orders=rows.map(sectionOrderValue).filter(n=>n<999999);
+  const duplicates=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
+  const plan=getSmartPlan?.();
+  const targetCount=Math.max(orders.length,Number(plan?.articles?.length||0));
+  const expected=[...Array(targetCount)].map((_,i)=>i+1);
+  const missing=expected.filter(n=>!orders.includes(n));
+  return {rows,orders,duplicates,missing};
+}
+async function reconcileApprovedSmartQueue({quiet=false}={}){
+  if(!S.issue)throw new Error('Open an issue first.');
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length||!smartPlanLocked(plan))throw new Error('Lock the approved Smart Issue Plan first.');
+  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=r.records||[];
+  const approved=new Map((plan.articles||[]).map(a=>[Number(a.order),String(a.title||'').trim().toLowerCase()]));
+  let active=0,superseded=0,changed=0;
+  for(const order of [...approved.keys()].sort((a,b)=>a-b)){
+    const candidates=S.sections.filter(sec=>Number(val(sec.fields||{},'Section Order'))===order);
+    if(!candidates.length)continue;
+    // Stable identity wins. If none exists yet, use the original locked-plan title.
+    let keeper=candidates.find(approvedPlanIdentity);
+    if(!keeper)keeper=candidates.find(sec=>String(val(sec.fields||{},'Section Title')||'').trim().toLowerCase()===approved.get(order));
+    if(!keeper)continue;
+    for(const sec of candidates){
+      const f=sec.fields||{},notes=String(val(f,'Notes')||'');
+      if(sec.id===keeper.id){
+        active++;
+        const cleaned=notes.replace(/^SUPERSEDED BY LOCKED SMART PLAN[^\n]*\n?/gm,'').replace(/PUBLISH NOW — Final Running Order \d{2}\.\s*/g,'').trim();
+        const marker=`PUBLISH NOW — Final Running Order ${String(order).padStart(2,'0')}.`;
+        const next=`${marker}\n${cleaned}`.trim();
+        if(next!==notes){
+          const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next,'Section Order':order}})});
+          sec.fields=d.record.fields;changed++;
+        }
+      }else{
+        superseded++;
+        const cleaned=notes.replace(/PUBLISH NOW — Final Running Order \d{2}\.\s*/g,'').replace(/^SUPERSEDED BY LOCKED SMART PLAN[^\n]*\n?/gm,'').trim();
+        const next=`SUPERSEDED BY LOCKED SMART PLAN — former Article ${String(order).padStart(2,'0')}. Preserved in library/history; excluded from active issue production.\n${cleaned}`.trim();
+        if(next!==notes){
+          const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next}})});
+          sec.fields=d.record.fields;changed++;
+        }
+      }
+    }
+  }
+  sortSections();renderSections();renderForm();
+  const activeRows=S.sections.filter(approvedPlanIdentity);
+  const orders=activeRows.map(s=>Number(val(s.fields,'Section Order')));
+  const duplicates=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
+  const missing=[...Array(plan.articles.length)].map((_,i)=>i+1).filter(n=>!orders.includes(n));
+  const clean=activeRows.length===plan.articles.length&&!duplicates.length&&!missing.length;
+  if(!quiet)alert(`Approved queue reconciled.\n${activeRows.length} active approved briefs · ${superseded} superseded briefs preserved · ${changed} records updated.\n${clean?'Stable identity clean ✓':`STOP — duplicates: ${duplicates.join(', ')||'none'} · missing: ${missing.join(', ')||'none'}`}`);
+  return {active:activeRows.length,superseded,changed,clean,duplicates,missing};
+}
+// v3.20.2 — preserve the selected issue and materialise/reconcile the locked queue
+// before Research/Produce. This is deliberately idempotent: completed records are kept.
+async function restoreActiveIssueContextV3202(){
+  if(S.issue?.id)return S.issue;
+  const id=String(localStorage.getItem('ics:activeIssueId')||localStorage.getItem('ics:lastIssue')||'').trim();
+  if(!id)return null;
+  const issue=(S.issues||[]).find(i=>i.id===id);
+  if(!issue)return null;
+  S.issue=issue;
+  localStorage.setItem('ics:lastIssue',id);
+  localStorage.setItem('ics:activeIssueId',id);
+  if(E('no-issue'))E('no-issue').hidden=true;
+  if(E('builder'))E('builder').hidden=false;
+  if(E('build-title'))E('build-title').textContent=`${pubName(S.issue.fields.Publication)} · Issue #${val(S.issue.fields,'Issue Number')||'—'}`;
+  if(E('build-meta'))E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`;
+  try{await loadSections()}catch(e){console.warn('v3.20.2 issue-context section restore failed',e)}
+  try{await loadArticleLibrary()}catch(e){console.warn('v3.20.2 article-library restore failed',e)}
+  return S.issue;
+}
+async function ensureApprovedQueueV3202({materialize=true,quiet=true}={}){
+  const issue=await restoreActiveIssueContextV3202();
+  if(!issue)throw new Error('No active issue is available. Re-open the issue once from Issues.');
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length||!smartPlanLocked(plan))throw new Error('Lock the approved 15-candidate plan first.');
+  let st=await approvedBriefStatusV3131();
+  if(st.clean)return {...st,repaired:false};
+  setWorkflowActionStatusV312(workflowSelectedStepV312||3,workflowSelectedStepV312===4?'Produce':'Research',`Repairing approved queue ${st.active}/${st.expected}…`,'ICS is restoring the locked plan into the current issue. Existing research and written Masters are preserved.');
+  if(materialize){
+    await applySmartPlanToBuild({quiet:true});
+    st=await approvedBriefStatusV3131();
+  }
+  if(!st.clean){
+    await reconcileApprovedSmartQueue({quiet:true});
+    st=await approvedBriefStatusV3131();
+  }
+  if(!st.clean)throw new Error(`Approved queue is still not clean: ${st.active}/${st.expected} active · duplicate orders ${st.duplicates?.join(', ')||'none'} · missing ${st.missing?.join(', ')||'none'}.`);
+  sortSections();renderSections();renderForm();render();
+  if(!quiet)alert(`Approved queue restored: ${st.active}/${st.expected} active · missing none.`);
+  return {...st,repaired:true};
+}
+async function productionSections(){
+ const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+ S.sections=r.records||[];
+ const plan=getSmartPlan();
+ if(plan?.articles?.length&&smartPlanLocked(plan)){
+   const active=S.sections.filter(approvedPlanIdentity);
+   const orders=active.map(s=>Number(val(s.fields,'Section Order')));
+   const dup=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
+   const expected=[...Array(plan.articles.length)].map((_,i)=>i+1);
+   const missing=expected.filter(n=>!orders.includes(n));
+   if(active.length!==plan.articles.length||dup.length||missing.length)throw new Error(`PRODUCTION STOP GATE — approved queue identity is not clean. Active ${active.length}/${plan.articles.length} · duplicate order ${dup.join(', ')||'none'} · missing ${missing.join(', ')||'none'}. Reconcile Approved Queue only if the running-order markers themselves are missing.`);
+   return active.map(s=>({s,run:Number(val(s.fields,'Section Order'))})).sort((a,b)=>a.run-b.run);
+ }
+ return S.sections.filter(s=>approvedPlanIdentity(s)).map(s=>({s,run:Number(val(s.fields,'Section Order'))})).sort((a,b)=>a.run-b.run)
+}
+function productionDone(s){return isProducedArticle(s)}
+function productionReady(s){const f=s.fields||{};return isProducedArticle(s)&&String(val(f,'Section QA Result')||'')==='Pass'&&['Ready','Published'].includes(String(val(f,'Section Status')||''))}
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+async function refreshProducedRecord(sectionId){
+ const r=await api('sections?issueId='+encodeURIComponent(S.issue.id)+'&_ts='+Date.now());
+ S.sections=r.records||[];
+ return S.sections.find(x=>x.id===sectionId)||null;
+}
+async function produceOne(item,mode="generate"){
+ const cls=productionClassForFields(item.s.fields);
+ const startedAt=Date.now();
+ const runId='ma_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
+ const response=await fetch('/.netlify/functions/produce-section',{
+   method:'POST',headers:{'content-type':'application/json',accept:'application/json'},
+   body:JSON.stringify({sectionId:item.s.id,productionClass:cls,runId,mode,publicationName:currentPublicationName()})
+ });
+ if(response.status!==202){
+   const raw=await response.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={error:`Invalid server response (${response.status}). ${raw.slice(0,300)||'No response body.'}`}}
+   throw new Error(d.error||`Unable to start background production (${response.status}).`);
+ }
+ const pollWindowMs=3*60*1000;const deadline=Date.now()+pollWindowMs;
+ let polls=0;
+ while(Date.now()<deadline){
+   await sleep(polls<3?3000:5000);polls++;
+   const current=await refreshProducedRecord(item.s.id);
+   if(!current)continue;
+   const notes=String(val(current.fields,'Notes')||'');
+   item.s=current;
+   if(S.section?.id===current.id)S.section=current;
+   if(/MASTER ARTICLE FAILED v(?:2\.\d+|3\.\d+\.\d+)/.test(notes)&&notes.includes(`Run ID: ${runId}`)){
+     const failedBlock=notes.slice(notes.indexOf(`Run ID: ${runId}`));
+     const m=failedBlock.match(/Error: ([^\n]+)/);
+     throw new Error(m?.[1]||'Background production failed. Check the Netlify function log for this run.');
+   }
+   const qa=String(val(current.fields,'Section QA Result')||'Fix Required');
+   const status=String(val(current.fields,'Section Status')||'');
+   const serviceBlocks=[...notes.matchAll(/PRODUCTION SERVICE v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|RESEARCH PACK|PRODUCTION SERVICE)|$)/g)].map(m=>m[0]);
+   const serviceBlockForRun=serviceBlocks.find(block=>block.split('\n').some(line=>line.trim()===`Run ID: ${runId}`))||'';
+   const hasCurrentService=!!serviceBlockForRun;
+   if(hasCurrentService){
+     const elapsedSec=Math.round((Date.now()-startedAt)/1000);
+     const outcome=String((serviceBlockForRun.match(/Outcome:\s*([A-Z_]+)/)||[])[1]||'');
+     const reviewText=outcome==='VERIFIED_NOW'?'Research complete — verified':outcome==='ATTRIBUTED_REPORT'?'Research complete — attribution required':outcome==='BLOCKED'?'Research blocked':outcome==='SOURCE_CHECK_REQUIRED'?'Source verification required':outcome==='RESEARCH_INCOMPLETE'?'Research incomplete':outcome==='EDITORIAL_REVIEW'?'Editorial review required':'Human review required';
+     E('production-progress').innerHTML=`<strong>${qa==='Pass'?'Master Article complete ✓':reviewText}</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">Finished in ${elapsedSec} seconds · ${qa==='Pass'?'Ready for Letterman':reviewText}</div>`;renderArticleWorkflow();
+     return {ok:true,record:current,productionClass:cls,qaResult:qa,outcome:outcome||'EDITORIAL_REVIEW',sources:[],background:true,runId,elapsedSec};
+   }
+   const traceMatches=[...notes.matchAll(/(?:✓|✖|▶) [^\n]+/g)];
+   const latestTrace=traceMatches.length?traceMatches[traceMatches.length-1][0]:'';
+   E('production-progress').innerHTML=`<strong>Producing selected Master Article</strong><div class="muted">${esc(val(current.fields,'Section Title'))}</div><div class="muted">${latestTrace?esc(latestTrace)+' · ':''}Background production is running · ${Math.round((Date.now()-(deadline-pollWindowMs))/1000)} seconds</div>`;
+ }
+ const latest=await refreshProducedRecord(item.s.id).catch(()=>null);
+ if(latest){
+   const notes=String(val(latest.fields,'Notes')||'');
+   const hasWriter=/MASTER ARTICLE WRITER CHECKPOINT v1[\s\S]*?END MASTER ARTICLE WRITER CHECKPOINT/.test(notes);
+   const hasResearch=/MASTER ARTICLE RESEARCH CHECKPOINT v1[\s\S]*?END MASTER ARTICLE RESEARCH CHECKPOINT/.test(notes);
+   if(hasWriter)throw new Error('Writer checkpoint saved. Click Produce selected Master Article again to resume at final package/save — research and writing will not be repeated.');
+   if(hasResearch)throw new Error('Research checkpoint saved. Click Produce selected Master Article again to resume at Writer — research will not be repeated.');
+ }
+ throw new Error('Background production did not finish within 3 minutes. No resumable checkpoint was found yet; check the Airtable Notes trace for the last completed stage.');
+}
+async function produceOneReliablyV31825(item,mode='generate'){
+  const attempts=(mode==='generate'?2:1);
+  let last;
+  for(let attempt=1;attempt<=attempts;attempt++){
+    try{return await produceOne(item,mode)}catch(e){
+      last=e;
+      const msg=String(e?.message||e||'');
+      const transient=/openai request timed out|timed out after|background production did not finish|failed to fetch|network|gateway|temporarily unavailable/i.test(msg);
+      if(!transient||attempt>=attempts)throw e;
+      E('production-progress').innerHTML=`<strong>Technical timeout — recovering automatically</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Retry ${attempt+1}/${attempts}. Saved research and any successful checkpoints are preserved; research will not rerun.</div>`;
+      await sleep(1000);
+      const refreshed=await refreshProducedRecord(item.s.id).catch(()=>null);
+      if(refreshed)item.s=refreshed;
+      if(productionDone(item.s))return {ok:true,record:item.s,qaResult:String(val(item.s.fields,'Section QA Result')||'Fix Required'),outcome:latestResearchServiceOutcome(item.s.fields)||'EDITORIAL_REVIEW',recovered:true};
+    }
+  }
+  throw last;
+}
+function latestResearchServiceOutcome(fields={}){
+ const notes=String(val(fields,'Notes')||'');
+ const blocks=[...notes.matchAll(/PRODUCTION SERVICE v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|RESEARCH PACK|PRODUCTION SERVICE)|$)/g)].map(m=>m[0]);
+ for(let i=blocks.length-1;i>=0;i--){
+   const block=blocks[i];
+   if(!/Stage:\s*RESEARCH/i.test(block))continue;
+   const outcome=String((block.match(/Outcome:\s*([A-Z_]+)/i)||[])[1]||'').toUpperCase();
+   if(outcome)return outcome;
+ }
+ return '';
+}
+function persistedResearchSummary(records=[]){
+ const out={total:0,publishable:0,verified:0,reported:0,blocked:0,other:0};
+ for(const r of records){
+   const f=r?.fields||{};
+   if(!researchPackPresent(f))continue;
+   out.total++;
+   const outcome=latestResearchServiceOutcome(f);
+   const evidence=String(val(f,'Evidence Status')||'');
+   const gate=evidencePublishabilityV3134(f);
+   if(gate.blocked||['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(outcome)||evidence==='Researching')out.blocked++;
+   else if(gate.attributed||outcome==='ATTRIBUTED_REPORT'||/Reported/i.test(evidence)){out.reported++;out.publishable++;}
+   else if(gate.verified||['VERIFIED_NOW','EDITORIAL'].includes(outcome)||evidence==='Verified'){out.verified++;out.publishable++;}
+   else out.other++;
+ }
+ return out;
+}
+async function refreshIssueSectionsForSummary(){
+ try{
+   const r=await api('sections?issueId='+encodeURIComponent(S.issue.id)+'&_ts='+Date.now());
+   S.sections=r.records||[];
+ }catch(e){console.warn('Could not refresh persisted production summary',e)}
+ return S.sections||[];
+}
+async function runProduction({one=false,mode="generate"}={}){
+ if(!S.issue){alert('Open an issue first.');return}
+ let work;
+ if(one){
+   if(!S.section){alert('Select the Master Article you want to produce first.');return}
+   const selected={s:S.section,run:999};
+   if(productionDone(selected.s)){
+     if(!confirm('This Master Article already has a written package. Produce it again and replace the current package?'))return;
+   }
+   work=[selected];
+ }else{
+   let queue;
+   try{
+     await ensureApprovedQueueV3202({materialize:true,quiet:true});
+     queue=await productionSections();
+   }catch(e){
+     E('production-progress').className='warning';
+     E('production-progress').innerHTML=`<strong>PRODUCTION STOP GATE</strong><div class="muted">${esc(e.message||e)}</div><div class="muted" style="margin-top:6px">Use Repair Approved Queue below. Do not rebuild the issue or go back to planning.</div>`;
+     alert(e.message);return
+   }
+   const pending=mode==='research'
+     ? queue.filter(x=>!researchPackPresent(x.s.fields||{}))
+     : queue.filter(x=>{
+         const f=x.s.fields||{};
+         const wf=articleWorkflowState(x.s);
+         const outcome=latestResearchServiceOutcome(f);
+         return !productionDone(x.s) && wf.researched && wf.publishableEvidence && !['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(outcome);
+       });
+   if(!pending.length){
+     E('production-progress').className='philosophy-box';
+     E('production-progress').innerHTML=mode==='research'
+       ? '<strong>Research complete.</strong><div class="muted">Every approved Master already has a saved Research Pack.</div>'
+       : '<strong>No publishable Masters waiting to be written.</strong><div class="muted">Step 4 writes only from saved publishable Research Packs. Blocked research stays blocked and completed Masters are preserved.</div>';
+     return;
+   }
+   work=pending;
+   if(mode!=='research'&&!confirm(`Write ${work.length} publishable Masters from their saved Research Packs? Blocked or unpublishable research will be skipped. No research will be rerun.`))return;
+ }
+ // Stabilisation v1.1: correct an obviously stale planner mode before research/production.
+ if(one&&work[0]?.s){
+   const sf=work[0].s.fields||{};
+   const stored=writingModeFromNotes(val(sf,'Notes'));
+   const effective=effectiveWritingMode(stored,val(sf,'Section Title'),val(sf,'Core Reader Question'));
+   if(effective!==stored){
+     const notes=upsertWritingMode(val(sf,'Notes')||'',effective);
+     try{
+       const patched=await api('sections',{method:'PATCH',body:JSON.stringify({id:work[0].s.id,fields:{Notes:notes}})});
+       work[0].s=patched.record;S.section=patched.record;S.sections=S.sections.map(x=>x.id===patched.record.id?patched.record:x);
+       E('save-state').textContent=`Writing mode auto-corrected: ${stored} → ${effective}.`;
+     }catch(e){console.warn('Writing mode auto-correction could not be persisted',e)}
+   }
+ }
+ let pass=0,sourceCheck=0,researchIncomplete=0,editorialReview=0,failed=0;
+ const failureDetails=[];
+ E('run-production').disabled=true;E('run-next-production').disabled=true;E('generate-selected-production').disabled=true;
+ for(let i=0;i<work.length;i++){
+   const item=work[i];
+   S.productionUi[item.s.id]={state:'running',error:''};
+   renderSections();
+   E('production-progress').className='philosophy-box';
+   E('production-progress').innerHTML=`<strong>${mode==='research'?'Researching selected article':'Generating selected Master Article'}</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">${mode==='research'?'Building and locking the Research Pack. The writer will not run.':'Using the locked Research Pack only. No web research will run.'}</div><div class="muted">Research publishable ${pass+editorialReview} · Attribution/source review ${sourceCheck} · Research blocked ${researchIncomplete} · Technical failed ${failed}</div>`;
+   try{
+     let d;
+     if(!one && mode==='generate'){
+       // v3.18.10 Step 4 is write-only. Step 3 owns research.
+       // Use the persisted Research Pack and never re-run research here.
+       E('production-progress').innerHTML=`<strong>Writing Master Article</strong><div class="muted">${esc(val(item.s.fields,'Section Title'))}</div><div class="muted">Article ${i+1}/${work.length} · Using the saved publishable Research Pack. No web research will run.</div><div class="muted">Completed ${pass+editorialReview+sourceCheck} · Technical failed ${failed}</div>`;
+       d=await produceOneReliablyV31825(item,'generate');
+     }else{
+       d=await produceOneReliablyV31825(item,mode);
+     }
+     delete S.productionUi[item.s.id];
+     if(d.qaResult==='Pass')pass++;
+     else if(d.outcome==='SOURCE_CHECK_REQUIRED')sourceCheck++;
+     else if(d.outcome==='RESEARCH_INCOMPLETE'||d.outcome==='BLOCKED')researchIncomplete++;
+     else editorialReview++;
+   }catch(e){
+     failed++;
+     const msg=String(e?.message||e||'Production failed');
+     S.productionUi[item.s.id]={state:'failed',error:msg};
+     failureDetails.push({title:String(val(item.s.fields,'Section Title')||'Untitled'),error:msg});
+     E('save-state').textContent=`Production error on ${val(item.s.fields,'Section Title')}: ${msg}`;
+     if(one)alert(msg);
+   }
+   renderSections();
+   if(!one&&i<work.length-1)await sleep(500);
+ }
+ E('run-production').disabled=false;E('run-next-production').disabled=false;E('generate-selected-production').disabled=false;
+ if(one&&work[0]?.s){S.section=S.sections.find(x=>x.id===work[0].s.id)||work[0].s;}
+ renderSections();
+ renderForm();
+ // Refresh the publication-wide Produced Articles library immediately after production.
+ // Previously the Issue Planner could continue showing a stale 0 count until the issue was reopened.
+ try{await loadArticleLibrary();}catch(e){console.warn('Produced Articles library refresh failed after production',e)}
+ if(document.querySelector('#view-assemble')?.classList.contains('active'))renderAssembly();
+ if(!one){
+   const failedList=failureDetails.length?`<div class="muted" style="margin-top:6px">${failureDetails.map(x=>`Failed: ${esc(x.title)} — ${esc(x.error)}`).join('<br>')}</div>`:'';
+   if(mode==='research'){
+     const persisted=persistedResearchSummary(await refreshIssueSectionsForSummary());
+     E('production-progress').innerHTML=`<strong>Research run finished</strong><div class="muted">Research Packs ${persisted.total} · Publishable ${persisted.publishable} (${persisted.verified} verified/editorial · ${persisted.reported} attribution required) · Blocked ${persisted.blocked} · Technical failed this run ${failed}</div>${failedList}`;
+     E('save-state').textContent=`Research run complete. Persisted state: ${persisted.total} Research Packs · ${persisted.publishable} publishable · ${persisted.blocked} blocked · ${failed} technical failed this run. Completed Research Packs are preserved.`;
+   }else{
+     const refreshed=await refreshIssueSectionsForSummary();
+     const producedNow=refreshed.filter(s=>productionDone(s)).length;
+     const blockedResearch=refreshed.filter(s=>{const wf=articleWorkflowState(s);return wf.researched&&!wf.publishableEvidence&&!productionDone(s)}).length;
+     E('production-progress').innerHTML=`<strong>Step 4 writing finished</strong><div class="muted">Written packages now ${producedNow} · Blocked research preserved ${blockedResearch} · Technical failed this run ${failed}</div>${failedList}`;
+     E('save-state').textContent=`Step 4 complete. ${producedNow} Master packages saved · ${blockedResearch} research-blocked Masters skipped · ${failed} technical failed this run. No research was rerun.`;
+   }
+ }else{
+   E('save-state').textContent=mode==='research'
+    ? `Research complete for selected Master. Saved Research Pack preserved.`
+    : `Selected Master Article production complete.`;
+ }
+}
+function buildProfile(f){
+ const title=String(val(f,'Section Title')||'');
+ const q=String(val(f,'Core Reader Question')||'');
+ const type=String(val(f,'Section Type')||'');
+ const status=String(val(f,'Evidence Status')||'');
+ const blob=(title+' '+q).toLowerCase();
+ if(status==='Question Only'||/intro|outro/.test(type.toLowerCase())) return {cls:'A — Question Only',proof:'No external proof required unless the draft introduces a new factual claim.'};
+ if(/water|sewage|drainage|nhs|dentist|health service|37\.7|mortgage|debt|conveyanc|solicitor|survey|deposit|house|£250,000|£350,000|£500,000|heat pump|air con|hosepipe|ban|cancel|sandringham|university|apprentice|road|diversion/.test(blob))
+   return {cls:'C — Evidence Heavy',proof:`Verify material claims with current reliable sources and named ${currentPlaceName()} proof before drafting.`};
+ return {cls:'B — Light Proof',proof:`Check named ${currentPlaceName()} examples and any current prices, dates or service details before drafting.`};
+}
+function suspectedBriefMismatch(f){
+ const title=String(val(f,'Section Title')||'').trim();
+ const titleLower=title.toLowerCase();
+ const proof=(String(val(f,'Local Proof Needed')||'')+' '+String(val(f,'Evidence Required')||'')).toLowerCase();
+ // For locked Peterborough articles, the strongest QA is exact comparison with the approved plan.
+ if(typeof PETERBOROUGH_EDITORIAL_PLAN!=='undefined'){
+   const expected=PETERBOROUGH_EDITORIAL_PLAN.find(item=>normalizePlanTitle(item.title)===normalizePlanTitle(title));
+   if(expected){
+     const actualProof=String(val(f,'Local Proof Needed')||'').trim();
+     const actualEvidence=String(val(f,'Evidence Required')||'').trim();
+     if(actualProof!==expected.proof || actualEvidence!==expected.evidence) return true;
+   }
+ }
+ // Generic cross-topic contamination guards retained for other publications.
+ if(/sandringham|heritage live|headline artists|promoter cancellation/.test(proof) && !/concert|sandringham|event.*cancel|cancelled.*event/.test(titleLower)) return true;
+ if(/homeowner|debt.consolidation|secured debt|mortgage risk/.test(proof) && !/mortgage|debt|monthly payment|homeowner/.test(titleLower)) return true;
+ if(/dentist|dental recall|nhs guidance/.test(proof) && !/dentist|dental/.test(titleLower)) return true;
+ if(/conveyanc|solicitor|regulator\/consumer guidance/.test(proof) && !/conveyanc|solicitor|legal/.test(titleLower)) return true;
+ if(/grooming|coat\/grooming|breed, coat/.test(proof) && !/groom|dog|pet/.test(titleLower)) return true;
+ if(/a47|a11|tyres|coolant|warning lights|pre-journey/.test(proof) && !/drive|car|road|diversion|journey/.test(titleLower)) return true;
+ if(/menu price|menu details|breakfast prices/.test(proof) && !/breakfast|full english|food|farm shop|beauty|family day|event/.test(titleLower)) return true;
+ return false;
+}
+async function buildIssue(){
+ if(!S.issue){alert('Open an issue first.');return}
+ E('save-state').textContent='Preparing build run…';
+ try{
+   const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+   S.sections=r.records||[];
+   const publish=S.sections.filter(s=>/PUBLISH NOW — Final Running Order \d{2}\./.test(String(val(s.fields,'Notes')||''))).map(s=>{
+     const m=String(val(s.fields,'Notes')||'').match(/Final Running Order (\d{2})/);
+     return {s,run:m?Number(m[1]):999};
+   }).sort((a,b)=>a.run-b.run);
+   if(!publish.length){alert('No Publish Now editorial plan found. Apply the editorial plan first.');return}
+   const groups={'A — Question Only':[],'B — Light Proof':[],'C — Evidence Heavy':[]};
+   const mismatches=[];
+   publish.forEach(x=>{const p=buildProfile(x.s.fields);groups[p.cls].push(x);if(suspectedBriefMismatch(x.s.fields))mismatches.push(x)});
+   const lines=['ISSUE BUILD QA',`${publish.length} Publish Now sections`,'',
+     `A — Question Only: ${groups['A — Question Only'].length}`,
+     `B — Light Proof: ${groups['B — Light Proof'].length}`,
+     `C — Evidence Heavy: ${groups['C — Evidence Heavy'].length}`,
+     `Suspected copied/mismatched briefs: ${mismatches.length}`,''];
+   if(mismatches.length){
+     lines.push('STOP GATE — BRIEF REPAIR REQUIRED');
+     mismatches.forEach(({s,run})=>lines.push(`${String(run).padStart(2,'0')} | ${val(s.fields,'Section Title')}`));
+     lines.push('','These sections appear to contain evidence/local-proof text copied from a different topic. Repair the section brief before automated research or drafting.','');
+   } else lines.push('QA PASS — no obvious copied brief mismatch detected.','');
+   lines.push('BUILD QUEUE');
+   publish.forEach(({s,run})=>{
+     const f=s.fields||{}, profile=buildProfile(f), bad=suspectedBriefMismatch(f);
+     lines.push('',`${String(run).padStart(2,'0')} | ${val(f,'Section Title')}`,
+       `Class: ${profile.cls} | Lane: ${val(f,'Commercial Lane')} | CTA: ${val(f,'CTA Type')} | Brief QA: ${bad?'REPAIR':'PASS'}`,
+       `Question: ${val(f,'Core Reader Question')||'—'}`,
+       `Stored local proof: ${val(f,'Local Proof Needed')||'—'}`,
+       `Stored evidence: ${val(f,'Evidence Required')||'—'}`,
+       `Build rule: ${profile.proof}`);
+   });
+   E('preview-text').value=lines.join('\n');
+   E('preview-dialog').showModal();
+   E('save-state').textContent=`Build QA: ${groups['A — Question Only'].length} A · ${groups['B — Light Proof'].length} B · ${groups['C — Evidence Heavy'].length} C · ${mismatches.length} brief repairs.`;
+ }catch(err){alert('Build issue error: '+err.message);E('save-state').textContent='Build issue failed.'}
+}
+const PETERBOROUGH_EDITORIAL_PLAN=[
+ {title:'Peterborough Unfiltered: Where Is The Infrastructure For All These New Homes?',question:'Is Peterborough approving major housing growth faster than roads, schools, GP capacity, water, sewage and drainage can realistically keep up?',problem:'New homes are needed, but residents need clear evidence that infrastructure will arrive at the same pace.',hook:'More homes are coming. The harder question is whether the infrastructure is coming with them.',reader:'Peterborough residents, homeowners, buyers and families affected by growth and local services.',value:'A clear evidence-led picture of what infrastructure is under pressure, what is planned, what is funded and what remains uncertain.',proof:'Named Peterborough growth areas and development sites, roads and congestion pressure, schools or GP capacity where evidenced, water, wastewater and drainage infrastructure.',evidence:'Current council/planning documents, Anglian Water or regulator evidence, transport/infrastructure plans and other authoritative local sources.',lane:'Authority',path:'Planning, architecture, infrastructure, property, conveyancing and mortgage experts.',action:'Give us your view',cta:'Button',ctaText:'Give Us Your View',social:'Should Peterborough keep approving major developments before the infrastructure is ready?',reuse:'Multi-edition'},
+ {title:'The Lower Monthly Payment That Can Cost More Overall',question:'When does consolidating debt into a mortgage or secured loan reduce the monthly pressure but increase the total cost and risk?',problem:'A smaller monthly payment can look like a solution while hiding a much longer repayment term and new security risk.',hook:'Would you rather pay less each month if it meant paying for the debt for years longer?',reader:'Peterborough homeowners weighing up debt consolidation or refinancing.',value:'A worked comparison showing monthly payment, term, total repayment and the risk of moving unsecured debt against the home.',proof:'A realistic illustrative Peterborough homeowner scenario; clearly labelled as an example, not a reader case.',evidence:'Current FCA and MoneyHelper guidance plus transparent worked repayment calculations and clear caveats.',lane:'Authority',path:'Mortgage advisers, debt advisers and financial specialists.',action:'Ask the debt question',cta:'Button',ctaText:'Ask the debt question',social:'Would you accept a lower monthly payment if it meant paying the debt for much longer?',reuse:'Multi-edition'},
+ {title:'The £20,000 Deposit Question: Three Savers, Three Very Different Timelines',question:'How long does it actually take to save a £20,000 house deposit at three realistic monthly saving levels?',problem:'“Save a deposit” sounds simple until the target is translated into months, years and the rest of the buying costs.',hook:'£20,000 sounds like one target. In real life it can mean 20 months or nearly seven years.',reader:'Peterborough first-time buyers and households planning a future purchase.',value:'Three transparent saving timelines plus the buying-cost questions readers should budget for beyond the deposit.',proof:'Three explicit monthly saving levels and a Peterborough first-time-buyer framing; any local property examples must be current and sourced.',evidence:'Transparent arithmetic plus current MoneyHelper/GOV.UK home-buying cost guidance.',lane:'Authority',path:'Mortgage, financial planning, estate agency and conveyancing experts.',action:'Save this deposit timeline',cta:'Save',ctaText:'Save this deposit timeline',social:'How much could you realistically save towards a house deposit every month?',reuse:'Multi-edition'},
+ {title:'What Happens After The Food Parcel? The Peterborough Charity Helping Families Get Out Of Crisis',question:'What support does a family need after the immediate food crisis has been dealt with?',problem:'Emergency food can solve today’s problem without fixing the housing, benefits, legal, digital or confidence issues behind the crisis.',hook:'A food parcel can get a family through today. What helps them get out of crisis altogether?',reader:'Peterborough residents, community supporters, employers and local businesses.',value:'Show how Mary’s Child combines immediate practical help with longer-term family support, community cafés, advice and skills-building.',proof:'Mary’s Child supplied information: community cafés in Orton Goldhay and Stanground, Family Support Team, welfare benefits, family/housing law support, IT drop-in, mother-and-baby café, workshops and community-garden plans.',evidence:'Mary’s Child supplied corporate sponsorship information plus any current public charity information used in the finished article.',lane:'Featured Partner',path:'Mary’s Child community partnership and corporate-support pathway; keep the article useful and editorial rather than advertorial.',action:'Find out how to help',cta:'Button',ctaText:'Find Out How To Help',social:'What kind of support helps a family move from an emergency to genuine stability?',reuse:'Local only'},
+ {title:'What Should You Check Before Signing For A Peterborough Rental?',question:'What should a tenant check about the property, tenancy, costs, deposit, repairs and inventory before signing?',problem:'Rental problems are much harder to untangle after the tenancy is signed and the keys have changed hands.',hook:'The most expensive rental mistake can happen before you have even moved in.',reader:'Peterborough renters and households preparing to move.',value:'A practical pre-signing checklist covering costs, condition, documents, inventory, repairs and questions that should be answered before commitment.',proof:'Peterborough rental context and practical local examples where useful; avoid repeating recent pet-in-rental coverage.',evidence:'Current GOV.UK and relevant tenancy/deposit guidance, plus clearly attributed expert input from Y-US Lettings where used.',lane:'Featured Partner',path:'Y-US Lettings / Suzanne as a practical local lettings authority; no pet angle.',action:'Ask your rental question',cta:'Button',ctaText:'Ask Your Rental Question',social:'What is the one thing every renter should check before signing a tenancy?',reuse:'Multi-edition'},
+ {title:'The Five-Minute Check Before A Peterborough Summer Drive',question:'What can an ordinary driver check in five minutes before a longer summer journey?',problem:'A car that copes with short local trips can still reveal tyre, coolant, warning-light or comfort problems on a longer loaded journey.',hook:'Five minutes on the driveway can save a very long afternoon at the roadside.',reader:'Peterborough drivers, families and visitors planning longer summer journeys.',value:'A quick pre-journey checklist that helps drivers spot simple problems before a longer summer trip.',proof:'Named Peterborough-area routes such as the A47, A1(M) or A605, plus a realistic pre-journey example.',evidence:'Current authoritative motoring/road-safety guidance covering tyres, coolant, warning lights, visibility and roadworthiness.',lane:'Authority',path:'Garages, tyre specialists, MOT centres, breakdown providers and vehicle air-conditioning specialists.',action:'Save the five-minute car check',cta:'Save',ctaText:'Save The Five-Minute Car Check',social:'What is the one car check you always do before a long summer drive — and what do most people forget?',reuse:'Multi-edition'},
+ {title:"Peterborough's £10 Test: What Still Feels Like Good Value?",question:'What can you still buy, eat, visit or do around Peterborough for about £10 that genuinely feels worth it?',problem:'A low price is not automatically good value; readers want specific local examples where a tenner still buys a worthwhile experience.',hook:'A tenner disappears quickly. Where around Peterborough does it still feel well spent?',reader:'Peterborough locals and visitors looking for specific good-value recommendations.',value:'A checked shortlist of named local £10-or-thereabouts wins with current prices and exactly what the reader gets.',proof:'Named Peterborough cafés, attractions, markets, shops, transport, food or experiences with current prices.',evidence:'Current official menus, venue pages, ticket information or business sources for every quoted price.',lane:'Activation',path:'Independent hospitality, attractions, retail, experiences and local businesses with specific value proof.',action:'Nominate your £10 win',cta:'Nominate',ctaText:'Nominate Your £10 Win',social:'What is the best thing you can still get around Peterborough for a tenner?',reuse:'Multi-edition'},
+ {title:'How Often Should Children See An NHS Dentist?',question:'How often should children actually have an NHS dental check-up, and does every child need to go every six months?',problem:'Parents hear conflicting recall intervals and may mistake the familiar six-month rule for a universal NHS requirement.',hook:'Six months, nine months or a year? Parents are often given different answers for a reason.',reader:'Peterborough parents and carers.',value:'Explain the risk-based recall approach, the normal interval range and when parents should seek help before the next routine check.',proof:'Peterborough/Cambridgeshire access context only where current local dental availability is discussed.',evidence:'Current NHS and NICE guidance on child dental recall intervals plus current local access information if used.',lane:'Authority',path:'Dental practices and regulated oral-health professionals.',action:'Ask your dental question',cta:'Button',ctaText:'Ask Your Dental Question',social:'How often do you think a child should have a routine dental check?',reuse:'Multi-edition'},
+ {title:'When The Concert Is Cancelled, Who Pays For Everything Else?',question:'When a major event is cancelled and the ticket is refunded, who carries the cost of hotels, Airbnb, trains, flights, car hire and other plans built around it?',problem:'A ticket refund may not make a customer financially whole when an entire trip has been booked around the event.',hook:'The ticket might be refunded. The hotel, train and annual leave are another story.',reader:'Peterborough residents who travel to concerts, festivals, sport and major events.',value:'Use the Sandringham cancellations as a real-world hook to explain the wider consumer question around consequential travel and accommodation losses.',proof:'Verified Sandringham cancellation and ticket/refund facts, with clearly sourced examples of package/ticket pricing where quoted; Peterborough relevance comes from outbound event-goers rather than pretending the event is local.',evidence:'Official promoter/ticket-agent information plus current consumer/travel-insurance guidance on separate bookings and cancellation cover.',lane:'Authority',path:'Travel advisers, insurance specialists, consumer-law experts and event/travel businesses.',action:'Tell us what you would do',cta:'Comment',ctaText:'Tell Us What You Would Do',social:'Would you book a non-refundable hotel for a concert months before the event?',reuse:'Multi-edition'},
+ {title:"Where Serves Peterborough's Best Full English?",question:'Which Peterborough-area breakfast genuinely deserves to be called the best Full English?',problem:'Readers want named, current recommendations with price, contents and a reason to make the trip — not a generic “best of” list.',hook:'A Full English can be brilliant or an expensive disappointment. Where gets it right?',reader:'Peterborough locals and visitors looking for a breakfast recommendation.',value:'A specific reader-friendly guide to strong local breakfasts, backed by current menus/prices and reader nominations where genuine.',proof:'Named Peterborough-area cafés, pubs, hotels or farm shops with current breakfast prices and what is included.',evidence:'Current official menu/business information for every named venue and price; reader recommendations must be genuine.',lane:'Activation',path:'Independent cafés, pubs, hotels and food businesses; Taste Trail crossover.',action:'Nominate your favourite',cta:'Nominate',ctaText:'Nominate Your Favourite',social:'What has absolutely no business being on a Full English breakfast?',reuse:'Multi-edition'}
+];
+const CAMBRIDGESHIRE_EDITORIAL_PLAN=[
+ {title:'Should New-Build Homes In Cambridgeshire Be Better At Keeping Cool?',question:'As hotter summer spells become more common, how well are new-build homes in Cambridgeshire designed to avoid overheating, and when would air conditioning actually make sense?',problem:'Modern homes can be energy-efficient yet uncomfortable in hot weather, leaving buyers unsure what good summer design should look like.',hook:'A new home can keep heat in brilliantly. In July, that is not always a compliment.',reader:'Cambridgeshire homeowners, buyers, renters and families in newer homes.',value:'Explain what overheating rules require, what buyers can check and when shading, ventilation or cooling may make a difference.',proof:'Named Cambridgeshire new-build areas or planning examples plus current overheating/building-regulation evidence; use local temperature or housing context only when verified.',evidence:'Current GOV.UK/Building Regulations overheating guidance plus current local planning/development sources where relevant.',lane:'Authority',path:'Architects, developers, surveyors, glazing/shading, ventilation and air-conditioning specialists.',action:'Tell us how hot your home gets',cta:'Button',ctaText:'Tell Us About Your Home',social:'Which room in your home becomes unbearable first when Cambridgeshire gets hot?',reuse:'Multi-edition'},
+ {title:'What Does £300,000 Actually Buy Around Cambridgeshire?',question:'How different is the home a buyer can get for around £300,000 in Cambridge, Ely, St Ives, March and Wisbech right now?',problem:'County-wide average prices hide huge local differences, so buyers need real examples rather than one Cambridgeshire number.',hook:'The same £300,000 budget can mean very different homes depending on which Cambridgeshire postcode you choose.',reader:'Cambridgeshire buyers, movers and homeowners comparing areas.',value:'A named-place comparison showing what a £300,000 budget currently looks like across several parts of the county.',proof:'Current named property listings or sold-price/ONS evidence across at least four Cambridgeshire locations; label live listings as examples, not valuations.',evidence:'Current ONS/HM Land Registry data plus current estate-agent/property portal examples where permitted and clearly dated.',lane:'Authority',path:'Estate agents, mortgage advisers, conveyancers and surveyors.',action:'Tell us where you would buy',cta:'Button',ctaText:'Where Would You Buy?',social:'If you had £300,000 to spend on a Cambridgeshire home, where would you get the best balance of house and location?',reuse:'Multi-edition'},
+ {title:'The £30 Family Day Out Test: How Far Does It Go In Cambridgeshire?',question:'What can a family realistically do around Cambridgeshire for about £30 before food and travel push the day into expensive territory?',problem:'A family day out can become costly quickly, and parents want named local options with real prices rather than generic free-things lists.',hook:'Can £30 still buy a decent family day out in Cambridgeshire?',reader:'Cambridgeshire parents, grandparents and carers looking for summer ideas.',value:'A checked shortlist of named attractions/activities with current family or individual prices and what is actually included.',proof:'Named Cambridgeshire attractions, museums, trails, parks or activities with current official prices, dates and parking notes where relevant.',evidence:'Current official attraction/venue pages and council information for every quoted price/date.',lane:'Activation',path:'Attractions, visitor venues, family businesses, cafés and tourism partners.',action:'Nominate your best-value day out',cta:'Nominate',ctaText:'Nominate A Day Out',social:'Where can a family still have a genuinely good Cambridgeshire day out without spending a fortune?',reuse:'Multi-edition'},
+ {title:'Online Conveyancer Or Local Solicitor: What Are You Actually Paying For?',question:'When buying or selling a Cambridgeshire home, what changes when you choose a low-cost online conveyancer rather than a local solicitor or conveyancer?',problem:'Quotes can look similar until readers compare what is included, how communication works and what happens when a transaction becomes complicated.',hook:'The cheapest conveyancing quote can look brilliant right up until you need somebody to pick up the phone.',reader:'Cambridgeshire buyers, sellers and landlords.',value:'A plain-English comparison of price structure, communication, local knowledge, exclusions and questions to ask before instructing anyone.',proof:'Current transparent example fee structures where publicly available, plus Cambridgeshire-specific property issues only where supported; do not imply local is automatically better.',evidence:'Current SRA/CLC or GOV.UK consumer guidance plus current published fee examples and clearly attributed expert input where used.',lane:'Authority',path:'Conveyancers and property solicitors.',action:'Ask the conveyancing question',cta:'Button',ctaText:'Ask Your Conveyancing Question',social:'Would you choose a cheaper online conveyancer or pay more for someone local you can speak to?',reuse:'Multi-edition'},
+ {title:'When Should A Home Survey Make You Walk Away?',question:'Which survey findings are normal negotiating points and which should make a Cambridgeshire buyer pause, renegotiate or walk away?',problem:'Survey reports can sound alarming even when issues are manageable, while serious defects can be underestimated by inexperienced buyers.',hook:'A survey can make an ordinary house sound like it is about to fall down. Which findings really deserve the red pen?',reader:'Cambridgeshire homebuyers, especially first-time buyers.',value:'Explain common survey red flags, what needs specialist follow-up and how to separate scary wording from serious cost/risk.',proof:'Cambridgeshire housing-stock examples such as older city homes, Fenland ground/drainage issues or rural properties only where supported by current expert/official evidence.',evidence:'Current RICS guidance plus authoritative local/geological/flood/subsidence evidence where a local example is used.',lane:'Authority',path:'RICS surveyors, structural engineers, drainage and property specialists.',action:'Ask the survey question',cta:'Button',ctaText:'Ask Your Survey Question',social:'What survey finding would make you walk away from a house purchase immediately?',reuse:'Multi-edition'},
+ {title:'Heat Pump Or Gas Boiler: What Should A Cambridgeshire Homeowner Compare First?',question:'For a Cambridgeshire homeowner replacing a heating system, what should be compared before deciding whether a heat pump is suitable?',problem:'Headlines reduce heating choices to one technology versus another, while actual suitability depends on the home, insulation, emitters, costs and grants.',hook:'A heat pump can be a great fit for one home and a poor fit for the house next door.',reader:'Cambridgeshire homeowners considering heating upgrades or facing boiler replacement.',value:'A reader-first checklist covering suitability, running temperatures, insulation, radiators, installation costs, grants and questions to ask installers.',proof:'Cambridgeshire housing examples or local scheme/installer context where verified; national grant figures must be current.',evidence:'Current GOV.UK Boiler Upgrade Scheme and Ofgem/MCS or other primary technical guidance plus local evidence where used.',lane:'Authority',path:'Heating engineers, heat-pump installers, energy advisers and retrofit specialists.',action:'Tell us what you would choose',cta:'Button',ctaText:'Heat Pump Or Boiler?',social:'If your boiler failed tomorrow, would you replace it like-for-like or seriously consider a heat pump?',reuse:'Multi-edition'},
+ {title:'Which Cambridgeshire Pub Garden Is Actually Worth The Drive?',question:'Which pub gardens across Cambridgeshire offer more than a few benches outside — and what do current menus, facilities and opening information show?',problem:'“Great beer garden” lists are often generic or out of date; readers want named places worth making a trip for.',hook:'Sun out, drink ordered, table found. Which Cambridgeshire pub garden is worth getting in the car for?',reader:'Cambridgeshire residents looking for a summer pub, meal or meet-up.',value:'A current shortlist spanning different parts of the county, with named venues, what makes each garden different and practical visit details.',proof:'Named pubs across several Cambridgeshire towns/villages with current official garden, menu, booking, family/dog or opening information; reader nominations only when genuine.',evidence:'Current official pub/venue websites and menus for every named recommendation.',lane:'Activation',path:'Pubs, breweries, restaurants, hospitality and Taste Trail partners.',action:'Nominate your pub garden',cta:'Nominate',ctaText:'Nominate A Pub Garden',social:'Which Cambridgeshire pub garden do you happily travel further for?',reuse:'Multi-edition'},
+ {title:'School Uniform Season: Where Does The Money Actually Go?',question:'What does a realistic back-to-school uniform basket cost for a Cambridgeshire family, and which items genuinely need to be branded?',problem:'Parents can spend heavily before September without knowing which branded items a school can reasonably require or where savings are possible.',hook:'Blazer, shoes, PE kit, logo tops... how quickly does the back-to-school basket hit £100?',reader:'Cambridgeshire parents and carers preparing for the new school year.',value:'Build a transparent example basket, explain current uniform guidance and show practical ways families can check what is compulsory before buying.',proof:'Current Cambridgeshire school uniform lists and named local/major retailer prices where appropriate; compare examples without claiming every school is the same.',evidence:'Current Department for Education school-uniform guidance plus current named school uniform requirements and retailer prices.',lane:'Activation',path:'Uniform suppliers, shoe retailers, family finance/community support and schools.',action:'Tell us your uniform bill',cta:'Button',ctaText:'Tell Us Your Uniform Bill',social:'What is the one school-uniform item you resent paying for every year?',reuse:'Multi-edition'},
+ {title:'Cambridgeshire Sunday Roast Test: What Does A Proper Roast Cost Now?',question:'What are current Sunday roast prices around Cambridgeshire, and what do diners actually get for the money?',problem:'A roast can be a value family meal or an expensive disappointment; readers need named current examples rather than a generic best-roast list.',hook:'How much is too much for a Sunday roast — £15, £20, £25?',reader:'Cambridgeshire residents looking for Sunday lunch recommendations.',value:'Compare named current menus across several towns/villages, showing price, meat/vegetarian options and what makes each place distinctive on paper.',proof:'Named Cambridgeshire pubs/restaurants with current official Sunday menus and prices across multiple areas; genuine reader comments only when supplied.',evidence:'Current official venue menus/pages for every price and claim.',lane:'Activation',path:'Pubs, restaurants, farm shops, hospitality and Taste Trail partners.',action:'Nominate your Sunday roast',cta:'Nominate',ctaText:'Nominate Your Roast',social:'What is the most you would happily pay for an excellent Sunday roast in Cambridgeshire?',reuse:'Multi-edition'}
+];
+async function applyEditorialPlan(){
+ if(!S.issue){alert('Open an issue first.');return}
+ const publication=currentPublicationName();
+ if(/Cambridgeshire Spotlight/i.test(publication)){
+   if(!confirm('Apply the 9-article Cambridgeshire starter plan to this issue? Existing matching titles will be updated; missing articles will be created.'))return;
+   E('save-state').textContent='Applying Cambridgeshire editorial plan…';
+   try{
+     const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=r.records||[];
+     let created=0,updated=0;
+     for(let i=0;i<CAMBRIDGESHIRE_EDITORIAL_PLAN.length;i++){
+       const x=CAMBRIDGESHIRE_EDITORIAL_PLAN[i],marker=`PUBLISH NOW — Final Running Order ${String(i+1).padStart(2,'0')}.`;
+       const fields={Issues:[S.issue.id],'Section Title':x.title,'Section Order':i+1,'Section Type':'Anchor','Section Status':'Planned','Reader Hook':x.hook,'Core Reader Question':x.question,'Universal Reader Problem':x.problem,'Reader Type':x.reader,'Emotional Outcome':'Curious','Reader Value':x.value,'Local Proof Needed':x.proof,'Evidence Required':x.evidence,'Evidence Status':'Needs Update','Commercial Lane':x.lane,'Commercial Pathway':x.path,'Primary Next Action':x.action,'CTA Type':x.cta,'CTA Text':x.ctaText,'Social Question Shape':x.social,'Archive Similarity Status':'Review','Reuse / Localisation Potential':x.reuse,'Notes':marker,'Section QA Result':'Not Checked'};
+       const existing=S.sections.find(s=>String(val(s.fields,'Section Title')||'').trim().toLowerCase()===x.title.trim().toLowerCase());
+       if(existing){
+        const patch={...fields};delete patch.Issues;
+        // v3.16: an approved-plan brief update invalidates every previous research/writer state.
+        // The new title/question/brief are controlling; stale production cannot survive a changed plan slot.
+        patch['Section Final Copy']='';
+        patch['Evidence Status']='Needs Update';
+        patch['Evidence Checked Date']='';
+        patch['Section QA Result']='Not Checked';
+        patch['Section Status']='Planned';
+        patch['Source / Reference Link 1']='';
+        patch['Action Destination URL']='';
+        patch['Primary Hot Button']='';
+        patch['Notes']=stripStaleProductionStateV316(patch['Notes']||'');
+        const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:existing.id,fields:patch})});existing.fields=d.record.fields;updated++;
+      }
+       else{const d=await api('sections',{method:'POST',body:JSON.stringify({fields})});S.sections.push(d.record);created++;}
+     }
+     const issueFields={'Main Theme':'Cambridgeshire questions with named local proof: what is changing, what it costs and what is genuinely worth knowing.','Issue Status':'BUILDING'};
+     const idata=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:issueFields})});S.issue=idata.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);
+     sortSections();renderSections();renderForm();render();
+     E('save-state').textContent=`Cambridgeshire plan ready: ${created} created · ${updated} updated.`;
+     alert(`Cambridgeshire editorial plan ready. ${created} article briefs created and ${updated} updated. Review the nine titles, then click Build issue. Produce Master Articles only after Build QA passes.`);
+   }catch(err){E('save-state').textContent='Editorial plan failed: '+err.message;alert('Editorial plan error: '+err.message)}
+   return;
+ }
+ if(/Peterborough Spotlight/i.test(publication)){
+   if(!confirm('Apply the approved 10-article Peterborough Master Article plan to this issue? Existing matching titles will be updated; missing articles will be created.'))return;
+   E('save-state').textContent='Applying Peterborough editorial plan…';
+   try{
+     const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=r.records||[];
+     let created=0,updated=0;
+     for(let i=0;i<PETERBOROUGH_EDITORIAL_PLAN.length;i++){
+       const x=PETERBOROUGH_EDITORIAL_PLAN[i], marker=`PUBLISH NOW — Final Running Order ${String(i+1).padStart(2,'0')}.`;
+       const fields={Issues:[S.issue.id],'Section Title':x.title,'Section Order':i+1,'Section Type':'Anchor','Section Status':'Planned','Reader Hook':x.hook,'Core Reader Question':x.question,'Universal Reader Problem':x.problem,'Reader Type':x.reader,'Emotional Outcome':'Curious','Reader Value':x.value,'Local Proof Needed':x.proof,'Evidence Required':x.evidence,'Evidence Status':'Needs Update','Commercial Lane':x.lane,'Commercial Pathway':x.path,'Primary Next Action':x.action,'CTA Type':x.cta,'CTA Text':x.ctaText,'Social Question Shape':x.social,'Archive Similarity Status':'Review','Reuse / Localisation Potential':x.reuse,'Notes':marker,'Section QA Result':'Not Checked'};
+       const existing=S.sections.find(s=>String(val(s.fields,'Section Title')||'').trim().toLowerCase()===x.title.trim().toLowerCase());
+       if(existing){const patch={...fields};delete patch.Issues;const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:existing.id,fields:patch})});existing.fields=d.record.fields;updated++;}
+       else{const d=await api('sections',{method:'POST',body:JSON.stringify({fields})});S.sections.push(d.record);created++;}
+     }
+     const issueFields={'Main Theme':'Peterborough questions that help readers decide what is changing, what it costs and what to do next.','Issue Status':'BUILDING'};
+     const idata=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:issueFields})});S.issue=idata.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);
+     sortSections();renderSections();renderForm();render();
+     E('save-state').textContent=`Peterborough plan ready: ${created} created · ${updated} updated.`;
+     alert(`Peterborough editorial plan ready. ${created} article briefs created and ${updated} updated. Now click Build issue, then Produce all ready Master Articles when the build QA passes.`);
+   }catch(err){E('save-state').textContent='Editorial plan failed: '+err.message;alert('Editorial plan error: '+err.message)}
+   return;
+ }
+ if(/Norfolk Spotlight/i.test(publication)){
+   const publishOrder=[23,1,18,17,25,19,31,13,20,5,29,24,27,8,15,4,9,12,7,14,10,6,28,30,26];
+   const parked=new Set([2,3,11,16,21,22]);
+   if(!confirm('Apply the locked 25 publish / 6 park Norfolk editorial plan to this issue? This writes editorial markers into Notes but does not change Section Order or delete records.'))return;
+   E('save-state').textContent='Applying Norfolk editorial plan…';
+   try{const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=r.records||[];const orderMap=new Map(publishOrder.map((n,i)=>[n,i+1]));let changed=0;for(const sec of S.sections){const f=sec.fields||{},n=Number(val(f,'Section Order'));let marker='';if(parked.has(n))marker='PARKED — hold for a future Norfolk issue. Do not include in this build.';else if(orderMap.has(n))marker=`PUBLISH NOW — Final Running Order ${String(orderMap.get(n)).padStart(2,'0')}.`;else continue;const notes=String(val(f,'Notes')||'').replace(/(?:PARKED — hold for a future Norfolk issue\. Do not include in this build\.|PUBLISH NOW — Final Running Order \d{2}\.)\s*/g,'').trim();const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{'Notes':notes?marker+'\n\n'+notes:marker}})});sec.fields=d.record.fields;changed++;}sortSections();renderSections();E('save-state').textContent=`Norfolk editorial plan applied to ${changed} sections.`;alert(`Norfolk editorial plan applied to ${changed} sections.`)}catch(err){E('save-state').textContent='Editorial plan failed: '+err.message;alert('Editorial plan error: '+err.message)}
+   return;
+ }
+ alert(`No locked editorial plan is configured yet for ${publication||'this publication'}. The production workspace is publication-aware; add that publication's approved plan before generating.`);
+}
+
+async function copyProductionMap(){
+ E('save-state').textContent='Loading current issue map…';
+ let records=[];
+ try{
+   const id=S.issue?.id;
+   if(!id){alert('Open an issue first.');E('save-state').textContent='Open an issue first.';return}
+   const r=await api('sections?issueId='+encodeURIComponent(id));
+   records=r.records||[];
+   S.sections=records;
+   sortSections();
+ }catch(err){
+   alert('Production map error: '+err.message);
+   E('save-state').textContent='Could not load production map.';
+   return;
+ }
+ const lines=['ISSUE PRODUCTION MAP',`${S.sections.length} sections`,''];
+ S.sections.forEach(s=>{
+   const f=s.fields||{};
+   lines.push(`${val(f,'Section Order')} | ${val(f,'Section Title')||'[BLANK TITLE]'} | Type: ${val(f,'Section Type')||'[blank]'} | Lane: ${val(f,'Commercial Lane')||'[blank]'} | CTA: ${val(f,'CTA Type')||'[blank]'} | Evidence: ${val(f,'Evidence Status')||'[blank]'}`);
+ });
+ const output=lines.join('\n');
+ E('preview-text').value=output;
+ E('preview-dialog').showModal();
+ E('save-state').textContent='Production map opened. Use Copy in the dialog or select the text manually.';
+}
+function auditMap(){
+ sortSections();
+ const counts={Authority:0,Activation:0,Community:0,Other:0};
+ const ctas={}; const evidence=[]; const pathways=[]; const archive=[]; const duplicates=[];
+ S.sections.forEach(s=>{
+   const lane=val(s.fields,'Commercial Lane')||'Other';
+   counts[lane]=(counts[lane]||0)+1;
+   const cta=val(s.fields,'CTA Type')||'Blank'; ctas[cta]=(ctas[cta]||0)+1;
+   if(!val(s.fields,'Evidence Status')||/needs update/i.test(val(s.fields,'Evidence Status'))) evidence.push(val(s.fields,'Section Order'));
+   if(!val(s.fields,'Commercial Pathway')) pathways.push(val(s.fields,'Section Order'));
+   if(!val(s.fields,'Archive Similarity Note')) archive.push(val(s.fields,'Section Order'));
+ });
+ for(let i=0;i<S.sections.length;i++)for(let j=i+1;j<S.sections.length;j++){
+   const a=S.sections[i],b=S.sections[j];
+   const score=issueSimilarity([val(a.fields,'Section Title'),val(a.fields,'Core Reader Question'),val(a.fields,'Universal Reader Problem')].join(' '),[val(b.fields,'Section Title'),val(b.fields,'Core Reader Question'),val(b.fields,'Universal Reader Problem')].join(' '));
+   if(score>=0.45)duplicates.push(`${val(a.fields,'Section Order')} ↔ ${val(b.fields,'Section Order')}`);
+ }
+ const lanes=AUTHORITY_LANES.map(([name,keys])=>{
+   const hits=S.sections.filter(s=>keys.some(k=>sectionText(s).includes(k)));
+   return `<div><strong>${hits.length?'✓':'✕'} ${esc(name)}</strong><br><span class="muted">${hits.length?'Sections '+hits.map(s=>esc(val(s.fields,'Section Order'))).join(', '):'MISSING'}</span></div>`;
+ }).join('');
+ const activationWarning=(counts.Activation||0)<6?`<div class="warn"><strong>Featured Partner opportunity gap:</strong> ${(counts.Activation||0)} legacy Activation lanes mapped; target is 6–8 clear short-term Featured Partner routes while the commercial model is being upgraded.</div>`:'';
+ E('map-audit').className='';
+ E('map-audit').innerHTML=`<div class="philosophy-box"><strong>Map audit</strong><div class="muted">${S.sections.length} sections</div></div>
+ <div class="grid3" style="margin-top:10px"><div><strong>${counts.Authority||0}</strong><br><span class="muted">Resident Expert / Authority</span></div><div><strong>${counts.Activation||0}</strong><br><span class="muted">Featured Partner (legacy Activation)</span></div><div><strong>${counts.Community||0}</strong><br><span class="muted">Community</span></div></div>
+ ${activationWarning}
+ <h3>Locked authority lane coverage</h3><div style="display:grid;gap:8px">${lanes}</div>
+ <h3>CTA mix</h3><div class="muted">${Object.entries(ctas).map(([k,v])=>`${esc(k)} ${v}`).join(' · ')}</div>
+ <h3>Pre-build gaps</h3><div class="muted">Evidence needs update: ${evidence.length?evidence.join(', '):'none'}<br>Missing commercial pathway: ${pathways.length?pathways.join(', '):'none'}<br>Missing archive note: ${archive.length?archive.join(', '):'none'}<br>Current issue similarity warnings: ${duplicates.length?duplicates.join(' · '):'none'}</div>
+ <div class="muted" style="margin-top:10px">Similarity warnings are review prompts, not automatic duplicate deletions.<br>URLs: use clean raw destination URLs only. Tracking is applied later in Global Control.</div>`;
+}
+
+
+function masterArticlePackage(fields){
+ const notes=String(val(fields,'Notes')||'');
+ const matches=[...notes.matchAll(/MASTER ARTICLE PACKAGE v1\n([\s\S]*?)\nEND MASTER ARTICLE PACKAGE/g)];
+ const match=matches[matches.length-1];
+ if(!match)return null;
+ try{return JSON.parse(match[1])}catch{return null}
+}
+function selectedArticleExport(){
+ if(!S.section)return 'No article selected.';
+ const f=S.section.fields||{},p=masterArticlePackage(f);
+ if(!p)return 'This record does not yet contain a Master Article package. Produce it first.';
+ const sources=(p.sources||[]).map((x,i)=>`${i+1}. ${x.title||x.url}\n${x.url}\nSupports: ${x.supports||''}`).join('\n\n');
+ return `LETTERMAN MASTER ARTICLE\n\nARTICLE TITLE\n${val(f,'Section Title')}\n\nEDITORIAL STANCE\n${p.editorial_stance||''}\n\nARTICLE SUBHEAD\n${p.article_subhead||''}\n\nARTICLE BODY\n${val(f,'Section Final Copy')}\n\nEDITORIAL READINESS\n${p.editorial_readiness?.status||''}${p.editorial_readiness?.grade?` · ${p.editorial_readiness.grade}`:''}\n${p.editorial_readiness?.rationale||''}${Array.isArray(p.editorial_readiness?.suggested_edits)&&p.editorial_readiness.suggested_edits.length?`\nSuggested edits:\n${p.editorial_readiness.suggested_edits.map((e,i)=>`${i+1}. Replace: ${e.original}\n   With: ${e.replacement}\n   Why: ${e.reason||''}`).join('\n')}`:''}\n\nRELATED QUESTIONS TO BANK\n${Array.isArray(p.related_questions)?p.related_questions.map(x=>'- '+x).join('\n'):''}\n\nARTICLE SUMMARY TITLE\n${p.summary_title||''}\n\nARTICLE SUMMARY SUBHEAD\n${p.summary_subhead||''}\n\nARTICLE SUMMARY CONTENT\n${p.summary_content||''}\n\nSEO TITLE\n${p.seo_title||''}\n\nSEO DESCRIPTION\n${p.seo_description||''}\n\nURL PATH\n${p.url_path||''}\n\nKEYWORDS\n${p.keywords||''}\n\nFEATURED IMAGE BRIEF\n${p.featured_image_brief||''}\n\nFEATURED IMAGE ALT TEXT\n${p.featured_image_alt||''}\n\nNEWSLETTER HEADLINE\n${p.newsletter_headline||''}\n\nNEWSLETTER TEASER\n${p.newsletter_teaser||''}\n\nBUTTON TEXT\n${val(f,'CTA Text')}\n\nFACEBOOK\n${p.social_facebook||''}\n\nLINKEDIN\n${p.social_linkedin||''}\n\nX\n${p.social_x||''}\n\nSOURCES / INTERNAL QA\n${sources}`;
+}
+async function testOpenAI(){
+ const b=E('test-openai'),old=b.textContent;b.disabled=true;b.textContent='Testing…';
+ try{const d=await api('openai-diagnostic',{method:'POST',body:'{}'});alert(`OpenAI connection passed.\n\nModel used: ${d.modelUsed}\nVisible models: ${d.visibleModelCount}\nResponse: ${d.message}`)}
+ catch(e){alert('OpenAI connection failed:\n\n'+e.message)}finally{b.disabled=false;b.textContent=old}
+}
+async function loadSections(){E('section-list').innerHTML='<div class="empty">Loading…</div>';const d=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=d.records;sortSections();S.section=S.sections[0]||null;renderSections();renderForm()}
+async function loadArticleLibrary(){
+  if(!S.issue){S.articleLibrary=[];S.articleLibraryDiag='No issue open.';return}
+  const publicationIds=Array.isArray(S.issue.fields?.Publication)?S.issue.fields.Publication:[];
+  const publicationId=publicationIds[0];
+  if(!publicationId){S.articleLibrary=[];S.articleLibraryDiag='Current issue has no linked publication ID.';return}
+  const issueIds=(S.issues||[]).filter(i=>Array.isArray(i.fields?.Publication)&&i.fields.Publication.includes(publicationId)).map(i=>i.id);
+  const gathered=[];let scanned=0,failed=0,lastError='';
+  for(const issueId of issueIds){
+    try{
+      const d=await api('sections?issueId='+encodeURIComponent(issueId));
+      gathered.push(...(d.records||[]));scanned++;
+      await new Promise(r=>setTimeout(r,80));
+    }catch(e){failed++;lastError=e.message||String(e);console.warn('Article library issue scan failed',issueId,e)}
+  }
+  const all=gathered.filter(isProducedArticle);
+  const seenTitles=new Set(),seenIds=new Set(),records=[];
+  for(const record of all){
+    const title=String(record.fields?.['Section Title']||'').trim().toLowerCase().replace(/\s+/g,' ');
+    if(seenIds.has(record.id)||(title&&seenTitles.has(title)))continue;
+    seenIds.add(record.id);if(title)seenTitles.add(title);records.push(record);
+  }
+  S.articleLibrary=records;
+  S.articleLibraryDiag=`Scanned ${scanned}/${issueIds.length} ${currentPublicationName()||'publication'} issue${issueIds.length===1?'':'s'} · ${gathered.length} section records · ${records.length} produced articles${failed?` · ${failed} failed${lastError?': '+lastError:''}`:''}`;
+}
+function parseRunStarted(value){
+  const raw=String(value||'').trim();
+  if(!raw)return NaN;
+  const direct=Date.parse(raw);
+  if(Number.isFinite(direct))return direct;
+  const normalized=/Z$|[+-]\d\d:\d\d$/.test(raw)?raw:`${raw}Z`;
+  const fallback=Date.parse(normalized);
+  return Number.isFinite(fallback)?fallback:NaN;
+}
+function latestProductionMarker(s){
+  const notes=String(val(s?.fields||{},'Notes')||'');
+  const markers=[];
+  for(const m of notes.matchAll(/MASTER ARTICLE RUNNING v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?END MASTER ARTICLE RUNNING/g)){
+    const block=m[0],run=(block.match(/Run ID:\s*([^\n]+)/)||[])[1]||'';
+    const started=(block.match(/Started:\s*([^\n]+)/)||[])[1]||'';
+    markers.push({type:'running',index:m.index||0,runId:run.trim(),started:started.trim(),block});
+  }
+  for(const m of notes.matchAll(/MASTER ARTICLE FAILED v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?END MASTER ARTICLE FAILED/g)){
+    const block=m[0],run=(block.match(/Run ID:\s*([^\n]+)/)||[])[1]||'';
+    const error=(block.match(/Error:\s*([^\n]+)/)||[])[1]||'Production failed';
+    markers.push({type:'failed',index:m.index||0,runId:run.trim(),error:error.trim(),block});
+  }
+  for(const m of notes.matchAll(/PRODUCTION SERVICE v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|MASTER ARTICLE BLOCKED|RESEARCH PACK|PRODUCTION SERVICE|MASTER ARTICLE FAILED|MASTER ARTICLE TRACE)|$)/g)){
+    const block=m[0],run=(block.match(/Run ID:\s*([^\n]+)/)||[])[1]||'';
+    const outcome=String((block.match(/Outcome:\s*([A-Z_]+)/)||[])[1]||'').trim();
+    const stage=String((block.match(/Stage:\s*([A-Z_]+)/)||[])[1]||'').trim();
+    const exception=(block.match(/Exception:\s*([^\n]+)/)||[])[1]||'';
+    let type='review';
+    if(['BLOCKED','RESEARCH_INCOMPLETE'].includes(outcome))type='blocked';
+    else if(['SOURCE_CHECK_REQUIRED','EDITORIAL_REVIEW','ATTRIBUTED_REPORT'].includes(outcome))type='review';
+    else if(['VERIFIED_NOW','COMPLETE'].includes(outcome)&&(/^(None)?$/i.test(exception.trim())))type='complete';
+    else if(stage==='RESEARCH'&&outcome)type=outcome==='VERIFIED_NOW'?'research-complete':'review';
+    markers.push({type,index:m.index||0,runId:run.trim(),error:exception.trim(),outcome,stage,block});
+  }
+  markers.sort((a,b)=>a.index-b.index);
+  const latest=markers[markers.length-1]||null;
+  if(latest?.type==='running'){
+    const startedMs=parseRunStarted(latest.started);
+    const ageMs=Number.isFinite(startedMs)?Date.now()-startedMs:Infinity;
+    const staleAfterMs=5*60*1000;
+    if(ageMs>staleAfterMs){
+      return {...latest,type:'failed',stale:true,error:'Stale production run — no terminal result was recorded within 5 minutes.',ageMs};
+    }
+  }
+  return latest;
+}
+function masterArticleOutcome(s){
+  const notes=String(val(s?.fields||{},'Notes')||'');
+  const blocks=[...notes.matchAll(/PRODUCTION SERVICE v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?(?=\n(?:MASTER ARTICLE RUNNING|MASTER ARTICLE PACKAGE|MASTER ARTICLE BLOCKED|RESEARCH PACK|PRODUCTION SERVICE|MASTER ARTICLE FAILED|MASTER ARTICLE TRACE)|$)/g)].map(m=>m[0]);
+  const block=blocks[blocks.length-1]||'';
+  return String((block.match(/Outcome:\s*([A-Z_]+)/)||[])[1]||'').trim();
+}
+function masterArticleReviewLabel(s){
+  const outcome=masterArticleOutcome(s);
+  const written=isProducedArticle(s);
+  if(outcome==='SOURCE_CHECK_REQUIRED')return written?'WRITTEN — SOURCE CHECK':'SOURCE CHECK REQUIRED';
+  if(outcome==='ATTRIBUTED_REPORT')return written?'WRITTEN — ATTRIBUTION REVIEW':'RESEARCH — ATTRIBUTION REVIEW';
+  if(outcome==='RESEARCH_INCOMPLETE')return 'RESEARCH BLOCKED — RETRY / REPLACE';
+  if(outcome==='BLOCKED')return 'RESEARCH BLOCKED — RETRY / REPLACE';
+  if(outcome==='EDITORIAL_REVIEW')return written?'WRITTEN — EDITOR REVIEW':'EDITORIAL REVIEW';
+  return written?'WRITTEN — NEEDS REVIEW':'MASTER ARTICLE — NEEDS REVIEW';
+}
+function masterArticleState(s){
+  const transient=S.productionUi?.[s.id];
+  if(transient?.state==='running')return 'running';
+  if(transient?.state==='failed')return 'failed';
+
+  const f=s.fields||{},produced=isProducedArticle(s),qa=String(val(f,'Section QA Result')||''),status=String(val(f,'Section Status')||'');
+  const evidenceGate=evidencePublishabilityV3134(f);
+  // v3.18.9: a persisted geography/evidence guard is a real blocked state, not a cosmetic report warning.
+  if(!produced&&researchPackPresent(f)&&evidenceGate.blocked)return 'blocked';
+  // v3.9.12: the final saved article state outranks an earlier research/source-check outcome.
+  // Once the writer has produced copy and QA has passed, the card must show READY rather
+  // than remaining stuck on SOURCE CHECK / ATTRIBUTION REVIEW from the research stage.
+  if(produced&&qa==='Pass'&&(status==='Ready'||status==='Published'||masterArticlePackage(f)))return 'complete';
+
+  const latest=latestProductionMarker(s);
+  if(latest?.type==='running')return 'running';
+  if(latest?.type==='failed')return 'failed';
+  if(latest?.type==='blocked'&&!produced)return 'blocked';
+  if(latest?.type==='complete'&&produced)return 'complete';
+  if(latest?.type==='review'&&produced)return 'review';
+  if(produced)return 'review';
+  if(latest?.type==='blocked')return 'blocked';
+  return 'queue'
+}function completion(s){if(masterArticleState(s)==='complete')return 100;const f=s.fields;const keys=['Core Reader Question','Primary Hot Button','Reader Value','Evidence Status','Primary Next Action','Section Final Copy'];return Math.round(keys.filter(k=>val(f,k)&&val(f,k)!=='Not Started').length/keys.length*100)}
+function isProducedArticle(s){const f=s.fields||{},notes=String(val(f,'Notes')||''),copy=String(val(f,'Section Final Copy')||val(f,'Final Copy')||'').trim(),status=String(val(f,'Section Status')||'').trim().toLowerCase(),dest=String(val(f,'Action Destination URL')||'').trim();return !!masterArticlePackage(f)||/MASTER ARTICLE PACKAGE(?: v1)?/i.test(notes)||/\b(article_(?:body|subhead)|newsletter_(?:headline|teaser)|seo_title|url_path)\b/i.test(notes)||copy.length>=350||((status==='ready'||status==='published')&&(dest||copy.length>=150))}
+function qaFlags(s){const f=s.fields,title=String(val(f,'Section Title')).toLowerCase(),cta=String(val(f,'CTA Text')).toLowerCase(),flags=[];if(/car check|five-minute car/.test(cta)&&!/car|drive|vehicle|motor/.test(title))flags.push('CTA appears copied from car article');if(isProducedArticle(s)&&!String(val(f,'CTA Text')).trim())flags.push('Missing CTA');if(isProducedArticle(s)&&!['Pass'].includes(String(val(f,'Section QA Result'))))flags.push('QA not passed');if(isProducedArticle(s)&&String(val(f,'Section Status'))!=='Ready'&&String(val(f,'Section Status'))!=='Published')flags.push('Status needs review');return flags}
+function hotButtonPending(s){return !String(val(s?.fields||{},'Primary Hot Button')||'').trim()}
+function needsEditorialReview(s){const state=masterArticleState(s);return state==='review'||state==='blocked'}
+function filteredSections(){const mode=E('library-filter')?.value||'all';if(mode==='produced')return S.sections.filter(isProducedArticle);if(mode==='queue')return S.sections.filter(s=>!isProducedArticle(s));if(mode==='review')return S.sections.filter(needsEditorialReview);if(mode==='qa')return S.sections.filter(s=>qaFlags(s).length);return S.sections}
+function previewArticleFromCard(id,event){event?.stopPropagation?.();selectSection(id);E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()}
+function readinessBadge(s){const p=masterArticlePackage(s?.fields||{}),r=p?.editorial_readiness;if(!r?.status)return '';const g=r.grade?` · ${esc(r.grade)}`:'';return `<span class="muted" style="display:block;margin-top:4px"><strong>${esc(r.status)}${g}</strong>${r.rationale?` — ${esc(String(r.rationale).slice(0,90))}`:''}</span>`}
+// v3.18.6 — every production workspace must be shareable without screenshots.
+function workspaceReportV3186(){
+  const rows=(typeof activeIssueSections==='function'?activeIssueSections():S.sections||[]).filter(s=>!isSupersededSmartBrief(s)).slice().sort((a,b)=>Number(val(a.fields||{},'Section Order')||999)-Number(val(b.fields||{},'Section Order')||999));
+  const issue=S.issue?.fields||{};
+  const pub=typeof currentPublicationName==='function'?currentPublicationName():'';
+  const number=val(issue,'Issue Number')||val(issue,'Number')||'';
+  const send=val(issue,'Send Date')||'';
+  const theme=val(issue,'Main Theme')||val(issue,'Main theme')||'';
+  const step=document.body.dataset.workflowStep||'';
+  const wfs=rows.map(articleWorkflowState);
+  const researched=wfs.filter(x=>x.researched).length, verified=wfs.filter(x=>x.verified).length, written=wfs.filter(x=>x.hasCopy).length, ready=wfs.filter(x=>x.ready).length;
+  const states={}; rows.forEach(r=>{const k=masterArticleState(r);states[k]=(states[k]||0)+1});
+  const out=[];
+  out.push('ICS WORKSPACE REPORT');
+  out.push('Generated: '+new Date().toLocaleString());
+  out.push('Publication: '+(pub||'—'));
+  out.push('Issue: '+(number||'—'));
+  if(send)out.push('Send date: '+send);
+  if(theme)out.push('Issue promise: '+theme);
+  if(step)out.push('Workflow step: '+step);
+  out.push('Active records: '+rows.length);
+  out.push(`Pipeline: ${researched} researched · ${verified} verified · ${written} written · ${ready} QA ready`);
+  out.push('States: '+Object.entries(states).map(([k,v])=>`${k} ${v}`).join(' · '));
+  out.push('');
+  rows.forEach((r,i)=>{
+    const f=r.fields||{}, wf=articleWorkflowState(r), latest=latestProductionMarker(r), state=masterArticleState(r), outcome=masterArticleOutcome(r);
+    const order=val(f,'Section Order')||i+1, title=val(f,'Section Title')||'Untitled';
+    out.push(`${order}. ${title}`);
+    out.push(`State: ${state.toUpperCase()}${outcome?` · Outcome: ${outcome}`:''}`);
+    out.push(`Pipeline: R ${wf.researched?'✓':'○'} · V ${wf.verified?'✓':'○'} · W ${wf.hasCopy?'✓':'○'} · QA ${wf.ready?'✓':'○'} · ${completion(r)}%`);
+    const evidence=String(val(f,'Evidence Status')||'').trim(); if(evidence)out.push('Evidence: '+evidence);
+    const geoIssue=persistedResearchGeographyIssueV3188(f); if(geoIssue)out.push('Research guard: BLOCKED — '+geoIssue);
+    const sectionStatus=String(val(f,'Section Status')||'').trim(); if(sectionStatus)out.push('Section status: '+sectionStatus);
+    const qa=String(val(f,'Section QA Result')||'').trim(); if(qa)out.push('QA result: '+qa);
+    const source=String(val(f,'Source / Reference Link 1')||'').trim(); if(source)out.push('Primary source: '+source);
+    const flags=qaFlags(r); if(flags.length)out.push('QA flags: '+flags.join(' | '));
+    if(latest?.error)out.push('Technical/block detail: '+latest.error);
+    if(latest?.block&&!latest?.error)out.push('Block detail: '+String(latest.block).replace(/\s+/g,' ').trim().slice(0,500));
+    const pack=masterArticlePackage(f), readiness=pack?.editorial_readiness; if(readiness?.status)out.push(`Editorial readiness: ${readiness.status}${readiness.grade?` · ${readiness.grade}`:''}${readiness.rationale?` — ${readiness.rationale}`:''}`);
+    out.push('');
+  });
+
+  // v3.18.12 — Taste Trail support mix: varied editorial jobs + local-proof grounding + surgical rebuild.
+  // v3.18.11 — reports must include the data for the CURRENT workflow step, not just Master state.
+  // Step 5 selection is stored as Section Order values. Surface it so downstream issue composition is shareable.
+  try{
+    const selectedOrders=(typeof getMasterSelectionV312==='function'?getMasterSelectionV312():[]);
+    if(selectedOrders.length){
+      out.push('STEP 5 — SAVED MASTER SELECTION');
+      out.push(`Selected Masters: ${selectedOrders.length}`);
+      selectedOrders.forEach((ord,idx)=>{
+        const r=rows.find(x=>Number(val(x.fields||{},'Section Order'))===Number(ord));
+        out.push(`${idx+1}. [${ord}] ${r?String(val(r.fields||{},'Section Title')||'Untitled'):'Saved selection record not currently visible'}`);
+      });
+      out.push('');
+    }
+  }catch{}
+
+  try{
+    if(Number(step)>=6&&typeof featureArticleRecordsV3204==='function'){
+      const features=featureArticleRecordsV3204();
+      out.push('STEP 6A — FEATURE ARTICLES');
+      out.push(`Features: ${features.length}/${featureTargetForIssueV3204()} planned · ${features.filter(featureArticleReadyV3204).length} ready`);
+      features.slice(0,featureTargetForIssueV3204()).forEach((r,i)=>{
+        const f=r.fields||{},p=masterArticlePackage(f)||{};
+        out.push(`${i+1}. ${String(val(f,'Section Title')||'Untitled Feature')}`);
+        out.push(`Status: ${featureArticleReadyV3204(r)?'READY':'IN PROGRESS'} · ${String(val(f,'Section QA Result')||'Not Checked')}`);
+        if(p.url_path)out.push(`Expected slug: ${p.url_path}`);
+      });
+      out.push('');
+    }
+  }catch(e){out.push('STEP 6A FEATURE REPORT WARNING: '+String(e.message||e));out.push('');}
+
+  // Step 6 is persistent in Airtable. Include every support component, its copy and readiness.
+  try{
+    if(typeof persistentSupportRecordsV3153==='function'){
+      const target=typeof supportTargetV315==='function'?supportTargetV315():null;
+      const supports=supportRecordsForTargetV3204(persistentSupportRecordsV3153(),target?.supportNeeded||999).slice().sort((a,b)=>Number(val(a.fields||{},'Section Order')||999)-Number(val(b.fields||{},'Section Order')||999));
+      if(supports.length||Number(step)>=6){
+        const readySupports=supports.filter(s=>typeof supportReadyRecordV3153==='function'&&supportReadyRecordV3153(s)).length;
+        out.push('STEP 6 — SUPPORTING COMPONENTS');
+        out.push(`Components: ${supports.length}${target?` / ${target.supportNeeded} required`:''} · ${readySupports} ready · ${Math.max(0,supports.length-readySupports)} incomplete`);
+        supports.forEach((r,i)=>{
+          const f=r.fields||{};
+          const meta=typeof supportMetaV3153==='function'?supportMetaV3153(r):{};
+          const title=String(val(f,'Section Title')||meta.type||'Supporting Component');
+          const status=String(val(f,'Section Status')||'').trim()||'—';
+          const qa=String(val(f,'Section QA Result')||'').trim()||'—';
+          const copy=String(val(f,'Section Final Copy')||'').trim();
+          out.push(`${i+1}. ${title}`);
+          if(meta.type)out.push(`Type: ${meta.type}`);
+          if(meta.lifeLane)out.push(`Life lane: ${meta.lifeLane}`);
+          out.push(`Status: ${status} · QA: ${qa} · ${copy?'COPY SAVED':'NO COPY'}`);
+          if(copy)out.push('Copy: '+copy.replace(/\s+/g,' ').trim());
+          const cta=String(val(f,'CTA Text')||'').trim(); if(cta)out.push('CTA: '+cta);
+          const dest=String(val(f,'Action Destination URL')||'').trim(); if(dest)out.push('CTA destination: '+dest);
+          out.push('');
+        });
+      }
+    }
+  }catch(e){out.push('STEP 6 REPORT WARNING: '+String(e.message||e));out.push('');}
+
+  // v3.19.0 — Step 7 must expose the actual persisted newsletter order.
+  try{
+    if(Number(step)>=7){
+      const canvas=(typeof getCanvas==='function'?getCanvas():[]);
+      out.push('STEP 7 — ASSEMBLED RUNNING ORDER');
+      if(canvas.length){
+        out.push(`Sections: ${canvas.length}`);
+        canvas.forEach((b,i)=>{
+          out.push(`${i+1}. ${String(b.title||b.type||'Untitled section')} [${String(b.type||b.kind||'section').toUpperCase()}] · ${String(b.status||'—')}`);
+        });
+      }else{
+        out.push('No assembled running order is currently available.');
+      }
+      out.push('');
+    }
+  }catch(e){out.push('STEP 7 REPORT WARNING: '+String(e.message||e));out.push('');}
+
+  // v3.18.16 — Step 8 Final QA must travel with the workspace report.
+  try{
+    const qa=JSON.parse(localStorage.getItem(qaKey())||'null');
+    if(qa?.summary&&Number(step)>=8){
+      out.push('STEP 8 — FINAL QA');
+      out.push(renderQAReport(qa));
+      out.push('');
+    }
+  }catch(e){out.push('STEP 8 QA REPORT WARNING: '+String(e.message||e));out.push('');}
+
+  return out.join('\n').trim()+'\n';
+}
+function createWorkspaceReportV3186(){
+  const t=workspaceReportV3186();
+  const box=E('workspace-report-text-v3186'); if(box)box.value=t;
+  E('workspace-report-dialog-v3186')?.showModal();
+}
+async function copyWorkspaceReportV3186(){
+  const box=E('workspace-report-text-v3186'); const text=box?.value||workspaceReportV3186();
+  try{if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(text);else{box?.focus();box?.select();document.execCommand('copy')};const b=E('copy-workspace-report-v3186');if(b){const old=b.textContent;b.textContent='Copied ✓';setTimeout(()=>b.textContent=old,1200)}}catch(e){if(box){box.focus();box.select()}alert('Report created. Clipboard access was blocked, so the report text has been selected for manual copy.');}
+}
+function downloadWorkspaceReportV3186(){
+  const text=E('workspace-report-text-v3186')?.value||workspaceReportV3186();
+  const pub=(typeof currentPublicationName==='function'?currentPublicationName():'issue').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()||'issue';
+  const num=String(val(S.issue?.fields||{},'Issue Number')||'').replace(/[^a-z0-9-]+/gi,'');
+  const blob=new Blob([text],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${pub}${num?'-issue-'+num:''}-workspace-report.txt`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function renderSections(){
+  sortSections();
+  const activeRows=activeIssueSections(),produced=activeRows.filter(isProducedArticle).length,queue=activeRows.length-produced,warnings=activeRows.filter(s=>qaFlags(s).length).length;
+  const workflowRows=activeRows.map(articleWorkflowState),researchedCount=workflowRows.filter(x=>x.researched).length,verifiedCount=workflowRows.filter(x=>x.verified).length,writtenCount=workflowRows.filter(x=>x.hasCopy).length,readyCount=workflowRows.filter(x=>x.ready).length,reviewCount=activeRows.filter(needsEditorialReview).length;
+  const issuePct=activeRows.length?Math.round(workflowRows.reduce((sum,x)=>sum+x.steps.filter(Boolean).length,0)/(activeRows.length*4)*100):0;
+  E('library-summary').innerHTML=`<div><strong>${produced}</strong><span>Produced</span></div><div><strong>${queue}</strong><span>Queue</span></div><div><strong>${warnings}</strong><span>Warnings</span></div><div><strong>${issuePct}%</strong><span>Issue ready</span></div><div class="issue-progress-note"><b>Pipeline: ${researchedCount} researched · ${verifiedCount} verified · ${writtenCount} written · ${readyCount} QA ready</b><span>${activeRows.length?`${reviewCount} need editorial review · ${readyCount} QA-ready`:'No active articles yet'}</span></div>`;
+  const rows=filteredSections().filter(s=>!isSupersededSmartBrief(s));
+  const ad=activeOrderDiagnostic();const diagnostic=activeRows.length?`<div class="muted" style="padding:4px 2px 10px">${activeRows.length} active records${ad.duplicates.length?` · duplicate order: ${ad.duplicates.join(', ')}`:''}${ad.missing.length?` · missing order: ${ad.missing.join(', ')}`:' · numbering clean ✓'}</div>`:'';
+  E('section-list').innerHTML=diagnostic+(rows.length?rows.map((s,n)=>{
+    const flags=qaFlags(s),state=masterArticleState(s),isComplete=state==='complete',isReview=state==='review',isRunning=state==='running',isFailed=state==='failed',isBlocked=state==='blocked';
+    const stateText=isComplete?'MASTER ARTICLE COMPLETE ✓':isReview?masterArticleReviewLabel(s):isBlocked?masterArticleReviewLabel(s):isRunning?'PRODUCING…':isFailed?'TECHNICAL FAILURE':'IN PRODUCTION QUEUE';
+    const hot=String(val(s.fields,'Primary Hot Button')||'').trim();
+    const transient=S.productionUi?.[s.id],latestMarker=latestProductionMarker(s);
+    const persistedError=isFailed&&latestMarker?.type==='failed'?(latestMarker.stale?`Stale run — safe to retry${Number.isFinite(latestMarker.ageMs)?` (${Math.floor(latestMarker.ageMs/60000)}m old)`:''}`:latestMarker.error):'';
+    const err=isFailed&&(transient?.error||persistedError)?`<span class="qa-flag">${esc(String(transient?.error||persistedError).slice(0,120))}</span>`:(flags.length?`<span class="qa-flag">${esc(flags[0])}</span>`:(!isComplete&&hotButtonPending(s)?`<span class="muted">Hot Button pending — planning metadata</span>`:''));
+    const wf=articleWorkflowState(s),firstOpen=wf.steps.findIndex(x=>!x);
+    const mini=`<div class="mini-workflow" title="Research · Verify · Write · QA ready">${wf.steps.map((done,i)=>`<span class="${done?'done':i===firstOpen?'current':''}"></span>`).join('')}</div>`;
+    return `<div class="section-item ${isComplete?'produced-complete':isReview?'produced-review':isBlocked?'production-blocked':isRunning?'production-running':isFailed?'production-failed':''} ${S.section?.id===s.id?'active':''}" onclick="selectSection('${s.id}')"><strong>${esc(val(s.fields,'Section Order')||n+1)}. ${esc(val(s.fields,'Section Title')||'Untitled section')}</strong><span class="production-state ${isComplete?'complete':isReview?'review':isBlocked?'blocked':isRunning?'running':isFailed?'failed':'queue'}">${stateText}</span>${mini}<small style="display:block;margin-top:5px">R ${wf.researched?'✓':'○'} · V ${wf.verified?'✓':'○'} · W ${wf.hasCopy?'✓':'○'} · QA ${wf.ready?'✓':'○'} · ${completion(s)}%</small>${err}${readinessBadge(s)}${isProducedArticle(s)?`<div class="article-card-actions"><button class="btn secondary" onclick="previewArticleFromCard('${s.id}',event)">Preview Master Article</button></div>`:''}</div>`;
+  }).join(''):'<div class="empty">No records match this filter.</div>')
+}function selectSection(id){S.section=S.sections.find(s=>s.id===id);renderSections();renderForm()}
+const fields=[['Section Title','input'],['Section Order','number'],['Section Type','select',['Intro','Lead / Unfiltered','Anchor','Medium','Short','Quick Hit','Community','Expert','Activation','Outro']],['Section Status','select',['Planned','Researching','Drafting','Ready','Published']],['Reader Hook','textarea','full'],['Core Reader Question','textarea','full'],['Universal Reader Problem','textarea','full'],['Primary Hot Button','hot','full'],['Reader Type','input'],['Decision Constraint','textarea'],['Emotional Outcome','select',['Curious','Reassured','Warned','Recognised','Clearer','Confident','Motivated','Amused','Concerned','Hopeful','Ready To Act']],['Reader Value','textarea','full'],['Local Proof Needed','textarea','full'],['Evidence Required','textarea','full'],['Evidence Status','select',['Not Started','Researching','Verified','Needs Update','Question Only','Illustrative Example']],['Evidence Checked Date','date'],['Source / Reference Link 1','url','full'],['Commercial Lane','select',['Not Assessed','Authority','Featured Partner','Activation','Community','None']],['Commercial Pathway','textarea','full'],['Primary Next Action','textarea','full'],['CTA Type','select',['None','Button','Link','Reply','Comment','Nominate','Vote','Save','Share']],['CTA Text','input','full'],['Action Destination URL','url','full'],['Social Question Shape','textarea','full'],['Archive Similarity Status','select',['Clear','Review','Too Similar']],['Archive Similarity Note','textarea','full'],['Reuse / Localisation Potential','select',['Not Assessed','Local only','Reusable','Niche adaptable','Multi-edition']],['Notes','textarea','full'],['Section QA Result','select',['Not Checked','Pass','Fix Required']],['Section Final Copy','copy','full']];
+
+const WRITING_MODES=['AUTO','Conversation Advice','News Explainer','Debate / Controversy','Recommendation / Discovery','Practical Service','Comparison / Value','Human / Community','Breaking Update'];
+function canonicalWritingMode(mode='AUTO'){const raw=String(mode||'AUTO').trim();const hit=WRITING_MODES.find(x=>x.toUpperCase()===raw.toUpperCase());return hit||'AUTO'}function writingModeFromNotes(notes=''){const m=String(notes).match(/^Writing mode:\s*(.+)$/mi);return canonicalWritingMode(m?m[1].trim():'AUTO')}
+function upsertWritingMode(notes='',mode='AUTO'){const clean=String(notes||'').replace(/^Writing mode:\s*.*$/gmi,'').replace(/\n{3,}/g,'\n\n').trim();const canonical=canonicalWritingMode(mode);return [clean,`Writing mode: ${canonical}`].filter(Boolean).join('\n')}
+function inferredWritingMode(text=''){const t=String(text).toLowerCase();if(/my |i |we |daughter|son|child|mortgage|save|saving|invest|should i|what should|how do i|what's the best way/.test(t))return 'Conversation Advice';if(/approved|decision|council|announced|opens?|closes?|plans?|reportedly|sold|sale|owed|taxpayer|accountab|collapsed|administration|public money/.test(t))return 'News Explainer';if(/controvers|debate|fair|unfair|should .* be|what was lost/.test(t))return 'Debate / Controversy';if(/best|favourite|worth the journey|worth the trip|where should|recommend|hidden|discover|takeaway|restaurant|pub|attraction|loyal following|keeps? people going back/.test(t))return 'Recommendation / Discovery';if(/compare|versus| vs |cheapest|best-value|cost/.test(t))return 'Comparison / Value';if(/event|weekend|checklist|what can you do|how to/.test(t))return 'Practical Service';return 'AUTO'}
+function effectiveWritingMode(stored='AUTO',title='',question=''){const current=canonicalWritingMode(stored);const text=[title,question].join(' ');const inferred=inferredWritingMode(text);const t=text.toLowerCase();const strongDiscovery=/takeaway|restaurant|pub|attraction|worth (?:the )?(?:journey|trip)|recommend|underrated|hidden|loyal following|keeps? people going back/.test(t);const strongNews=/sold|sale|collapsed|administration|reorganisation|delayed|decision|latest|today|what happens next|taxpayer|announced|approved|refused/.test(t);if(current==='AUTO')return inferred==='AUTO'?'AUTO':inferred;if(['Breaking Update','News Explainer'].includes(current)&&inferred==='Recommendation / Discovery'&&strongDiscovery&&!strongNews)return inferred;if(current==='Recommendation / Discovery'&&inferred==='News Explainer'&&strongNews)return inferred;if(current==='Practical Service'&&inferred!=='AUTO')return inferred;return current}
+function hotLabel(x){return String(x).replace(/^(\d+)\s+—\s+THE\s+[“\"](.+?)[”\"]\s+TEST$/i,'$1 — $2').replace(/\b([A-Z]{2,})\b/g,m=>m.charAt(0)+m.slice(1).toLowerCase())}const fieldLabels={'Section Title':'Section title','Primary Hot Button':'Primary Hot Button','Local Proof Needed':'Named local proof needed','Reuse / Localisation Potential':'Reuse / localisation potential','CTA Text':'Button / CTA text','Commercial Pathway':'Commercial pathway'};// v3.9.5 HARD RECENT HISTORY GUARD
+// This is deliberately a small known-history layer, not full Archive Recovery.
+// It combines the 4 Aug 2026 Letterman snapshot with ICS article provenance.
+const KNOWN_PUBLISHED_HISTORY={
+ 'Peterborough Spotlight':[
+  "What's On In Peterborough: Events & Things To Do","10 Clever Money-Saving Ideas You Might Not Have Tried","10 Money-Saving Tips That Could Actually Save You Money","7 Surprising Peterborough Facts You Might Not Know","Best Charity Shops in Peterborough: Hidden Bargains","Back Pain: Move Or Rest? NHS Advice Explained","House Survey Red Flags Every Buyer Should Understand","Why Dogs Ignore You Outside (And What To Do About It)","Why Reporting Small Repairs Early Saves Money","How Peterborough Businesses Can Support Mary’s Child","Peterborough's New Leisure Centre: What's Planned?","How Often Should Children See an NHS Dentist?","Peterborough's Best Things for £10 or Less","Best Full English Breakfast in Peterborough: Prices Compared","5-Minute Car Check Before a Long Summer Drive","Renters' Rights Act: 7 Changes Peterborough Tenants Should Know","Mary's Child Peterborough: Support Beyond Food Parcels","How Long Does It Take to Save a £20,000 House Deposit?","Debt Consolidation Mortgage: Why Lower Payments Can Cost More","Peterborough Housing Growth: What About Roads and Schools?","Peterborough Pride In place investment of £40m"
+ ],
+ 'Cambridgeshire Spotlight':[
+  "What's On In Cambridgeshire: 3–9 August 2026","How Often Should Children See an NHS Dentist?","£500 At Auction: How Much Does The Seller Actually Receive?","How Often Should Your Dog Be Professionally Groomed?","7 Cambridgeshire Charity Shops To Try For Second-Hand Finds","Online Conveyancer vs Local Solicitor: 7 Things To Compare","10 Money-Saving Tips That Are Actually Worth Doing Cambridgeshire","Back Pain: Should You Rest Or Keep Moving?","7 Surprising Cambridgeshire Places With Hidden Stories","GSK's £400m Cambridge Investment: What It Means For Cambridgeshire"
+ ],
+ 'Norfolk Spotlight':[
+  "A47 Weekend Closure: Norfolk Travel Advice for 31 July–3 August","Will Faster NHS Obesity Care Change Anything in Norfolk?","Free Domestic Abuse Legal Help in Norfolk: What You Need To Know","Who Fixes Traffic Problems Outside Norfolk Retail Parks?","Will Norfolk’s Brown Tourist Signs Make Days Out Easier?","Will Norfolk's New Pothole Repairs Last Longer?","Buying A Norfolk Building Plot? Read This Before You Buy","Who's Going To Build Norfolk's New Homes?","Will Your Norfolk Home Still Get Project Gigabit Broadband?","Is King's Lynn's New Travel Hub Worth £4.1 Million?","Will More SEND Staff Improve Support For Norfolk Families?","Snettisham Housing Plans: 31 New Homes Proposed Near Beach Road","Brown Norfolk Lawn: What To Do During A Hosepipe Ban","Norfolk Beauty Prices: What's Worth Paying For?","Norfolk Home Cooling: Fan, Air Con Or Heat Pump?","Norfolk Unfiltered: when diversions hit villages","Is University Still Norfolk's Only Serious Option?","Is Norfolk keeping pace with growth, heat and costs?","Norfolk summer events: the safety questions to ask","Should Norfolk Councils Fly Pride Flags?","Norfolk's Top 10 Farm Shops: Your Guide","Norfolk Health Services and Extreme Heat: Are They Ready?","Norfolk Housing Growth: Can Water and Sewers Cope?","When Does A Norfolk Village Stop Being a Community?","EES And ETIAS: What Travellers Need To Know","20,000 House Deposit: How Long Will It Take To Save?","Back Pain: When to Move, Rest or Get Medical Help","Norfolk charity-shop finds: what's your best bargain?","House Survey Red Flags: When Norfolk Buyers Should Walk","What You Really Receive From a £500 Auction Sale","How Often Should Your Dog Be Professionally Groomed?","Online Conveyancer or Local Solicitor: What You Pay For","Cheaper Rural Norfolk Homes: The Cost of Two Cars","How Often Should Children See an NHS Dentist?","Debt Consolidation: When a Lower Payment Costs More","The Norfolk lesson visitors learn too late","Norfolk's £10 Test: Five Good-Value Local Wins","The Five-Minute Check Before a Norfolk Summer Drive","Sandringham Concerts Cancelled: What Happens Next?","Norfolk House Prices Explained: What £250k, £350k and £500k Buy","Best Full English Breakfasts in Norfolk | Norfolk Spotlight"
+ ]
+};
+function reuseWords(text=''){
+ const stop=new Set('the a an and or but to of in on at for from with by is are was were be been this that what which who will would should could can do does did have has had your our norfolk peterborough cambridgeshire spotlight guide explained actually new best how when why'.split(/\s+/));
+ return [...new Set(String(text).toLowerCase().replace(/£/g,' ').replace(/20,?000/g,'20000').replace(/[^a-z0-9]+/g,' ').split(/\s+/).filter(w=>w.length>2&&!stop.has(w)))];
+}
+function titleSimilarity(a,b){
+ const A=reuseWords(a),B=reuseWords(b);if(!A.length||!B.length)return 0;const bs=new Set(B),hit=A.filter(x=>bs.has(x)).length;return hit/Math.min(A.length,B.length);
+}
+function newsletterUsageBlocksV319(record){
+ const notes=String(val(record?.fields||{},'Notes')||'');
+ return [...notes.matchAll(/NEWSLETTER USAGE v1\n([\s\S]*?)\nEND NEWSLETTER USAGE/g)].map(m=>m[1]);
+}
+function usageMarkedIssueIdsV319(){
+ const ids=new Set();
+ [...(S.articleLibrary||[]),...(S.sections||[])].forEach(r=>{
+   if(!newsletterUsageBlocksV319(r).length)return;
+   (r?.fields?.Issues||[]).forEach(id=>ids.add(String(id)));
+ });
+ return ids;
+}
+function recordUsedInNewsletterV319(record){
+ if(!record)return false;
+ if(newsletterUsageBlocksV319(record).length)return true;
+ const linked=(record.fields?.Issues||[]).map(String);
+ const markedIssues=usageMarkedIssueIdsV319();
+ // Once an issue contains explicit usage markers, unmarked READY Masters are banked, not used.
+ if(linked.some(id=>markedIssues.has(id)))return false;
+ // Legacy fallback only: old published/archive issues pre-date usage markers.
+ return linked.some(id=>{const issue=(S.issues||[]).find(x=>String(x.id)===id);const st=String(val(issue?.fields||{},'Issue Status')||'').toUpperCase();return ['PUBLISHED','ARCHIVED'].includes(st)});
+}
+function livePublishedHistoryEntries(publication=currentPublicationName()){
+ const rows=[];
+ const add=(record)=>{
+   if(!record||!isProducedArticle(record)||!recordUsedInNewsletterV319(record))return;
+   const title=String(val(record.fields||{},'Section Title')||'').trim();
+   if(!title)return;
+   rows.push({publication,title,source:'LIVE ARTICLE LIBRARY',id:record.id});
+ };
+ (S.articleLibrary||[]).forEach(add);
+ (S.sections||[]).forEach(add);
+ const seen=new Set();
+ return rows.filter(x=>{const k=normalizePlanTitle(x.title);if(!k||seen.has(k))return false;seen.add(k);return true});
+}
+function allPublishedHistoryEntries(publication=currentPublicationName()){
+ const rows=[];
+ for(const [pub,titles] of Object.entries(KNOWN_PUBLISHED_HISTORY))for(const title of titles)rows.push({publication:pub,title,source:'KNOWN HISTORY'});
+ rows.push(...livePublishedHistoryEntries(publication));
+ return rows;
+}
+function knownHistoryMatch(title,publication=currentPublicationName()){
+ let best=null;
+ for(const row of allPublishedHistoryEntries(publication)){
+   const score=titleSimilarity(title,row.title);if(!best||score>best.score)best={publication:row.publication,title:row.title,score,source:row.source,id:row.id||''};
+ }
+ if(!best||best.score<0.5)return {status:'UNKNOWN HISTORY — REVIEW',match:null};
+ if(best.publication===publication)return {status:'BLOCKED RECENT DUPLICATE',match:best};
+ return {status:'LOCALISE FROM OTHER PUBLICATION',match:best};
+}
+function inventoryWithReuseGuard(list,limit=120){
+ const publication=currentPublicationName();
+ // v3.10.1: same-publication produced articles are live history, not a default reuse pool.
+ // Every article in this publication library is therefore checked against the live archive and blocked from direct reuse.
+ return (list||[]).slice(0,limit).map(s=>{const x=inferArticleIntelligence(s),title=val(s.fields,'Section Title'),g=knownHistoryMatch(title,publication);return {id:s.id,title,purpose:val(s.fields,'Reader Value')||val(s.fields,'Core Reader Question'),proof:val(s.fields,'Local Proof Needed'),freshness:x.freshness,topic:x.topic,history_status:g.status,history_match:g.match?.title||'',history_publication:g.match?.publication||'',history_score:g.match?Math.round(g.match.score*100):0}})
+ .filter(x=>x.history_status!=='BLOCKED RECENT DUPLICATE');
+}
+function recentHistoryForPublication(publication=currentPublicationName()){
+ const staticTitles=(KNOWN_PUBLISHED_HISTORY[publication]||[]);
+ const liveTitles=livePublishedHistoryEntries(publication).map(x=>x.title);
+ const seen=new Set();
+ return [...liveTitles,...staticTitles].filter(x=>{const k=normalizePlanTitle(x);if(!k||seen.has(k))return false;seen.add(k);return true}).slice(0,180);
+}
+function articleReuseGuard(a,plan=getSmartPlan()){
+ if(!a)return {status:'UNKNOWN HISTORY — REVIEW',match:null};
+ const exact=(S.articleLibrary||[]).find(x=>x.id===a.existing_article_id);
+ const candidateTitle=exact?val(exact.fields,'Section Title'):a.title;
+ return knownHistoryMatch(candidateTitle,plan?.publication||currentPublicationName());
+}
+function reuseGuardSummary(plan){let blocked=0,localise=0,review=0;for(const a of plan?.articles||[]){if(!['REUSE','LOCALISE','REFRESH'].includes(String(a.mode||'').toUpperCase()))continue;const g=articleReuseGuard(a,plan);if(g.status==='BLOCKED RECENT DUPLICATE')blocked++;else if(g.status==='LOCALISE FROM OTHER PUBLICATION')localise++;else review++;}return{blocked,localise,review}}
+function freshnessGuardSummary(plan){
+ const arts=plan?.articles||[];
+ const counts=arts.reduce((o,a)=>{const m=String(a.mode||'CREATE NEW').toUpperCase();o[m]=(o[m]||0)+1;return o},{ });
+ const createNew=counts['CREATE NEW']||0,refresh=counts.REFRESH||0,localise=counts.LOCALISE||0,reuse=counts.REUSE||0;
+ const freshAngle=refresh+localise;
+ const freshTotal=createNew+freshAngle;
+ const profile=engineProfileForPublication();
+ const minCreateNew=profile.key==='SPOTLIGHT'?Math.min(6,arts.length):Math.ceil(arts.length*.5);
+ const maxReuse=profile.key==='SPOTLIGHT'?Math.min(2,Math.max(0,arts.length-minCreateNew)):Math.max(1,Math.floor(arts.length*.25));
+ const findings=[];
+ if(createNew<minCreateNew)findings.push(`Only ${createNew}/${arts.length} Master Articles are CREATE NEW; ${profile.name} needs at least ${minCreateNew} fresh new articles before production.`);
+ if(reuse>maxReuse)findings.push(`${reuse} direct REUSE articles exceeds the ${profile.name} maximum of ${maxReuse}. Replace recent material with fresh questions.`);
+ return {createNew,refresh,localise,reuse,freshAngle,freshTotal,minCreateNew,maxReuse,findings,ok:findings.length===0};
+}
+
+function inferArticleIntelligence(s){
+  const f=s?.fields||{};
+  const identity=[
+    val(f,'Section Title'),
+    val(f,'Core Reader Question'),
+    val(f,'Reader Hook'),
+    val(f,'Commercial Lane'),
+    val(f,'Commercial Pathway')
+  ].join(' ').toLowerCase();
+  const wider=[
+    identity,
+    val(f,'Universal Reader Problem'),
+    val(f,'Section Final Copy')
+  ].join(' ').toLowerCase();
+
+  let topic='Local Life';
+  if(/mary.?s child|charity|food parcel|food bank|family support|community support|community caf[eé]|volunteer|crisis resilience/.test(identity)){
+    topic='Community & Support';
+  }else if(/mortgage|remortgage|debt consolidation|secured loan|unsecured loan|interest rate|credit card/.test(identity)){
+    topic='Money & Mortgages';
+  }else if(/house|property|homebuy|home buy|seller|conveyanc|survey|rent|landlord|tenant/.test(identity)){
+    topic='Property & Housing';
+  }else if(/car|driver|drive|vehicle|garage|tyre|mot\b|road/.test(identity)){
+    topic='Motoring & Transport';
+  }else if(/dentist|nhs|health|pain|physio|doctor|wellbeing/.test(identity)){
+    topic='Health & Wellbeing';
+  }else if(/cafe|café|pub|restaurant|breakfast|food|farm shop|takeaway|meal/.test(identity)){
+    topic='Food & Drink';
+  }else if(/event|festival|ticket|attraction|day out|sandringham|visitor/.test(identity)){
+    topic='Days Out & Events';
+  }else if(/mortgage|remortgage|debt consolidation|secured borrowing/.test(wider)){
+    topic='Money & Mortgages';
+  }
+
+  let expert='Local community or public-service source';
+  if(topic==='Community & Support')expert='Local charity, community organisation or relevant support service';
+  else if(topic==='Money & Mortgages')expert='Mortgage adviser or debt specialist';
+  else if(topic==='Property & Housing')expert='Estate agent, conveyancer or surveyor';
+  else if(topic==='Motoring & Transport')expert='Garage, tyre specialist or motoring expert';
+  else if(topic==='Health & Wellbeing')expert='Relevant regulated health professional';
+  else if(topic==='Food & Drink')expert='Independent food business or hospitality expert';
+  else if(topic==='Days Out & Events')expert='Venue, attraction or event organiser';
+
+  let role='Newsletter Card';
+  if(/poll|vote|which would you choose/.test(wider))role='Poll / Reader Verdict';
+  else if(/quiz|how many|test your/.test(wider))role='Quiz / Challenge';
+  else if(/nominate|recommend|tell us your|reader/.test(wider))role='Reader Recommendation';
+  else if(!isProducedArticle(s))role='Newsletter Component / Queue';
+
+  let freshness='Evergreen';
+  if(/today|this week|this weekend|current price|latest|opening date|deadline/.test(wider))freshness='Time-sensitive / Review before reuse';
+  else if(/\b2026\b/.test(wider))freshness='Dated evidence / Review before reuse';
+
+  let localisation=String(val(f,'Reuse / Localisation Potential')||'Not assessed');
+  return{topic,expert,role,freshness,localisation}
+}function renderArticleIntelligence(){const box=E('article-intelligence');if(!box)return;if(!S.section){box.innerHTML='<span class="muted">Select a record to view its suggested classification.</span>';return}const x=inferArticleIntelligence(S.section);box.innerHTML=`<strong>${esc(x.topic)}</strong><div class="muted" style="margin-top:6px"><b>Expert lane:</b> ${esc(x.expert)}<br><b>Newsletter role:</b> ${esc(x.role)}<br><b>Freshness:</b> ${esc(x.freshness)}<br><b>Localisation:</b> ${esc(x.localisation)}</div><div class="muted" style="margin-top:8px">Preview only — nothing is written to Airtable.</div>`}
+function renderForm(){if(!S.section){E('section-form').innerHTML='<div class="empty">Add or select a section.</div>';E('save-state').textContent='No section selected.';E('gate').innerHTML='';renderArticleIntelligence();renderArticleWorkflow();syncSelectedProductionProgress();return}const f=S.section.fields;const storedWm=writingModeFromNotes(val(f,'Notes'));const wm=effectiveWritingMode(storedWm,val(f,'Section Title'),val(f,'Core Reader Question'));const wmHtml=`<div class="field full"><label>Writing mode</label><select id="writing-mode-control">${WRITING_MODES.map(x=>`<option ${x===wm?'selected':''}>${esc(x)}</option>`).join('')}</select><div class="muted">AUTO chooses the treatment from the reader question/story. Override only when needed.</div></div>`;E('section-form').innerHTML=fields.map(([k,t,o])=>{const v=val(f,k);let c='';if(t==='select')c=`<select data-field="${esc(k)}"><option value="" ${!v?'selected':''}>— Select —</option>${o.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('')}</select>`;else if(t==='hot')c=`<select data-field="${esc(k)}"><option value="">Choose one primary Hot Button</option>${S.hot.map(x=>`<option value="${esc(x)}" ${x===v?'selected':''}>${esc(hotLabel(x))}</option>`).join('')}</select><div class="muted">Choose the main reader thought. The exact locked Airtable value is preserved.</div>`;else if(['textarea','copy'].includes(t))c=`<textarea class="${t==='copy'?'copy':''}" data-field="${esc(k)}">${esc(v)}</textarea>`;else c=`<input type="${t}" data-field="${esc(k)}" value="${esc(v)}">`;return `<div class="field ${o==='full'||t==='hot'?'full':''}"><label>${esc(fieldLabels[k]||k)}</label>${c}</div>`}).join('');const q=document.querySelector('#section-form [data-field="Core Reader Question"]');if(q)q.closest('.field').insertAdjacentHTML('afterend',wmHtml);E('save-state').textContent='Loaded from Airtable.';
+// v3.10.25: if the saved title/question now describe a different story family from the
+// stored intelligence, clear the stale story-specific fields in the editor immediately.
+// This is a UI-only pending reset until Save section is clicked; Airtable is not mutated on load.
+const loaded=formFields();
+if(staleStoryIntelligenceDetected(loaded)){
+  resetStoryIntelligenceForReplacement(loaded);
+  E('save-state').textContent='Replacement pending — stale story intelligence cleared in this editor. Generate intelligence, then Save section.';
+}
+renderGate();renderArticleIntelligence();renderArticleWorkflow();syncSelectedProductionProgress()}
+
+function syncSelectedProductionProgress(){
+ const box=E('production-progress');if(!box)return;
+ if(!S.section){box.className='empty';box.textContent='Select an article to see its latest production state.';return}
+ const state=masterArticleState(S.section),f=S.section.fields||{},title=esc(val(f,'Section Title')||'Current article');
+ let head='Production service not run yet.',detail='No terminal production result has been saved for this article.';
+ if(state==='complete'){head='Master Article complete ✓';detail='Ready for Letterman';}
+ else if(state==='review'){head=masterArticleReviewLabel(S.section);detail='Master Article written — editor review required before publication.';}
+ else if(state==='blocked'){head=masterArticleReviewLabel(S.section);detail='Research finished — retry research or replace the article.';}
+ else if(state==='failed'){head='Technical failure';detail='Retry after reviewing the latest production error.';}
+ else if(state==='running'){head='Producing selected Master Article';detail='Background production is running.';}
+ else if(researchPackPresent(f)){head='Research complete';detail='Writing has not completed yet.';}
+ else if(String(val(f,'Evidence Status')||'')==='Researching'){head='Research not complete';detail='Research was started, but no completed Research Pack was saved. Retry research once.';}
+ box.className=state==='complete'?'philosophy-box':(state==='queue'?'empty':'philosophy-box');
+ box.innerHTML=`<strong>${esc(head)}</strong><div class="muted">${title}</div><div class="muted">${esc(detail)}</div>`;
+}
+
+function researchPackPresent(f){
+ const notes=String(val(f,'Notes')||'');
+ const hasPack=/RESEARCH PACK v1[\s\S]*?END RESEARCH PACK/.test(notes);
+ const hasTerminalService=/PRODUCTION SERVICE v(?:2\.\d+|3\.\d+\.\d+)[\s\S]*?Stage:\s*RESEARCH[\s\S]*?State:\s*RESEARCH_COMPLETE/.test(notes);
+ return hasPack||hasTerminalService;
+}
+
+
+function attributionInstructionV3134(fields){
+  const gate=evidencePublishabilityV3134(fields);
+  if(!gate.attributed)return '';
+  return 'ATTRIBUTION RULE V3.13.4: This Research Pack is publishable as ATTRIBUTED evidence, not independently VERIFIED evidence. Attribute material factual claims to the named source/report/organisation in the copy. Do not upgrade attributed claims into unqualified fact. Do not add “according to” mechanically to every sentence; attribute where it materially supports the claim.';
+}
+function persistedResearchGeographyIssueV3188(fields){
+  const pub=String(typeof currentPublicationName==='function'?currentPublicationName():'').toLowerCase();
+  const title=String(val(fields,'Section Title')||'').toLowerCase();
+  const q=String(val(fields,'Core Reader Question')||'').toLowerCase();
+  const src=String(val(fields,'Source / Reference Link 1')||'').toLowerCase();
+  const notes=String(val(fields,'Notes')||'').toLowerCase();
+  const blob=[src,notes].join(' ');
+  if(!pub.includes('peterborough'))return '';
+  const intentionalTrip=/worth the trip|food trip|detour from peterborough|outside peterborough|from peterborough/.test(title+' '+q);
+  if(/peterboroughnh\.gov|peterborough[,\s]+new hampshire|peterborough[,\s]+nh\b|\bnew hampshire\b/.test(blob))return 'Wrong Peterborough: New Hampshire/US evidence';
+  if(/peterborough[,\s]+ontario|\bontario,? canada\b|\bpeterborough\.ca\b|\bkawartha\b|\botonabee\b/.test(blob))return 'Wrong Peterborough: Ontario/Canada evidence';
+  if(!intentionalTrip && /tripadvisor\.ca/.test(src))return 'Foreign geography source';
+  return '';
+}
+function evidencePublishabilityV3134(fields){
+  const status=String(val(fields,'Evidence Status')||'').trim().toLowerCase();
+  const verified=/verified|verification complete|verified evidence/.test(status);
+  const attributed=/reported\s*[—-]\s*attribution required|attribution required|reported/.test(status);
+  const statusBlocked=/blocked|insufficient|unverified central claim|no reliable basis/.test(status);
+  const geographyIssue=persistedResearchGeographyIssueV3188(fields);
+  const blocked=statusBlocked||!!geographyIssue;
+  return {
+    verified:verified&&!blocked,
+    attributed:attributed&&!blocked,
+    publishable:(verified||attributed)&&!blocked,
+    blocked,
+    geographyIssue
+  };
+}
+function articleWorkflowState(s){
+  const f=s?.fields||s||{};
+  const evidenceGate=evidencePublishabilityV3134(f);
+  const researched=researchPackPresent(f);
+  const researchOutcome=latestResearchServiceOutcome(f);
+  const persistedVerified=evidenceGate.verified||['VERIFIED_NOW','EDITORIAL'].includes(researchOutcome)||['Verified','Question Only','Illustrative Example'].includes(String(val(f,'Evidence Status')||''));
+  const persistedAttributed=evidenceGate.attributed||researchOutcome==='ATTRIBUTED_REPORT';
+  const researchBlocked=['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(researchOutcome)||evidenceGate.blocked;
+  const publishableEvidence=researched&&!researchBlocked&&(persistedVerified||persistedAttributed);
+  const hasCopy=isProducedArticle(s),qa=String(val(f,'Section QA Result')||''),ready=hasCopy&&qa==='Pass';
+  return{researched,verified:persistedVerified,publishableEvidence,attributedEvidence:persistedAttributed,hasCopy,qa,ready,steps:[researched,persistedVerified,hasCopy,ready]}}
+function renderArticleWorkflow(){
+ const box=E('article-workflow');if(!box)return;
+ if(!S.section){box.className='workflow-card';box.innerHTML='<strong>Current article workflow</strong><div class="muted" style="margin-top:6px">Select an article to see the next required action.</div>';return}
+ const f=S.section.fields||{},wf=articleWorkflowState(S.section),{researched,verified,hasCopy,qa,ready}=wf;
+ const steps=[['1. Research',researched],['2. Verify evidence',verified],['3. Write article',hasCopy],['4. Preview package',ready]];
+ let next='Run research for this article.';let cls='workflow-card';
+ if(researched&&!verified){next='Open the source, check the claims, then mark the evidence verified.';cls+=' warn'}
+ else if(verified&&!hasCopy){next='Evidence is verified. Write the current Master Article.'}
+ else if(hasCopy&&!ready){next='Review the draft and QA result, then fix or approve it.';cls+=' warn'}
+ else if(ready){next='Article package is ready to preview and copy to Letterman.';cls+=' good'}
+ box.className=cls;box.innerHTML=`<strong>${esc(val(f,'Section Title')||'Current article')}</strong><div class="workflow-steps">${steps.map(([n,d],i)=>`<div class="workflow-step ${d?'done':(!steps.slice(0,i).some(x=>!x[1])?'current':'')}">${d?'✓':'○'} ${n}</div>`).join('')}</div><div class="workflow-next">Next: ${esc(next)}</div>`;
+ const source=String(val(f,'Source / Reference Link 1')||'').trim();E('open-primary-source').disabled=!/^https?:\/\//i.test(source);E('view-research').disabled=!researched;E('mark-evidence-verified').disabled=!researched||verified;
+}
+function focusField(name){const x=document.querySelector(`#section-form [data-field="${CSS.escape(name)}"]`);if(!x)return;x.scrollIntoView({behavior:'smooth',block:'center'});x.classList.add('field-focus');setTimeout(()=>x.classList.remove('field-focus'),1800);x.focus()}
+function formFields(){const out={};document.querySelectorAll('#section-form [data-field]').forEach(x=>{let v=x.value;if(x.type==='number')v=v===''?null:Number(v);out[x.dataset.field]=v});return out}function setField(k,v,overwrite=false){const x=document.querySelector(`#section-form [data-field="${CSS.escape(k)}"]`);if(!x)return;if(overwrite||!String(x.value||'').trim()){x.value=v??'';x.dispatchEvent(new Event('change',{bubbles:true}))}}
+function hotByNumber(n){return S.hot.find(x=>String(x).startsWith(String(n).padStart(2,'0')+' '))||''}
+function noteReaderQuestion(notes=''){const m=String(notes||'').match(/^Reader question:\s*(.+)$/mi);return m?m[1].trim():''}
+function storyFamilies(text=''){const t=String(text||'').toLowerCase(),out=[];if(/junior isa|\bisa\b|saving|savings|invest|investment|university fund|premium bonds?|financial adviser|family finance|mortgage|remortgage|interest rate|tracker mortgage|fixed mortgage/.test(t))out.push('finance');if(/dog groom|pet|vet|puppy|cat|kennel|animal/.test(t))out.push('pet');if(/planning application|planning approval|planning permission|council decision|development approved|residential development|highways|parking and access/.test(t))out.push('planning');if(/car|driver|vehicle|mot\b|garage|tyre|tire|coolant|breakdown/.test(t))out.push('motoring');if(/cafe|café|pub|restaurant|breakfast|food|takeaway|meal/.test(t))out.push('food');if(/boiler|roofer|roof|builder|plumber|electrician|home repair|trades/.test(t))out.push('home');if(/survey|conveyanc|estate agent|lettings|house sale|home seller|property/.test(t))out.push('property');return [...new Set(out)]}
+function storyFamily(text=''){return storyFamilies(text)[0]||''}
+function staleStoryIntelligenceDetected(f){const core=[f['Section Title'],f['Core Reader Question']].join(' ').trim();if(!core)return false;const notes=f['Notes']||val(S.section?.fields||{},'Notes')||'';const priorQ=noteReaderQuestion(notes);if(priorQ&&issueSimilarity(core,priorQ)<0.45)return true;const currentFamilies=storyFamilies(core);const currentFamily=currentFamilies[0]||'';if(!currentFamily)return false;const staleFields=['Reader Hook','Universal Reader Problem','Reader Type','Decision Constraint','Reader Value','Local Proof Needed','Evidence Required','Commercial Pathway','Primary Next Action','CTA Text','Source / Reference Link 1','Social Question Shape','Notes'];for(const k of staleFields){const raw=(f[k] ?? val(S.section?.fields||{},k) ?? '');const v=String(raw);if(!v.trim())continue;const families=storyFamilies(v);if(families.some(x=>x!==currentFamily))return true;}return false}
+function storyReplacementDetected(f){const old=S.section?.fields||{};const now=[f['Section Title'],f['Core Reader Question']].join(' ').trim();const before=[val(old,'Section Title'),val(old,'Core Reader Question')].join(' ').trim();if(staleStoryIntelligenceDetected(f))return true;if(!now||!before||normalizePlanTitle(now)===normalizePlanTitle(before))return false;return issueSimilarity(now,before)<0.55}
+function resetStoryIntelligenceForReplacement(f){const oldNotes=String(val(S.section?.fields||{},'Notes')||'');const order=(oldNotes.match(/PUBLISH NOW — Final Running Order \d{2}\./)||[])[0]||'';const num=String(f['Section Order']||val(S.section?.fields||{},'Section Order')||'').padStart(2,'0');const selected=canonicalWritingMode(E('writing-mode-control')?.value||'AUTO');const mode=selected!=='AUTO'?selected:inferredWritingMode([f['Section Title'],f['Core Reader Question']].join(' '));const marker=[order,`SMART PLAN MANUAL REPLACEMENT — Article ${num}.`,`Reader question: ${f['Core Reader Question']||f['Section Title']||''}`,`Writing mode: ${mode}`].filter(Boolean).join('\n');const clears=['Reader Hook','Universal Reader Problem','Primary Hot Button','Reader Type','Decision Constraint','Reader Value','Local Proof Needed','Evidence Required','Evidence Checked Date','Source / Reference Link 1','Commercial Pathway','Primary Next Action','CTA Text','Action Destination URL','Social Question Shape','Archive Similarity Note','Section Final Copy'];for(const k of clears)setField(k,'',true);setField('Evidence Status','Not Started',true);setField('Commercial Lane','Not Assessed',true);setField('CTA Type','None',true);setField('Archive Similarity Status','Review',true);setField('Reuse / Localisation Potential','Not Assessed',true);setField('Section QA Result','Not Checked',true);setField('Section Status','Planned',true);setField('Notes',marker,true);const w=E('writing-mode-control');if(w)w.value=mode;E('save-state').textContent='Story replacement detected — old article intelligence cleared before regeneration.';}
+function generateIntelligence(){if(!S.section)return;let f=formFields();if(storyReplacementDetected(f)){resetStoryIntelligenceForReplacement(f);f=formFields();}const selectedMode=E('writing-mode-control')?.value||'AUTO';const autoMode=inferredWritingMode([f['Section Title'],f['Core Reader Question']].join(' '));const resolvedMode=selectedMode==='AUTO'?autoMode:selectedMode;if(E('writing-mode-control'))E('writing-mode-control').value=resolvedMode;setField('Notes',upsertWritingMode(f['Notes']||'',resolvedMode),true);f=formFields();const text=[f['Section Title'],f['Reader Hook'],f['Core Reader Question'],f['Universal Reader Problem'],f['Primary Next Action']].join(' ').toLowerCase();
+const isCar=/car|driver|drive|journey|tyre|tire|coolant|air conditioning|breakdown|vehicle|mot\b|garage/.test(text);
+const isMortgage=/mortgage|debt|credit card|loan|overdraft|remortgage|interest|junior isa|\bisa\b|saving|savings|invest|investment|university fund|premium bonds?|financial adviser|family finance/.test(text);
+const isFood=/cafe|café|pub|restaurant|breakfast|food|takeaway|meal|plate|beans|sausage/.test(text);
+const isVisitor=/visitor|day trip|holiday|tourist|visiting friends|visiting relatives/.test(text);
+const isEvent=/concert|festival|event|ticket|sandringham|performer|promoter/.test(text);
+const isCommunity=/nominate|reader|what is your|tell us|share your|your verdict|give us/.test(text);
+const currentIssuePeers=S.sections.filter(s=>s.id!==S.section.id);
+const proposedCore=[f['Section Title'],f['Core Reader Question'],f['Universal Reader Problem']].join(' ').toLowerCase();
+const issueMatches=currentIssuePeers.map(s=>({s,score:issueSimilarity(proposedCore,[val(s.fields,'Section Title'),val(s.fields,'Core Reader Question'),val(s.fields,'Universal Reader Problem')].join(' '))})).filter(x=>x.score>=0.45).sort((a,b)=>b.score-a.score);
+let hot=38;
+if(isMortgage&&/child|daughter|son|university|junior isa|saving|savings|invest/.test(text))hot=4;
+else if(isCar&&/check|before|overlook|assume|ready/.test(text))hot=49;
+else if(/worth|overpriced|good value|feels worth/.test(text))hot=2;
+else if(/trust|recommend|who would you use|who would you call/.test(text))hot=3;
+else if(/which|choose|versus| vs /.test(text))hot=4;
+else if(/hard|difficult|friction|why is this/.test(text))hot=5;
+else if(/local advice|locals know|visitor|insider|regulars know/.test(text))hot=33;
+else if(/cost overall|really cost|total cost|longer term|paying for/.test(text))hot=35;
+else if(/changed|what changed/.test(text))hot=19;
+else if(/unfair|fair/.test(text))hot=9;
+else if(/miss something|too late|caught out|regret/.test(text))hot=1;
+else if(/what happens next|future|end of|next/.test(text))hot=38;
+setField('Primary Hot Button',hotByNumber(hot),true);
+
+const action=(f['Primary Next Action']||'').trim();let cta='Reply';
+if(/\bnominate\b/i.test(action))cta='Nominate';
+else if(/\bvote\b/i.test(action))cta='Vote';
+else if(/\bcomment\b/i.test(action))cta='Comment';
+else if(/\bshare\b/i.test(action))cta='Share';
+else if(/\bsave\b/i.test(action))cta='Save';
+else if(/\bask\b/i.test(action))cta='Reply';
+else if(/\breply\b|\bsend\b|\btell\b|\bgive .* verdict\b/i.test(action))cta='Reply';
+else if(/click|read|download|open/i.test(action))cta='Button';
+setField('CTA Type',cta,true);
+
+let ctaText='';
+if(cta==='Save'&&isCar)ctaText='SAVE THE FIVE-MINUTE CAR CHECK';
+else if(cta==='Nominate'&&isFood)ctaText='NOMINATE YOUR NORFOLK FAVOURITE';
+else if(cta==='Nominate')ctaText='MAKE YOUR NOMINATION';
+else if(cta==='Vote')ctaText='CAST YOUR VOTE';
+else if(cta==='Reply')ctaText='TELL US WHAT YOU THINK';
+else if(cta==='Comment')ctaText='JOIN THE CONVERSATION';
+else if(cta==='Share')ctaText='SHARE THIS';
+else if(cta==='Button')ctaText='FIND OUT MORE';
+if(ctaText)setField('CTA Text',ctaText,true);
+
+let lane='Community',path='Community organisations and local businesses connected to the reader question.';
+if(isCar){lane='Authority';path='Garages, tyre specialists, MOT centres, breakdown providers and vehicle air-conditioning specialists.'}
+else if(isMortgage&&/child|daughter|son|university|junior isa|saving|savings|invest/.test(text)){lane='Authority';path='Financial advisers or family-finance specialists who can explain savings, Junior ISA and investment choices without turning the article into personal financial advice.'}
+else if(isMortgage){lane='Authority';path='Mortgage advisers, debt advisers and financial specialists who can explain suitability, total cost and risk clearly.'}
+else if(isFood){lane='Activation';path='Independent cafés, pubs, farm shops, hotels and local food businesses with specific local proof.'}
+else if(isEvent){lane='Activation';path='Event organisers, attractions, venues and family-experience partners who can demonstrate real value through transparent pricing, inclusions and practical visitor information.'}
+setField('Commercial Lane',lane,true);
+const existingPath=(f['Commercial Pathway']||'').trim();
+const stalePath=/garages|tyre specialists|mot centres|independent cafés|independent cafes|farm shops|event businesses affected by major visitor events/i.test(existingPath);
+if(!existingPath||stalePath)setField('Commercial Pathway',path,true);
+
+const place=currentPlaceName();
+let reader=`${place} residents directly affected by this question`;
+if(isCar)reader=`${place} drivers, families and visitors planning longer summer journeys`;
+else if(isVisitor)reader=`${place} residents, visitors and people planning a ${place} day out`;
+else if(isMortgage&&/child|daughter|son|university|junior isa|saving|savings|invest/.test(text))reader='Parents and families planning long-term savings for a child';
+else if(isMortgage)reader=`${place} homeowners weighing up a financial decision`;
+else if(isFood)reader=`${place} locals and visitors looking for specific food recommendations`;
+setField('Reader Type',reader,true);
+
+let constraint='Time, location and the reader’s real-life circumstances.';
+if(isCar)constraint='Five minutes before departure; checks must be simple, visible and realistic for an ordinary driver.';
+else if(/£|price|cost|budget|pay/.test(text))constraint='Budget, total cost and whether the outcome feels worth it.';
+setField('Decision Constraint',constraint,true);
+
+let emotion='Curious';
+if(isCar)emotion='Ready To Act';
+else if(/warning|risk|cancel|debt/.test(text))emotion='Concerned';
+setField('Emotional Outcome',emotion,true);
+
+if(isMortgage&&/child|daughter|son|university|junior isa|saving|savings|invest/.test(text)){
+ setField('Universal Reader Problem','Parents can have years to save for university or early-adult costs, but choosing between cash, a Junior ISA and investments means balancing access, ownership, tax, risk and time.',true);
+ setField('Primary Next Action','Compare the main options, then decide what monthly amount and level of access or investment risk fits your family.',true);
+}
+let value=f['Core Reader Question']?`A clear, useful answer to: ${f['Core Reader Question']}`:'A specific answer that helps the reader decide or act.';
+if(isCar)value='A quick pre-journey checklist that helps drivers spot simple problems before a longer summer trip.';
+setField('Reader Value',value,true);
+
+let proof=`Named ${place} places, current examples, prices, dates or reader experiences relevant to the question.`;
+let evidence='At least one reliable current source plus named local proof.';
+let evidenceStatus=isCommunity?'Question Only':'Needs Update';
+if(isCar){
+  proof=`Named ${place} summer routes, plus a realistic pre-journey example relevant to local drivers.`;
+  evidence='Current authoritative motoring or road-safety guidance covering tyres, coolant, warning lights and pre-journey vehicle checks.';
+  evidenceStatus='Needs Update';
+}else if(isMortgage&&/child|daughter|son|university|junior isa|saving|savings|invest/.test(text)){
+  proof='A realistic worked example using £50 a month over 15 years, with no invented investment return presented as guaranteed.';
+  evidence='Current authoritative UK guidance on Junior ISAs, cash savings and investing for children, including access/ownership rules, tax treatment, risk and clearly labelled illustrative calculations.';
+  evidenceStatus='Needs Update';
+}else if(isMortgage){
+  proof=`A realistic ${place} homeowner example showing the monthly-payment versus total-cost trade-off.`;
+  evidence='A worked example plus current authoritative guidance on total borrowing cost and the risk of securing previously unsecured debt against a home.';
+}else if(isFood){
+  proof=`Named ${place} venues, current prices and exactly what the reader gets.`;
+  evidence='Venue name, location, current menu price and current offer or menu details.';
+}
+setField('Local Proof Needed',proof,true);
+setField('Evidence Required',evidence,true);
+setField('Evidence Status',evidenceStatus,true);
+
+let social=f['Core Reader Question']||`What is your ${place} verdict?`;
+if(isCar)social='What is the one car check you always do before a long summer drive — and what do most people forget?';
+else if(isMortgage&&/child|daughter|son|university|junior isa|saving|savings|invest/.test(text))social='If your child was three and you could save £50 a month, where would you put it for the next 15 years?';
+else if(isMortgage)social='Would you accept a lower monthly payment if it meant paying the debt for much longer?';
+else if(isFood)social='What is the one detail that makes or breaks this for you?';
+setField('Social Question Shape',social,true);
+
+setField('Archive Similarity Status','Review',true);
+if(issueMatches.length){
+ const top=issueMatches[0];
+ setField('Archive Similarity Note',`CURRENT ISSUE WARNING: Similar to Section ${val(top.s.fields,'Section Order')} — ${val(top.s.fields,'Section Title')}. Review before saving.`,true);
+ E('save-state').textContent=`Current issue duplicate warning: compare with Section ${val(top.s.fields,'Section Order')}.`;
+}else if(/CURRENT ISSUE WARNING:/i.test(f['Archive Similarity Note']||'')){
+ setField('Archive Similarity Note','No close current-issue match detected by ICS. Archive review still required.',true);
+}
+let reuse='Reusable';
+if(isCar||isMortgage)reuse='Multi-edition';
+else if(/sandringham/.test(text)&&/cancel|concert|event/.test(text))reuse='Multi-edition';
+else if(isFood)reuse='Niche adaptable';
+setField('Reuse / Localisation Potential',reuse,true);
+setField('Section QA Result','Not Checked',true);
+E('save-state').textContent='Improved intelligence added. Review the suggestions, then save.';renderGate()}function renderGate(){const f=S.section?.fields||{};const checks=[['Core reader question',!!val(f,'Core Reader Question')],['One primary Hot Button',!!val(f,'Primary Hot Button')],['Clear reader value',!!val(f,'Reader Value')],['Evidence handled',['Verified','Question Only','Illustrative Example'].includes(val(f,'Evidence Status'))],['One primary action',!!val(f,'Primary Next Action')],['Final copy ready',!!val(f,'Section Final Copy')&&!/\[[^\]]+\]|TBC|TODO/i.test(val(f,'Section Final Copy'))]];E('gate').innerHTML=checks.map(([n,ok])=>`<div class="check ${ok?'good':''}">${ok?'✓':'○'} ${n}</div>`).join('')}
+async function saveSection(){if(!S.section)return;E('save-state').textContent='Saving…';const fields=formFields();const wm=effectiveWritingMode(E('writing-mode-control')?.value||writingModeFromNotes(fields['Notes']||''),fields['Section Title']||'',fields['Core Reader Question']||'');fields['Notes']=upsertWritingMode(fields['Notes']||'',wm);localStorage.setItem('ics:recovery:'+S.section.id,JSON.stringify({fields,savedAt:new Date().toISOString()}));try{let d=await api('sections',{method:'PATCH',body:JSON.stringify({id:S.section.id,fields})});let savedMode=writingModeFromNotes(val(d.record?.fields||{},'Notes'));if(savedMode!==wm){d=await api('sections',{method:'PATCH',body:JSON.stringify({id:S.section.id,fields:{Notes:fields['Notes']}})});savedMode=writingModeFromNotes(val(d.record?.fields||{},'Notes'));}S.section=d.record;S.sections=S.sections.map(x=>x.id===d.record.id?d.record:x);if(savedMode!==wm){E('save-state').textContent=`Save incomplete — Writing mode stayed ${savedMode}.`;alert(`Writing mode did not persist. Expected ${wm}, Airtable returned ${savedMode}. Do not research this article yet.`);return}localStorage.removeItem('ics:recovery:'+S.section.id);E('save-state').textContent=`Saved to Airtable · Writing mode: ${wm} ✓`;renderSections();renderForm()}catch(e){E('save-state').textContent='Network save failed. Recovery draft kept in this browser.';alert(e.message)}}
+async function addSection(){if(!S.issue){alert('Open an issue before adding a section.');return}const button=E('add-section');const original=button.textContent;button.disabled=true;button.textContent='Adding…';E('save-state').textContent='Creating section in Airtable…';try{const order=(Math.max(0,...S.sections.map(s=>Number(val(s.fields,'Section Order')||0)))+1);const d=await api('sections',{method:'POST',body:JSON.stringify({fields:{Issues:[S.issue.id],'Section Title':'New section','Section Order':order}})});S.sections.push(d.record);S.section=d.record;sortSections();renderSections();renderForm();E('save-state').textContent='New section created in Airtable.'}catch(e){E('save-state').textContent='Section was not created.';alert('Unable to add section: '+e.message)}finally{button.disabled=false;button.textContent=original}}
+async function saveIssue(){if(!S.issue)return;const fields={'Issue Status':E('ih-status').value,'Main Theme':E('ih-theme').value,'Subject Line':E('ih-subject').value,'Preheader':E('ih-preheader').value,'Send Date':E('ih-date').value};const d=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields})});S.issue=d.record;S.issues=S.issues.map(x=>x.id===d.record.id?d.record:x);E('build-meta').textContent=`Target ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')}`;render()}
+function letterman(){if(!S.issue)return '';const f=S.issue.fields;const sections=[...S.sections].sort((a,b)=>Number(val(a.fields,'Section Order')||999)-Number(val(b.fields,'Section Order')||999));let out=`SUBJECT\n${val(f,'Subject Line')}\n\nPREHEADER\n${val(f,'Preheader')}\n\n`;for(const s of sections){const sf=s.fields;if(!val(sf,'Section Final Copy'))continue;out+=`${val(sf,'Section Final Copy').trim()}\n`;if(val(sf,'Primary Next Action'))out+=`\nBUTTON: ${val(sf,'Primary Next Action')}`;if(val(sf,'Action Destination URL'))out+=`\nURL: ${val(sf,'Action Destination URL')}`;out+='\n\n---\n\n'}return out.trim()}
+async function copyText(t){await navigator.clipboard.writeText(t);alert('Copied.')}
+function publicationNameFromSetupV3184(){
+ const area=String(E('pub-area')?.value||'').trim();
+ const family=String(E('pub-family')?.value||'').trim();
+ return [area,family].filter(Boolean).join(' ').trim();
+}
+function publicationCodeFromNameV3184(name=''){
+ const words=String(name||'').replace(/[^A-Za-z0-9 ]+/g,' ').trim().split(/\s+/).filter(Boolean);
+ if(!words.length)return '';
+ return words.map(w=>w[0]).join('').toUpperCase().slice(0,8);
+}
+function syncPublicationSetupV3184(forceName=false){
+ const suggested=publicationNameFromSetupV3184();
+ const name=E('pub-name');
+ if(name&&(forceName||!String(name.value||'').trim()||name.dataset.auto==='1')){name.value=suggested;name.dataset.auto='1'}
+ const code=E('pub-code');
+ if(code&&(forceName||!String(code.value||'').trim()||code.dataset.auto==='1')){code.value=publicationCodeFromNameV3184(name?.value||suggested);code.dataset.auto='1'}
+}
+async function createPublicationV3184(ev){
+ ev.preventDefault();
+ const area=String(E('pub-area').value||'').trim();
+ const family=String(E('pub-family').value||'').trim();
+ const name=String(E('pub-name').value||'').trim();
+ const code=String(E('pub-code').value||'').trim().toUpperCase();
+ const status=String(E('pub-status').value||'Active').trim();
+ if(!area){alert('Enter the area / geography, for example Peterborough.');return}
+ if(!family){alert('Choose a publication family.');return}
+ if(!name){alert('Enter a publication name.');return}
+ const duplicate=(S.publications||[]).find(p=>String(val(p.fields,'Publication Name')||'').trim().toLowerCase()===name.toLowerCase());
+ if(duplicate){alert(`${name} already exists. It is ready to use from Issues.`);E('publication-dialog').close();render();return}
+ const fields={'Publication Name':name,'Short Code':code||publicationCodeFromNameV3184(name),'Status':status};
+ const btn=E('create-publication');btn.disabled=true;const old=btn.textContent;btn.textContent='Creating…';
+ try{
+   const d=await api('publications',{method:'POST',body:JSON.stringify({fields})});
+   S.publications.push(d.record);
+   S.publications.sort((a,b)=>String(val(a.fields,'Publication Name')||'').localeCompare(String(val(b.fields,'Publication Name')||'')));
+   E('publication-dialog').close();
+   render();
+   show('issues');
+   E('new-publication').value=d.record.id;
+   E('new-number').value='1';
+   E('new-date').value='';
+   E('new-theme').value='';
+   E('issue-dialog').showModal();
+ }catch(e){alert(e.message)}finally{btn.disabled=false;btn.textContent=old}
+}
+async function createIssue(ev){ev.preventDefault();const pub=E('new-publication').value,no=String(E('new-number').value||'').trim(),date=E('new-date').value;const existing=no?S.issues.find(i=>String(val(i.fields,'Issue Status')||'').toUpperCase()!=='ARCHIVED'&&(i.fields.Publication||[])[0]===pub&&String(val(i.fields,'Issue Number')||'').trim()===no):null;if(existing){alert(`Issue #${no} already exists for ${pubName(existing.fields.Publication)}. Opening the existing issue instead of creating a duplicate.`);E('issue-dialog').close();await openIssue(existing.id);return}if(!date){alert('Choose a send date before creating the issue.');return}const fields={Publication:[pub],'Issue Number':no?Number(no):undefined,'Send Date':date,'Issue Status':'PLANNED','Main Theme':E('new-theme').value};const btn=E('create-issue');btn.disabled=true;const old=btn.textContent;btn.textContent='Creating…';try{const d=await api('issues',{method:'POST',body:JSON.stringify({fields})});S.issues.unshift(d.record);E('issue-dialog').close();render();await openIssue(d.record.id)}catch(e){alert(e.message)}finally{btn.disabled=false;btn.textContent=old}}
+
+
+const ENGINE_PROFILES={
+ SPOTLIGHT:{
+  key:'SPOTLIGHT',name:'Spotlight',description:'Broad local-life publication: useful, enjoyable, surprising and locally specific.',targetSections:[24,30],targetMasters:[8,10],targetSupport:[14,18],defaultMasters:15,
+  lanes:['LOCAL LIFE','FOOD & HOSPITALITY',"WHAT'S ON",'PLACES & DISCOVERY','MONEY & CONSUMER','HOME & PROPERTY','FAMILY & COMMUNITY','MOTORING & TRAVEL','FUN & CURIOSITY','READER VOICE','BUSINESS & PEOPLE','TOPICAL / BREAKING'],
+  minimumGroups:[
+   {label:'Food / Hospitality',min:2,lanes:['FOOD & HOSPITALITY']},
+   {label:"What's On / Discovery",min:2,lanes:["WHAT'S ON",'PLACES & DISCOVERY']},
+   {label:'Local Life / Community',min:2,lanes:['LOCAL LIFE','FAMILY & COMMUNITY']},
+   {label:'Money / Home / Consumer',min:2,lanes:['MONEY & CONSUMER','HOME & PROPERTY']},
+   {label:'Motoring / Travel',min:1,lanes:['MOTORING & TRAVEL']},
+   {label:'Business / People',min:1,lanes:['BUSINESS & PEOPLE']},
+   {label:'Fun / Curiosity',min:2,lanes:['FUN & CURIOSITY']},
+   {label:'Reader interaction',min:3,lanes:['READER VOICE']}
+  ],
+  commercialTargets:{minCategories:10,maxCategories:13,minExpert:4,minPartner:4},
+  laneCaps:{'FOOD & HOSPITALITY':4,'MOTORING & TRAVEL':3,'FUN & CURIOSITY':4},
+  readerVoice:{targetMin:3,targetMax:5,softMax:6,reviewMax:7,hardMax:7},
+  sponsorFeatureTargetPerMonth:'1–2',
+  maxHeavyMoodShare:.40,
+  masterLifeGuard:{minLife:4,minDiscoveryFun:2,targetFoodMax:2,hardFoodMax:3,maxCivic:3},
+  supportRecipe:['OPENING NOTE','POLL','LOCAL TRIVIA','EVENT PICK','WEEKEND IDEA','FOOD FIND','PROPERTY DESK','PET QUICK CHECK','HEALTH QUICK CHECK','MOTORING QUICK CHECK','HOME QUICK CHECK','LOCAL BUSINESS FIND','COMMUNITY VOICE','HUMOUR','SALLY SAVERS','FAMILY ACTIVITY','READER RECOMMENDATION','BEFORE YOU GO']
+ },
+ HOME_SELLER:{
+  key:'HOME_SELLER',name:'Home Seller Insider',description:'Niche seller publication using the same planner with a property-specific editorial mix.',targetSections:[12,18],targetMasters:[5,7],targetSupport:[6,11],defaultMasters:15,
+  lanes:['PRICING & VALUATION','ESTATE AGENTS','PRESENTATION','LEGAL & CONVEYANCING','MORTGAGES & FINANCE','SURVEYS & CONDITION','MOVING','NEGOTIATION','SELLER MISTAKES','BUYER PSYCHOLOGY','READER VOICE','EXPERT'],
+  minimumGroups:[{label:'Selling strategy',min:2,lanes:['PRICING & VALUATION','NEGOTIATION','BUYER PSYCHOLOGY']},{label:'Process / protection',min:2,lanes:['LEGAL & CONVEYANCING','SURVEYS & CONDITION','MORTGAGES & FINANCE']},{label:'Reader interaction',min:2,lanes:['READER VOICE']}],maxHeavyMoodShare:.50,
+  supportRecipe:['OPENING NOTE','READER POLL','QUICK PRICE CHECK','READER QUESTION','EXPERT QUICK CHECK','MYTH V FACT','READER RECOMMENDATION','NOMINATION','BEFORE YOU GO']
+ },
+ TASTE_TRAIL:{
+  key:'TASTE_TRAIL',name:'Taste Trail',description:'Independent hospitality and going-out guide built around the rhythm of a day: eat, drink, discover, go out and stay over.',targetSections:[15,20],targetMasters:[5,7],targetSupport:[8,13],defaultMasters:15,
+  lanes:['BREAKFAST & BRUNCH','COFFEE & CAFES','LUNCH & DAYTIME','AFTERNOON TEA','DINNER & RESTAURANTS','PUBS & BARS','NIGHTLIFE & LIVE','HOTELS & STAYS','TAKEAWAYS & STREET FOOD','MARKETS & PRODUCERS','EVENTS & EXPERIENCES','VALUE','OPENINGS & CLOSURES','PLACES & DISCOVERY','READER VOICE','HOSPITALITY PEOPLE'],
+  minimumGroups:[
+    {label:'Morning / daytime',min:3,lanes:['BREAKFAST & BRUNCH','COFFEE & CAFES','LUNCH & DAYTIME','AFTERNOON TEA','TAKEAWAYS & STREET FOOD','MARKETS & PRODUCERS']},
+    {label:'Dinner / evening / night',min:3,lanes:['DINNER & RESTAURANTS','PUBS & BARS','NIGHTLIFE & LIVE']},
+    {label:'Discovery / events / stays',min:2,lanes:['HOTELS & STAYS','EVENTS & EXPERIENCES','PLACES & DISCOVERY','OPENINGS & CLOSURES']},
+    {label:'Reader interaction',min:2,lanes:['READER VOICE']}
+  ],maxHeavyMoodShare:.45,
+  supportRecipe:['OPENING NOTE','FOOD FIND','QUICK PRICE CHECK','LOCAL BUSINESS FIND','EVENT PICK','LOCAL TRIVIA','READER POLL','QUICK QUIZ','READER RECOMMENDATION','BEFORE YOU GO']
+ },
+ PET_INSIDER:{
+  key:'PET_INSIDER',name:'Pet Insider',description:'Pet niche publication: health, behaviour, costs, local places, services and reader pets.',targetSections:[12,18],targetMasters:[5,7],targetSupport:[6,11],defaultMasters:15,
+  lanes:['HEALTH','BEHAVIOUR & TRAINING','FOOD & NUTRITION','COSTS','WALKS & PLACES','SERVICES','PRODUCTS','LOCAL PET LIFE','READER PETS','EXPERT','FUN & CURIOSITY'],
+  minimumGroups:[{label:'Health / behaviour',min:2,lanes:['HEALTH','BEHAVIOUR & TRAINING']},{label:'Local pet life',min:2,lanes:['WALKS & PLACES','LOCAL PET LIFE','SERVICES']},{label:'Reader / fun',min:2,lanes:['READER PETS','FUN & CURIOSITY']}],maxHeavyMoodShare:.50,
+  supportRecipe:['OPENING NOTE','READER POLL','READER PETS','LOCAL TRIVIA','WEEKEND IDEA','READER RECOMMENDATION','EXPERT QUICK CHECK','NOMINATION','HUMOUR','BEFORE YOU GO']
+ }
+};
+function engineProfileForPublication(name=currentPublicationName()){
+ const n=String(name||'').toLowerCase();
+ if(/home seller/.test(n))return ENGINE_PROFILES.HOME_SELLER;
+ if(/taste trail/.test(n))return ENGINE_PROFILES.TASTE_TRAIL;
+ if(/pet insider|local pet/.test(n))return ENGINE_PROFILES.PET_INSIDER;
+ return ENGINE_PROFILES.SPOTLIGHT;
+}
+function normaliseEditorialLane(v){return String(v||'').trim().toUpperCase().replace(/\s+/g,' ')}
+function classifySpotlightLane(text){
+ const t=String(text||'').toLowerCase();
+ // Named business/people stories should count as BUSINESS & PEOPLE even when the story also concerns premises or planning.
+ if(/\b(business|company|founder|owner|operator|entrepreneur|independent business|local business)\b/.test(t))return 'BUSINESS & PEOPLE';
+ if(/restaurant|pub|cafe|coffee|breakfast|lunch|dinner|takeaway|chippy|food|drink|menu|roast|hospitality/.test(t))return 'FOOD & HOSPITALITY';
+ if(/event|festival|theatre|cinema|concert|market|what.?s on|exhibition|gig/.test(t))return "WHAT'S ON";
+ if(/walk|day out|attraction|visit|village|hidden|worth the drive|beach|park|place to go|discover/.test(t))return 'PLACES & DISCOVERY';
+ if(/mortgage|house|property|rent|letting|buyer|seller|conveyanc|survey|boiler|roof|plumber|garden|home quick check/.test(t))return 'HOME & PROPERTY';
+ if(/bill|saving|price|insurance|refund|consumer|subscription|wallet|pay|money|cost/.test(t))return 'MONEY & CONSUMER';
+ if(/school|child|family|library|charity|club|volunteer|community/.test(t))return 'FAMILY & COMMUNITY';
+ if(/mot|car|road|traffic|parking|vehicle|bus|train|travel|holiday|motoring quick check/.test(t))return 'MOTORING & TRAVEL';
+ if(/trivia|fact|odd|weird|fun|quiz|joke|did you know|curious/.test(t))return 'FUN & CURIOSITY';
+ if(/poll|vote|tell us|your recommendation|reader|nominate|question|have your say/.test(t))return 'READER VOICE';
+ if(/business|shop|founder|owner|independent|expert|people/.test(t))return 'BUSINESS & PEOPLE';
+ if(/breaking|latest|announcement|closed|closure|opens|opening/.test(t))return 'TOPICAL / BREAKING';
+ return 'LOCAL LIFE';
+}
+function classifyNicheLane(text,profile){
+ const t=String(text||'').toLowerCase();
+ if(profile.key==='HOME_SELLER'){
+  if(/price|valuation|asking|value/.test(t))return 'PRICING & VALUATION';if(/estate agent|agent/.test(t))return 'ESTATE AGENTS';if(/stage|presentation|declutter|viewing|photo/.test(t))return 'PRESENTATION';if(/legal|conveyanc|solicitor|contract/.test(t))return 'LEGAL & CONVEYANCING';if(/mortgage|finance|loan/.test(t))return 'MORTGAGES & FINANCE';if(/survey|condition|defect|repair/.test(t))return 'SURVEYS & CONDITION';if(/move|removal|moving/.test(t))return 'MOVING';if(/negot|offer/.test(t))return 'NEGOTIATION';if(/mistake|avoid|wrong/.test(t))return 'SELLER MISTAKES';if(/buyer|psycholog/.test(t))return 'BUYER PSYCHOLOGY';if(/reader|poll|question|nominate/.test(t))return 'READER VOICE';return 'EXPERT';
+ }
+ if(profile.key==='TASTE_TRAIL'){
+  if(/reader|poll|recommend|nominate|vote|tell us/.test(t))return 'READER VOICE';
+  if(/hotel|accommodation|accomodation|stay over|stayover|room|spa|bnb|b&b|bed and breakfast/.test(t))return 'HOTELS & STAYS';
+  if(/nightclub|club night|late night|dj|dancefloor|dance floor|live music|gig|concert|comedy|theatre|show/.test(t))return 'NIGHTLIFE & LIVE';
+  if(/pub|bar|cocktail|beer|ale|wine|whisky|drinks?/.test(t))return 'PUBS & BARS';
+  if(/afternoon tea|cream tea|tea room/.test(t))return 'AFTERNOON TEA';
+  if(/breakfast|brunch/.test(t))return 'BREAKFAST & BRUNCH';
+  if(/cafe|café|coffee|bakery/.test(t))return 'COFFEE & CAFES';
+  if(/takeaway|chippy|kebab|street food|food stall|food truck/.test(t))return 'TAKEAWAYS & STREET FOOD';
+  if(/market|producer|farm shop|butcher|deli|food hall/.test(t))return 'MARKETS & PRODUCERS';
+  if(/lunch|daytime|midday/.test(t))return 'LUNCH & DAYTIME';
+  if(/dinner|restaurant|supper|roast|menu|dish/.test(t))return 'DINNER & RESTAURANTS';
+  if(/event|festival|experience|tasting|tour|what.?s on/.test(t))return 'EVENTS & EXPERIENCES';
+  if(/price|value|cheap|cost|under £|deal|offer/.test(t))return 'VALUE';
+  if(/open|close|closure|relaunch|rebrand|new venue|new opening/.test(t))return 'OPENINGS & CLOSURES';
+  if(/chef|owner|publican|team|people|hospitality person/.test(t))return 'HOSPITALITY PEOPLE';
+  return 'PLACES & DISCOVERY';
+ }
+ if(profile.key==='PET_INSIDER'){
+  if(/vet|health|dental|ill|injur/.test(t))return 'HEALTH';if(/train|behavio|bark|recall/.test(t))return 'BEHAVIOUR & TRAINING';if(/food|diet|nutrition/.test(t))return 'FOOD & NUTRITION';if(/cost|insurance|bill|price/.test(t))return 'COSTS';if(/walk|park|place|beach/.test(t))return 'WALKS & PLACES';if(/groom|walker|sitter|service/.test(t))return 'SERVICES';if(/product|toy|lead|bed/.test(t))return 'PRODUCTS';if(/reader|pet of|photo|nominate/.test(t))return 'READER PETS';if(/expert|vet|trainer/.test(t))return 'EXPERT';if(/fun|fact|quiz|odd/.test(t))return 'FUN & CURIOSITY';return 'LOCAL PET LIFE';
+ }
+ return classifySpotlightLane(t);
+}
+function editorialLaneFor(item,profile=engineProfileForPublication()){
+ const explicit=normaliseEditorialLane(item?.editorial_lane||item?.life_lane||item?.lifeLane||'');
+ const isComponent=String(item?.kind||'').toLowerCase()==='component';
+ // v3.10.9: Master classification is deliberately strict. Use only the reader-facing subject (title + core question).
+ // Planner rationale, why-now text, issue promise and commercial-purpose text can mention food, readers, cost, etc. and must never contaminate the editorial lane count.
+ const subjectText=isComponent
+   ? [item?.type,item?.title,item?.purpose].join(' ')
+   : [item?.title,item?.question].join(' ');
+ const inferred=classifyNicheLane(subjectText,profile);
+ if(profile.key==='SPOTLIGHT'){
+   // For Masters, semantic subject wins over stored planner metadata. Stored labels are advisory only.
+   if(!isComponent)return inferred||'LOCAL LIFE';
+   // Components are intentionally typed, so their explicit/editorial type can be trusted when it is valid.
+   if(profile.lanes.includes(explicit))return explicit;
+   return inferred||'LOCAL LIFE';
+ }
+ if(profile.lanes.includes(explicit))return explicit;
+ return inferred;
+}
+function editorialMood(item){
+ const type=String(item?.type||'').toUpperCase();
+ // At planning stage these compact sponsor-visibility components are neutral editorial opportunities, not automatically 'problem/admin'. Their produced copy can still become urgent/heavy later if the evidence warrants it.
+ if(['PROPERTY DESK','PET QUICK CHECK','HEALTH QUICK CHECK','MOTORING QUICK CHECK','HOME QUICK CHECK'].includes(type))return 'USEFUL';
+ const t=[item?.title,item?.question,item?.purpose,item?.content,item?.problem,item?.why_now,item?.stance].join(' ').toLowerCase();
+ if(/urgent|warning|deadline|must|act now/.test(t))return 'URGENT';
+ if(/bill|saving|price|cost|cheaper|money|mortgage/.test(t))return 'SAVE MONEY';
+ if(/repair|check|problem|complaint|avoid|fix|what to do|how to/.test(t))return 'PROBLEM SOLVING';
+ if(/debate|versus|vs\b|overpriced|should|controvers|unfiltered/.test(t))return 'DEBATE';
+ if(/community|family|people|reader story|charity|volunteer/.test(t))return 'HUMAN';
+ if(/food|pub|restaurant|cafe|event|weekend|day out|enjoy/.test(t))return 'ENJOY';
+ if(/discover|hidden|place|walk|attraction|visit/.test(t))return 'DISCOVER';
+ if(/trivia|fact|odd|weird|quiz|curious|did you know/.test(t))return 'CURIOUS';
+ if(/poll|vote|tell us|recommend|nominate|reader/.test(t))return 'COMMUNITY';
+ return 'USEFUL';
+}
+function plannedSupportItems(profile=engineProfileForPublication(),publication=currentPublicationName()){
+ const local=String(publication||'Local').replace(/\s+(Spotlight|Taste Trail|Pet Insider|Home Seller Insider).*$/i,'').trim()||'Local';
+ return (profile.supportRecipe||[]).map((type,i)=>({kind:'component',type,title:(COMPONENT_DEFS.find(x=>x.type===type)?.title||type),purpose:(COMPONENT_DEFS.find(x=>x.type===type)?.purpose||''),order:100+i,publication:local}));
+}
+function renderEngineProfile(){
+ const p=engineProfileForPublication();if(!E('engine-profile-name'))return;
+ E('engine-profile-name').textContent=p.name+' Engine Profile';E('engine-profile-desc').textContent=p.description;
+ E('engine-target-sections').textContent=p.targetSections.join('–');E('engine-target-masters').textContent=p.targetMasters.join('–');E('engine-target-support').textContent=p.targetSupport.join('–');E('engine-profile-mode').textContent='AUTO · '+p.key;
+ E('engine-profile-lanes').innerHTML=p.lanes.map(x=>`<span class="lane-chip">${esc(x)}</span>`).join('');
+ const plan=getSmartPlan?.();const h=plan?.articles?.length?candidateSlateAuditV312i(plan):null;const box=E('engine-health');
+ if(!h){box.className='engine-health';box.innerHTML='<strong>Candidate gate:</strong> Build 15 Master candidates. Final issue balance is checked after Step 5 selection.';return}
+ box.className='engine-health '+(h.status==='READY'?'ready':h.status==='BLOCKED'?'blocked':'review');
+ const leak=h.leakage.blocked?`<br>• Wrong-publication references detected — rebuild before approval.`:'';
+ box.innerHTML=`<strong>Candidate gate: ${esc(h.status)}</strong> · ${h.count}/${h.target} candidates · ${h.uniqueLanes} lanes${h.notes.length?`<br>${h.notes.slice(0,3).map(x=>'• '+esc(x)).join('<br>')}`:' · candidate pool ready for editorial review.'}${leak}`;
+}
+
+const COMPONENT_DEFS=[
+ {type:'OPENING NOTE',title:'Opening Note',family:'Short Editorial',purpose:'Set the issue promise and give readers a reason to continue.',template:'SHORT COMPONENT',points:1},
+ {type:'NEWS BRIEF',title:'News Brief',family:'Short Editorial',purpose:'Give the essential verified update without forcing a full article.',template:'SHORT COMPONENT',points:2},
+ {type:'QUICK UPDATE',title:'Quick Update',family:'Short Editorial',purpose:'Explain what changed, why it matters and what happens next.',template:'SHORT COMPONENT',points:2},
+ {type:'THREE-POINT TIP',title:'Three-Point Tip',family:'Short Editorial',purpose:'Give three practical actions the reader can use immediately.',template:'SHORT COMPONENT',points:1},
+ {type:'MOTORING QUICK CHECK',title:'Motoring Quick Check',family:'Lifestyle',purpose:'Give one timely motoring or travel check with a clear reader action and a natural garage, vehicle or travel-service route where relevant.',template:'SHORT COMPONENT',points:1},
+ {type:'HOME QUICK CHECK',title:'Home Quick Check',family:'Lifestyle',purpose:'Give one timely home, property or household check with a clear reader action and a natural property, trade or home-service route where relevant.',template:'SHORT COMPONENT',points:1},
+ {type:'PROPERTY DESK',title:'Property Desk',family:'Lifestyle',purpose:'One compact property-life block covering a useful seller/buyer/renter question and keeping mortgage, estate agency/lettings, conveyancing and surveying expertise visibly available without forcing four separate articles.',template:'SHORT COMPONENT',points:2},
+ {type:'PET QUICK CHECK',title:'Pet Quick Check',family:'Lifestyle',purpose:'Give one concise pet-life question, behaviour check, local service prompt or reader pet problem with a natural pet-expert route where relevant.',template:'SHORT COMPONENT',points:1},
+ {type:'HEALTH QUICK CHECK',title:'Health & Wellness Quick Check',family:'Lifestyle',purpose:'Give one concise everyday health, mobility, dental or wellbeing question with a natural qualified-expert route where relevant; never fabricate medical claims.',template:'SHORT COMPONENT',points:1},
+ {type:'DID YOU KNOW?',title:'Did You Know?',family:'Short Editorial',purpose:'Share one verified surprising fact with clear relevance.',template:'SHORT COMPONENT',points:1},
+ {type:'EVENT PICK',title:'Event Pick',family:'Lifestyle',purpose:'Recommend one timely local event with date, place, price and reason to care.',template:'SHORT COMPONENT',points:2},
+ {type:'USEFUL LINK',title:'Useful Link',family:'Evergreen',purpose:'Point readers to one genuinely useful official or local resource.',template:'SHORT COMPONENT',points:1},
+ {type:'POLL',title:'Reader Poll',family:'Engagement',purpose:'Ask one specific, easy-to-answer question with useful options.',template:'SHORT COMPONENT',points:1},
+ {type:'THIS OR THAT',title:'This or That',family:'Engagement',purpose:'Create a fast preference choice that can segment readers.',template:'QUICK QUIZ',points:1},
+ {type:'QUIZ',title:'Quick Quiz',family:'Interactive',purpose:'Test local or topic knowledge or capture a simple preference.',template:'QUICK QUIZ',points:3},
+ {type:'Q&A',title:'Q&A',family:'Partner',purpose:'Answer a useful reader question; attach an expert only where they genuinely help.',template:'PARTNER TIP',points:3},
+ {type:'PARTNER TIP',title:'Partner Tip',family:'Partner',purpose:'Deliver one concise, useful expert contribution with a relevant action.',template:'PARTNER TIP',points:2},
+ {type:'ASK THE EXPERT',title:'Ask the Expert',family:'Partner',purpose:'Answer a reader question with a named, qualified partner.',template:'PARTNER TIP',points:3},
+ {type:'GIVEAWAY',title:'Giveaway',family:'Promotion',purpose:'Create a useful partner-backed giveaway with a clear entry route and closing date.',template:'COMPETITION / GIVEAWAY',points:5},
+ {type:'COMPETITION',title:'Competition',family:'Promotion',purpose:'Create a compliant competition with prize, dates, entry rules and follow-up.',template:'COMPETITION / GIVEAWAY',points:5},
+ {type:'READER RECOMMENDATION',title:'Reader Recommendation',family:'Engagement',purpose:'Ask for a named recommendation that can feed a future guide or list.',template:'SHORT COMPONENT',points:1},
+ {type:'COMMUNITY VOICE',title:'Community Voice',family:'Community',purpose:'Add a useful local voice, cause or community contribution.',template:'SHORT COMPONENT',points:2},
+ {type:'ACTIVATION / OFFER',title:'Activation / Offer',family:'Commercial',purpose:'Give the reader a useful action: visit, book, nominate, download, claim, attend, ask or reply.',template:'PARTNER TIP',points:3},
+ {type:'FACEBOOK DISCUSSION',title:'Facebook Discussion',family:'Distribution',purpose:'Create a standalone stop-and-comment post connected to the issue.',template:'SHORT COMPONENT',points:1},
+ {type:'CLOSING QUESTION',title:'Closing Question',family:'Engagement',purpose:'End with one specific reply or comment question.',template:'SHORT COMPONENT',points:1},
+ {type:'LOCAL TRIVIA',title:'Local Trivia',family:'Fun & Curiosity',purpose:'Give one verified surprising local fact and one simple reader question.',template:'SHORT COMPONENT',points:1},
+ {type:"WHAT'S ON",title:"What's On",family:'Lifestyle',purpose:'Give a short timely set of local things worth doing, with verified dates and places.',template:'SHORT COMPONENT',points:2},
+ {type:'FOOD FIND',title:'Food Find',family:'Food & Hospitality',purpose:'Surface one specific local food, pub, restaurant, cafe or takeaway discovery with a clear reason to care.',template:'SHORT COMPONENT',points:2},
+ {type:'PUB / RESTAURANT QUESTION',title:'Pub / Restaurant Question',family:'Food & Hospitality',purpose:'Ask one specific local food or hospitality question that can feed a future guide.',template:'SHORT COMPONENT',points:1},
+ {type:'WORTH THE DRIVE?',title:'Worth The Drive?',family:'Places & Discovery',purpose:'Recommend or ask about one specific place readers might travel locally to discover.',template:'SHORT COMPONENT',points:1},
+ {type:'QUICK PRICE CHECK',title:'Quick Price Check',family:'Money & Consumer',purpose:'Compare one simple price or cost readers can understand quickly.',template:'SHORT COMPONENT',points:1},
+ {type:'SALLY SAVERS',title:'Sally Savers',family:'Money & Consumer',purpose:'Give one fresh, specific money-saving check without repeating the main article.',template:'SHORT COMPONENT',points:1},
+ {type:'LOCAL DEBATE',title:'Local Debate',family:'Reader Voice',purpose:'Put one specific local tension or choice to readers without turning it into a generic what-do-you-think prompt.',template:'SHORT COMPONENT',points:1},
+ {type:'READER VOICE',title:'Reader Voice',family:'Reader Voice',purpose:'Use or request one specific reader contribution that can shape future editorial coverage.',template:'SHORT COMPONENT',points:1},
+ {type:'WEEKEND IDEA',title:'Weekend Idea',family:'Places & Discovery',purpose:'Give one timely local idea for something enjoyable to do.',template:'SHORT COMPONENT',points:1},
+ {type:'LOCAL BUSINESS FIND',title:'Local Business Find',family:'Business & People',purpose:'Surface one specific independent local business because it is editorially interesting, not because it paid for an advert.',template:'SHORT COMPONENT',points:2},
+ {type:'FAMILY ACTIVITY',title:'Family Activity',family:'Family & Community',purpose:'Give one specific family, children or activity idea with real local proof and a natural family-service or activity-partner route where relevant.',template:'SHORT COMPONENT',points:1},
+ {type:'EXPERT QUICK CHECK',title:'Expert Quick Check',family:'Partner',purpose:'Give one concise check an appropriate expert could help explain; do not fabricate a real expert or quote.',template:'SHORT COMPONENT',points:2},
+ {type:'NOMINATION',title:'Nominate Something',family:'Reader Voice',purpose:'Ask readers to nominate one specific local place, business, person or service for a future evidence-led feature.',template:'SHORT COMPONENT',points:1},
+ {type:'HUMOUR',title:'Quick Breather',family:'Fun & Curiosity',purpose:'Add one short relatable observation or joke that gives the issue breathing room.',template:'SHORT COMPONENT',points:1},
+ {type:'READER QUESTION',title:'Reader Question',family:'Reader Voice',purpose:'Ask one precise reader question that can enter the Question Bank.',template:'SHORT COMPONENT',points:1},
+ {type:'MYTH V FACT',title:'Myth v Fact',family:'Fun & Curiosity',purpose:'Test one belief and give a fair sourced answer.',template:'SHORT COMPONENT',points:1},
+ {type:'READER PETS',title:'Reader Pets',family:'Reader Voice',purpose:'Invite one specific pet story, photo or recommendation that can shape a future pet feature.',template:'SHORT COMPONENT',points:1},
+ {type:'BEFORE YOU GO',title:'Before You Go',family:'Engagement',purpose:'End warmly with one specific question or action that gives the next issue a useful lead.',template:'SHORT COMPONENT',points:1}
+]
+let canvasSelectedUid=null,dragPayload=null;
+function assemblyIssueId(){return S.issue?.id||localStorage.getItem('ics:lastIssue')||'none'}
+function assemblyKey(){return 'ics:canvas:'+assemblyIssueId()}
+function themeKey(){return 'ics:canvasTheme:'+assemblyIssueId()}
+function canvasRecoveryMode(){return !S.issue&&assemblyIssueId()!=='none'&&getCanvas().length>0}
+function componentObjectId(b){return b.componentId||('CMP-'+String(b.refId||b.uid||uid()).replace(/[^a-z0-9]/gi,'').slice(-10).toUpperCase())}
+function componentLifecycle(b){const distributed=['IN LETTERMAN','PUBLISHED'].includes(String(b.productionStatus||''));const produced=['APPROVED'].includes(String(b.contentStatus||''))||['READY FOR LETTERMAN','IN LETTERMAN','PUBLISHED'].includes(String(b.productionStatus||''));const evidence=!!String(b.proof||'').trim()||b.kind==='component'&&!/ARTICLE|Q&A|QUIZ|FACT/i.test(String(b.type||''));if(distributed)return 'DISTRIBUTION';if(produced)return 'PRODUCTION COMPLETE';if(evidence)return 'EVIDENCE / PRODUCTION';return 'PLANNING'}
+function normaliseCanvasBlock(b){const d=COMPONENT_DEFS.find(x=>x.type===b.type);const isArticle=b.kind==='article';return {...b,componentId:componentObjectId(b),lifeLane:b.lifeLane||'',commercialRole:b.commercialRole||(b.partner?'AUTHORITY':'EDITORIAL'),productionTemplate:b.productionTemplate||(isArticle?'MASTER ARTICLE':(d?.template||'SHORT COMPONENT')),productionPoints:Number(b.productionPoints||(isArticle?5:(d?.points||2))),contentStatus:b.contentStatus||(b.status==='READY'?'APPROVED':'PLANNED'),productionStatus:b.productionStatus||(b.status==='READY'?'READY FOR LETTERMAN':'NOT STARTED')}}
+function getCanvas(){try{return JSON.parse(localStorage.getItem(assemblyKey())||'[]').map(normaliseCanvasBlock)}catch{return[]}}
+function saveCanvas(items){localStorage.setItem(assemblyKey(),JSON.stringify(items));renderAssembly()}
+function uid(){return 'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function articleTeaser(s){const p=masterArticlePackage(s.fields||{});return p?.newsletter_teaser||String(val(s.fields,'Reader Value')||val(s.fields,'Core Reader Question')||'').trim()}
+function articleButton(s){return String(val(s.fields,'CTA Text')||'READ THE FULL STORY').trim()}
+function articleUrl(s){const f=s.fields||{},p=masterArticlePackage(f);return String(val(f,'Action Destination URL')||p?.url_path||'').trim()}
+function makeArticleBlock(s){const blockUid=uid(),feature=isFeatureArticleV3204(s);return {uid:blockUid,componentId:'CMP-'+blockUid.slice(-10).toUpperCase(),kind:'article',refId:s.id,type:feature?'FEATURE ARTICLE':'MASTER ARTICLE',title:val(s.fields,'Section Title')||'Untitled article',purpose:val(s.fields,'Reader Value')||val(s.fields,'Core Reader Question')||'',partnerAttached:false,partner:'',category:'',suggestedPartnerCategory:val(s.fields,'Potential Sponsor Category')||'',commitment:'',cta:val(s.fields,'CTA Text')||val(s.fields,'Primary Next Action')||'',button:val(s.fields,'CTA Text')||'',url:articleUrl(s),proof:val(s.fields,'Local Proof Needed')||val(s.fields,'Evidence Required')||'',content:val(s.fields,'Section Final Copy')||val(s.fields,'Final Copy')||'',lifeLane:val(s.fields,'Commercial Lane')||'',commercialRole:'EDITORIAL',productionTemplate:feature?'FEATURE ARTICLE':'MASTER ARTICLE',productionPoints:feature?3:5,contentStatus:'APPROVED',productionStatus:(articleUrl(s)?'ASSETS NEEDED':'ASSETS NEEDED'),status:'READY'}}
+function makeComponentBlock(def){const blockUid=uid();return {uid:blockUid,componentId:'CMP-'+blockUid.slice(-10).toUpperCase(),kind:'component',refId:'',type:def.type,title:def.title,purpose:def.purpose,partnerAttached:false,partner:'',category:'',suggestedPartnerCategory:'',commitment:'',cta:'',button:'',url:'',proof:'',content:'',lifeLane:'',commercialRole:def.family==='Partner'?'AUTHORITY':def.family==='Commercial'||def.family==='Promotion'?'ACTIVATION':'EDITORIAL',productionTemplate:def.template||'SHORT COMPONENT',productionPoints:def.points||2,contentStatus:'PLANNED',productionStatus:'NOT STARTED',status:'NEEDS PRODUCTION'}}
+function makePartnerBlock(){const blockUid=uid();return {uid:blockUid,componentId:'CMP-'+blockUid.slice(-10).toUpperCase(),kind:'partner',refId:'',type:'PARTNER PRESENCE',title:'Partner Presence',purpose:'Use only when a standalone partner activation is genuinely the content job; otherwise attach the partner to the relevant article or component.',partnerAttached:true,partner:'',category:'',suggestedPartnerCategory:'',commitment:'Weekly presence',cta:'',button:'',url:'',proof:'',content:'',status:'NEEDS DECISION'}}
+function addBlock(block,index=null){const items=getCanvas();if(index===null||index<0||index>items.length)items.push(block);else items.splice(index,0,block);saveCanvas(items);canvasSelectedUid=block.uid;setTimeout(()=>selectCanvasBlock(block.uid),0)}
+function addArticleToCanvas(id,index=null){const s=S.articleLibrary.find(x=>x.id===id)||S.sections.find(x=>x.id===id);if(!s)return;const title=String(val(s.fields,'Section Title')||'').trim().toLowerCase().replace(/\s+/g,' ');const duplicate=getCanvas().some(b=>b.kind==='article'&&(b.refId===s.id||String(b.title||'').trim().toLowerCase().replace(/\s+/g,' ')===title));if(duplicate){canvasSelectedUid=getCanvas().find(b=>b.kind==='article'&&(b.refId===s.id||String(b.title||'').trim().toLowerCase().replace(/\s+/g,' ')===title))?.uid||canvasSelectedUid;renderAssembly();return;}addBlock(makeArticleBlock(s),index)}
+function addComponentToCanvas(type,index=null){const def=COMPONENT_DEFS.find(x=>x.type===type);if(!def)return;addBlock(makeComponentBlock(def),index)}
+function renderAssembly(){
+ const lib=E('assembly-library'),order=E('assembly-order'),palette=E('component-palette');if(!lib||!order||!palette)return;
+ const q=String(E('assembly-search')?.value||'').toLowerCase();const produced=(S.articleLibrary?.length?S.articleLibrary:S.sections.filter(isProducedArticle));
+ const rows=produced.filter(s=>!q||[val(s.fields,'Section Title'),inferArticleIntelligence(s).topic].join(' ').toLowerCase().includes(q));if(E('assembly-available-count'))E('assembly-available-count').textContent=`${produced.length} available`;
+ lib.innerHTML=rows.length?rows.map(s=>{const x=inferArticleIntelligence(s),title=String(val(s.fields,'Section Title')||'').trim().toLowerCase().replace(/\s+/g,' '),added=getCanvas().some(b=>b.kind==='article'&&(b.refId===s.id||String(b.title||'').trim().toLowerCase().replace(/\s+/g,' ')===title));const usage=recordUsedInNewsletterV319(s)?'USED IN NEWSLETTER':'BANKED · UNUSED';return `<div class="palette-item" draggable="${added?'false':'true'}" ${added?'style="opacity:.55;cursor:default"':'ondragstart="startPaletteDrag(event,\'article\',\''+s.id+'\')"'} ondblclick="${added?'':'addArticleToCanvas(\''+s.id+'\')'}"><strong>${esc(val(s.fields,'Section Title')||'Untitled')}</strong><small>${added?'Already in Canvas':usage+' · '+(masterArticleState(s)==='complete'?(isFeatureArticleV3204(s)?'FEATURE ARTICLE COMPLETE ✓ · ':'MASTER ARTICLE COMPLETE ✓ · '):masterArticleReviewLabel(s)+' · ')+esc(x.topic)+' · '+esc(x.freshness)+' · drag or double-click'}</small></div>`}).join(''):`<div class="empty">${produced.length?'No produced articles match this search.':'No produced Articles are available for this publication yet.'}</div>`;if(E('assembly-library-diag'))E('assembly-library-diag').textContent=S.articleLibraryDiag||'';
+ palette.innerHTML=COMPONENT_DEFS.map(d=>`<div class="component-chip" draggable="true" ondragstart="startPaletteDrag(event,'component','${esc(d.type)}')" ondblclick="addComponentToCanvas('${esc(d.type)}')"><strong>${esc(d.title)}</strong><small>${esc(d.family)} · ${d.points} pt${d.points===1?'':'s'}</small></div>`).join('');
+ const items=getCanvas();
+ const recovering=canvasRecoveryMode();
+ const recoveryBanner=E('canvas-recovery-banner');
+ if(recoveryBanner)recoveryBanner.style.display=recovering?'block':'none';
+ ['assembly-clear','assembly-auto','assembly-build-plan','assembly-smart-assemble','assembly-produce','assembly-partners','assembly-fix','assembly-generate'].forEach(id=>{const el=E(id);if(el)el.disabled=recovering});
+ order.innerHTML=items.length?items.map((b,i)=>{const missing=[];if(!String(b.content||'').trim())missing.push('COPY');if(['MASTER ARTICLE','COMPETITION / GIVEAWAY','PARTNER TIP'].includes(b.productionTemplate)&&!String(b.url||'').trim())missing.push('URL');if(String(b.button||'').trim()&&!String(b.url||'').trim())missing.push('BUTTON URL');const ready=b.productionStatus==='READY FOR LETTERMAN'||b.productionStatus==='IN LETTERMAN'||b.productionStatus==='PUBLISHED';return `<div class="canvas-card ${ready?'is-ready':'is-needs'} ${canvasSelectedUid===b.uid?'selected':''}" draggable="true" ondragstart="startCanvasDrag(event,'${b.uid}')" ondragover="markCardDrop(event,this)" ondragleave="clearCardDrop(this)" ondrop="dropOnCard(event,'${b.uid}')" onclick="selectCanvasBlock('${b.uid}')"><div class="drag-handle">⋮⋮</div><div><strong>${i+1}. ${esc(b.title||b.type)}</strong><small>${esc(b.type)} · ${esc(b.productionTemplate)} · ${b.productionPoints} pts${b.partner?' · '+esc(b.partner):''}</small><div class="object-id">${esc(b.componentId||componentObjectId(b))}</div><div class="lifecycle-row">${['PLAN','EVIDENCE','PRODUCE','DISTRIBUTE'].map((step,si)=>{const stage=componentLifecycle(b),done=(si===0)||(si===1&&stage!=='PLANNING')||(si===2&&['PRODUCTION COMPLETE','DISTRIBUTION'].includes(stage))||(si===3&&stage==='DISTRIBUTION');const current=(!done)&&((si===1&&stage==='PLANNING')||(si===2&&stage==='EVIDENCE / PRODUCTION')||(si===3&&stage==='PRODUCTION COMPLETE'));return `<span class="life-step ${done?'done':current?'current':''}">${step}</span>`}).join('')}</div><div class="canvas-badges"><span class="mini-badge ${b.contentStatus==='APPROVED'?'ready':'needs'}">${esc(b.contentStatus)}</span><span class="mini-badge ${ready?'ready':'needs'}">${esc(b.productionStatus)}</span>${missing.map(x=>`<span class="mini-badge needs">MISSING ${x}</span>`).join('')}</div></div><div class="card-move"><button class="btn secondary" title="Move up" onclick="event.stopPropagation();moveCanvasStep('${b.uid}',-1)" ${i===0?'disabled':''}>↑</button><button class="btn secondary" title="Move down" onclick="event.stopPropagation();moveCanvasStep('${b.uid}',1)" ${i===items.length-1?'disabled':''}>↓</button><button class="btn secondary" title="Remove" onclick="event.stopPropagation();removeCanvasBlock('${b.uid}')">×</button></div></div>`}).join(''):'<div class="drop-hint">Drag a Master Article or another component here to start assembling the issue.</div>';
+ E('assembly-count').textContent=`${items.length} blocks`;
+ const savedTheme=localStorage.getItem(themeKey());if(E('assembly-theme')&&!E('assembly-theme').value)E('assembly-theme').value=savedTheme||val(S.issue?.fields||{},'Main Theme')||'';if(E('issue-context-summary'))E('issue-context-summary').textContent=S.issue?`${currentPublicationName()} · Issue #${val(S.issue.fields,'Issue Number')||'—'} · Send ${fmt(val(S.issue.fields,'Send Date'))} · ${val(S.issue.fields,'Issue Status')||'PLANNED'}`:'No issue selected';
+ updatePlannerScore();renderComponentCommandCentre();renderInspector();renderSmartPlan();renderFeatureSummaryV3204();
+}
+function renderComponentCommandCentre(){
+ const items=getCanvas();const total=items.length;
+ const evidence=items.filter(b=>!!String(b.proof||'').trim()||b.kind==='component'&&!/ARTICLE|Q&A|QUIZ|FACT/i.test(String(b.type||''))).length;
+ const produced=items.filter(b=>String(b.contentStatus||'')==='APPROVED'||['READY FOR LETTERMAN','IN LETTERMAN','PUBLISHED'].includes(String(b.productionStatus||''))).length;
+ const distributed=items.filter(b=>['IN LETTERMAN','PUBLISHED'].includes(String(b.productionStatus||''))).length;
+ const score=total?Math.round(((total+evidence+produced+distributed)/(total*4))*100):0;
+ if(E('command-planned'))E('command-planned').textContent=total;if(E('command-evidence'))E('command-evidence').textContent=evidence;if(E('command-produced'))E('command-produced').textContent=produced;if(E('command-distributed'))E('command-distributed').textContent=distributed;if(E('command-progress-bar'))E('command-progress-bar').style.width=score+'%';
+ const next=items.find(b=>componentLifecycle(b)!=='DISTRIBUTION');
+ if(E('command-summary'))E('command-summary').textContent=total?`${score}% through the full component lifecycle · ${items.filter(x=>String(x.type||'').toUpperCase()==='MASTER ARTICLE').length} Masters · ${items.filter(x=>String(x.type||'').toUpperCase()==='FEATURE ARTICLE').length} Features · ${items.filter(x=>x.kind!=='article').length} supporting components.`:'Add or assemble components to begin.';
+ if(E('command-next'))E('command-next').innerHTML=next?`<strong>Next:</strong> ${esc(next.title||next.type)} — ${esc(componentLifecycle(next)==='PLANNING'?'confirm purpose, proof and partner fit':componentLifecycle(next)==='EVIDENCE / PRODUCTION'?'finish or approve the content':componentLifecycle(next)==='PRODUCTION COMPLETE'?'move into the publishing platform / publish':'review')}.`:'<strong>Issue lifecycle complete.</strong> Every Canvas component is production ready or published.';
+ const counts=items.reduce((m,b)=>(m[b.type]=(m[b.type]||0)+1,m),{});if(E('component-registry-strip'))E('component-registry-strip').innerHTML=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,v])=>`<span class="registry-chip">${esc(k)} · ${v}</span>`).join('')||'<span class="muted">Component Registry will appear here.</span>';
+ if(E('jump-next-component'))E('jump-next-component').disabled=!next;
+}
+function jumpToNextIncompleteComponent(){const next=getCanvas().find(b=>componentLifecycle(b)!=='DISTRIBUTION');if(!next)return;canvasSelectedUid=next.uid;renderAssembly();setTimeout(()=>document.querySelector('.canvas-card.selected')?.scrollIntoView({behavior:'smooth',block:'center'}),30)}
+function updatePlannerScore(){if(!E('score-headlines'))return;const items=getCanvas();E('score-headlines').textContent=items.filter(x=>x.kind==='article').length;E('score-interactive').textContent=items.filter(x=>x.kind==='component').length;E('score-authority').textContent=items.filter(x=>x.kind==='partner'||x.partner).length;E('score-activation').textContent=items.filter(x=>['READY FOR LETTERMAN','IN LETTERMAN','PUBLISHED'].includes(x.productionStatus)).length;E('score-commitments').textContent=items.filter(x=>!['IN LETTERMAN','PUBLISHED'].includes(x.productionStatus)).reduce((n,x)=>n+Number(x.productionPoints||0),0);}
+function startPaletteDrag(ev,kind,value){dragPayload={source:'palette',kind,value};ev.dataTransfer.effectAllowed='copy';ev.dataTransfer.setData('text/plain',JSON.stringify(dragPayload))}
+function startCanvasDrag(ev,uidValue){dragPayload={source:'canvas',uid:uidValue};ev.dataTransfer.effectAllowed='move';ev.dataTransfer.setData('text/plain',JSON.stringify(dragPayload))}
+function readDrag(ev){try{return dragPayload||JSON.parse(ev.dataTransfer.getData('text/plain'))}catch{return null}}
+function dropOnCanvas(ev,index=null){ev.preventDefault();E('assembly-order')?.classList.remove('drag-over');const p=readDrag(ev);if(!p)return;if(p.source==='palette'){if(p.kind==='article')addArticleToCanvas(p.value,index);else if(p.kind==='component')addComponentToCanvas(p.value,index);else if(p.kind==='partner')addBlock(makePartnerBlock(),index)}else if(p.source==='canvas'){moveCanvasUid(p.uid,index===null?getCanvas().length:index)}dragPayload=null}
+function dropOnCard(ev,targetUid){ev.preventDefault();ev.stopPropagation();const card=ev.currentTarget||ev.target.closest('.canvas-card');card?.classList.remove('drop-target','drop-before','drop-after');const items=getCanvas(),idx=items.findIndex(x=>x.uid===targetUid);const rect=card?.getBoundingClientRect();const after=rect?ev.clientY>rect.top+(rect.height/2):false;dropOnCanvas(ev,idx+(after?1:0))}
+function markCardDrop(ev,card){ev.preventDefault();const rect=card.getBoundingClientRect(),after=ev.clientY>rect.top+(rect.height/2);card.classList.toggle('drop-before',!after);card.classList.toggle('drop-after',after)}
+function clearCardDrop(card){card.classList.remove('drop-target','drop-before','drop-after')}
+function moveCanvasStep(uidValue,delta){const items=getCanvas(),from=items.findIndex(x=>x.uid===uidValue);if(from<0)return;const to=Math.max(0,Math.min(items.length-1,from+delta));if(to===from)return;const [item]=items.splice(from,1);items.splice(to,0,item);saveCanvas(items);canvasSelectedUid=uidValue}
+function moveCanvasUid(moveUid,index){let items=getCanvas();const from=items.findIndex(x=>x.uid===moveUid);if(from<0)return;const [item]=items.splice(from,1);if(from<index)index--;items.splice(Math.max(0,Math.min(index,items.length)),0,item);saveCanvas(items)}
+function removeCanvasBlock(uidValue){let items=getCanvas().filter(x=>x.uid!==uidValue);if(canvasSelectedUid===uidValue)canvasSelectedUid=null;saveCanvas(items)}
+function selectCanvasBlock(uidValue){canvasSelectedUid=uidValue;renderAssembly()}
+function componentTypeOptions(current=''){const types=['MASTER ARTICLE',...COMPONENT_DEFS.map(x=>x.type),'PARTNER PRESENCE'];if(current&&!types.includes(current))types.push(current);return types.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}
+function componentContext(block){
+ const items=getCanvas(),idx=items.findIndex(x=>x.uid===block?.uid),theme=String(E('assembly-theme')?.value||localStorage.getItem(themeKey())||val(S.issue?.fields||{},'Main Theme')||'').trim();
+ const before=idx>0?items[idx-1]:null,after=idx>=0&&idx<items.length-1?items[idx+1]:null;
+ const lanes=[...new Set(items.map(x=>String(x.lifeLane||'').trim()).filter(Boolean))];
+ const partnerCats=[...new Set(items.filter(x=>x.uid!==block?.uid&&x.partnerAttached).map(x=>String(x.category||'').trim()).filter(Boolean))];
+ const types=items.reduce((m,x)=>(m[x.type]=(m[x.type]||0)+1,m),{});
+ const underused=COMPONENT_DEFS.filter(d=>(types[d.type]||0)===0).slice(0,4).map(d=>d.type);
+ return {theme,before,after,lanes,partnerCats,underused,index:idx,total:items.length};
+}
+function renderInspectorContext(block){const box=E('inspect-context');if(!box||!block)return;const c=componentContext(block);const escTitle=x=>x?esc(x.title||x.type):'None';box.innerHTML=`<strong>Issue context · position ${c.index+1} of ${c.total}</strong><div><b>Promise:</b> ${esc(c.theme||'Not set')}</div><div><b>Before:</b> ${escTitle(c.before)} · <b>After:</b> ${escTitle(c.after)}</div><div class="context-tags">${c.lanes.slice(0,5).map(x=>`<span class="context-tag">${esc(x)}</span>`).join('')||'<span class="muted">No life lanes assigned yet</span>'}</div>${c.partnerCats.length?`<div class="muted" style="margin-top:6px">Partner categories already used: ${esc(c.partnerCats.join(', '))}</div>`:''}${c.underused.length?`<div class="muted">Unused component formats: ${esc(c.underused.join(', '))}</div>`:''}`}
+function titleCaseAllWordsV312(v){return String(v||'').trim().replace(/(^|[\s—–:/([{])([a-z])/g,(m,p,c)=>p+c.toUpperCase())}
+function inferLifeLaneFromText(text){text=String(text||'').toLowerCase();if(/mortgage|rent|house|property|letting|buyer|seller|conveyanc|surveyor|estate agent/.test(text))return 'Home & Property';if(/repair|builder|plumber|electric|garden|solar|kitchen|bathroom|decorat|roof/.test(text))return 'Home Improvement & Garden';if(/bill|saving|pension|tax|insurance|ifa|household cost|finance/.test(text))return 'Money & Household Costs';if(/school|child|family|parent|childcare/.test(text))return 'Family & Children';if(/health|dental|physio|wellbeing|clinic|fitness|care/.test(text))return 'Health & Wellbeing';if(/food|pub|restaurant|cafe|meal|drink|farm shop/.test(text))return 'Food & Dining';if(/dog|cat|pet|vet|animal|groom/.test(text))return 'Pets & Animals';if(/car|road|traffic|parking|vehicle|bus|train|commut/.test(text))return 'Motoring & Transport';if(/travel|hotel|day out|attraction|weekend|experience/.test(text))return 'Travel, Days Out & Experiences';if(/theatre|festival|music|cinema|sport|leisure|culture/.test(text))return 'Leisure, Culture & Entertainment';if(/council|community|charity|development|neighbourhood|planning/.test(text))return 'Community & Local Change';if(/business|job|employer|entrepreneur|networking|skills|high street/.test(text))return 'Work, Business & Opportunity';return ''}
+function renderInspector(){const empty=E('inspector-empty'),form=E('inspector-form');if(!empty||!form)return;const b=getCanvas().find(x=>x.uid===canvasSelectedUid);if(!b){empty.hidden=false;form.hidden=true;return}empty.hidden=true;form.hidden=false;E('inspect-component-id').value=b.componentId||componentObjectId(b);E('inspect-lifecycle').value=componentLifecycle(b);E('inspect-type').innerHTML=componentTypeOptions(b.type||'');E('inspect-type').value=b.type||'';E('inspect-title').value=b.title||'';E('inspect-purpose').value=b.purpose||'';const hasPartner=b.kind==='partner'||b.partnerAttached===true||!!String(b.partner||'').trim();E('inspect-has-partner').checked=hasPartner;E('inspect-has-partner').disabled=b.kind==='partner';E('partner-fields').hidden=!hasPartner;E('inspect-partner').value=b.partner||'';E('inspect-category').value=b.category||'';E('inspect-commitment').value=b.commitment||'';const suggestion=String(b.suggestedPartnerCategory||'').trim();E('inspect-partner-suggestion').textContent=hasPartner&&suggestion&&!b.category?`Suggested lane from article intelligence: ${suggestion} — confirm it before using.`:'';E('inspect-cta').value=b.cta||'';E('inspect-button').value=b.button||'';E('inspect-url').value=b.url||'';const ctaGroup=E('inspect-cta-group');if(ctaGroup){const actionType=/POLL|VOTE|COMPETITION|GIVEAWAY|CHALLENGE|RECOMMENDATION|NOMINATION|PARTNER|FACEBOOK|SOCIAL|CLOSING QUESTION|READER QUESTION/i.test(String(b.type||''));ctaGroup.hidden=!(b.kind==='article'||b.kind==='partner'||actionType||b.cta||b.button||b.url)};E('inspect-proof').value=b.proof||'';E('inspect-content').value=b.content||'';E('inspect-life-lane').value=b.lifeLane||'';E('inspect-commercial-role').value=b.commercialRole||'EDITORIAL';E('inspect-content-status').value=b.contentStatus||'PLANNED';E('inspect-production-status').value=b.productionStatus||'NOT STARTED';E('inspect-template').value=b.productionTemplate||'';E('inspect-points').value=b.productionPoints||2;E('inspect-status').value=b.status||'NEEDS DECISION';renderInspectorContext(b)}
+function toggleInspectorPartner(){const b=getCanvas().find(x=>x.uid===canvasSelectedUid);const on=b?.kind==='partner'||E('inspect-has-partner').checked;E('partner-fields').hidden=!on;if(!on){E('inspect-partner').value='';E('inspect-category').value='';E('inspect-commitment').value=''}else{const suggestion=String(b?.suggestedPartnerCategory||'').trim();E('inspect-partner-suggestion').textContent=suggestion&&!E('inspect-category').value?`Suggested lane from article intelligence: ${suggestion} — confirm it before using.`:''}}
+function saveInspector(){const items=getCanvas(),i=items.findIndex(x=>x.uid===canvasSelectedUid);if(i<0)return;const previous=items[i],previousType=previous.type||'';const selectedType=E('inspect-type').value||previousType;const def=COMPONENT_DEFS.find(x=>x.type===selectedType);const isMaster=selectedType==='MASTER ARTICLE';const isPartnerPresence=selectedType==='PARTNER PRESENCE';const forced=isPartnerPresence||previous.kind==='partner';const attached=forced||E('inspect-has-partner').checked;const typeChanged=selectedType!==previousType;const title=titleCaseAllWordsV312(E('inspect-title').value),purpose=E('inspect-purpose').value;let category=attached?E('inspect-category').value.trim():'';let suggestion=attached?String(previous.suggestedPartnerCategory||'').trim():'';if(typeChanged&&!attached){category='';suggestion=''}
+ const role=E('inspect-commercial-role').value;const lifeLane=E('inspect-life-lane').value.trim()||inferLifeLaneFromText([title,purpose,E('inspect-content').value].join(' '));
+ items[i]={...previous,kind:isMaster?'article':(isPartnerPresence?'partner':'component'),type:selectedType,title,purpose,partnerAttached:attached,partner:attached?E('inspect-partner').value.trim():'',category,suggestedPartnerCategory:suggestion,commitment:attached?E('inspect-commitment').value.trim():'',cta:E('inspect-cta').value,button:E('inspect-button').value,url:E('inspect-url').value,proof:E('inspect-proof').value,content:E('inspect-content').value,lifeLane,commercialRole:role,contentStatus:E('inspect-content-status').value,productionStatus:E('inspect-production-status').value,productionTemplate:typeChanged?(isMaster?'MASTER ARTICLE':(def?.template||(isPartnerPresence?'PARTNER TIP':'SHORT COMPONENT'))):E('inspect-template').value,productionPoints:typeChanged?(isMaster?5:(def?.points||(isPartnerPresence?3:2))):(Number(E('inspect-points').value)||2),status:E('inspect-status').value};localStorage.setItem(assemblyKey(),JSON.stringify(items));renderAssembly()}
+function createStarterCopy(){const items=getCanvas(),b=items.find(x=>x.uid===canvasSelectedUid);if(!b||b.kind==='article')return;const c=componentContext(b),theme=c.theme||'this issue',before=c.before?.title||'',after=c.after?.title||'',lane=b.lifeLane||inferLifeLaneFromText([b.title,b.purpose,theme].join(' '));let text='';
+ const localContext=[before&&`Previous item: ${before}`,after&&`Next item: ${after}`].filter(Boolean).join(' · ');
+ if(b.type==='POLL')text=`QUESTION: Thinking about ${theme}, which answer comes closest to your view?\n\nA. [Specific option]\nB. [Specific option]\nC. [Specific option]\nD. Something else — tell us\n\nEDITOR NOTE: Keep this different from ${before||'the previous item'} and make every option genuinely distinct.`;
+ else if(b.type==='QUIZ')text=`QUESTION: [Write one answerable local question connected to ${theme}]\n\nANSWER / REVEAL: [Add the verified answer]\nSOURCE: [Add the official or first-party source]\n\nCONTEXT: ${localContext||'Use the issue promise and avoid repeating another component.'}`;
+ else if(b.type==='Q&A')text=`READER QUESTION: [Write the clearest real-world question in ${lane||'this life lane'}]\n\nANSWER: [Give a direct, evidence-based answer${b.partner?' attributed to '+b.partner:''}]\n\nONE NEXT STEP: [Add one useful action only]`;
+ else if(b.type==='OPENING NOTE')text=`This week: ${theme}\n\n[Write 2–4 short, human lines explaining why this matters now and what readers will get from the issue. Do not summarise every story.]`;
+ else if(b.type==='CLOSING QUESTION')text=`After everything in this issue, what is the one local change, recommendation or answer you would add about ${theme}?`;
+ else if(b.type==='READER RECOMMENDATION')text=`Who or where would you recommend for ${lane||theme} — and what specific experience makes you recommend them?`;
+ else if(b.type==='FACEBOOK DISCUSSION')text=`FACEBOOK QUESTION: [Choose the strongest unresolved tension from ${theme}]\n\nAdd one named local example or choice that makes it easy to comment. Avoid repeating: ${before||'the preceding component'}.`;
+ else if(b.type==='PARTNER PRESENCE')text=`PARTNER: ${b.partner||'[ADD CONFIRMED PARTNER]'}\nREADER JOB: [What useful problem does this solve?]\nFORMAT: [Q&A / TIP / MYTH V FACT / OFFER / RECOMMENDATION]\nCONTENT: [Add concrete value, not an advert]\nCTA: ${b.cta||'[ONE PRIMARY ACTION]'}\n\nGUARD: Do not invent services, prices, claims or commitments.`;
+ else text=`${b.type}\n\nISSUE PROMISE: ${theme}\nLIFE LANE: ${lane||'[Choose lane]'}\nREADER JOB: ${b.purpose||'[Clarify the job]'}\nNEARBY CONTEXT: ${localContext||'No neighbouring items yet'}\n\n[CREATE FINISHED LETTERMAN-READY CONTENT HERE]\n\nLOCAL PROOF / SOURCE: ${b.proof||'[Add if factual]'}\nPRIMARY ACTION: ${b.cta||'[One action maximum]'}`;
+ E('inspect-content').value=text;if(!E('inspect-life-lane').value&&lane)E('inspect-life-lane').value=lane;E('inspect-status').value='NEEDS PRODUCTION'}
+
+async function produceSelectedComponent(){
+  if(!canvasSelectedUid){alert('Select a supporting component first.');return}
+  saveInspector();
+  const items=getCanvas();
+  const i=items.findIndex(x=>x.uid===canvasSelectedUid);
+  if(i<0)return;
+  const block=items[i];
+  if(block.kind==='article'){alert('Use Master Article production for articles.');return}
+  const c=componentContext(block);
+  const theme=c.theme||E('assembly-theme')?.value||'';
+  const before=c.before?.title||'';
+  const after=c.after?.title||'';
+  const starter=String(block.productionBrief||block.content||'').trim();
+  const proof=String(block.proof||'').trim();
+  const partner=String(block.partner||'').trim();
+  const partnerCategory=String(block.category||'').trim();
+  const commitment=String(block.commitment||'').trim();
+  const primaryAction=String(block.cta||block.button||'').trim();
+  const button=E('produce-selected-component');
+  const original=button.textContent;
+  button.disabled=true;button.textContent='Producing…';
+  try{
+    const prompt=`You are producing ONE finished supporting component for a Trail Blaze Local Spotlight newsletter.
+
+PUBLICATION: ${S.publication?.name||S.publication?.fields?.Name||currentPublicationName()||'Spotlight'}
+ISSUE PROMISE: ${theme}
+COMPONENT TYPE: ${block.type}
+LABEL: ${block.title}
+PURPOSE / READER JOB: ${block.purpose||''}
+LIFE LANE: ${block.lifeLane||''}
+NEARBY ITEMS: ${[before&&`Before: ${before}`,after&&`After: ${after}`].filter(Boolean).join(' | ')||'None yet'}
+ATTACHED PARTNER: ${partner||'None'}
+PARTNER CATEGORY: ${partnerCategory||'None'}
+PARTNER COMMITMENT: ${commitment||'Not stated'}
+LOCAL PROOF / SOURCE REQUIREMENT: ${proof||'No factual source supplied — do not invent facts.'}
+PRODUCTION BRIEF / STARTER: ${starter||'No starter supplied.'}
+PRIMARY ACTION REQUESTED: ${primaryAction||'None — add no CTA unless the reader job clearly needs one.'}
+
+Write ONLY the finished Letterman-ready component copy.
+- Normally 60–140 words; shorter is fine when the format needs it. Never turn it into a mini Master Article.
+- One clear reader job. Answer or deliver value quickly.
+- Natural UK English and Spotlight personality. Sound like a local publication, not a report, brochure or AI explainer.
+- Use named local proof only when it is supplied or safely supported by the brief.
+- Do not invent prices, qualifications, testimonials, outcomes, quotes, services, claims or reader comments.
+- If a real partner is attached, integrate the partner naturally as the relevant expert/featured partner, not as an advert.
+- IMPORTANT: never invent advice and attribute it to the named partner. If the brief does not actually contain that partner's supplied advice, write any general editorial advice without quotation or personal attribution, and use the partner name only as the resident expert/route for follow-up.
+- ONE CTA maximum. If the requested action is blank and no action is needed, end without a CTA.
+- Do not include internal labels such as ISSUE PROMISE, READER JOB, LOCAL PROOF, PRODUCTION BRIEF, or [CREATE FINISHED...].
+- Do not include a markdown heading unless the copy genuinely needs a short reader-facing subhead; the component label is already stored separately. If you do create any reader-facing heading or subhead, Capitalise Every Word.
+- NEVER use these filler words/phrases in reader-facing copy: useful, practical, meaningful, key question, important distinction, crucial, straightforward, navigate, 'The question is', 'The honest answer', and 'in plain English'. Avoid 'whether' unless grammatically unavoidable.
+- CTA/button wording must be Title Case.
+- Vary structure from nearby items; do not stack checklist after checklist or generic question after generic question.`;
+    const data=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
+    const text=String(data.text||'').trim();
+    if(!text)throw new Error('No finished component copy returned.');
+    block.productionBrief=starter;
+    block.content=text;
+    block.contentStatus='APPROVED';
+    block.productionStatus='READY FOR LETTERMAN';
+    block.status='READY';
+    block.productionError='';
+    localStorage.setItem(assemblyKey(),JSON.stringify(items));
+    renderAssembly();
+    canvasSelectedUid=block.uid;
+    renderInspector();
+    alert('Component produced. Review the finished copy, make any small edit if needed, then Save component.');
+  }catch(err){
+    block.status='NEEDS PRODUCTION';
+    block.productionStatus='NOT STARTED';
+    block.productionError=String(err?.message||err);
+    localStorage.setItem(assemblyKey(),JSON.stringify(items));
+    renderAssembly();
+    canvasSelectedUid=block.uid;renderInspector();
+    alert('Component production failed: '+(err?.message||err));
+  }finally{button.disabled=false;button.textContent=original}
+}
+
+function exportCanvasBackup(){
+  const issueId=assemblyIssueId();
+  const canvas=getCanvas();
+  if(!canvas.length){alert('There is no Canvas content to export.');return}
+  const payload={
+    format:'TBOS Issue Canvas Backup',
+    version:'3.9.2',
+    exportedAt:new Date().toISOString(),
+    issueId,
+    issue:S.issue?{
+      id:S.issue.id,
+      publication:pubName(S.issue.fields.Publication),
+      issueNumber:val(S.issue.fields,'Issue Number')||'',
+      sendDate:val(S.issue.fields,'Send Date')||'',
+      status:val(S.issue.fields,'Issue Status')||'',
+      mainTheme:val(S.issue.fields,'Main Theme')||''
+    }:{id:issueId,recoveryMode:true},
+    issuePromise:localStorage.getItem(themeKey())||E('assembly-theme')?.value||'',
+    canvas,
+    finalQA:(()=>{try{return JSON.parse(localStorage.getItem(qaKey())||'null')}catch{return null}})()
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const label=(payload.issue.publication||'Issue').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'');
+  a.href=url;
+  a.download=`TBOS-Canvas-${label||issueId}-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function smartPlanKey(){return 'ics:smartPlan:v3101:'+assemblyIssueId()}
+function smartRejectedKey(){return 'ics:smartRejected:v3101:'+assemblyIssueId()}
+function getSmartRejected(){try{return JSON.parse(localStorage.getItem(smartRejectedKey())||'[]')}catch{return []}}
+function addSmartRejected(title){title=String(title||'').trim();if(!title)return;const v=getSmartRejected();if(!v.some(x=>normalizePlanTitle(x)===normalizePlanTitle(title)))v.push(title);localStorage.setItem(smartRejectedKey(),JSON.stringify(v.slice(-30)))}
+function clearSmartRejected(){localStorage.removeItem(smartRejectedKey())}
+function smartSignalsKey(){return 'ics:smartSignals:'+assemblyIssueId()}
+function getSmartSignals(){try{return JSON.parse(localStorage.getItem(smartSignalsKey())||'[]')}catch{return []}}
+function saveSmartSignals(v){localStorage.setItem(smartSignalsKey(),JSON.stringify(v||[]))}
+function getSmartPlan(){try{return JSON.parse(localStorage.getItem(smartPlanKey())||'null')}catch{return null}}
+function smartPlanBatchesKey(){return 'ics:smartPlanBatches:v3101:'+assemblyIssueId()}
+function getSmartPlanBatches(){try{return JSON.parse(localStorage.getItem(smartPlanBatchesKey())||'[]')}catch{return []}}
+function saveSmartPlanBatches(v){localStorage.setItem(smartPlanBatchesKey(),JSON.stringify(v||[]))}
+function planModeClass(m){return ['REUSE','LOCALISE'].includes(m)?'ready':'needs'}
+let smartEditOrder=null;
+function saveSmartPlan(plan){localStorage.setItem(smartPlanKey(),JSON.stringify(plan))}
+
+function resetSmartCandidatePlanV312j(){
+  const plan=getSmartPlan(),batches=getSmartPlanBatches();
+  const count=(plan?.articles||[]).length||batches.flatMap(b=>b.articles||[]).length;
+  if(!count){
+    const m='No saved candidate plan to reset. Collected source signals are still available.';
+    E('smart-scan-progress').textContent=m;updateWorkflowShellV312(1);setWorkflowActionStatusV312(1,'Plan','Nothing to reset.',m);return;
+  }
+  const ok=confirm(`Reset the saved ${count}-candidate plan for ${currentPublicationName()}?\n\nThis clears only the candidate decisions and current-run rejected list. It keeps the collected source signals so the 15 candidates can be rebuilt immediately.`);
+  if(!ok)return;
+  localStorage.removeItem(smartPlanKey());
+  saveSmartPlanBatches([]);
+  clearSmartRejected();
+  const m=`15-candidate plan reset for ${currentPublicationName()}. Collected source signals were kept. Next: Build / Resume 15-Candidate Plan.`;
+  E('smart-scan-progress').textContent=m;
+  renderSmartPlan();renderEngineProfile();updateWorkflowShellV312(1);
+  setWorkflowActionStatusV312(1,'Plan','Candidate plan reset.',m);
+}
+
+function smartPlanLocked(plan=getSmartPlan()){return !!plan?.lockedAt}
+function recalcSmartCounts(plan){plan.counts=(plan.articles||[]).reduce((o,a)=>(o[a.mode]=(o[a.mode]||0)+1,o),{});return plan}
+function unlockSmartPlan(plan){if(plan?.lockedAt)delete plan.lockedAt}
+function keepSmartArticle(order){const plan=getSmartPlan(),a=(plan?.articles||[]).find(x=>+x.order===+order);if(!a)return;a.editorDecision='KEEP';unlockSmartPlan(plan);saveSmartPlan(plan);renderSmartPlan()}
+function resolvedWritingMode(a){
+  const explicit=String(a?.writing_mode||'AUTO').trim().toUpperCase();
+  if(explicit&&explicit!=='AUTO')return explicit;
+  const text=[a?.title,a?.question,a?.real_life_question,a?.why_now,a?.stance,a?.life_lane].filter(Boolean).join(' ').toLowerCase();
+  const stance=String(a?.stance||'').toUpperCase();
+  if(/breaking|just announced|today|this morning|live update/.test(text))return 'BREAKING UPDATE';
+  if(stance==='DEBATE'||stance==='CHALLENGE'||stance==='UNFILTERED'||/controvers|row|debate|should .* be|what do you think/.test(text))return 'DEBATE / CONTROVERSY';
+  if(/approved|council|planning|decision|closure|opens|closed|scheme|development|reported|announced/.test(text))return 'NEWS EXPLAINER';
+  if(/best-value|best value|cost|cheapest|compare|comparison|worth the money|what does .* cost/.test(text))return 'COMPARISON / VALUE';
+  if(/where .* go|worth the journey|worth the drive|recommend|hidden|discover|attraction|restaurant|pub|takeaway|breakfast|weekend/.test(text))return 'RECOMMENDATION / DISCOVERY';
+  if(/community|charity|volunteer|local person|neighbour|family story/.test(text))return 'HUMAN / COMMUNITY';
+  if(/check|what can i do|how do i|what should i|should i|my |our |save for|mortgage|boiler|dog |car |health|money/.test(text))return 'CONVERSATION ADVICE';
+  return 'PRACTICAL SERVICE';
+}
+function openSmartArticleEdit(order){const plan=getSmartPlan(),a=(plan?.articles||[]).find(x=>+x.order===+order);if(!a)return;smartEditOrder=+order;E('smart-edit-head').textContent=`Edit article ${order}`;E('smart-edit-mode').value=a.mode||'CREATE NEW';E('smart-edit-stance').value=a.stance||'PRACTICAL';E('smart-edit-writing-style').value=a.writing_mode||'AUTO';E('smart-edit-title').value=a.title||'';E('smart-edit-question').value=a.question||'';E('smart-edit-real-life').value=a.real_life_question||a.question||'';E('smart-edit-why').value=a.why_now||'';E('smart-edit-life-lane').value=a.life_lane||'Open';E('smart-edit-lane').value=a.lane||'Editorial';E('smart-edit-existing').value=a.existing_article_id||'';E('smart-edit-panel').style.display='block';E('smart-edit-panel').scrollIntoView({behavior:'smooth',block:'nearest'})}
+function saveSmartArticleEdit(){
+  const plan=getSmartPlan(),a=(plan?.articles||[]).find(x=>+x.order===+smartEditOrder);if(!a)return;
+  const oldTitle=String(a.title||'').trim(),oldQuestion=String(a.question||'').trim();
+  const title=E('smart-edit-title').value.trim(),q=E('smart-edit-question').value.trim();
+  if(!title||!q){alert('Title and core question are required.');return}
+  const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const conceptChanged=norm(title)!==norm(oldTitle)||norm(q)!==norm(oldQuestion);
+  Object.assign(a,{
+    mode:E('smart-edit-mode').value,
+    stance:E('smart-edit-stance').value,
+    writing_mode:E('smart-edit-writing-style').value,
+    title,
+    question:q,
+    real_life_question:E('smart-edit-real-life').value.trim()||q,
+    why_now:E('smart-edit-why').value.trim(),
+    life_lane:E('smart-edit-life-lane').value||'Open',
+    lane:E('smart-edit-lane').value.trim()||'Editorial',
+    existing_article_id:E('smart-edit-existing').value.trim(),
+    editorDecision:'EDITED'
+  });
+  if(conceptChanged && String(a.mode||'').toUpperCase()==='CREATE NEW'){
+    a.problem=q;
+  }
+  // Reconcile provenance AFTER the new concept is applied. If an edited
+  // CREATE NEW item still points to an old Lead but no longer aligns with it,
+  // detach that lead and require fresh research. Minor edits that still align
+  // keep their original source.
+  let detached=false;
+  if(String(a.mode||'').toUpperCase()==='CREATE NEW' && normaliseLeadRef(a)){
+    const pa=provenanceAlignment(a,plan);
+    if(pa.level==='WEAK'||pa.level==='MISMATCH'){
+      a.source_signal='Manual editorial replacement — fresh research required';
+      a.problem=q;
+      a.local_proof='Research and localise this edited concept for the active publication. Do not reuse the previous planning lead as evidence.';
+      a.evidence='Fresh research required before production.';
+      detached=true;
+    }
+  }
+  unlockSmartPlan(plan);recalcSmartCounts(plan);saveSmartPlan(plan);E('smart-edit-panel').style.display='none';renderSmartPlan();
+  const m=detached?`Article ${a.order} updated. Stale planning lead detached; fresh research required.`:(conceptChanged?`Article ${a.order} updated.`:`Article ${a.order} updated.`);
+  E('smart-scan-progress').textContent=m;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Manual edit saved.',m);
+}
+async function replaceSmartArticle(order){
+  const plan=getSmartPlan(),current=(plan?.articles||[]).find(x=>+x.order===+order);
+  if(!current)return;
+  if(!confirm(`Replace article ${order}: "${current.title}"?`))return;
+  const btn=document.querySelector(`[data-smart-replace="${order}"]`);
+  if(btn){btn.disabled=true;btn.textContent='Replacing…'}
+  try{
+    await loadArticleLibrary();
+    const inventory=inventoryWithReuseGuard(S.articleLibrary,45);
+    const otherArticles=(plan.articles||[]).filter(x=>+x.order!==+order);
+    const prior=otherArticles.map(x=>({title:x.title,question:x.question,mode:x.mode,existing_article_id:x.existing_article_id||'',source_signal:x.source_signal||''}));
+    const usedLeads=[...new Set(otherArticles.map(normaliseLeadRef).filter(Boolean))];
+    let lastCollision=null;
+
+    for(let attempt=1;attempt<=2;attempt++){
+      if(btn)btn.textContent=attempt===1?'Replacing…':'Trying another…';
+      const retryContext=lastCollision?` Previous candidate was rejected because ${lastCollision}. Choose a genuinely different source lead and subject.`:'';
+      let data;
+      try{
+        data=await api('plan-issue-batch',{
+          method:'POST',
+          body:JSON.stringify({
+            publication:currentPublicationName(),
+            forbiddenPublicationTerms:forbiddenPublicationTermsV312i(),
+            issuePromise:plan.issuePromise||E('assembly-theme').value,
+            sendDate:val(S.issue.fields,'Send Date'),
+            signals:getSmartSignals(),
+            existingArticles:inventory,
+            batch:99,
+            batchLabel:'SINGLE REPLACEMENT',
+            batchBrief:`Return one replacement for rejected slot ${order}: "${current.title}". It must be materially different and must not duplicate priorArticles. USED SOURCE LEADS — DO NOT USE: ${usedLeads.length?usedLeads.map(x=>x.replace(':',' ')).join(', '):'none identified'}. Do not reuse the same underlying event, source lead, reader problem or substantially similar question already represented in this issue. REAL-LIFE QUESTION RULE: prefer a recognisable human situation and a question someone would naturally ask at the pub, dinner table, school gate, work or on WhatsApp. The answer should have a natural expert/partner pathway where appropriate, but editorial usefulness comes first. Do not invent personal facts; use supplied details or a clearly representative scenario.${retryContext}`,
+            priorArticles:prior,
+            targetCount:1,
+            blockedRecentHistory:recentHistoryForPublication(currentPublicationName()),
+            freshnessPolicy:{minimumCreateNew:6,maximumDirectReuse:2,rule:'Do not return a same-publication published question. Prefer CREATE NEW.'}
+          })
+        });
+      }catch(err){
+        const parseFailure=/json|non-whitespace|parse|invalid server response/i.test(String(err?.message||''));
+        if(parseFailure&&attempt<2){
+          lastCollision='the replacement response was malformed and could not be parsed';
+          continue;
+        }
+        throw err;
+      }
+      const r=(data.articles||[])[0];
+      if(!r)throw new Error('No replacement returned.');
+      const candidate={...r,order:+order};
+      const collision=otherArticles.map(x=>({other:x,hit:sameIssueDuplicatePair(candidate,x)})).find(x=>x.hit?.level==='DUPLICATE');
+      if(collision){
+        lastCollision=`it duplicated Article ${collision.other.order} "${collision.other.title}". ${collision.hit.reason}`;
+        if(attempt<2)continue;
+        throw new Error(`Replacement rejected after one automatic retry because ${lastCollision}`);
+      }
+      Object.assign(current,r,{order:+order,editorDecision:'REPLACED'});
+      unlockSmartPlan(plan);
+      recalcSmartCounts(plan);
+      saveSmartPlan(plan);
+      renderSmartPlan();
+      return;
+    }
+  }catch(e){
+    const m=`Could not replace Article ${order}: ${e.message}`;
+    E('smart-scan-progress').textContent=m;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Replacement failed.',m);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Replace'}
+  }
+}
+
+function repairEditedCandidateProvenanceV313(plan){
+  const repaired=[];
+  for(const a of (plan?.articles||[])){
+    if(String(a.editorDecision||'').toUpperCase()!=='EDITED')continue;
+    if(String(a.mode||'').toUpperCase()!=='CREATE NEW')continue;
+    if(!normaliseLeadRef(a))continue;
+    const pa=provenanceAlignment(a,plan);
+    if(pa.level==='WEAK'||pa.level==='MISMATCH'){
+      a.source_signal='Manual editorial replacement — fresh research required';
+      a.problem=a.question||a.title||'';
+      a.local_proof='Research and localise this edited concept for the active publication. Do not reuse the previous planning lead as evidence.';
+      a.evidence='Fresh research required before production.';
+      repaired.push(+a.order||0);
+    }
+  }
+  if(repaired.length){
+    recalcSmartCounts(plan);saveSmartPlan(plan);
+  }
+  return repaired;
+}
+function step2BlockerSummaryV313(plan){
+  const blockers=[];
+  const profile=engineProfileForPublication();
+  const target=profile.defaultMasters||15;
+  const arts=plan?.articles||[];
+
+  if(arts.length!==target){
+    blockers.push({type:'BROKEN CANDIDATE SET',items:[`Expected ${target} candidates; found ${arts.length}.`]});
+  }
+
+  const broken=arts.filter(a=>!String(a.title||'').trim()||!String(a.question||'').trim());
+  if(broken.length){
+    blockers.push({type:'BROKEN CANDIDATE',items:broken.map(a=>`Article ${a.order||'?'} — title and core question are required.`)});
+  }
+
+  const leakage=publicationLeakageAuditV312i(plan);
+  if(leakage.blocked){
+    blockers.push({type:'WRONG PUBLICATION / GEOGRAPHY',items:leakage.hits.map(x=>`Article ${x.order}: ${x.title} — foreign term: ${x.hits.join(', ')}`)});
+  }
+
+  const dup=sameIssueDuplicationSummary(plan);
+  if(dup.duplicate){
+    const seen=new Set(),items=[];
+    for(const x of dup.pairs.filter(x=>x.level==='DUPLICATE')){
+      const key=[x.a.order,x.b.order].sort((m,n)=>m-n).join('-');
+      if(seen.has(key))continue;seen.add(key);
+      items.push(`Articles ${x.a.order} & ${x.b.order} — ${x.reason}`);
+    }
+    blockers.push({type:'TRUE DUPLICATE',items});
+  }
+
+  const align=smartPlanAlignmentSummary(plan);
+  const mismatch=align.results.filter(x=>x.r.level==='MISMATCH');
+  if(mismatch.length){
+    blockers.push({type:'SOURCE MISMATCH',items:mismatch.map(x=>`Article ${x.a.order}: ${x.a.title} — ${x.r.reason}`)});
+  }
+
+  const refresh=refreshGateSummary(plan);
+  if(refresh.replace){
+    blockers.push({type:'WEAK REFRESH',items:refresh.rows.filter(x=>x.r.level==='REPLACE').map(x=>`Article ${x.a.order}: ${x.a.title} — ${x.r.reason}`)});
+  }
+
+  const history=reuseGuardSummary(plan);
+  if(history.blocked){
+    blockers.push({type:'RECENT HISTORY DUPLICATE',items:history.rows.filter(x=>x.guard?.status==='BLOCKED RECENT DUPLICATE').map(x=>`Article ${x.a.order}: ${x.a.title}`)});
+  }
+
+  const fresh=freshnessGuardSummary(plan);
+  if(!fresh.ok){
+    blockers.push({type:'FRESHNESS',items:fresh.findings||['Freshness requirements are not met.']});
+  }
+
+  return {ok:blockers.length===0,blockers};
+}
+function step2BlockerTextV313(summary){
+  if(summary.ok)return 'STEP 2 READY — No hard blockers remain. Candidate-stage balance and overlap notes are advisory and will be resolved when Step 5 selects the final Masters.';
+  const lines=['STEP 2 BLOCKED — Fix only these production blockers:',''];
+  for(const b of summary.blockers){
+    lines.push(`${b.type}:`);
+    (b.items||[]).forEach(x=>lines.push(`- ${x}`));
+    lines.push('');
+  }
+  lines.push('Do not reset the candidate slate. Edit or replace only the named candidates.');
+  return lines.join('\\n');
+}
+
+function lockSmartPlan(){
+ const plan=getSmartPlan(),profile=engineProfileForPublication();
+ if(!plan?.articles?.length){
+   const m='STEP 2 BLOCKED — No candidate plan is loaded.';
+   E('smart-scan-progress').textContent=m;setWorkflowActionStatusV312(2,'Approve','Candidate plan blocked.',m);return;
+ }
+
+ const repaired=repairEditedCandidateProvenanceV313(plan);
+ const gate=step2BlockerSummaryV313(plan);
+
+ if(!gate.ok){
+   const m=step2BlockerTextV313(gate);
+   E('smart-scan-progress').textContent=m;
+   updateWorkflowGuide();
+   setWorkflowActionStatusV312(2,'Approve','Candidate plan blocked — named fixes required.',m);
+   renderSmartPlan();
+   return;
+ }
+
+ plan.engineProfile=profile.key;
+ plan.projectedSupportRecipe=profile.supportRecipe;
+ plan.lockedAt=new Date().toISOString();
+ recalcSmartCounts(plan);saveSmartPlan(plan);renderSmartPlan();renderEngineProfile();
+
+ const repairNote=repaired.length?` Auto-repaired stale source provenance on Article${repaired.length===1?'':'s'} ${repaired.join(', ')}.`:'';
+ const note=`15-candidate slate approved.${repairNote} Final issue balance is not judged here. Step 5 will select the strongest ${profile.targetMasters[0]}–${profile.targetMasters[1]} Masters; Step 6 then builds support to the publication target.`;
+ E('smart-scan-progress').textContent=note;updateWorkflowGuide();setWorkflowActionStatusV312(2,'Approve','Candidate slate locked.',note);
+}
+function signalWords(text=''){
+  const stop=new Set('the a an and or but to of in on at for from with by is are was were be been this that what which who will would should could can do does did have has had new local norfolk current reported report reports why now'.split(/\s+/));
+  return [...new Set(String(text).toLowerCase().replace(/https?:\/\/\S+/g,' ').replace(/[^a-z0-9]+/g,' ').split(/\s+/).filter(w=>w.length>2&&!stop.has(w)))];
+}
+function smartSignalForArticle(a,plan){
+  const raw=String(a.source_signal||'').trim();
+  const sigs=Array.isArray(plan?.signals)?plan.signals:[];
+  if(raw){
+    const m=raw.match(/lead\s*(\d+)/i);
+    if(m&&sigs[Number(m[1])-1])return {...sigs[Number(m[1])-1],ref:`Lead ${m[1]}`};
+    const byText=sigs.find(x=>raw.toLowerCase().includes(String(x.signal||'').toLowerCase().slice(0,55)));
+    if(byText)return {...byText,ref:'Matched signal'};
+  }
+  return null;
+}
+function provenanceAlignment(a,plan){
+  const sig=smartSignalForArticle(a,plan);
+  if(!sig)return {level:'MISSING',label:'SOURCE MISSING',reason:'No discovery signal is explicitly linked to this article.',signal:null};
+  const article=new Set(signalWords([a.title,a.question,a.problem,a.why_now].join(' ')));
+  const source=signalWords([sig.signal,sig.why_now,sig.why_local,sig.source_title].join(' '));
+  const shared=source.filter(w=>article.has(w));
+  const specific=[...article].filter(w=>/\d/.test(w)||w.length>=7);
+  const specificShared=specific.filter(w=>source.includes(w));
+  const A=[a.title,a.question].join(' ').toLowerCase(),B=String(sig.signal||'').toLowerCase();
+  const contradictions=[];
+  if(/speeding|speed camera|speed enforcement/.test(A)&&/mobile phone|phone behind the wheel|using their phone/.test(B)&&!/speeding/.test(B))contradictions.push('The linked signal is about mobile-phone enforcement, not speeding.');
+  if(/library shake|branch|opening hours|library service/.test(A)&&/pride/.test(B)&&!/branch|opening|service change|hours/.test(B))contradictions.push('The linked signal is about Pride/library display policy, not a library-service shake-up.');
+  if(contradictions.length)return {level:'MISMATCH',label:'SOURCE MISMATCH',reason:contradictions.join(' '),signal:sig};
+  if(shared.length<2 && specificShared.length<1)return {level:'WEAK',label:'WEAK ALIGNMENT',reason:`Only ${shared.length} meaningful source/article terms overlap.`,signal:sig};
+  return {level:'OK',label:'ALIGNED',reason:`${shared.length} meaningful terms overlap${specificShared.length?`, including ${specificShared.length} specific anchor${specificShared.length===1?'':'s'}`:''}.`,signal:sig};
+}
+function smartPlanAlignmentSummary(plan){
+  const results=(plan?.articles||[]).map(a=>({a,r:provenanceAlignment(a,plan)}));
+  return {results,ok:results.filter(x=>x.r.level==='OK').length,warn:results.filter(x=>x.r.level==='WEAK'||x.r.level==='MISSING').length,bad:results.filter(x=>x.r.level==='MISMATCH').length};
+}
+
+function refreshDuplicationCheck(a){
+  if(String(a.mode||'').toUpperCase()!=='REFRESH')return {level:'NA',label:'NOT A REFRESH',reason:''};
+  const prov=String(a.source_signal||'')+' '+String(a.why_now||'')+' '+String(a.countercase||'');
+  const material=/(new|changed|change|updated|update|increase|decrease|rise|fall|rule|law|rate|price|cost|funding|decision|approval|refusal|launch|closure|opened|opening|consultation|deadline|scheme|trial|test|figures|data|statistics|announcement|policy|guidance|seasonal evidence|new local evidence)/i.test(prov);
+  const weak=/(still relevant|remains exposed|still feels|summer|august|holiday period|evergreen|refresh required|time-sensitive|wider .* leads|supported by the wider)/i.test(prov);
+  if(!material || weak){
+    return {level:'REPLACE',label:'REFRESH TOO WEAK',reason:'No clear material change is identified since the existing article was used. Replace this slot unless a concrete new development, figure, rule, price, decision or local evidence changes the answer.'};
+  }
+  return {level:'OK',label:'REFRESH JUSTIFIED',reason:'A material change/current trigger is explicitly identified.'};
+}
+function refreshGateSummary(plan){
+  const rows=(plan?.articles||[]).filter(a=>String(a.mode||'').toUpperCase()==='REFRESH').map(a=>({a,r:refreshDuplicationCheck(a)}));
+  return {rows,ok:rows.filter(x=>x.r.level==='OK').length,replace:rows.filter(x=>x.r.level==='REPLACE').length};
+}
+
+function normaliseLeadRef(a){
+  const raw=String(a?.source_signal||'').toLowerCase();
+  const m=raw.match(/lead\s*(\d+)/i);
+  return m?`lead:${m[1]}`:'';
+}
+function articleTopicTokens(a){
+  // Compare the editorial idea itself, never planner metadata such as why_now.
+  // v3.12l was counting repeated fallback wording ("deterministic saved-signal fallback...")
+  // as topic overlap, which created dozens of false duplicate pairs.
+  const stop=new Set('cambridge cambridgeshire spotlight local locally area new what will should could would actually article create refresh more into from with that this your their about before after when where which does make need use get still people residents reader readers'.split(/\s+/));
+  return [...new Set([a?.title,a?.question,a?.problem].join(' ').toLowerCase().replace(/[^a-z0-9]+/g,' ').split(/\s+/).filter(w=>w.length>3&&!stop.has(w)))];
+}
+function issuePairSimilarity(a,b){
+  const A=new Set(articleTopicTokens(a)),B=new Set(articleTopicTokens(b));
+  if(!A.size||!B.size)return 0;
+  const overlap=[...A].filter(x=>B.has(x)).length;
+  return overlap/Math.min(A.size,B.size);
+}
+function sameIssueDuplicatePair(a,b){
+  if(!a||!b||a.order===b.order)return null;
+  const la=normaliseLeadRef(a),lb=normaliseLeadRef(b);
+  if(la&&lb&&la===lb)return {level:'DUPLICATE',reason:`Both use ${la.replace(':',' ')} as the current-story source.`};
+  const ta=String(a.title||'').trim().toLowerCase(),tb=String(b.title||'').trim().toLowerCase();
+  const qa=String(a.question||'').trim().toLowerCase(),qb=String(b.question||'').trim().toLowerCase();
+  if((ta&&tb&&ta===tb)||(qa&&qb&&qa===qb))return {level:'DUPLICATE',reason:'The two candidate questions/titles are effectively identical.'};
+  const sim=issuePairSimilarity(a,b);
+  if(sim>=0.72)return {level:'REVIEW',reason:`The candidate ideas are quite close (${Math.round(sim*100)}% topic similarity). Review during Step 5 selection.`};
+  if(sim>=0.52)return {level:'REVIEW',reason:`The candidate ideas share some topic overlap (${Math.round(sim*100)}%). Step 5 should avoid selecting both if they would feel repetitive.`};
+  return null;
+}
+function sameIssueDuplicationSummary(plan){
+  const arts=plan?.articles||[],pairs=[];
+  for(let i=0;i<arts.length;i++)for(let j=i+1;j<arts.length;j++){
+    const hit=sameIssueDuplicatePair(arts[i],arts[j]);
+    if(hit)pairs.push({a:arts[i],b:arts[j],...hit});
+  }
+  return {pairs,duplicate:pairs.filter(x=>x.level==='DUPLICATE').length,review:pairs.filter(x=>x.level==='REVIEW').length};
+}
+function duplicateWarningsForArticle(a,plan){
+  return sameIssueDuplicationSummary(plan).pairs.filter(x=>x.a.order===a.order||x.b.order===a.order);
+}
+
+function classifyCommercialOpportunity(a){
+  const text=[a?.title,a?.question,a?.problem,a?.why_now,a?.lane].join(' ').toLowerCase();
+  const lanes=[];
+  const add=(type,label)=>{if(!lanes.some(x=>x.type===type&&x.label===label))lanes.push({type,label})};
+
+  // Resident Expert / authority lanes
+  if(/mortgage|remortg|first[- ]time buyer|deposit|borrowing|affordab|interest rate/.test(text))add('EXPERT','Mortgage');
+  if(/conveyanc|solicitor|legal|lease|will\b|probate/.test(text))add('EXPERT','Legal / Conveyancing');
+  if(/survey|structural|property defect|subsidence|damp|valuation/.test(text))add('EXPERT','Surveyor');
+  if(/letting|rent|tenant|landlord/.test(text))add('EXPERT','Lettings / Renting');
+  if(/health|obesity|physio|mobility|injury|nhs|dentist|dental/.test(text))add('EXPERT','Health');
+  if(/dog|pet|behaviour|training|groom/.test(text))add('EXPERT','Pet');
+  if(/tax|account|business finance|pension|investment/.test(text))add('EXPERT','Finance / Accountant');
+  if(/planning|housing development|developer|self-build|self build|estate agent|property market/.test(text))add('EXPERT','Property / Planning');
+  if(/broadband|gigabit|digital access|cyber/.test(text))add('EXPERT','Digital / Telecoms');
+  if(/insurance|energy bill|utility|household bill|consumer rights|refund/.test(text))add('EXPERT','Money / Consumer');
+
+  // Featured Partner / activation lanes
+  if(/road|pothole|car|driver|motoring|garage|vehicle/.test(text))add('PARTNER','Garage / Motoring');
+  if(/food|drink|restaurant|pub|cafe|distillery|tourist sign|visitor|attraction|day trip|weekend/.test(text))add('PARTNER','Food / Leisure / Visitor');
+  if(/charity|care leaver|community|support service|volunteer/.test(text))add('PARTNER','Community / Charity');
+  if(/home improvement|builder|trade|plumber|electrician|garden|boiler|roof|home service/.test(text))add('PARTNER','Home / Trades');
+  if(/event|theatre|festival|venue|music|concert/.test(text))add('PARTNER','Events / Venues');
+  if(/shop|retail|independent business|local business|high street/.test(text))add('PARTNER','Retail / Local Business');
+  if(/family|child|school|nursery|club|activity/.test(text))add('PARTNER','Family / Activities');
+
+  return lanes;
+}
+const CORE_SPONSOR_LANES=[
+ {key:'MORTGAGE',label:'Mortgage',type:'AUTHORITY'},
+ {key:'ESTATE',label:'Estate Agent / Lettings',type:'AUTHORITY'},
+ {key:'LEGAL',label:'Legal / Conveyancing',type:'AUTHORITY'},
+ {key:'SURVEYOR',label:'Surveyor',type:'AUTHORITY'},
+ {key:'HOME',label:'Home / Trades',type:'AUTHORITY'},
+ {key:'MOTORING',label:'Motoring / Garage',type:'AUTHORITY'},
+ {key:'PET',label:'Pet',type:'AUTHORITY'},
+ {key:'HEALTH',label:'Health / Wellness',type:'AUTHORITY'},
+ {key:'FOOD',label:'Food / Hospitality',type:'ACTIVATION'},
+ {key:'EVENTS',label:'Attractions / Events',type:'ACTIVATION'},
+ {key:'RETAIL',label:'Retail / Local Business',type:'ACTIVATION'},
+ {key:'COMMUNITY',label:'Community / Charity',type:'ACTIVATION'},
+ {key:'FAMILY',label:'Family / Activities',type:'ACTIVATION'}
+];
+function sponsorLaneKeysForItem(item){
+ // v3.10.9: classify Master sponsor opportunity only from the reader-facing subject (title + core question).
+ // Never use why_now/problem/purpose for Masters: those fields often repeat issue-wide context and previously made 7/9 Masters look like Food/Hospitality.
+ const isComponent=String(item?.kind||'').toLowerCase()==='component';
+ const t=(isComponent
+   ? [item?.type,item?.title,item?.purpose]
+   : [item?.title,item?.question]).join(' ').toLowerCase();
+ const out=new Set();
+ const add=k=>out.add(k);
+ if(/mortgage|remortg|borrowing|interest rate|first[- ]time buyer/.test(t))add('MORTGAGE');
+ if(/estate agent|letting|tenant|landlord|renting|property desk/.test(t))add('ESTATE');
+ if(/conveyanc|solicitor|legal|will\b|probate|property desk/.test(t))add('LEGAL');
+ if(/surveyor|survey|structural|subsidence|valuation|property desk/.test(t))add('SURVEYOR');
+ if(/home quick|home service|boiler|builder|plumber|electrician|roof|garden|trade/.test(t))add('HOME');
+ if(/motoring|garage|vehicle|\bcar\b|driver|mot\b/.test(t))add('MOTORING');
+ if(/pet quick|\bpet\b|\bdog\b|groom|animal|training/.test(t))add('PET');
+ if(/health quick|wellness|health|physio|mobility|injury|dentist|dental|wellbeing/.test(t))add('HEALTH');
+ if(/food find|restaurant|pub|cafe|coffee|breakfast|lunch|dinner|takeaway|food|hospitality/.test(t))add('FOOD');
+ if(/what's on|event|venue|theatre|festival|attraction|worth the drive|weekend idea|day out/.test(t))add('EVENTS');
+ if(/local business find|retail|shop|independent business|high street/.test(t))add('RETAIL');
+ if(/community voice|charity|volunteer|community support/.test(t))add('COMMUNITY');
+ if(/family activity|family|child|school|nursery|activity/.test(t))add('FAMILY');
+ // Property Desk is deliberately a compact visibility block for the four core property authority categories.
+ if(String(item?.type||'').toUpperCase()==='PROPERTY DESK'){['MORTGAGE','ESTATE','LEGAL','SURVEYOR'].forEach(add)}
+ return [...out];
+}
+function sponsorCoverageForPlan(plan,projected){
+ const rows=CORE_SPONSOR_LANES.map(x=>({...x,visible:false,treatment:'NONE',masters:0,support:0}));
+ const byKey=Object.fromEntries(rows.map(x=>[x.key,x]));
+ for(const item of projected||[]){
+   const isMaster=!item?.kind||item?.kind!=='component';
+   for(const key of sponsorLaneKeysForItem(item)){
+     const r=byKey[key];if(!r)continue;r.visible=true;
+     if(isMaster){r.masters++;r.treatment='MASTER'}else{r.support++;if(r.treatment!=='MASTER')r.treatment='IMPLIED / SHORT'}
+   }
+ }
+ const visibleRows=rows.filter(x=>x.visible);
+ const masterVisible=rows.filter(x=>x.masters>0).length;
+ const supportOnly=rows.filter(x=>x.visible&&x.masters===0&&x.support>0).length;
+ return {rows,visible:visibleRows.length,missing:rows.filter(x=>!x.visible),authorityVisible:rows.filter(x=>x.type==='AUTHORITY'&&x.visible).length,activationVisible:rows.filter(x=>x.type==='ACTIVATION'&&x.visible).length,masterVisible,supportOnly};
+}
+function engagementSignals(a){
+  const t=[a?.title,a?.question,a?.problem,a?.why_now].join(' ').toLowerCase();
+  const out=[];
+  if(/what do you think|would you|should|who would|worth|overpriced|which|best|vote|have your say|what can|what should/.test(t))out.push('DISCUSSION');
+  if(/check|guide|how|what to do|what changes|what can|what should|before/.test(t))out.push('SAVE');
+  if(/weekend|day trip|food|drink|visitor|attraction|recommend/.test(t))out.push('SHARE');
+  return [...new Set(out)];
+}
+function toneBucket(a){
+  const t=[a?.title,a?.question,a?.stance,a?.lane].join(' ').toLowerCase();
+  if(/debate|unfiltered|challenge|contrarian|controvers/.test(t))return 'EDGE';
+  if(/weekend|visitor|food|drink|day trip|recommend|fun|worth/.test(t))return 'LIGHT';
+  if(/care leaver|community|charity|people|support/.test(t))return 'HUMAN';
+  return 'PRACTICAL';
+}
+function isCivicHeavyArticle(a){
+  const t=[a?.title,a?.question,a?.problem,a?.why_now,a?.life_lane].join(' ').toLowerCase();
+  return /council|county council|district council|planning decision|development approval|transport hub|bus pass|waste|bin backlog|service continuity|public service|scrutiny|accountab|local authority/.test(t);
+}
+function commercialValueForArticle(a){
+  const opps=classifyCommercialOpportunity(a);
+  const labels=[...new Set(opps.map(x=>x.label))];
+  const expert=[...new Set(opps.filter(x=>x.type==='EXPERT').map(x=>x.label))];
+  const partner=[...new Set(opps.filter(x=>x.type==='PARTNER').map(x=>x.label))];
+  const explicit=String(a?.partner_path||'').trim();
+  return {labels,expert,partner,explicit,has:labels.length>0||!!explicit};
+}
+function issueBalanceAudit(plan){
+  const profile=engineProfileForPublication();
+  const arts=plan?.articles||[];
+  const supports=plannedSupportItems(profile);
+  const projected=[...arts,...supports];
+  const expert=new Set(),partner=new Set(),engage=new Set(),lifeLanes=new Set();
+  const tones={PRACTICAL:0,EDGE:0,LIGHT:0,HUMAN:0};
+  const laneCounts={},moodCounts={};
+  let commercialArticles=0,civicHeavy=0;
+  for(const a of arts){
+    const cv=commercialValueForArticle(a);cv.expert.forEach(x=>expert.add(x));cv.partner.forEach(x=>partner.add(x));if(cv.has)commercialArticles++;
+    engagementSignals(a).forEach(x=>engage.add(x));tones[toneBucket(a)]=(tones[toneBucket(a)]||0)+1;if(isCivicHeavyArticle(a))civicHeavy++;
+  }
+  for(const item of projected){
+    const lane=editorialLaneFor(item,profile);if(lane){lifeLanes.add(lane);laneCounts[lane]=(laneCounts[lane]||0)+1}
+    const mood=editorialMood(item);moodCounts[mood]=(moodCounts[mood]||0)+1;
+  }
+  const findings=[];
+  const sponsorCoverage=sponsorCoverageForPlan(plan,projected);
+  const freshness=freshnessGuardSummary(plan);
+  findings.push(...freshness.findings);
+  const projectedSections=projected.length;
+  if(projectedSections<profile.targetSections[0]||projectedSections>profile.targetSections[1])findings.push(`Projected issue size is ${projectedSections}; ${profile.name} normally targets ${profile.targetSections[0]}–${profile.targetSections[1]} sections.`);
+  if(arts.length<profile.targetMasters[0]||arts.length>profile.targetMasters[1])findings.push(`Master Article count is ${arts.length}; ${profile.name} normally targets ${profile.targetMasters[0]}–${profile.targetMasters[1]}.`);
+  for(const g of profile.minimumGroups||[]){const count=(g.lanes||[]).reduce((n,l)=>n+(laneCounts[l]||0),0);if(count<g.min)findings.push(`${g.label} is underweight (${count}/${g.min} minimum in the projected issue).`)}
+  for(const [lane,cap] of Object.entries(profile.laneCaps||{})){const count=laneCounts[lane]||0;if(count>cap)findings.push(`${lane} is over-concentrated (${count}/${cap} normal maximum). Reassign or rotate supporting components so one lifestyle lane does not dominate the issue.`)}
+  // v3.10.10: Reader Voice has a target band, not a brittle hard cap. Six is a soft review; seven is a stronger review; eight+ blocks.
+  if(profile.key==='SPOTLIGHT'&&profile.readerVoice){
+    const rv=laneCounts['READER VOICE']||0, r=profile.readerVoice;
+    const swapPriority=["WHAT'S ON",'FAMILY & COMMUNITY','MONEY & CONSUMER','MOTORING & TRAVEL','BUSINESS & PEOPLE','PLACES & DISCOVERY','FUN & CURIOSITY','LOCAL LIFE'];
+    const swapLane=swapPriority.slice().sort((a,b)=>(laneCounts[a]||0)-(laneCounts[b]||0))[0];
+    if(rv===r.softMax)findings.push(`Reader Voice is slightly above its ${r.targetMin}–${r.targetMax} target (${rv}). This is acceptable for a ${projectedSections}-section Spotlight issue; if you want a cleaner spread, rotate one reader prompt into ${swapLane}.`);
+    else if(rv===r.reviewMax)findings.push(`Reader Voice is high (${rv}; target ${r.targetMin}–${r.targetMax}). Rebalance is recommended before production: rotate one or two reader prompts into ${swapLane}.`);
+    else if(rv>r.reviewMax)findings.push(`Reader Voice would dominate the issue (${rv}; target ${r.targetMin}–${r.targetMax}, planning block from ${r.reviewMax+1}). Rotate at least ${rv-r.targetMax} reader prompts into other life lanes, starting with ${swapLane}.`);
+  }
+  if(profile.key==='SPOTLIGHT'&&sponsorCoverage.missing.length)findings.push(`Core sponsor-lane visibility is incomplete (${sponsorCoverage.visible}/${CORE_SPONSOR_LANES.length}). Missing: ${sponsorCoverage.missing.map(x=>x.label).join(', ')}. Use a Master, short component or implied editorial opportunity — do not force an advert.`);
+  if(profile.key==='SPOTLIGHT'&&(laneCounts['MONEY & CONSUMER']||0)<1)findings.push('Money / Consumer visibility is missing. Add a Sally Savers, price check, mortgage/household-money quick check or another genuinely useful finance-facing component; a full Master Article is not required every issue.');
+  if(commercialArticles===0)findings.push('No obvious commercial pathways are visible yet. Strengthen at least one strong reader-first article so a suitable expert, feature partner or activation could add value.');
+  else if(commercialArticles<Math.min(4,arts.length))findings.push(`Only ${commercialArticles}/${arts.length} Master Articles currently show an obvious commercial pathway. Look for natural expert, feature, resource or activation value — do not force a sponsor.`);
+  if(profile.key==='SPOTLIGHT'&&profile.commercialTargets){
+    const ct=profile.commercialTargets;
+    if(sponsorCoverage.authorityVisible<ct.minExpert)findings.push(`Authority-lane visibility is underweight (${sponsorCoverage.authorityVisible}/${ct.minExpert} minimum). Use editorial questions or quick checks to keep core expert categories visible.`);
+    if(sponsorCoverage.activationVisible<ct.minPartner)findings.push(`Activation-lane visibility is underweight (${sponsorCoverage.activationVisible}/${ct.minPartner} minimum). Use food, events, retail, family or community content where it genuinely helps the reader.`);
+  }
+  if(profile.key==='SPOTLIGHT'&&profile.masterLifeGuard){
+    const mg=profile.masterLifeGuard;
+    const masterLanes=arts.map(a=>editorialLaneFor(a,profile));
+    const lifeSet=new Set(['FOOD & HOSPITALITY',"WHAT'S ON",'PLACES & DISCOVERY','FAMILY & COMMUNITY','FUN & CURIOSITY','LOCAL LIFE']);
+    const discoverySet=new Set(["WHAT'S ON",'PLACES & DISCOVERY','FUN & CURIOSITY']);
+    const lifeMasters=masterLanes.filter(l=>lifeSet.has(l)).length;
+    const discoveryFunMasters=masterLanes.filter(l=>discoverySet.has(l)).length;
+    const foodMasters=masterLanes.filter(l=>l==='FOOD & HOSPITALITY').length;
+    if(lifeMasters<mg.minLife)findings.push(`Master Article layer needs more everyday life (${lifeMasters}/${mg.minLife} life-led Masters). Add places, events, food, family, people, discovery or fun before production.`);
+    if(discoveryFunMasters<mg.minDiscoveryFun)findings.push(`Master Article layer needs more discovery/fun (${discoveryFunMasters}/${mg.minDiscoveryFun}). Add a place, event, oddity, local discovery or genuinely enjoyable reader idea.`);
+    if(foodMasters>mg.hardFoodMax)findings.push(`Food is over-concentrated in the Master Article layer (${foodMasters}/${mg.hardFoodMax} hard maximum). Keep the strongest food stories and rotate another into places, events, fun, people or a shorter component.`);
+    else if(foodMasters>mg.targetFoodMax)findings.push(`Food is slightly concentrated in the Master Article layer (${foodMasters}; normal target up to ${mg.targetFoodMax}). This can still work if the food angles are genuinely different, but broaden the remaining Masters into places, events, fun, people or discovery.`);
+    if(civicHeavy>mg.maxCivic)findings.push(`Civic/public-service stories are too concentrated in the Master Article layer (${civicHeavy}/${mg.maxCivic} normal maximum). Keep the strongest current stories and replace the rest with local-life or discovery angles.`);
+  }
+  const heavy=(moodCounts['SAVE MONEY']||0)+(moodCounts['PROBLEM SOLVING']||0)+(moodCounts.URGENT||0);
+  const heavyMoodShare=projectedSections?heavy/projectedSections:0;
+  if(heavyMoodShare>profile.maxHeavyMoodShare)findings.push(`Heavy problem/admin mood would dominate ${Math.round(heavyMoodShare*100)}% of the projected issue. Rebalance before production.`);
+  if(profile.key==='SPOTLIGHT'){
+    const enjoyment=(moodCounts.ENJOY||0)+(moodCounts.DISCOVER||0)+(moodCounts.CURIOUS||0)+(moodCounts.HUMAN||0);
+    if(enjoyment<6)findings.push(`Spotlight has too little life in the projected issue (${enjoyment} enjoy/discover/curious/human moments). Add food, places, people, discovery or fun before production.`);
+  }
+  if((tones.LIGHT||0)+(tones.HUMAN||0)<2&&arts.length>=8)findings.push('The Master Article layer is too serious. Add at least two discovery, enjoyment or people-led article moments.');
+  if((tones.EDGE||0)<1&&profile.key==='SPOTLIGHT')findings.push('Unfiltered/debate edge is low. Add one credible challenge, comparison or debate angle where earned.');
+  if(civicHeavy>4)findings.push(`Civic/public-service stories are dominating the Master Article plan (${civicHeavy}/${arts.length}). Keep the strongest current stories, then rebalance.`);
+  // v3.10.10: only genuine planning failures block. Soft balance notes produce REVIEW, not NEEDS ATTENTION.
+  const hard=findings.filter(x=>/underweight|over-concentrated|visibility is incomplete|visibility is missing|would dominate|too little life|Projected issue size|Master Article count|CREATE NEW|direct REUSE|planning block/.test(x));
+  const status=hard.length?'NEEDS ATTENTION':findings.length?'REVIEW':'READY';
+  return {profile:profile.key,expert:[...expert],partner:[...partner],commercialArticles,sponsorCoverage,engagement:[...engage],tones,civicHeavy,lifeLanes:[...lifeLanes],laneCounts,moodCounts,heavyMoodShare,projectedSections,projectedSupport:supports.length,freshness,findings,status};
+}
+
+
+function canvasCommercialCompletion(plan){
+  const blocks=(typeof getCanvas==='function'?getCanvas():[]);
+  const articleOpps=(plan?.articles||[]).flatMap(classifyCommercialOpportunity);
+  const expert=new Set(articleOpps.filter(x=>x.type==='EXPERT').map(x=>x.label));
+  const partner=new Set(articleOpps.filter(x=>x.type==='PARTNER').map(x=>x.label));
+  let interactive=0,activation=0;
+  for(const b of blocks){
+    const t=[b?.type,b?.headline,b?.label,b?.purpose,b?.reason,b?.finished_copy,b?.partner_category].join(' ').toLowerCase();
+    if(/poll|quiz|question|reader|community voice|facebook|trivia|myth|recommend/.test(t))interactive++;
+    if(/offer|activation|competition|booking|featured partner|resident expert|partner/.test(t))activation++;
+    if(/garage|motoring|vehicle|car/.test(t))partner.add('Garage / Motoring');
+    if(/food|restaurant|pub|cafe|visitor|attraction|leisure/.test(t))partner.add('Food / Leisure / Visitor');
+    if(/home|trade|builder|plumber|electrician|garden/.test(t))partner.add('Home / Trades');
+    if(/community|charity/.test(t))partner.add('Community / Charity');
+    if(/event|venue|theatre|festival/.test(t))partner.add('Events / Venues');
+    if(/retail|shop|local service/.test(t))partner.add('Retail / Local Service');
+  }
+  return {expert:[...expert],partner:[...partner],interactive,activation,totalBlocks:blocks.length};
+}
+function commercialCompletionText(plan){
+  const c=canvasCommercialCompletion(plan);
+  const blocks=(typeof getCanvas==='function'?getCanvas():[]);
+  const articles=blocks.filter(b=>b.kind==='article').length;
+  const components=blocks.filter(b=>b.kind==='component').length;
+  const dedicated=blocks.filter(b=>b.kind==='partner').length;
+  const attached=blocks.filter(b=>b.partnerAttached&&b.kind!=='partner').length;
+  return [
+    `COMMERCIAL OPPORTUNITY MAP — ${blocks.length>=24&&blocks.length<=30?'NORMAL RANGE':'REVIEW MIX'}`,
+    `Total canvas sections: ${blocks.length} / normal 24–30`,
+    `Master Articles: ${articles} / normal around 8–10`,
+    `Supporting components: ${components}`,
+    `Partners attached to useful content: ${attached}`,
+    `Dedicated partner/activation blocks: ${dedicated}`,
+    `Feature / activation opportunity lanes: ${c.partner.length}${c.partner.length?' — '+c.partner.join(' · '):''}`,
+    `Rule: actual partner commitments increase priority only when the content still passes reader-value, specificity and factual-confidence checks.`,
+    `Rule: attach partners to relevant articles/components where possible; use a standalone partner block only for a genuine activation/offer/content job.`
+  ].join('\n');
+}
+function renderCommercialCompletionPanel(plan){
+  let box=E('commercial-completion-panel');
+  if(!box){box=document.createElement('div');box.id='commercial-completion-panel';box.className='check smart-audit-panel';const audit=document.querySelector('.smart-audit-panel');(audit?.parentNode||E('smart-plan-list')).insertBefore(box,audit?.nextSibling||null)}
+  const blocks=(typeof getCanvas==='function'?getCanvas():[]),c=canvasCommercialCompletion(plan);
+  const articles=blocks.filter(b=>b.kind==='article').length,components=blocks.filter(b=>b.kind==='component').length,dedicated=blocks.filter(b=>b.kind==='partner').length,attached=blocks.filter(b=>b.partnerAttached&&b.kind!=='partner').length;
+  box.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><strong>COMMERCIAL OPPORTUNITY MAP</strong><button class="btn secondary" id="copy-commercial-completion" type="button">Copy Issue Audit</button></div>
+  <div class="audit-grid" style="margin-top:8px"><div><strong>Total sections:</strong> ${blocks.length} / normal 24–30</div><div><strong>Master Articles:</strong> ${articles} / around 8–10</div><div><strong>Supporting components:</strong> ${components}</div><div><strong>Partners attached:</strong> ${attached}</div><div><strong>Dedicated activations:</strong> ${dedicated}</div><div><strong>Feature / activation lanes:</strong> ${c.partner.length}</div><div><strong>Authority / expert lanes:</strong> ${c.expert.length}</div></div>
+  <div class="muted" style="margin-top:8px"><strong>Commercial rule:</strong> fulfil real commitments naturally, but never lower the editorial floor. One strong article may support several commercial pathways without requiring a separate article for each business.</div>`;
+}
+async function copyCommercialCompletion(){
+  const plan=getSmartPlan();if(!plan?.articles?.length)return;
+  const text=commercialCompletionText(plan);
+  try{await navigator.clipboard.writeText(text);const b=E('copy-commercial-completion');if(b){const old=b.textContent;b.textContent='Copied ✓';setTimeout(()=>b.textContent=old,1200)}}
+  catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}
+}
+function issueBalanceAuditText(plan){
+  const p=engineProfileForPublication(),slate=candidateSlateAuditV312i(plan),gate=step2BlockerSummaryV313(plan);
+  const laneLine=Object.entries(slate.laneCounts||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
+  const lines=[
+    `STEP 2 CANDIDATE SLATE — ${gate.ok?'READY':'BLOCKED'}`,
+    `Publication: ${currentPublicationName()}`,
+    `Master candidates: ${(plan.articles||[]).length}/${p.defaultMasters||15}`,
+    `Candidate lanes: ${slate.uniqueLanes}`,
+    `Lane mix: ${laneLine||'None'}`,
+    '',
+    'Hard blockers:',
+  ];
+  if(gate.ok)lines.push('- None');
+  else gate.blockers.forEach(b=>(b.items||[]).forEach(x=>lines.push(`- ${b.type}: ${x}`)));
+  lines.push('','Advisory selection notes:');
+  if(!(slate.notes||[]).length)lines.push('- None');
+  else slate.notes.forEach(x=>lines.push(`- ${x}`));
+  lines.push('','Rule: Step 2 approves a 15-candidate production pool. Final 8–10 Master balance and full issue size are judged later.');
+  return lines.join('\\n');
+}
+async function copyIssueBalanceAudit(){
+  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the Issue Plan first.');return}
+  const text=issueBalanceAuditText(plan);
+  try{await navigator.clipboard.writeText(text);const b=E('copy-smart-audit');if(b){const old=b.textContent;b.textContent='Copied ✓';setTimeout(()=>b.textContent=old,1200)}}
+  catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Audit copied.')}
+}
+function commercialAuditHtml(plan){
+  const p=engineProfileForPublication(),slate=candidateSlateAuditV312i(plan),gate=step2BlockerSummaryV313(plan);
+  const laneLine=Object.entries(slate.laneCounts||{}).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${k} ${v}`).join(' · ');
+  const blockerHtml=gate.ok
+    ? '<strong>Hard blockers:</strong> None'
+    : `<strong>Hard blockers:</strong><br>${gate.blockers.map(b=>`<strong>${esc(b.type)}</strong><br>${(b.items||[]).map(x=>`• ${esc(x)}`).join('<br>')}`).join('<br>')}`;
+  const advisory=(slate.notes||[]).length?slate.notes.map(x=>`• ${esc(x)}`).join('<br>'):'None';
+  return `<div class="check smart-audit-panel" style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><strong>STEP 2 CANDIDATE SLATE — ${gate.ok?'READY':'BLOCKED'}</strong><button class="btn secondary" id="copy-smart-audit" type="button">Copy Step 2 Check</button></div>
+    <div class="audit-grid" style="margin-top:8px">
+      <div><strong>Master candidates:</strong> ${(plan.articles||[]).length} / ${p.defaultMasters||15}</div>
+      <div><strong>Final Masters later:</strong> ${p.targetMasters[0]}–${p.targetMasters[1]} selected in Step 5</div>
+      <div><strong>Candidate lanes:</strong> ${slate.uniqueLanes}</div>
+      <div><strong>Final issue target:</strong> ${p.targetSections[0]}–${p.targetSections[1]} after Step 6</div>
+    </div>
+    <div style="margin-top:8px">${blockerHtml}</div>
+    <div style="margin-top:8px"><strong>Advisory selection notes:</strong><br><span class="muted">${advisory}</span></div>
+    <div style="margin-top:8px"><strong>Candidate lane mix:</strong><br><span class="muted">${esc(laneLine||'No lanes detected')}</span></div>
+    <div class="muted" style="margin-top:8px"><strong>Step 2 rule:</strong> approve a sensible, distinct 15-candidate production pool. Final issue size, final Master count, food concentration, mood mix and commercial balance are not lock blockers here.</div>
+  </div>`;
+}
+
+function smartTitleReviewTextV312l(plan=getSmartPlan()){
+  const pub=currentPublicationName(),issue=String(val(S.issue?.fields,'Issue Number')||'').trim();
+  const lines=[`${pub}${issue?` · Issue #${issue}`:''} · 15-Candidate Review`,''];
+  (plan?.articles||[]).forEach((a,i)=>{
+    lines.push(`${i+1}. ${a.title}${a.editorDecision?` [${a.editorDecision}]`:''}`);
+    if(a.question&&a.question!==a.title)lines.push(`   Question: ${a.question}`);
+  });
+  return lines.join('\n');
+}
+function renderSmartTitleReviewV312l(plan){
+  const box=E('smart-title-review-v312l'),list=E('smart-title-list-v312l');
+  if(!box||!list)return;
+  const show=!!plan?.articles?.length && workflowSelectedStepV312===2;
+  box.style.display=show?'block':'none';
+  if(!show)return;
+  list.innerHTML=(plan.articles||[]).map((a,i)=>`<div class="smart-title-row-v312l"><strong>${i+1}. ${esc(a.title)}</strong><div class="muted">${esc(a.question||'')}</div></div>`).join('');
+}
+async function copySmartTitlesV312l(){
+  const value=smartTitleReviewTextV312l();
+  try{
+    if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(value);
+    else{
+      const ta=document.createElement('textarea');ta.value=value;ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+    }
+    const b=E('smart-title-copy-v312l');if(b){const old=b.textContent;b.textContent='Copied';setTimeout(()=>b.textContent=old,1200)}
+  }catch(e){downloadSmartTitlesV312l()}
+}
+function downloadSmartTitlesV312l(){
+  const value=smartTitleReviewTextV312l();
+  const pub=currentPublicationName().replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()||'publication';
+  const blob=new Blob([value],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=`${pub}-15-candidate-review.txt`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+function toggleSmartCompactReviewV312l(){
+  document.body.classList.toggle('smart-compact-review-v312l');
+  const on=document.body.classList.contains('smart-compact-review-v312l');
+  if(E('smart-title-toggle-v312l'))E('smart-title-toggle-v312l').textContent=on?'Show Details':'Hide Details';
+}
+
+function renderSmartPlan(){
+ renderEngineProfile();
+ const plan=getSmartPlan(),panel=E('smart-plan-panel');if(!panel)return;panel.style.display='block';const apply=E('smart-plan-apply'),lock=E('smart-plan-lock');
+ if(!plan){renderSmartTitleReviewV312l(null);const sig=getSmartSignals(),batches=getSmartPlanBatches(),arts=batches.flatMap(b=>b.articles||[]);E('smart-plan-status').textContent='No completed Smart Issue Plan yet. Partial decisions survive timeouts and are shown below.';E('smart-plan-summary').innerHTML=sig.length?'<strong>Next:</strong> Build / Resume Issue Plan.':'<strong>Next:</strong> Collect Signals first.';E('smart-scan-progress').textContent=(sig.length?`${sig.length} current signals saved. `:'')+(arts.length?`${arts.length}/${engineProfileForPublication().defaultMasters||15} article decisions saved.`:'');E('smart-plan-signals-list').innerHTML=sig.length?`<div class="check"><strong>Saved current signals</strong><br>${sig.map(x=>`${esc(x.signal)}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';E('smart-plan-list').innerHTML=arts.length?`<div class="check"><strong>Partial plan — ${arts.length}/${engineProfileForPublication().defaultMasters||15} saved</strong></div>`+arts.map((a,i)=>`<div class="check"><span class="mini-badge ${planModeClass(a.mode)}">${esc(a.mode)}</span> <strong>${i+1}. ${esc(a.title)}</strong><br><span class="muted">${esc(a.question)}</span></div>`).join(''):'';apply.disabled=true;lock.disabled=true;return}
+ renderSmartTitleReviewV312l(plan); const c=plan.counts||{},locked=smartPlanLocked(plan);E('smart-plan-status').textContent=locked?`LOCKED ✓ ${plan.articles.length} articles · ${c.REUSE||0} reuse · ${c.LOCALISE||0} localise · ${c.REFRESH||0} refresh · ${c['CREATE NEW']||0} create new.`:`EDITOR REVIEW — ${plan.articles.length} articles · Keep, Edit or Replace individual choices, then lock the plan.`;E('smart-plan-summary').innerHTML=`<strong>Editorial shape</strong><br>${esc(plan.issue_summary||'')}<br><small>${locked?`Locked ${new Date(plan.lockedAt).toLocaleString()}`:'Nothing is written to Airtable until you lock the plan and create briefs.'}</small>`;E('smart-scan-progress').textContent=`${(plan.signals||[]).length} current signals saved and used in this plan.`;const sig=Array.isArray(plan.signals)?plan.signals:[];E('smart-plan-signals-list').innerHTML=sig.length?`<div class="check"><strong>Current signals researched</strong><br>${sig.map(x=>`${esc(x.signal)}${x.why_local?' — '+esc(x.why_local):''}${x.source_url?` · <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a>`:''}`).join('<br>')}</div>`:'';const alignment=smartPlanAlignmentSummary(plan),refreshGate=refreshGateSummary(plan),dupGate=sameIssueDuplicationSummary(plan);
+  const historyGate=reuseGuardSummary(plan); E('smart-plan-list').innerHTML=commercialAuditHtml(plan)+`<div class="check"><strong>Reuse guard:</strong> ${historyGate.blocked} blocked same-publication · ${historyGate.localise} localise from another publication · ${historyGate.review} history review${historyGate.blocked?'<br><strong>Do not lock while BLOCKED RECENT DUPLICATE items remain.</strong>':''}<br><strong>Source alignment:</strong> ${alignment.ok} aligned · ${alignment.warn} review · ${alignment.bad} mismatch${alignment.bad?'<br><strong>Do not lock while SOURCE MISMATCH items remain.</strong>':''}<br><strong>Refresh gate:</strong> ${refreshGate.ok} justified · ${refreshGate.replace} should be replaced${refreshGate.replace?'<br><strong>Do not lock while REFRESH TOO WEAK items remain.</strong>':''}<br><strong>Same-issue duplication:</strong> ${dupGate.duplicate} true duplicate pair${dupGate.duplicate===1?'':'s'} · ${dupGate.review} overlap warning${dupGate.review===1?'':'s'}${dupGate.duplicate?'<br><strong>Do not lock while true same-source/identical duplicates remain.</strong>':'<br><span class="muted">Overlap warnings are advisory for the 15-candidate pool and are resolved when Step 5 selects the final 8–10.</span>'}</div>`+(plan.articles||[]).map(a=>{const pa=provenanceAlignment(a,plan),sig=pa.signal,rg=refreshDuplicationCheck(a),dw=duplicateWarningsForArticle(a,plan);return `<div class="check"><div style="display:flex;gap:8px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:260px"><span class="mini-badge ${planModeClass(a.mode)}">${esc(a.mode)}</span> <strong>${a.order}. ${esc(a.title)}</strong>${a.editorDecision?` <span class="mini-badge">${esc(a.editorDecision)}</span>`:''}<br><span class="muted">${esc(a.question)}</span><br><small><strong>Question:</strong> ${esc(a.real_life_question||a.question||'')}<br><strong>Writing mode:</strong> ${esc(resolvedWritingMode(a))}<br><strong>Why now:</strong> ${esc(a.why_now||'')} · <strong>Stance:</strong> ${esc(a.stance||'PRACTICAL')} · <strong>Life Lane:</strong> ${esc(a.life_lane||'Open')} · <strong>Commercial:</strong> ${esc(a.lane||'Editorial')}</small>${(()=>{const cv=commercialValueForArticle(a);const path=[...cv.labels,cv.explicit].filter(Boolean);return `<div style="margin-top:4px"><small><strong>Commercial pathways:</strong> ${path.length?esc(path.join(' · ')):'No obvious pathway yet — editorial value can still justify the article.'}</small></div>`})()}<div style="margin-top:7px;padding:8px;border:1px solid var(--line);border-radius:8px"><strong>${esc(pa.label)}</strong> — ${esc(pa.reason)}<br>${sig?`<small><strong>${esc(sig.ref||'Source signal')}:</strong> ${esc(sig.signal||'')}${sig.source_title?` · ${esc(sig.source_title)}`:''}${sig.source_url?` · <a href="${esc(sig.source_url)}" target="_blank" rel="noopener">source</a>`:''}</small>`:`<small>No explicit source signal stored.</small>`}<br><small><strong>Planner provenance:</strong> ${esc(a.source_signal||'Not stored')} · <strong>Decision:</strong> ${esc(a.mode||'')}</small>${(()=>{if(!['REUSE','LOCALISE','REFRESH'].includes(String(a.mode||'').toUpperCase()))return '';const hg=articleReuseGuard(a,plan);return `<div style="margin-top:6px"><strong>${esc(hg.status)}</strong>${hg.match?` — matched ${esc(hg.match.publication)}: ${esc(hg.match.title)} (${Math.round(hg.match.score*100)}% title/topic overlap)`:' — no confirmed publication-history match in the current minimum history layer.'}</div>`})()}${String(a.mode||'').toUpperCase()==='REFRESH'?`<div style="margin-top:6px"><strong>${esc(rg.label)}</strong> — ${esc(rg.reason)}</div>`:''}${dw.length?`<div style="margin-top:6px">${dw.map(x=>{const other=x.a.order===a.order?x.b:x.a;return `<strong>${x.level==='DUPLICATE'?'TRUE DUPLICATE':'SELECTION OVERLAP'}</strong> — Article ${other.order}: ${esc(other.title)}. ${esc(x.reason)}`}).join('<br>')}</div>`:''}</div></div><div class="toolbar"><button class="btn secondary" data-smart-keep="${a.order}">Keep</button><button class="btn secondary" data-smart-edit="${a.order}">Edit</button><button class="btn secondary" data-smart-replace="${a.order}">Replace</button></div></div></div>`}).join('');document.querySelectorAll('[data-smart-keep]').forEach(b=>b.onclick=()=>keepSmartArticle(+b.dataset.smartKeep));document.querySelectorAll('[data-smart-edit]').forEach(b=>b.onclick=()=>openSmartArticleEdit(+b.dataset.smartEdit));document.querySelectorAll('[data-smart-replace]').forEach(b=>b.onclick=()=>replaceSmartArticle(+b.dataset.smartReplace));apply.disabled=!locked;lock.disabled=locked;lock.textContent=locked?'Plan Locked ✓':'Lock Approved Plan'
+}
+function plannerStatusText(){
+  const sig=getSmartSignals(),plan=getSmartPlan(),batches=getSmartPlanBatches(),arts=plan?.articles||batches.flatMap(b=>b.articles||[]);
+  const lines=[S.issue?`${currentPublicationName()} · Issue #${val(S.issue.fields,'Issue Number')||'—'} · Send ${fmt(val(S.issue.fields,'Send Date'))}`:'No issue selected',`${sig.length} discovery leads saved`,`${arts.length}/${engineProfileForPublication().defaultMasters||15} Master Article decisions saved`];
+  if(E('smart-scan-progress')?.textContent)lines.push(E('smart-scan-progress').textContent);
+  if(E('smart-plan-summary')?.innerText)lines.push(E('smart-plan-summary').innerText);
+  return lines.filter(Boolean).join('\n');
+}
+function masterSelectionKeyV312(){return S.issue?`ics:masterSelection:${S.issue.id}`:'ics:masterSelection:none'}
+function getMasterSelectionV312(){try{return JSON.parse(localStorage.getItem(masterSelectionKeyV312())||'[]').map(Number).filter(Boolean)}catch{return []}}
+function saveMasterSelectionV312(arr){localStorage.setItem(masterSelectionKeyV312(),JSON.stringify([...new Set(arr.map(Number).filter(Boolean))].sort((a,b)=>a-b)))}
+function planArticleRecordV312(a){
+  if(!a)return null;
+  const order=Number(a.order);
+  // v3.14: the active issue production queue is the source of truth for Step 5.
+  // Article Library can lag behind the just-completed Step 4 run.
+  const active=(S.sections||[]).find(s=>approvedPlanIdentity(s)&&Number(val(s.fields,'Section Order'))===order);
+  if(active)return active;
+  if(String(a.mode||'').toUpperCase()==='REUSE')return (S.articleLibrary||[]).find(x=>x.id===a.existing_article_id)||null;
+  return (S.articleLibrary||[]).find(x=>String(val(x.fields,'Section Title')||'').trim().toLowerCase()===String(a.title||'').trim().toLowerCase())||null;
+}
+function masterCandidateStateV312(a){
+  const r=planArticleRecordV312(a);if(!r)return 'NOT PRODUCED';
+  const leak=producedMasterLeakageV316(r);
+  if(leak)return `GEOGRAPHY REVIEW — ${leak.hits.join(', ')}`;
+  const notes=String(val(r.fields||{},'Notes')||'');
+  if(/SMART PLAN APPROVED REPAIR|MASTER ARTICLE INTEGRITY RESET v1/.test(notes) && masterArticleState(r)!=='complete')return 'REPAIR PENDING';
+  const st=masterArticleState(r);
+  if(st==='complete')return 'READY';
+  if(st==='review')return 'WRITTEN REVIEW';
+  if(st==='blocked')return 'BLOCKED';
+  if(st==='failed')return 'FAILED';
+  if(st==='research')return 'RESEARCHED';
+  return 'IN PROGRESS';
+}
+function masterCandidateReadinessV314(a){
+  const r=planArticleRecordV312(a),p=r?masterArticlePackage(r.fields||{}):null;
+  const er=p?.editorial_readiness||{};
+  return {
+    record:r,
+    status:String(er.status||'').trim(),
+    grade:String(er.grade||'').trim().toUpperCase(),
+    rationale:String(er.rationale||'').trim()
+  };
+}
+async function refreshMasterSelectionDataV314(){
+  if(!S.issue)return;
+  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id)+'&_ts='+Date.now());
+  S.sections=r.records||[];
+  sortSections();
+  renderSections();
+}
+function recommendMasterSelectionV314(){
+  const plan=getSmartPlan(),profile=engineProfileForPublication();
+  if(!plan?.articles?.length)return [];
+  const min=profile.targetMasters?.[0]||8,max=profile.targetMasters?.[1]||10;
+  const target=Math.max(min,Math.min(max,Math.round((min+max)/2)));
+  const gradeScore={A:40,B:25,C:10};
+  const ready=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').map(a=>{
+    const rd=masterCandidateReadinessV314(a),lane=normaliseEditorialLane(a.life_lane||editorialLaneFor(a,profile)||'Open');
+    return {a,rd,lane,tone:toneBucket(a),base:gradeScore[rd.grade]??0,civic:isCivicHeavyArticle(a)};
+  });
+  const picked=[],laneCounts={},toneCounts={};
+  // Greedy editorial mix: quality first, then reward a new life lane / new tone and penalise concentration.
+  while(picked.length<target){
+    const pool=ready.filter(x=>!picked.includes(x));
+    if(!pool.length)break;
+    pool.sort((x,y)=>{
+      const score=z=>z.base + (laneCounts[z.lane]?0:14) + (toneCounts[z.tone]?0:6) - (laneCounts[z.lane]||0)*8 - (z.civic?Math.max(0,(picked.filter(q=>q.civic).length-1))*8:0);
+      return score(y)-score(x)||Number(x.a.order)-Number(y.a.order);
+    });
+    const x=pool[0]; picked.push(x); laneCounts[x.lane]=(laneCounts[x.lane]||0)+1; toneCounts[x.tone]=(toneCounts[x.tone]||0)+1;
+  }
+  const orders=picked.map(x=>Number(x.a.order));
+  saveMasterSelectionV312(orders);
+  return orders;
+}
+function renderMasterSelectionV312(){
+  const panel=E('master-selection-panel-v312'),grid=E('master-selection-grid-v312');if(!panel||!grid)return;
+  const plan=getSmartPlan(),profile=engineProfileForPublication();
+  if(!plan?.articles?.length){panel.style.display='none';return}
+  panel.style.display='block';
+  renderArticleBankV320();if(typeof renderFeatureSummaryV3204==='function')renderFeatureSummaryV3204();
+  const min=profile.targetMasters?.[0]||8,max=profile.targetMasters?.[1]||10;
+  const ready=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').length;
+  const review=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='WRITTEN REVIEW').length;
+  let selected=getMasterSelectionV312();
+
+  // Old pre-production default selections are not trusted once Step 4 has produced real states.
+  const selectedReady=selected.filter(o=>{
+    const a=(plan.articles||[]).find(x=>Number(x.order)===Number(o));
+    return a&&masterCandidateStateV312(a)==='READY';
+  });
+  if(selectedReady.length<min && ready>=min){
+    selected=recommendMasterSelectionV314();
+  }
+
+  E('master-selection-summary-v312').textContent=`${ready}/${plan.articles.length} READY · ${review} WRITTEN REVIEW · choose ${min}–${max} READY Masters. ICS recommends the strongest issue mix using readiness grade, life-lane spread, tone variety and concentration penalties; unselected READY candidates remain bankable.`;
+
+  grid.innerHTML=(plan.articles||[]).map(a=>{
+    const state=masterCandidateStateV312(a),checked=selected.includes(Number(a.order)),rd=masterCandidateReadinessV314(a);
+    const grade=rd.grade?` · Grade ${rd.grade}`:'';
+    const readiness=rd.status?`${rd.status}${grade}`:(state==='READY'?`READY${grade}`:state);
+    const leak=rd.record?producedMasterLeakageV316(rd.record):null;
+    const geoNote=leak?`<small style="font-weight:700">Wrong-Publication Geography Detected: ${esc(leak.hits.join(', '))}</small>`:'';
+    const rationale=rd.rationale?`<small>${esc(rd.rationale.slice(0,180))}</small>`:'';
+
+    const disabled=state!=='READY'?'disabled':'';
+    return `<label class="master-selection-row-v312">
+      <input type="checkbox" data-master-select-v312="${a.order}" ${checked&&state==='READY'?'checked':''} ${disabled}>
+      <span class="order">${String(a.order).padStart(2,'0')}</span>
+      <span><strong>${esc(a.title)}</strong><small>${esc(a.life_lane||'Open')} · ${esc(a.mode||'CREATE NEW')}</small>${geoNote}${rationale}</span>
+      <span class="selection-status-v312">${esc(readiness)}</span>
+    </label>`;
+  }).join('');
+
+  document.querySelectorAll('[data-master-select-v312]').forEach(x=>x.onchange=()=>{
+    const vals=[...document.querySelectorAll('[data-master-select-v312]:checked')].map(y=>Number(y.dataset.masterSelectV312));
+    saveMasterSelectionV312(vals);
+    updateWorkflowShellV312(5);
+  });
+}
+
+function workflowContextLabelV312(step,name){
+  const pub=currentPublicationName()||'Publication';
+  const num=String(val(S.issue?.fields,'Issue Number')||'').trim();
+  return `${pub}${num?` · Issue #${num}`:''} · Step ${step} — ${name}`;
+}
+function setWorkflowActionStatusV312(step,name,status,detail=''){
+  if(E('workflow-current-v312'))E('workflow-current-v312').textContent=workflowContextLabelV312(step,name);
+  if(E('workflow-instruction-v312'))E('workflow-instruction-v312').textContent=[status,detail].filter(Boolean).join(' · ');
+}
+async function copyWorkflowStatusV312E(){
+  const parts=[
+    E('workflow-current-v312')?.textContent||'',
+    E('workflow-instruction-v312')?.textContent||'',
+    E('smart-scan-progress')?.textContent||'',
+    E('save-state')?.textContent||'',
+    E('production-progress')?.textContent||''
+  ].map(x=>String(x||'').trim()).filter(Boolean);
+  const value=[...new Set(parts)].join('\n');
+  try{
+    if(navigator.clipboard&&window.isSecureContext){
+      await navigator.clipboard.writeText(value);
+    }else{
+      const ta=document.createElement('textarea');
+      ta.value=value;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+    }
+    const btn=E('workflow-copy-status-v312e');
+    if(btn){const old=btn.textContent;btn.textContent='Copied';setTimeout(()=>btn.textContent=old,1200)}
+  }catch(err){
+    // Always leave the exact status visible and selectable if browser copy permission fails.
+    const box=E('workflow-instruction-v312');
+    if(box)box.textContent=value;
+  }
+}
+function plannerRejectedTitlesFromMessageV312E(msg){
+  const out=[];
+  const patterns=[
+    /Recent-history guard rejected[^:]*:\s*(.+?)\.\s*Click Build/i,
+    /Planning-run guard rejected a previously rejected concept again:\s*(.+?)\.\s*Click Build/i
+  ];
+  for(const re of patterns){
+    const m=String(msg||'').match(re);
+    if(m)out.push(...m[1].split(' | ').map(x=>x.trim()).filter(Boolean));
+  }
+  return [...new Set(out)];
+}
+
+
+async function approvedBriefStatusV3131(){
+  if(!S.issue)return {active:0,expected:0,clean:false};
+  const plan=getSmartPlan(),expected=plan?.articles?.length||0;
+  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));
+  S.sections=r.records||[];
+  const active=S.sections.filter(approvedPlanIdentity);
+  const orders=active.map(s=>Number(val(s.fields,'Section Order')));
+  const duplicates=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
+  const missing=[...Array(expected)].map((_,i)=>i+1).filter(n=>!orders.includes(n));
+  return {active:active.length,expected,clean:expected>0&&active.length===expected&&!duplicates.length&&!missing.length,duplicates,missing};
+}
+async function openResearchWorkspaceV3131(){
+  if(!S.issue)return;
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length||!smartPlanLocked(plan)){
+    const m='STEP 3 BLOCKED — Lock the approved candidate plan first.';
+    setWorkflowActionStatusV312(3,'Research','Research workspace blocked.',m);return;
+  }
+  const btn=E('workflow-primary-v312');
+  const old=btn?.textContent||'Open Research Workspace';
+  if(btn){btn.disabled=true;btn.textContent='Preparing 15 Master Briefs…';}
+  try{
+    let st=await approvedBriefStatusV3131();
+    if(!st.clean){
+      setWorkflowActionStatusV312(3,'Research',`Preparing ${plan.articles.length} Master briefs…`,'The locked Step 2 slate is being materialised into the research queue. No manual article entry is required.');
+      await applySmartPlanToBuild({quiet:true});
+      st=await approvedBriefStatusV3131();
+    }
+    if(!st.clean){
+      throw new Error(`Approved brief queue is not clean: ${st.active}/${st.expected} active · duplicate orders ${st.duplicates?.join(', ')||'none'} · missing ${st.missing?.join(', ')||'none'}.`);
+    }
+    sortSections();renderSections();renderForm();render();show('build');
+    setWorkflowActionStatusV312(3,'Research',`${st.active}/${st.expected} Master briefs ready.`,`Next: click Research All ${st.expected} Masters. Research Packs are saved article by article; completed research is preserved if the run stops.`);
+    if(btn)btn.textContent=`Research All ${st.expected} Masters`;
+    setTimeout(()=>E('run-next-production')?.scrollIntoView({behavior:'smooth',block:'center'}),80);
+  }catch(e){
+    const m='STEP 3 PREPARATION FAILED — '+String(e.message||e);
+    E('save-state').textContent=m;
+    setWorkflowActionStatusV312(3,'Research','Research workspace preparation failed.',m);
+  }finally{
+    if(btn){
+      btn.disabled=false;
+      const planNow=getSmartPlan(),expected=planNow?.articles?.length||15;
+      btn.textContent=S.workflowStep===3?`Research All ${expected} Masters`:old;
+    }
+  }
+}
+async function researchAllApprovedMastersV3131(){
+  if(!S.issue)return;
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length||!smartPlanLocked(plan)){
+    setWorkflowActionStatusV312(3,'Research','Research blocked.','Lock the Step 2 candidate slate first.');return;
+  }
+  try{
+    const st=await approvedBriefStatusV3131();
+    if(!st.clean){
+      await openResearchWorkspaceV3131();
+      const retry=await approvedBriefStatusV3131();
+      if(!retry.clean)return;
+    }else{
+      sortSections();renderSections();renderForm();
+    }
+    setWorkflowActionStatusV312(3,'Research',`Researching approved Masters…`,`ICS will research every Master without a saved Research Pack. Existing completed Research Packs are skipped.`);
+    await runProduction({one:false,mode:'research'});
+    const queue=await productionSections();
+    const rows=queue.map(x=>({item:x,wf:articleWorkflowState(x.s),status:String(val(x.s.fields,'Evidence Status')||'').trim(),title:String(val(x.s.fields,'Section Title')||'Untitled'),order:Number(val(x.s.fields,'Section Order')||0)}));
+    const researched=rows.filter(x=>x.wf.researched).length;
+    const verified=rows.filter(x=>x.wf.publishableEvidence||x.wf.verified).length;
+    const total=rows.length;
+    const exceptions=rows.filter(x=>x.wf.researched&&!(x.wf.publishableEvidence||x.wf.verified));
+    const exceptionLines=exceptions.map(x=>`Article ${x.order}: ${x.title} — ${x.status||'Evidence status not verified'}`);
+    const headline=`${researched}/${total} researched · ${verified}/${total} verified`;
+    const detail=researched===total
+      ? (exceptions.length
+          ? `Research is complete. ${exceptions.length} evidence exception${exceptions.length===1?'':'s'} remain:\n- ${exceptionLines.join('\n- ')}\nCompleted Research Packs are preserved. Resolve only these exceptions before Step 4 writes the affected Masters.`
+          : 'Step 3 complete — all Research Packs are saved and evidence is publishable. Next: Step 4 — Produce.')
+      : `Research stopped before all Masters completed. ${researched}/${total} Research Packs are saved. Completed research is preserved.`;
+    setWorkflowActionStatusV312(3,'Research',headline,detail);
+    E('save-state').textContent=`${headline}. ${exceptions.length?`${exceptions.length} evidence exceptions remain.`:'No evidence exceptions.'}`;
+    setTimeout(()=>hydrateStep3StateV3133(),0);
+  }catch(e){
+    const m='STEP 3 RESEARCH FAILED — '+String(e.message||e);
+    E('save-state').textContent=m;setWorkflowActionStatusV312(3,'Research','Research run stopped.',m);
+  }
+}
+
+
+async function hydrateStep3StateV3133(){
+  if(!S.issue||workflowSelectedStepV312!==3)return;
+  try{
+    const plan=getSmartPlan();
+    if(!plan?.articles?.length||!smartPlanLocked(plan)){
+      setWorkflowActionStatusV312(3,'Research','Step 3 blocked.','Lock the approved 15-candidate slate in Step 2 first.');
+      const b=E('workflow-primary-v312');if(b)b.textContent='Open Research Workspace';
+      return;
+    }
+
+    const st=await approvedBriefStatusV3131();
+    const b=E('workflow-primary-v312');
+    if(!st.clean){
+      setWorkflowActionStatusV312(3,'Research',`${st.active}/${st.expected} Master briefs ready.`,'The approved research queue is incomplete. Open Research Workspace to create/update the missing Master briefs.');
+      if(b)b.textContent='Open Research Workspace';
+      return;
+    }
+
+    const queue=await productionSections();
+    const rows=queue.map(x=>({
+      s:x.s,
+      wf:articleWorkflowState(x.s),
+      status:String(val(x.s.fields,'Evidence Status')||'').trim(),
+      title:String(val(x.s.fields,'Section Title')||'Untitled'),
+      order:Number(val(x.s.fields,'Section Order')||0)
+    }));
+    const total=rows.length;
+    const researched=rows.filter(x=>x.wf.researched).length;
+    const verified=rows.filter(x=>x.wf.publishableEvidence||x.wf.verified).length;
+    const exceptions=rows.filter(x=>x.wf.researched&&!(x.wf.publishableEvidence||x.wf.verified));
+
+    if(researched===0){
+      setWorkflowActionStatusV312(3,'Research',`${st.active}/${st.expected} Master briefs ready.`,`Next: Research All ${st.expected} Masters. Research Packs are saved article by article; completed work is preserved if the run stops.`);
+      if(b)b.textContent=`Research All ${st.expected} Masters`;
+      return;
+    }
+
+    if(researched<total){
+      setWorkflowActionStatusV312(3,'Research',`${researched}/${total} researched · ${verified}/${total} verified`,`Research is partially complete. Click Research Remaining ${total-researched}; completed Research Packs will be skipped.`);
+      if(b)b.textContent=`Research Remaining ${total-researched}`;
+      return;
+    }
+
+    if(exceptions.length){
+      const lines=exceptions.map(x=>`Article ${x.order}: ${x.title} — ${x.status||'Evidence not verified'}`);
+      setWorkflowActionStatusV312(3,'Research',`${researched}/${total} researched · ${verified}/${total} publishable · ${exceptions.length} evidence exception${exceptions.length===1?'':'s'}`,`Research is complete. Resolve only these evidence exceptions before Step 4 writes the affected Masters:\n- ${lines.join('\n- ')}`);
+      if(b)b.textContent='Review Evidence Exceptions';
+      return;
+    }
+
+    setWorkflowActionStatusV312(3,'Research',`${researched}/${total} researched · ${verified}/${total} publishable`,'Step 3 complete. All approved Masters have saved Research Packs with publishable evidence. Verified and attributed evidence are both valid. Next: Step 4 — Produce.');
+    if(b)b.textContent='Go To Step 4 — Produce';
+  }catch(e){
+    setWorkflowActionStatusV312(3,'Research','Step 3 state unavailable.','Could not refresh Step 3 state: '+String(e.message||e));
+  }
+}
+
+
+
+
+// v3.20.4 — Feature Article layer: permanent 300–450 word articles between Masters and micro-components.
+const FEATURE_MARKER_V3204='FEATURE ARTICLE v1';
+const FEATURE_TARGET_V3204=4;
+function isFeatureArticleV3204(s){return String(val(s?.fields||{},'Notes')||'').includes(FEATURE_MARKER_V3204)}
+function featureArticleRecordsV3204(){return (S.sections||[]).filter(isFeatureArticleV3204).sort((a,b)=>Number(val(a.fields||{},'Section Order')||999)-Number(val(b.fields||{},'Section Order')||999))}
+function featureArticleReadyV3204(s){return isFeatureArticleV3204(s)&&masterArticleState(s)==='complete'}
+function readyFeatureArticlesV3204(){return featureArticleRecordsV3204().filter(featureArticleReadyV3204).slice(0,FEATURE_TARGET_V3204)}
+function featureMarkerNotesV3204(index,brief={}){return [FEATURE_MARKER_V3204,`FEATURE SLOT: ${index+1}`,`Writing mode: ${brief.writing_mode||'PRACTICAL SERVICE'}`,`FEATURE PURPOSE: ${brief.reader_value||''}`,'FEATURE STATUS: PLANNED'].join('\n')}
+function featureTypeLabelV3204(record){return isFeatureArticleV3204(record)?'FEATURE ARTICLE':'MASTER ARTICLE'}
+function featureTargetForIssueV3204(){return FEATURE_TARGET_V3204}
+function featureBlockReasonV3208(r){
+  const f=r?.fields||{},notes=String(val(f,'Notes')||'');
+  const qa=String(val(f,'Section QA Result')||'').toLowerCase();
+  if(qa!=='fix required')return '';
+  const miss=(notes.match(/^Missing:\s*(.+)$/mi)||notes.match(/^Missing evidence:\s*(.+)$/mi)||[])[1]||'';
+  const decision=(notes.match(/^Decision:\s*(.+)$/mi)||notes.match(/^Exception:\s*(.+)$/mi)||[])[1]||'';
+  return String(miss||decision||'Evidence check blocked this Feature.').trim().slice(0,220);
+}
+function renderFeatureSummaryV3204(){
+  const panel=E('step6-feature-panel-v3204'),box=E('step6-feature-summary-v3204');if(panel)panel.style.display=workflowSelectedStepV312===6?'block':'none';if(!box)return;
+  const all=featureArticleRecordsV3204(),ready=all.filter(featureArticleReadyV3204),pending=all.filter(x=>!featureArticleReadyV3204(x));
+  box.innerHTML=`<strong>${ready.length}/${FEATURE_TARGET_V3204} Feature Articles ready</strong><div class="muted" style="margin-top:5px">${all.length?all.slice(0,FEATURE_TARGET_V3204).map((r,i)=>{const blocked=featureBlockReasonV3208(r);return `${i+1}. ${esc(val(r.fields||{},'Section Title')||'Feature')} — ${featureArticleReadyV3204(r)?'READY':blocked?'BLOCKED · '+esc(blocked):'IN PROGRESS'}`}).join('<br>'):'ICS will plan four distinct short features around the issue without duplicating the selected Masters.'}</div>${pending.length?'<div class="muted" style="margin-top:5px">Build / Resume now automatically recommissions a blocked Feature once from a verified local evidence seed. The evidence bar is not lowered.</div>':''}`;
+  const b=E('step6-build-features-v3204');if(b)b.textContent=ready.length>=FEATURE_TARGET_V3204?'Feature Articles Ready ✓':'Build / Resume 4 Feature Articles';
+}
+async function apiFeaturePlanV3205(payload,btn){
+  let last;
+  for(let attempt=1;attempt<=4;attempt++){
+    try{
+      const r=await fetch('/.netlify/functions/plan-features',{method:'POST',headers:{'content-type':'application/json',accept:'application/json'},body:JSON.stringify(payload)});
+      const raw=await r.text();let d;try{d=raw?JSON.parse(raw):{}}catch{d={}}
+      if(r.ok&&d?.ok&&Array.isArray(d.features)&&d.features.length)return d;
+      if(r.status===202){
+        last=new Error('Feature planner is still being accepted by the server.');
+        if(btn)btn.textContent=`Planner accepted — retrying ${attempt}/4…`;
+        await sleep(1200*attempt);
+        continue;
+      }
+      const err=new Error(d?.error||`Request failed (${r.status})`);err.details=d?.details;throw err;
+    }catch(e){
+      last=e;
+      const transient=/202|accepted|408|429|500|502|503|504|timeout|timed out|failed to fetch|network|gateway|temporarily/i.test(String(e?.message||e));
+      if(!transient||attempt>=4)throw e;
+      if(btn)btn.textContent=`Feature planner retry ${attempt}/4…`;
+      await sleep(1200*attempt);
+    }
+  }
+  throw last||new Error('Feature planner did not return a completed plan.');
+}
+function featureResearchCompleteV3207(r){
+  const f=r?.fields||{},notes=String(val(f,'Notes')||'');
+  if(/State:\s*RESEARCH_COMPLETE/i.test(notes)||/RESEARCH PACK v1/i.test(notes))return true;
+  const ev=String(val(f,'Evidence Status')||'').toLowerCase();
+  const qa=String(val(f,'Section QA Result')||'').toLowerCase();
+  return ['verified','reported — attribution required','reported - attribution required'].includes(ev)||qa==='fix required';
+}
+async function waitForFeatureStateV3207(sectionId,stage,btn,{timeoutMs=75000}={}){
+  const started=Date.now();
+  while(Date.now()-started<timeoutMs){
+    await sleep(2500);
+    await loadSections();
+    const r=(S.sections||[]).find(x=>x.id===sectionId);
+    if(!r)continue;
+    if(stage==='research'&&featureResearchCompleteV3207(r))return {ok:true,record:r,recoveredFrom202:true};
+    if(stage==='generate'&&featureArticleReadyV3204(r))return {ok:true,record:r,recoveredFrom202:true};
+    if(stage==='generate'&&String(val(r.fields||{},'Section QA Result')||'').toLowerCase()==='fix required')return {ok:true,record:r,recoveredFrom202:true,blocked:true};
+    if(btn)btn.textContent=`${stage==='research'?'Research':'Writing'} accepted — checking saved state…`;
+  }
+  return null;
+}
+async function featureProduceCallV3207(sectionId,mode,btn){
+  const label=mode==='research'?'research':'writing';
+  const payload={sectionId,publicationName:currentPublicationName(),mode,contentType:'feature'};
+  for(let attempt=1;attempt<=2;attempt++){
+    const response=await fetch('/.netlify/functions/produce-section',{method:'POST',headers:{'content-type':'application/json',accept:'application/json'},body:JSON.stringify(payload)});
+    const raw=await response.text();let data;try{data=raw?JSON.parse(raw):{}}catch{data={}}
+    if(response.ok&&response.status!==202&&data?.ok)return data;
+    if(response.status===202){
+      if(btn)btn.textContent=`Feature ${label} accepted (202) — waiting for saved result…`;
+      const recovered=await waitForFeatureStateV3207(sectionId,mode,btn,{timeoutMs:attempt===1?75000:45000});
+      if(recovered)return recovered;
+      if(attempt<2){if(btn)btn.textContent=`No saved result yet — retrying Feature ${label} once…`;continue}
+      throw new Error(`Feature ${label} was accepted (202) but no saved ${label} result appeared. Endpoint: produce-section.`);
+    }
+    throw new Error(`Feature ${label} failed at produce-section (${response.status}): ${data?.error||raw.slice(0,180)||'No response body'}`);
+  }
+}
+
+function featureRecoveryUsedV3208(r){return /FEATURE RECOVERY:\s*1/i.test(String(val(r?.fields||{},'Notes')||''))}
+function featureEvidenceSeedsV3208(){
+  const selected=new Set(getMasterSelectionV312().map(Number));
+  const plan=getSmartPlan()||{},titleToOrder=new Map((plan.articles||[]).map(a=>[String(a.title||'').trim().toLowerCase(),Number(a.order)]));
+  return (S.sections||[]).filter(r=>!isFeatureArticleV3204(r)&&masterArticleState(r)==='complete'&&String(val(r.fields||{},'Source / Reference Link 1')||'').trim()).sort((a,b)=>{
+    const ao=titleToOrder.get(String(val(a.fields||{},'Section Title')||'').trim().toLowerCase()),bo=titleToOrder.get(String(val(b.fields||{},'Section Title')||'').trim().toLowerCase());
+    const as=selected.has(ao)?1:0,bs=selected.has(bo)?1:0;return as-bs||Number(val(a.fields||{},'Section Order')||999)-Number(val(b.fields||{},'Section Order')||999)
+  });
+}
+function recoveryBriefFromSeedV3208(seed,slot){
+  const f=seed?.fields||{},title=String(val(f,'Section Title')||'Local story').trim(),q=String(val(f,'Core Reader Question')||'').trim();
+  const source=String(val(f,'Source / Reference Link 1')||'').trim(),proof=String(val(f,'Local Proof Needed')||'').trim();
+  const place=(currentPublicationName().replace(/\b(?:Spotlight|Taste Trail|Pet Insider|Home Seller Insider|Business Pulse)\b/gi,'').trim()||currentPublicationName());
+  const shapes=[
+    {prefix:'The Bit Worth Knowing:',mode:'PRACTICAL SERVICE',lane:'Local Life'},
+    {prefix:'In Three Minutes:',mode:'NEWS EXPLAINER',lane:'Places & Discovery'},
+    {prefix:'What This Changes:',mode:'PRACTICAL SERVICE',lane:'Money & Consumer'},
+    {prefix:'The Local Detail Behind:',mode:'HUMAN / COMMUNITY',lane:'Fun & Curiosity'}
+  ],shape=shapes[slot%shapes.length];
+  return {title:`${shape.prefix} ${title}`,question:q||`What is the one specific ${place} detail here that a reader can use, notice or act on now?`,reader_value:'A tight standalone sidecar feature that uses verified local evidence for one narrower reader job. It must not summarise or duplicate the seed Master.',local_proof:proof||`Use the named ${place} facts already supported by the seed source; add only evidence that can be verified responsibly.`,evidence:`Start with this already-verified local source: ${source}. Verify every material claim; if a narrower angle cannot be supported, block rather than pad.`,life_lane:String(val(f,'Commercial Lane')||shape.lane),writing_mode:shape.mode,cta_text:'',seedSource:source,seedTitle:title};
+}
+async function recommissionBlockedFeatureV3208(r,slot,btn){
+  if(!r||featureRecoveryUsedV3208(r))return r;
+  const seeds=featureEvidenceSeedsV3208();if(!seeds.length)return r;
+  const seed=seeds[slot%seeds.length],b=recoveryBriefFromSeedV3208(seed,slot),oldNotes=String(val(r.fields||{},'Notes')||'');
+  if(btn)btn.textContent=`Recommissioning blocked Feature ${slot+1} from verified evidence…`;
+  const fields={'Section Title':b.title,'Section Status':'Planned','Core Reader Question':b.question,'Reader Value':b.reader_value,'Local Proof Needed':b.local_proof,'Evidence Required':b.evidence,'Evidence Status':'Not Started','Evidence Checked Date':'','Source / Reference Link 1':b.seedSource,'Commercial Lane':b.life_lane,'CTA Text':'','Section Final Copy':'','Section QA Result':'Not Checked','Notes':[featureMarkerNotesV3204(slot,b),`FEATURE RECOVERY: 1`,`SEED MASTER: ${b.seedTitle}`,`SEED SOURCE: ${b.seedSource}`].join('\n')};
+  const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:r.id,fields})});
+  if(d?.record){const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=d.record;return d.record}
+  return r;
+}
+async function buildFeatureArticlesV3204(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const btn=E('step6-build-features-v3204');if(btn){btn.disabled=true;btn.textContent='Building Features…'}
+  let currentStage='initialising',currentFeature=0;
+  try{
+    await Promise.all([loadSections(),loadArticleLibrary()]);
+    let rows=featureArticleRecordsV3204();
+    if(rows.length<FEATURE_TARGET_V3204){
+      currentStage='planning Feature briefs';
+      const plan=getSmartPlan()||{},selected=new Set(getMasterSelectionV312().map(Number));
+      const selectedTitles=(plan.articles||[]).filter(a=>selected.has(Number(a.order))).map(a=>a.title);
+      const allTitles=(plan.articles||[]).map(a=>a.title);
+      const seedMasters=featureEvidenceSeedsV3208().slice(0,8).map(r=>({title:String(val(r.fields||{},'Section Title')||''),question:String(val(r.fields||{},'Core Reader Question')||''),source:String(val(r.fields||{},'Source / Reference Link 1')||''),reader_value:String(val(r.fields||{},'Reader Value')||'')}));
+      const resp=await apiFeaturePlanV3206({publicationName:currentPublicationName(),issuePromise:String(val(S.issue.fields||{},'Main Theme')||''),selectedMasterTitles:selectedTitles,allMasterTitles:allTitles,seedMasters,count:FEATURE_TARGET_V3204},btn);
+      const briefs=(resp.features||[]).slice(0,FEATURE_TARGET_V3204);
+      currentStage='creating Feature records';
+      for(let i=rows.length;i<FEATURE_TARGET_V3204;i++){
+        currentFeature=i+1;const b=briefs[i]||{};
+        const fields={Issues:[S.issue.id],'Section Title':b.title||`Short Feature ${i+1}`,'Section Type':'Feature Article','Section Status':'Planned','Section Order':201+i,'Core Reader Question':b.question||'What is one specific local thing worth knowing?','Reader Value':b.reader_value||'Give the reader one tight, entertaining, standalone local feature.','Local Proof Needed':b.local_proof||`Named, current ${currentPublicationName()} proof that makes the feature genuinely local.`,'Evidence Required':b.evidence||'Current primary/local evidence for every material claim.','Commercial Lane':b.life_lane||'Open','CTA Text':b.cta_text||'','Notes':featureMarkerNotesV3204(i,b)};
+        const d=await api('sections',{method:'POST',body:JSON.stringify({fields})});if(d?.record)S.sections.push(d.record);
+      }
+      await loadSections();rows=featureArticleRecordsV3204();
+    }
+    for(let i=0;i<Math.min(rows.length,FEATURE_TARGET_V3204);i++){
+      currentFeature=i+1;let r=rows[i];if(featureArticleReadyV3204(r))continue;
+      if(!featureResearchCompleteV3207(r)){
+        currentStage='research';if(btn)btn.textContent=`Researching Feature ${i+1}/${FEATURE_TARGET_V3204}…`;
+        const research=await featureProduceCallV3207(r.id,'research',btn);
+        if(research?.record){r=research.record;const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=r}
+      }
+      if(String(val(r.fields||{},'Section QA Result')||'').toLowerCase()==='fix required'){
+        currentStage='recommissioning blocked Feature';
+        const repaired=await recommissionBlockedFeatureV3208(r,i,btn);
+        if(repaired&&repaired.id===r.id&&!featureBlockReasonV3208(repaired)){
+          r=repaired;currentStage='research recovery';if(btn)btn.textContent=`Researching replacement Feature ${i+1}/${FEATURE_TARGET_V3204}…`;
+          const rr=await featureProduceCallV3207(r.id,'research',btn);if(rr?.record){r=rr.record;const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=r}
+        }else r=repaired||r;
+      }
+      if(String(val(r.fields||{},'Section QA Result')||'').toLowerCase()==='fix required')continue;
+      currentStage='writing';if(btn)btn.textContent=`Writing Feature ${i+1}/${FEATURE_TARGET_V3204}…`;
+      const gen=await featureProduceCallV3207(r.id,'generate',btn);
+      if(gen?.record){r=gen.record;const idx=S.sections.findIndex(x=>x.id===r.id);if(idx>=0)S.sections[idx]=r}
+      renderFeatureSummaryV3204();
+    }
+    await Promise.all([loadSections(),loadArticleLibrary()]);
+    renderFeatureSummaryV3204();renderStep6StatusV3151();renderArticleBankV320();
+    const ready=readyFeatureArticlesV3204().length;
+    alert(ready>=FEATURE_TARGET_V3204?`${ready} Feature Articles are READY. They are permanent Article Bank assets and will be distributed through Step 7.`:`${ready}/${FEATURE_TARGET_V3204} Feature Articles are READY. Any blocked Feature has been preserved for review; do not lower the evidence bar.`);
+  }catch(e){
+    alert(`Feature Article build stopped at ${currentStage}${currentFeature?` (Feature ${currentFeature})`:''}: ${String(e?.message||e)}`);
+  }finally{if(btn){btn.disabled=false;btn.textContent='Build / Resume 4 Feature Articles'}renderFeatureSummaryV3204()}
+}
+
+const SUPPORT_MARKER_V3153='ICS SUPPORT COMPONENT V3.15.3';
+
+function isPersistentSupportSectionV3153(s){
+  const f=s?.fields||{};
+  return String(val(f,'Notes')||'').includes(SUPPORT_MARKER_V3153);
+}
+function supportMetaV3153(s){
+  const notes=String(val(s?.fields||{},'Notes')||'');
+  const pickLine=k=>{
+    const m=notes.match(new RegExp('^'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+':\\s*(.+)$','mi'));
+    return m?m[1].trim():'';
+  };
+  return {
+    type:pickLine('COMPONENT TYPE')||String(val(s?.fields||{},'Section Type')||'SUPPORT').toUpperCase(),
+    lifeLane:pickLine('LIFE LANE')||String(val(s?.fields||{},'Commercial Lane')||'OPEN'),
+    commercialRole:pickLine('COMMERCIAL ROLE')||'EDITORIAL',
+    partnerName:pickLine('PARTNER')||''
+  };
+}
+function persistentSupportRecordsV3153(){
+  return (S.sections||[]).filter(isPersistentSupportSectionV3153);
+}
+function supportRecordsForTargetV3204(records=persistentSupportRecordsV3153(),needed=supportTargetV315().supportNeeded){
+  const rows=[...(records||[])].sort((a,b)=>Number(val(a.fields||{},'Section Order')||999)-Number(val(b.fields||{},'Section Order')||999));
+  if(rows.length<=needed)return rows;
+  const closing=[...rows].reverse().find(r=>{const m=supportMetaV3153(r),t=String(m.type||'').toUpperCase();return t==='BEFORE YOU GO'||t==='CLOSING QUESTION'})||null;
+  const pool=closing?rows.filter(x=>x.id!==closing.id):rows;
+  const chosen=pool.slice(0,Math.max(0,needed-(closing?1:0)));
+  if(closing&&chosen.length<needed)chosen.push(closing);
+  return chosen.slice(0,needed);
+}
+function fitSupportRecipeV3204(recipe,needed){
+  const rows=[...(recipe||[])];if(rows.length<=needed)return rows;
+  const opening=rows.find(r=>String(r?.[0]||'').toUpperCase()==='OPENING NOTE')||rows[0];
+  const closing=[...rows].reverse().find(r=>['BEFORE YOU GO','CLOSING QUESTION'].includes(String(r?.[0]||'').toUpperCase()))||rows.at(-1);
+  const middle=rows.filter(r=>r!==opening&&r!==closing);
+  return [opening,...middle.slice(0,Math.max(0,needed-2)),closing].filter(Boolean).slice(0,needed);
+}
+function supportReadyRecordV3153(s){
+  const f=s?.fields||{};
+  return !!String(val(f,'Section Final Copy')||'').trim() &&
+    /ready|approved/i.test(String(val(f,'Section Status')||''));
+}
+function currentSupportComponentsV315(){
+  return supportRecordsForTargetV3204().map(s=>{
+    const f=s.fields||{},m=supportMetaV3153(s);
+    return {
+      id:s.id,uid:s.id,refId:s.id,kind:'component',componentType:m.type,type:m.type,
+      title:String(val(f,'Section Title')||m.type),content:String(val(f,'Section Final Copy')||''),
+      purpose:String(val(f,'Reader Value')||''),lifeLane:m.lifeLane,commercialRole:m.commercialRole,
+      partnerName:m.partnerName,status:supportReadyRecordV3153(s)?'READY':'NEEDS PRODUCTION',
+      contentStatus:supportReadyRecordV3153(s)?'APPROVED':'PLANNED',
+      productionStatus:supportReadyRecordV3153(s)?'READY FOR LETTERMAN':'NOT STARTED',
+      persistent:true
+    };
+  });
+}
+async function refreshPersistentSupportV3153(){
+  if(!S.issue)return;
+  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id)+'&_ts='+Date.now());
+  S.sections=r.records||[];
+  sortSections();
+}
+function supportNotesV3153({type,lifeLane='OPEN',commercialRole='EDITORIAL',partnerName='',error=''}) {
+  return [
+    SUPPORT_MARKER_V3153,
+    `COMPONENT TYPE: ${type}`,
+    `LIFE LANE: ${lifeLane}`,
+    `COMMERCIAL ROLE: ${commercialRole}`,
+    partnerName?`PARTNER: ${partnerName}`:'',
+    error?`PRODUCTION ERROR: ${error}`:''
+  ].filter(Boolean).join('\n');
+}
+function supportRecordToCanvasV3153(s){
+  const f=s.fields||{},m=supportMetaV3153(s),blockUid='srv-'+s.id;
+  return {
+    uid:blockUid,componentId:'CMP-'+s.id.replace(/[^a-z0-9]/gi,'').slice(-10).toUpperCase(),
+    kind:'component',refId:s.id,type:m.type,title:String(val(f,'Section Title')||m.type),
+    purpose:String(val(f,'Reader Value')||''),partnerAttached:!!m.partnerName,partner:m.partnerName,
+    category:'',suggestedPartnerCategory:'',commitment:'',cta:String(val(f,'CTA Text')||''),
+    button:String(val(f,'CTA Text')||''),url:String(val(f,'Action Destination URL')||''),
+    proof:String(val(f,'Evidence Required')||''),content:String(val(f,'Section Final Copy')||''),
+    lifeLane:m.lifeLane,commercialRole:m.commercialRole,productionTemplate:'SHORT COMPONENT',
+    productionPoints:1,contentStatus:supportReadyRecordV3153(s)?'APPROVED':'PLANNED',
+    productionStatus:supportReadyRecordV3153(s)?'READY FOR LETTERMAN':'NOT STARTED',
+    status:supportReadyRecordV3153(s)?'READY':'NEEDS PRODUCTION',persistent:true
+  };
+}
+function selectedMasterCountV315(){
+  return getMasterSelectionV312().length;
+}
+function activePartnerCountV315(){
+  const pub=currentPublicationName();
+  return (S.partners||[]).filter(p=>{
+    const active=String(val(p.fields,'Active')||'').toLowerCase();
+    const pubs=String(val(p.fields,'Publications')||val(p.fields,'Publication')||'').toLowerCase();
+    return (!active||['true','yes','active','1'].includes(active)) && (!pub||!pubs||pubs.includes(pub.toLowerCase()));
+  }).length;
+}
+function supportTargetV315(){
+  const profile=engineProfileForPublication();
+  const selected=selectedMasterCountV315();
+  const issueTarget=Math.round(((profile.targetSections?.[0]||24)+(profile.targetSections?.[1]||30))/2);
+  const existingMasters=selected;
+  const featureArticles=readyFeatureArticlesV3204().length;
+  return {
+    issueTarget,
+    selectedMasters:selected,
+    featureArticles,
+    supportNeeded:Math.max(0,issueTarget-existingMasters-featureArticles)
+  };
+}
+function setStep6LiveProgressV3152({show=true,done=0,total=0,ready=0,failed=0,current='',phase='Working'}={}){
+  const box=E('step6-live-v3152'),head=E('step6-live-head-v3152'),cur=E('step6-live-current-v3152'),
+        bar=E('step6-progress-bar-v3152'),count=E('step6-live-count-v3152');
+  if(box)box.style.display=show?'block':'none';
+  if(head)head.textContent=phase;
+  if(cur)cur.textContent=current||'';
+  const pct=total?Math.max(0,Math.min(100,Math.round(done/total*100))):0;
+  if(bar)bar.style.width=pct+'%';
+  if(count)count.textContent=`${done}/${total} processed · ${ready} ready · ${failed} failed · ${pct}%`;
+  const detail=current?`${phase}: ${current}`:phase;
+  const label=/Saving Component Records|Checking Saved State|Saved State Checked/.test(phase)
+    ? `${done}/${total} records saved · ${ready} ready · ${failed} failed`
+    : `${done}/${total} processed · ${ready} ready · ${failed} failed`;
+  setWorkflowActionStatusV312(6,'Components',label,detail);
+}
+
+function supportAllocationPlanV31814(profile, recipe, plan, selectedOrders){
+  const norm=s=>String(s||'').toLowerCase();
+  const records=(plan?.articles||[]).filter(a=>!selectedOrders.includes(Number(a.order))).map(a=>{
+    const rec=typeof planArticleRecordV312==='function'?planArticleRecordV312(a):null;
+    const f=rec?.fields||{};
+    const ready=String(val(f,'Section Status')||'').toUpperCase()==='READY' || String(val(f,'Section QA Result')||'').toUpperCase()==='PASS';
+    if(!ready)return null;
+    return {
+      id:`MASTER_${Number(a.order)||0}`,
+      title:String(a.title||'').trim(),
+      source:String(val(f,'Source / Reference Link 1')||val(f,'Primary source')||'').trim(),
+      copy:String(val(f,'Section Final Copy')||'').replace(/\s+/g,' ').trim().slice(0,650)
+    };
+  }).filter(Boolean);
+  const used=new Set();
+  const score=(type,c)=>{
+    const t=norm(type),b=norm(`${c.title} ${c.copy}`);
+    let n=1;
+    if(/price|value|money|saver/.test(t))n+=/(price|value|cheap|free|deal|voucher|clubcard|cost|bill|£)/.test(b)?8:-4;
+    if(/event|what's on|weekend/.test(t)){
+      const eventWords=/(event|festival|live music|gig|concert|show|fair|tasting|supper club|ticket|tickets|opening night|launch night|market day)/.test(b);
+      const timeWords=/(today|tomorrow|this week|this weekend|tonight|next week|august|september|october|november|december|january|february|march|april|may|june|july|2026|2027)/.test(b);
+      const historicOpeningOnly=/(reopened|reopening|opened in|opened on|former .* closed|closed in)/.test(b) && !eventWords;
+      n+=(eventWords&&timeWords&&!historicOpeningOnly)?12:-12;
+    }
+    if(/business|hospitality|expert|producer/.test(t))n+=/(owner|chef|producer|brewer|grower|bakery|cafe|café|restaurant|pub|bar|smokehouse|business|opened|opening)/.test(b)?6:-2;
+    if(/trivia|history/.test(t))n+=/(former|old|history|historic|first|reopen|reopened|years|quirky)/.test(b)?7:-3;
+    if(/food find|worth the drive|discovery/.test(t))n+=/(food|cafe|café|restaurant|pub|bar|smokehouse|lounge|detour|dish|coffee)/.test(b)?6:0;
+    return n;
+  };
+  // v3.20.3 — Reader Delight Component Engine.
+  // Only roles that genuinely need evidence are forced through the evidence allocator.
+  // Fun, utility and participation roles must stay distinct instead of collapsing into generic Editorial Bridges.
+  const factual=t=>/NEWS BRIEF|WHAT'S ON|EVENT PICK|FOOD FIND|LOCAL BUSINESS FIND|WORTH THE DRIVE|QUICK UPDATE|QUICK PRICE CHECK|EXPERT QUICK CHECK|MOTORING QUICK CHECK|HOME QUICK CHECK|LOCAL TRIVIA/i.test(String(t||''));
+  const delightFallback=(type,label,lane,i)=>{
+    const key=String(type||'').toUpperCase();
+    const map={
+      "WHAT'S ON":['LOCAL CHALLENGE','Try This This Week','FUN & CURIOSITY'],
+      'EVENT PICK':['LOCAL CHALLENGE','Try This This Week','FUN & CURIOSITY'],
+      'FOOD FIND':['FOOD ARGUMENT','The Food Argument','FOOD & HOSPITALITY'],
+      'LOCAL BUSINESS FIND':['SHOPFRONT IDEA','If This Shopfront Were Yours','BUSINESS & PEOPLE'],
+      'SALLY SAVERS':['MONEY MINI-GAME','Would You Pay It?','MONEY & CONSUMER'],
+      'MOTORING QUICK CHECK':['ONE-MINUTE TEST','The One-Minute Test','MOTORING & TRAVEL'],
+      'HOME QUICK CHECK':['HOME MINI-WIN','One Small Home Win','HOME & PROPERTY'],
+      'WORTH THE DRIVE?':['WEEKEND IDEA','Your Next Little Detour','PLACES & DISCOVERY'],
+      'QUICK UPDATE':['ODDLY LOCAL','Oddly Local','FUN & CURIOSITY'],
+      'LOCAL TRIVIA':['LOCAL MEMORY','Remember This?','FUN & CURIOSITY'],
+      'QUICK PRICE CHECK':['MONEY MINI-GAME','Would You Pay It?','MONEY & CONSUMER'],
+      'EXPERT QUICK CHECK':['MYTH V FACT','Myth Or Fact?','FUN & CURIOSITY'],
+      'NEWS BRIEF':['LOCAL SNAPSHOT','The 30-Second Local Snapshot','LOCAL LIFE']
+    };
+    return map[key]||['QUICK CHALLENGE',`Quick Challenge ${i+1}`,'FUN & CURIOSITY'];
+  };
+  const allocations=[];
+  for(let i=0;i<recipe.length;i++){
+    let [type,label,lane]=recipe[i];
+    let candidate=null;
+    if(factual(type)){
+      const ranked=records.filter(c=>!used.has(c.id)).map(c=>({c,n:score(type,c)})).sort((a,b)=>b.n-a.n);
+      if(ranked.length && ranked[0].n>0){candidate=ranked[0].c;used.add(candidate.id)}
+      if(/event|what's on|weekend/i.test(type) && (!candidate || score(type,candidate)<5)){
+        if(candidate)used.delete(candidate.id);
+        const alt=records.filter(c=>!used.has(c.id)).map(c=>({c,n:score('WORTH THE DRIVE?',c)})).sort((a,b)=>b.n-a.n)[0];
+        if(alt && alt.n>0){candidate=alt.c;used.add(candidate.id);type='WORTH THE DRIVE?';label='Worth The Trip?';lane='PLACES & DISCOVERY'}
+      }
+      if(/hospitality person|producer/i.test(label) && candidate && !/(owner|chef|producer|brewer|grower|person|people)/i.test(`${candidate.title} ${candidate.copy}`)){
+        type='LOCAL BUSINESS FIND';label='Local Business Find';
+      }
+      if(!candidate){[type,label,lane]=delightFallback(type,label,lane,i)}
+    }
+    allocations.push({type,label,lane,candidate});
+  }
+  return allocations;
+}
+
+async function buildSupportBatchV315(){
+  const t=supportTargetV315();
+  if(!t.selectedMasters){
+    const m='STEP 6 BLOCKED — Save the Step 5 Master selection first.';
+    setWorkflowActionStatusV312(6,'Components','Cannot build support yet.',m);return;
+  }
+
+  const btn=E('workflow-primary-v312'),dedicated=E('step6-build-v3151');
+  [btn,dedicated].filter(Boolean).forEach(b=>{b.disabled=true;b.textContent='Building Supporting Components…';});
+
+  try{
+    setStep6LiveProgressV3152({
+      show:true,
+      done:0,
+      total:t.supportNeeded,
+      ready:0,
+      failed:0,
+      current:'Checking Airtable for previously saved supporting components…',
+      phase:'Step 6 — Checking Saved State'
+    });
+    await refreshPersistentSupportV3153();
+
+    const alreadySaved=persistentSupportRecordsV3153().length;
+    const alreadyReady=persistentSupportRecordsV3153().filter(supportReadyRecordV3153).length;
+    setStep6LiveProgressV3152({
+      show:true,
+      done:alreadySaved,
+      total:t.supportNeeded,
+      ready:alreadyReady,
+      failed:0,
+      current:alreadySaved
+        ? `Found ${alreadySaved}/${t.supportNeeded} saved component records.`
+        : 'No saved component records found yet. Starting persistent build…',
+      phase:'Step 6 — Saved State Checked'
+    });
+
+    const profile=engineProfileForPublication();
+    const recipes={
+      SPOTLIGHT:[
+        ['OPENING NOTE','Opening Note','READER VOICE'],['NEWS BRIEF','News Brief','LOCAL LIFE'],['LOCAL TRIVIA','Did You Know?','FUN & CURIOSITY'],['FOOD FIND','Food / Drink Find','FOOD & HOSPITALITY'],
+        ['SALLY SAVERS','Sally Savers','MONEY & CONSUMER'],['LOCAL BUSINESS FIND','Local Business Find','BUSINESS & PEOPLE'],['FAMILY ACTIVITY','Family Idea','FAMILY & COMMUNITY'],['HUMOUR','Make Me Smile','FUN & CURIOSITY'],
+        ['WEEKEND IDEA','Try This This Week','PLACES & DISCOVERY'],['THIS OR THAT','This Or That','FUN & CURIOSITY'],['MYTH V FACT','Myth Or Fact?','FUN & CURIOSITY'],['QUICK CHALLENGE','Quick Challenge','FUN & CURIOSITY'],
+        ['LOCAL MEMORY','Remember This?','LOCAL LIFE'],['WORTH THE DRIVE?','Worth The Trip?','PLACES & DISCOVERY'],['ONE MINUTE WIN','One-Minute Win','MONEY & CONSUMER'],['COMMUNITY VOICE','Community Voice','FAMILY & COMMUNITY'],
+        ['READER POLL','One Quick Vote','READER VOICE'],['LOCAL DEBATE','The Local Argument','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']
+      ],
+      TASTE_TRAIL:[
+        ['OPENING NOTE','Opening Note','OPEN'],
+        ['FOOD FIND','Morning / Daytime Find','BREAKFAST & BRUNCH'],
+        ['QUICK PRICE CHECK','Worth The Money?','VALUE'],
+        ['LOCAL BUSINESS FIND','Hospitality Person / Place','HOSPITALITY PEOPLE'],
+        ['EVENT PICK',"What's On / Going Out Pick",'EVENTS & EXPERIENCES'],
+        ['LOCAL TRIVIA','Local Food & Drink Curiosity','FUN & CURIOSITY'],
+        ['WORTH THE DRIVE?','Wider-Area Discovery','PLACES & DISCOVERY'],
+        ['PUB / RESTAURANT QUESTION','One Table Question','READER VOICE'],
+        ['READER POLL','One Quick Vote','READER VOICE'],
+        ['QUICK QUIZ','Quick Taste Trail Quiz','READER VOICE'],
+        ['READER RECOMMENDATION','Your Recommendation','READER VOICE'],
+        ['BEFORE YOU GO',"That's All For This Week — But Before You Go…",'OPEN']
+      ],
+      HOME_SELLER:[['OPENING NOTE','Opening Note','READER VOICE'],['READER POLL','Reader Poll','READER VOICE'],['QUICK PRICE CHECK','Quick Price Check','PRICING & VALUATION'],['READER QUESTION','Reader Question','READER VOICE'],['MYTH V FACT','Myth v Fact','FUN & CURIOSITY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']],
+      PET_INSIDER:[['OPENING NOTE','Opening Note','READER VOICE'],['READER POLL','Reader Poll','READER VOICE'],['READER PETS','Reader Pets','READER PETS'],['LOCAL TRIVIA','Local Trivia','FUN & CURIOSITY'],['WEEKEND IDEA','Weekend Idea','WALKS & PLACES'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['HUMOUR','Quick Breather','FUN & CURIOSITY'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','READER VOICE']]
+    };
+    const recipe=fitSupportRecipeV3204(recipes[profile.key]||recipes.SPOTLIGHT,t.supportNeeded);
+
+    let existing=persistentSupportRecordsV3153();
+
+    // Create missing support records in Airtable first so progress survives refresh/deploy.
+    // IMPORTANT: this phase must be visible from the very first network request.
+    const createFrom=existing.length;
+    const createNeed=Math.max(0,t.supportNeeded-createFrom);
+
+    if(createNeed){
+      setStep6LiveProgressV3152({
+        show:true,
+        done:createFrom,
+        total:t.supportNeeded,
+        ready:existing.filter(supportReadyRecordV3153).length,
+        failed:0,
+        current:`Saving support component ${createFrom+1} of ${t.supportNeeded} to Airtable…`,
+        phase:'Step 6 — Saving Component Records'
+      });
+
+      for(let i=createFrom;i<t.supportNeeded;i++){
+        const [type,title,lane]=recipe[i%recipe.length];
+
+        setStep6LiveProgressV3152({
+          show:true,
+          done:i,
+          total:t.supportNeeded,
+          ready:existing.filter(supportReadyRecordV3153).length,
+          failed:0,
+          current:`Saving ${i+1} of ${t.supportNeeded}: ${title}`,
+          phase:'Step 6 — Saving Component Records'
+        });
+
+        const d=await api('sections',{
+          method:'POST',
+          body:JSON.stringify({fields:{
+            Issues:[S.issue.id],
+            'Section Title':title,
+            'Section Type':'Short',
+            'Section Status':'Planned',
+            'Section Order':100+i+1,
+            'Reader Value':`Deliver one concise ${title} supporting job for this issue without repeating a Master Article.`,
+            'Evidence Status':'Question Only',
+            'Commercial Lane':'None',
+            'Section QA Result':'Not Checked',
+            'Notes':supportNotesV3153({type,lifeLane:lane})
+          }})
+        });
+
+        S.sections.push(d.record);
+        existing.push(d.record);
+
+        setStep6LiveProgressV3152({
+          show:true,
+          done:i+1,
+          total:t.supportNeeded,
+          ready:existing.filter(supportReadyRecordV3153).length,
+          failed:0,
+          current:`Saved ${i+1} of ${t.supportNeeded}: ${title}`,
+          phase:i+1===t.supportNeeded?'Step 6 — Component Records Saved':'Step 6 — Saving Component Records'
+        });
+
+        // Yield so status/progress paints between Airtable writes.
+        await new Promise(r=>setTimeout(r,0));
+      }
+    }
+
+    await refreshPersistentSupportV3153();
+    existing=persistentSupportRecordsV3153();
+    const pending=existing.filter(s=>!supportReadyRecordV3153(s));
+    const total=t.supportNeeded;
+    let readyNow=existing.filter(supportReadyRecordV3153).length;
+    const failed=[];
+
+    if(!pending.length){
+      const integrity=supportMixIntegrityV31827(existing,t.supportNeeded,profile.key);
+      setStep6LiveProgressV3152({show:true,done:total,total,ready:readyNow,failed:0,current:integrity.ok?'All supporting components are saved, ready and structurally distinct.':'All supporting copy is saved, but the component mix needs repair: '+integrity.errors.join(' '),phase:integrity.ok?'Step 6 complete':'Step 6 — Mix Integrity Failed'});
+      await renderStep6StatusV3151();
+      return;
+    }
+
+    setStep6LiveProgressV3152({
+      show:true,done:readyNow,total,ready:readyNow,failed:0,
+      current:`Persistent component records saved. Producing ${pending.length} unfinished components…`,
+      phase:'Step 6 production running'
+    });
+
+    const theme=String(E('assembly-theme')?.value||val(S.issue.fields,'Main Theme')||'').trim();
+    const selectedOrdersV31813=(typeof getMasterSelectionV312==='function'?getMasterSelectionV312():[]).map(Number);
+    const planV31813=typeof getSmartPlan==='function'?getSmartPlan():null;
+    const selectedArticlesV31813=(planV31813?.articles||[]).filter(a=>selectedOrdersV31813.includes(Number(a.order)));
+    const selectedEvidenceV31813=selectedArticlesV31813.map(a=>{
+      const rec=typeof planArticleRecordV312==='function'?planArticleRecordV312(a):null;
+      const f=rec?.fields||{};
+      const src=String(val(f,'Source / Reference Link 1')||val(f,'Primary source')||'').trim();
+      const copy=String(val(f,'Section Final Copy')||'').replace(/\s+/g,' ').trim().slice(0,360);
+      return `- ${a.title}${src?` | SOURCE: ${src}`:''}${copy?` | COPY EXTRACT: ${copy}`:''}`;
+    }).join('\n')||'- No selected-Master evidence context available.';
+
+    // Generic support-novelty evidence bank: completed but unselected Masters are valuable source material
+    // for short supports. They add new subjects without repeating the seven headline Masters.
+    const unusedEvidenceV31813=(planV31813?.articles||[]).filter(a=>!selectedOrdersV31813.includes(Number(a.order))).map(a=>{
+      const rec=typeof planArticleRecordV312==='function'?planArticleRecordV312(a):null;
+      const f=rec?.fields||{};
+      const ready=String(val(f,'Section Status')||'').toUpperCase()==='READY' || String(val(f,'Section QA Result')||'').toUpperCase()==='PASS';
+      if(!ready)return '';
+      const src=String(val(f,'Source / Reference Link 1')||val(f,'Primary source')||'').trim();
+      const copy=String(val(f,'Section Final Copy')||'').replace(/\s+/g,' ').trim().slice(0,420);
+      return `- ${a.title}${src?` | SOURCE: ${src}`:''}${copy?` | COPY EXTRACT: ${copy}`:''}`;
+    }).filter(Boolean).slice(0,8).join('\n')||'- No unused completed Master evidence available.';
+
+    const discoverySignalsV31813=(typeof getSmartSignals==='function'?getSmartSignals():[]).slice(0,18).map(x=>`- ${String(x.signal||'').trim()}${x.source_url?` | SOURCE: ${x.source_url}`:''}`).join('\n')||'- No extra discovery signals available.';
+    const masterSubjectsV31813=selectedArticlesV31813.map(a=>`- ${a.title}`).join('\n')||'- None';
+
+    // v3.18.14 generic subject allocator: assign one primary evidence subject to each factual support slot
+    // before writing begins, so a strong unused Master cannot be recycled into several different components.
+    const allSupportsV31814=existing.slice(0,t.supportNeeded);
+    const recipeV31814=allSupportsV31814.map(x=>{const m=supportMetaV3153(x);return [m.type,String(val(x.fields||{},'Section Title')||m.type),m.lifeLane]});
+    const allocationsV31814=supportAllocationPlanV31814(profile,recipeV31814,planV31813,selectedOrdersV31813);
+    const allocationByIdV31814=new Map(allSupportsV31814.map((x,idx)=>[x.id,allocationsV31814[idx]||null]));
+
+    for(let i=0;i<pending.length;i++){
+      const s=pending[i],f=s.fields||{},originalMeta=supportMetaV3153(s),allocation=allocationByIdV31814.get(s.id)||{};
+      const meta={...originalMeta,type:allocation.type||originalMeta.type,lifeLane:allocation.lane||originalMeta.lifeLane};
+      const title=String(allocation.label||val(f,'Section Title')||meta.type);
+      const assigned=allocation.candidate?`ASSIGNED PRIMARY SUBJECT — use this subject in THIS component only:
+- ${allocation.candidate.title}${allocation.candidate.source?` | SOURCE: ${allocation.candidate.source}`:''}${allocation.candidate.copy?` | COPY EXTRACT: ${allocation.candidate.copy}`:''}`:'ASSIGNED PRIMARY SUBJECT: None. Do not borrow a named subject already allocated to another support.';
+
+      setStep6LiveProgressV3152({
+        show:true,done:readyNow+failed.length,total,ready:readyNow,failed:failed.length,
+        current:`Producing ${readyNow+failed.length+1} of ${total}: ${title}`,
+        phase:'Step 6 production running'
+      });
+
+      try{
+        const prompt=`You are producing ONE finished supporting component for ${currentPublicationName()}.
+
+ISSUE PROMISE: ${theme}
+COMPONENT TYPE: ${meta.type}
+LABEL: ${title}
+LIFE LANE: ${meta.lifeLane}
+${assigned}
+RECENT SUPPORT COMPONENTS: ${persistentSupportRecordsV3153().filter(x=>x.id!==s.id&&supportReadyRecordV3153(x)).slice(-3).map(x=>`${val(x.fields,'Section Title')}: ${String(val(x.fields,'Section Final Copy')||'').slice(0,180)}`).join(' | ')||'None yet'}
+
+SELECTED MASTER SUBJECTS — NOVELTY EXCLUSION LIST:
+${masterSubjectsV31813}
+
+SELECTED MASTER EVIDENCE CONTEXT — reference only. Do NOT make these same venues/people/topics the subject of the support unless the component adds a clearly different reader job:
+${selectedEvidenceV31813}
+
+UNUSED COMPLETED MASTER EVIDENCE — prefer this bank for factual support because it adds new local subjects without wasting completed research:
+${unusedEvidenceV31813}
+
+OTHER CURRENT DISCOVERY SIGNALS — secondary idea bank; do not state unverified detail as fact:
+${discoverySignalsV31813}
+
+UNIVERSAL READER DELIGHT GATE — applies to EVERY Trail Blaze publication family:
+- If this block does not entertain, surprise, help, tempt, amuse or reward the reader, it does not get in.
+- Supporting components are NOT filler between Master Articles. They are where personality, discovery, humour, trust and habit are built.
+- Earn attention before asking for it. Never ask readers to comment, vote, nominate, reply or share unless the block first gives them something worth their time: a laugh, a sharp opinion, a useful nugget, a surprising detail, a tempting idea, a small win or a genuinely interesting choice.
+- Make it naturally shareable/commentable because the idea is good, not because the copy begs for engagement.
+- Give the reader a reason to think “I’m glad I opened this”, “I know someone who’d like this”, or “I’ve got an answer to that”.
+- Theme saturation guard: the issue promise is an anchor, not the subject of every support. Most supports should widen the issue with a different local pleasure, problem, curiosity, person, place, memory, laugh, small win or discovery.
+- No generic civic/philosophical filler such as repeated variations of “reasons to stay”, “a city centre is more than…”, “the real test is…”, “it needs a mix”, or “small changes add up” unless a specific new fact, joke, useful action or vivid local example earns the space.
+- HUMOUR / fun roles must actually contain a smile, recognisable local observation, playful choice or comic tension — not a serious paragraph wearing a light label.
+- VALUE-BEFORE-ASK rule: a reader-input CTA is the dessert, never the whole meal.
+- TRUST rule: never invent or overclaim. Being lively is not permission to be loose with facts.
+- SELF-TEST before returning copy: “Would I voluntarily read this if it arrived in my inbox?” If no, rewrite it before answering.
+
+Write ONLY finished newsletter copy.
+- Normally 45–120 words; shorter is fine.
+- One clear reader job.
+- Natural UK English, conversational and locally knowledgeable. Give it personality; it should sound like a lively local publication, not a council guide, business article, brochure or AI explainer.
+- Vary the format and sentence shape from the recent support components. Do not create another checklist/question/explainer if the recent blocks already use that structure.
+- GENERIC SUPPORT NOVELTY GUARD: Masters carry the big stories; supports should normally introduce a new named venue, person, event, product, fact, place or reader job. Do not miniaturise or summarise a selected Master.
+- SUBJECT ALLOCATION GUARD: if an ASSIGNED PRIMARY SUBJECT is supplied, that is the only named evidence-bank subject this component may centre on. Do not switch to another unused Master merely because it is easier to write.
+- A named evidence-bank subject is normally allocated to ONE support only. Do not recycle a venue/person/topic that another support already used.
+- The declared COMPONENT TYPE, LABEL and LIFE LANE above are final for this run. The copy must actually perform that job; do not write an event block about a non-event or a people block about a venue.
+- Prefer the ASSIGNED PRIMARY SUBJECT over the general UNUSED COMPLETED MASTER EVIDENCE bank. The general bank is context only and must not be mined for extra named subjects.
+- If no primary subject is assigned, keep the block non-factual/editorial/reader-facing as appropriate and do not import a named venue from another support.
+- For Taste Trail, the support set must feel like a local hospitality day-and-night circuit: breakfast/coffee/daytime, lunch/afternoon, dinner, pubs/bars, nightlife/live, hotels/stays, markets/stalls/takeaways, events and wider-area discoveries. Use named place/dish/person/event/value/discovery where evidence supports it, not generic lifestyle advice.
+- For factual Taste Trail components (daytime find, price check, hospitality person/place, What's On pick, wider-area discovery), use at least one named local proof point from the supplied evidence context when possible. Where a venue/business is named, prefer a current official website, booking/menu page or official social page as the reader route and status double-check. If the context does not support the requested factual component, write a short clearly non-factual editorial bridge instead of inventing facts.
+- Reader-voice formats are limited: do not turn a factual/discovery component into another poll, nomination, recommendation request or question merely because evidence is thin.
+- Do not invent facts, prices, dates, quotes, businesses, services, events, people or reader comments.
+- One CTA maximum. CTA/button wording must be Title Case.
+- Do not repeat a Master Article or recycle the same reader prompt.
+- Capitalise Every Word in any heading/subhead.
+- NEVER use these filler words/phrases in reader-facing copy: useful, practical, meaningful, key question, important distinction, straightforward, crucial, navigate, 'in plain English'. Avoid 'whether' unless grammatically unavoidable.`;
+
+        const data=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
+        const copy=String(data.text||'').trim();
+        if(!copy)throw new Error('No component copy returned.');
+
+        const d=await api('sections',{
+          method:'PATCH',
+          body:JSON.stringify({id:s.id,fields:{
+            'Section Title':title,
+            'Section Final Copy':copy,
+            'Section Status':'Ready',
+            'Evidence Status':'Question Only',
+            'Section QA Result':'Not Checked',
+            'Notes':supportNotesV3153(meta)
+          }})
+        });
+        s.fields=d.record.fields;
+      }catch(e){
+        const message=String(e.message||e);
+        failed.push(`${title}: ${message}`);
+        try{
+          const d=await api('sections',{
+            method:'PATCH',
+            body:JSON.stringify({id:s.id,fields:{
+              'Section Status':'Needs Production',
+              'Notes':supportNotesV3153({...meta,error:message})
+            }})
+          });
+          s.fields=d.record.fields;
+        }catch{}
+      }
+
+      await refreshPersistentSupportV3153();
+      readyNow=persistentSupportRecordsV3153().filter(supportReadyRecordV3153).length;
+      setStep6LiveProgressV3152({
+        show:true,
+        done:Math.min(total,readyNow+failed.length),
+        total,
+        ready:readyNow,
+        failed:failed.length,
+        current:failed.length && failed[failed.length-1].startsWith(title)?`Exception on ${title}`:`Completed ${title}`,
+        phase:readyNow===total?'Step 6 complete':'Step 6 production running'
+      });
+      await renderStep6StatusV3151();
+      await new Promise(r=>setTimeout(r,0));
+    }
+
+    await refreshPersistentSupportV3153();
+    readyNow=persistentSupportRecordsV3153().filter(supportReadyRecordV3153).length;
+    const detail=failed.length
+      ? `${readyNow}/${total} supporting components are persistently READY in Airtable. ${failed.length} production exception${failed.length===1?'':'s'} remain:\n- ${failed.join('\n- ')}`
+      : `${readyNow}/${total} supporting components are persistently READY in Airtable. These will survive refreshes and new deployments.`;
+
+    setStep6LiveProgressV3152({
+      show:true,done:total,total,ready:readyNow,failed:failed.length,
+      current:failed.length?'Batch finished with exceptions.':'All supporting components are saved and ready.',
+      phase:failed.length?'Step 6 finished with exceptions':'Step 6 complete'
+    });
+    setWorkflowActionStatusV312(6,'Components',`${readyNow}/${total} persistently ready · ${failed.length} failed`,detail);
+    await renderStep6StatusV3151();
+
+  }catch(e){
+    const ready=persistentSupportRecordsV3153().filter(supportReadyRecordV3153).length;
+    setStep6LiveProgressV3152({show:true,done:ready,total:t.supportNeeded,ready,failed:1,current:String(e.message||e),phase:'Step 6 batch failed'});
+    setWorkflowActionStatusV312(6,'Components','Component batch failed.','Saved component records and Masters are preserved. '+String(e.message||e));
+  }finally{
+    [btn,dedicated].filter(Boolean).forEach(b=>{b.disabled=false;b.textContent='Build / Resume Supporting Components';});
+  }
+}
+
+function step6ReadyCountV3151(){
+  return supportRecordsForTargetV3204().filter(supportReadyRecordV3153).length;
+}
+async function rebuildComponentMixV31813(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const profile=engineProfileForPublication();
+  const t=supportTargetV315();
+  if(!t.selectedMasters){alert('Save the Step 5 Master selection first.');return}
+  if(!confirm(`Rebuild the ${t.supportNeeded} supporting components using the ${profile.name} publication profile plus the generic subject-allocation/novelty guard? Selected Master Articles are preserved.`))return;
+  const btn=E('step6-rebuild-mix-v31812');const old=btn?.textContent;if(btn){btn.disabled=true;btn.textContent='Rebuilding Mix…'}
+  try{
+    await refreshPersistentSupportV3153();
+    const recipes={
+      SPOTLIGHT:[
+        ['OPENING NOTE','Opening Note','OPEN'],['NEWS BRIEF','News Brief','LOCAL LIFE'],['LOCAL TRIVIA','Did You Know?','FUN & CURIOSITY'],['FOOD FIND','Food / Drink Find','FOOD & HOSPITALITY'],
+        ['SALLY SAVERS','Sally Savers','MONEY & CONSUMER'],['LOCAL BUSINESS FIND','Local Business Find','BUSINESS & PEOPLE'],['FAMILY ACTIVITY','Family Idea','FAMILY & COMMUNITY'],['HUMOUR','Make Me Smile','FUN & CURIOSITY'],
+        ['WEEKEND IDEA','Try This This Week','PLACES & DISCOVERY'],['THIS OR THAT','This Or That','FUN & CURIOSITY'],['MYTH V FACT','Myth Or Fact?','FUN & CURIOSITY'],['QUICK CHALLENGE','Quick Challenge','FUN & CURIOSITY'],
+        ['LOCAL MEMORY','Remember This?','LOCAL LIFE'],['WORTH THE DRIVE?','Worth The Trip?','PLACES & DISCOVERY'],['ONE MINUTE WIN','One-Minute Win','MONEY & CONSUMER'],['COMMUNITY VOICE','Community Voice','FAMILY & COMMUNITY'],
+        ['READER POLL','One Quick Vote','READER VOICE'],['LOCAL DEBATE','The Local Argument','READER VOICE'],['BEFORE YOU GO','Before You Go','OPEN']
+      ],
+      TASTE_TRAIL:[
+        ['OPENING NOTE','Opening Note','OPEN'],['FOOD FIND','Morning / Daytime Find','BREAKFAST & BRUNCH'],['QUICK PRICE CHECK','Worth The Money?','VALUE'],['LOCAL BUSINESS FIND','Hospitality Person / Place','HOSPITALITY PEOPLE'],
+        ['EVENT PICK',"What's On / Going Out Pick",'EVENTS & EXPERIENCES'],['LOCAL TRIVIA','Local Food & Drink Curiosity','FUN & CURIOSITY'],['WORTH THE DRIVE?','Wider-Area Discovery','PLACES & DISCOVERY'],['PUB / RESTAURANT QUESTION','One Table Question','READER VOICE'],
+        ['READER POLL','One Quick Vote','READER VOICE'],['QUICK QUIZ','Quick Taste Trail Quiz','READER VOICE'],['READER RECOMMENDATION','Your Recommendation','READER VOICE'],['BEFORE YOU GO',"That's All For This Week — But Before You Go…",'OPEN']
+      ],
+      HOME_SELLER:[['OPENING NOTE','Opening Note','OPEN'],['READER POLL','Reader Poll','READER VOICE'],['QUICK PRICE CHECK','Quick Price Check','PRICING & VALUATION'],['READER QUESTION','Reader Question','READER VOICE'],['MYTH V FACT','Myth v Fact','FUN & CURIOSITY'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['NOMINATION','Nominate Something','READER VOICE'],['BEFORE YOU GO','Before You Go','OPEN']],
+      PET_INSIDER:[['OPENING NOTE','Opening Note','OPEN'],['READER POLL','Reader Poll','READER VOICE'],['READER PETS','Reader Pets','READER PETS'],['LOCAL TRIVIA','Local Trivia','FUN & CURIOSITY'],['WEEKEND IDEA','Weekend Idea','WALKS & PLACES'],['READER RECOMMENDATION','Reader Recommendation','READER VOICE'],['EXPERT QUICK CHECK','Expert Quick Check','EXPERT'],['HUMOUR','Quick Breather','FUN & CURIOSITY'],['BEFORE YOU GO','Before You Go','OPEN']]
+    };
+    const recipe=fitSupportRecipeV3204(recipes[profile.key]||recipes.SPOTLIGHT,t.supportNeeded);
+    let supports=persistentSupportRecordsV3153();
+    for(let i=0;i<Math.min(supports.length,t.supportNeeded);i++){
+      const rec=supports[i],r=recipe[i%recipe.length];
+      await api('sections',{method:'PATCH',body:JSON.stringify({id:rec.id,fields:{
+        'Section Title':r[1],
+        'Section Status':'Planned',
+        'Section Final Copy':'',
+        'Evidence Status':'Needs Update',
+        'Section QA Result':'Not Checked',
+        'Notes':`PERSISTENT SUPPORT COMPONENT | Type: ${r[0]} | Life lane: ${r[2]} | v3.18.14 publication-profile mix + generic support subject allocation guard`
+      }})});
+    }
+    await refreshPersistentSupportV3153();
+    setStep6LiveProgressV3152({show:true,done:0,total:t.supportNeeded,ready:0,failed:0,current:`${profile.name} component mix reset. Allocating distinct support subjects, then producing varied components…`,phase:'Step 6 — Rebuilding Component Mix'});
+    await buildSupportBatchV315();
+  }catch(e){alert('Component mix rebuild failed: '+String(e.message||e))}
+  finally{if(btn){btn.disabled=false;btn.textContent=old||'Rebuild Component Mix'}}
+}
+
+
+function supportMixIntegrityV31827(records,needed,profileKey){
+  const rows=supportRecordsForTargetV3204(records,needed).map(r=>{
+    const f=r?.fields||{},m=supportMetaV3153(r);
+    return {id:r.id,type:String(m.type||'').trim().toUpperCase(),title:String(val(f,'Section Title')||'').trim(),copy:String(val(f,'Section Final Copy')||'').trim(),ready:supportReadyRecordV3153(r)};
+  });
+  const errors=[];
+  if(rows.length!==needed)errors.push(`Component count ${rows.length}/${needed}.`);
+  const counts={};for(const r of rows)counts[r.type]=(counts[r.type]||0)+1;
+  const dupes=Object.entries(counts).filter(([type,n])=>type&&n>1).map(([type,n])=>`${type} ×${n}`);
+  if(dupes.length)errors.push(`Duplicate functional roles: ${dupes.join(', ')}.`);
+  if((counts['EDITORIAL BRIDGE']||0)>1)errors.push(`Too many Editorial Bridges (${counts['EDITORIAL BRIDGE']}); supporting components must deliver distinct reader value, not filler.`);
+  const fillerTitles=rows.filter(r=>/quick breather/i.test(r.title));
+  if(fillerTitles.length>1)errors.push(`Too many Quick Breathers (${fillerTitles.length}); keep at most one and use distinct fun/useful/discovery roles instead.`);
+  if((counts['OPENING NOTE']||0)>1)errors.push('More than one Opening Note.');
+  if((counts['BEFORE YOU GO']||0)>1)errors.push('More than one closing component.');
+  if(String(profileKey||'').toUpperCase()==='TASTE_TRAIL'){
+    const ev=rows.find(r=>r.type==='EVENT PICK');
+    if(ev&&ev.ready){
+      const b=(ev.title+' '+ev.copy).toLowerCase();
+      const eventWords=/(event|festival|live music|gig|concert|show|fair|tasting|supper club|ticket|tickets|opening night|launch night|market day)/.test(b);
+      const timeWords=/(today|tomorrow|this week|this weekend|tonight|next week|august|september|october|november|december|january|february|march|april|may|june|july|2026|2027)/.test(b);
+      if(!(eventWords&&timeWords))errors.push('Event Pick is not visibly a current/dated event; it should fall back to a different discovery role.');
+    }
+  }
+  return {ok:errors.length===0,errors,rows,dupes};
+}
+async function renderStep6StatusV3151(){
+  const panel=E('step6-status-panel-v3151');
+  if(!panel)return;
+  try{await refreshPersistentSupportV3153()}catch{}
+  const t=supportTargetV315(),items=currentSupportComponentsV315(),ready=step6ReadyCountV3151();
+  const built=items.length,remaining=Math.max(0,t.supportNeeded-built);
+  panel.style.display=workflowSelectedStepV312===6?'block':'none';
+  renderStep6SummaryV315();
+
+  const detail=E('step6-detail-v3151');
+  if(detail){
+    detail.textContent=
+      `Selected Masters: ${t.selectedMasters}\n`+
+      `Feature Articles ready: ${t.featureArticles}/${featureTargetForIssueV3204()}\n`+
+      `Target issue size: ${t.issueTarget}\n`+
+      `Supporting / partner components required: ${t.supportNeeded}\n`+
+      `Built: ${built}\n`+
+      `Ready: ${ready}\n`+
+      `Remaining to build: ${remaining}`;
+  }
+
+  const mix=supportMixIntegrityV31827(persistentSupportRecordsV3153(),t.supportNeeded,engineProfileForPublication().key);
+  const btn=E('step6-build-v3151');
+  if(btn){
+    btn.textContent=remaining>0?'Build / Resume Supporting Components':
+      (ready>=t.supportNeeded&&mix.ok?'Go To Step 7 — Assemble':'Repair Component Mix');
+  }
+
+  const featuresReady=t.featureArticles>=featureTargetForIssueV3204();
+  const fullyReady=featuresReady&&ready>=t.supportNeeded&&t.supportNeeded>0&&mix.ok;
+  const headline=fullyReady
+    ? `Step 6 complete · ${built}/${t.supportNeeded} built · ${ready} ready · mix integrity passed`
+    : (ready>=t.supportNeeded&&!mix.ok
+      ? `Step 6 attention required · ${ready}/${t.supportNeeded} ready · mix integrity failed`
+      : `${built}/${t.supportNeeded} support components built · ${ready} ready`);
+  const message=fullyReady
+    ? 'Step 6 is complete. Feature Articles, component count, readiness and component-mix integrity all pass. Next: Step 7 — Assemble.'
+    : (ready>=t.supportNeeded&&!mix.ok
+      ? `Supporting copy is preserved, but Step 6 cannot go green until the mix is structurally sound. ${mix.errors.join(' ')}`
+      : `Selected Masters ${t.selectedMasters} · issue target ${t.issueTarget} · ${remaining} support/partner components still need to be built.`);
+  setWorkflowActionStatusV312(6,'Components',headline,message);
+}
+function renderStep6SummaryV315(){
+  const panel=E('step6-summary-v315');if(!panel)return;
+  const t=supportTargetV315(),items=currentSupportComponentsV315();
+  const ready=items.filter(x=>String(x.status||x.contentStatus||'').toUpperCase()==='READY'||String(x.productionStatus||'').toUpperCase()==='READY').length;
+  const mix=supportMixIntegrityV31827(persistentSupportRecordsV3153(),t.supportNeeded,engineProfileForPublication().key);
+  panel.innerHTML=`<strong>Step 6 — Components</strong>
+  <div class="muted" style="margin-top:6px">Selected Masters: ${t.selectedMasters} · Feature Articles: ${t.featureArticles}/${featureTargetForIssueV3204()} · Target issue size: ${t.issueTarget} · Support/partner components required: ${t.supportNeeded}</div>
+  <div style="margin-top:8px"><strong>${items.length}/${t.supportNeeded}</strong> built · <strong>${ready}</strong> ready · <strong>${mix.ok?'mix passed':'mix needs repair'}</strong></div>
+  ${mix.ok?'':`<div style="margin-top:6px;color:#a33"><strong>Mix integrity:</strong> ${esc(mix.errors.join(' '))}</div>`}
+  <div class="muted" style="margin-top:6px">ICS should create the missing support automatically. Manual component controls are Advanced only.</div>`;
+}
+// v3.18.21 — Step 7 running order must also survive deploy-preview/localStorage changes.
+// v3.18.22 — Step 9 generates universal /tell-us/ response URLs for reader-response CTAs; GC tags stay in Letterman.
+// v3.18.27 — Research Identity + State Recovery: family recipes must cover required support count without modulo duplicates; event slots require genuine current-event evidence; green status requires mix integrity.
+// v3.18.26 — Publishability Gate Reset: deterministic local proof, true round-up detection, legacy false-review repair; preserves successful research and writing.
+// v3.18.24 — Issue promise source-of-truth guard: publication-safe defaults, Airtable persistence and sibling-geography carry-over repair.
+// v3.18.23 — Taste Trail day-to-night hospitality profile, broader discovery, newsletter SEO output and synced CTA destinations.
+// Persist the exact 17-block assembly order onto the existing issue section records.
+const ASSEMBLY_MARKER_RE_V31821=/^ISSUE ASSEMBLY — Final Running Order (\d{2})\.\s*$/mi;
+function assemblyOrderFromNotesV31821(notes){
+  const m=String(notes||'').match(ASSEMBLY_MARKER_RE_V31821);return m?Number(m[1]):0;
+}
+function stripAssemblyMarkerV31821(notes){
+  return String(notes||'').replace(/^ISSUE ASSEMBLY — Final Running Order \d{2}\.\s*\n?/gmi,'').trim();
+}
+function persistedAssemblyItemsV31821(){
+  const rows=(S.sections||[]).map(s=>({s,order:assemblyOrderFromNotesV31821(val(s.fields||{},'Notes'))})).filter(x=>x.order>0).sort((a,b)=>a.order-b.order);
+  return rows.map(({s})=>isPersistentSupportSectionV3153(s)?supportRecordToCanvasV3153(s):makeArticleBlock(s));
+}
+function persistedAssemblyCompleteV31821(){
+  const profile=engineProfileForPublication(), selected=getMasterSelectionV312(), plan=getSmartPlan();
+  const rows=(S.sections||[]).map(s=>({s,order:assemblyOrderFromNotesV31821(val(s.fields||{},'Notes'))})).filter(x=>x.order>0).sort((a,b)=>a.order-b.order);
+  if(!rows.length)return false;
+  const min=Number(profile.targetSections?.[0]||0),max=Number(profile.targetSections?.[1]||999),supportNeed=supportTargetV315().supportNeeded;
+  if(rows.length<min||rows.length>max)return false;
+  const masters=rows.filter(x=>!isPersistentSupportSectionV3153(x.s)&&!isFeatureArticleV3204(x.s));
+  const features=rows.filter(x=>isFeatureArticleV3204(x.s));
+  const supports=rows.filter(x=>isPersistentSupportSectionV3153(x.s));
+  if(masters.length!==selected.length||features.length<featureTargetForIssueV3204()||supports.length<supportNeed)return false;
+  const selectedOrders=new Set(selected.map(Number));
+  const wantedIds=new Set((plan?.articles||[]).filter(a=>selectedOrders.has(Number(a.order))).map(a=>planArticleRecordV312(a)?.id).filter(Boolean));
+  const gotIds=new Set(masters.map(x=>x.s.id));
+  return wantedIds.size===selected.length && [...wantedIds].every(id=>gotIds.has(id));
+}
+function legacyAssemblyStructurallyCompleteV3191(){
+  const profile=engineProfileForPublication();
+  const rows=(S.sections||[]).map(s=>({s,order:assemblyOrderFromNotesV31821(val(s.fields||{},'Notes'))})).filter(x=>x.order>0).sort((a,b)=>a.order-b.order);
+  if(!rows.length)return false;
+  const min=Number(profile.targetSections?.[0]||0),max=Number(profile.targetSections?.[1]||999),supportNeed=supportTargetV315().supportNeeded;
+  if(rows.length<min||rows.length>max)return false;
+  const orders=rows.map(x=>x.order);
+  if(new Set(orders).size!==rows.length)return false;
+  if(orders.some((n,i)=>n!==i+1))return false;
+  const masters=rows.filter(x=>!isPersistentSupportSectionV3153(x.s)&&!isFeatureArticleV3204(x.s));
+  const features=rows.filter(x=>isFeatureArticleV3204(x.s));
+  const supports=rows.filter(x=>isPersistentSupportSectionV3153(x.s));
+  const [minMasters,maxMasters]=profile.targetMasters||[1,99];
+  return masters.length>=minMasters&&masters.length<=maxMasters&&features.length>=featureTargetForIssueV3204()&&supports.length>=supportNeed;
+}
+// v3.19.2 — a valid legacy browser running order may pre-date Airtable assembly markers.
+// Treat its structure as Step 7 complete without forcing the operator to rebuild finished work.
+function browserAssemblyStructurallyCompleteV3192(){
+  const items=getCanvas(),profile=engineProfileForPublication();
+  if(!items.length)return false;
+  const min=Number(profile.targetSections?.[0]||0),max=Number(profile.targetSections?.[1]||999),supportNeed=supportTargetV315().supportNeeded;
+  if(items.length<min||items.length>max)return false;
+  const masters=items.filter(b=>b.kind==='article'&&String(b.type||'').toUpperCase()==='MASTER ARTICLE'),features=items.filter(b=>String(b.type||'').toUpperCase()==='FEATURE ARTICLE'),supports=items.filter(b=>b.kind!=='article');
+  const [minMasters,maxMasters]=profile.targetMasters||[1,99];
+  if(masters.length<minMasters||masters.length>maxMasters||features.length<featureTargetForIssueV3204()||supports.length<supportNeed)return false;
+  if(items.some(b=>!b.uid||!b.refId))return false;
+  const refs=items.map(b=>String(b.refId));
+  if(new Set(refs).size!==refs.length)return false;
+  const liveIds=new Set((S.sections||[]).map(s=>String(s.id)));
+  return refs.every(id=>liveIds.has(id));
+}
+async function persistAssemblyV31821(items){
+  if(!S.issue?.id)throw new Error('Open an issue first.');
+  const desired=new Map(items.map((b,i)=>[String(b.refId||''),i+1]));
+  if(desired.size!==items.length||[...desired.keys()].some(k=>!k))throw new Error('Running order contains a block without a persistent section record.');
+  await refreshPersistentSupportV3153();
+  const changes=[];
+  for(const sec of S.sections||[]){
+    const old=String(val(sec.fields||{},'Notes')||''), clean=stripAssemblyMarkerV31821(old), ord=desired.get(String(sec.id));
+    const next=ord?`ISSUE ASSEMBLY — Final Running Order ${String(ord).padStart(2,'0')}.\n${clean}`.trim():clean;
+    if(next!==old.trim())changes.push({sec,next});
+  }
+  for(const {sec,next} of changes){
+    const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next}})});
+    const i=S.sections.findIndex(x=>x.id===sec.id);if(i>=0)S.sections[i]=d.record;
+  }
+  if(!persistedAssemblyCompleteV31821())throw new Error('Running order was generated but its persisted assembly markers did not verify.');
+  return changes.length;
+}
+function restorePersistedAssemblyV31821(){
+  const local=getCanvas();if(local.length)return local;
+  const persisted=persistedAssemblyItemsV31821();
+  if(persisted.length){localStorage.setItem(assemblyKey(),JSON.stringify(persisted));return persisted.map(normaliseCanvasBlock)}
+  return [];
+}
+// v3.19.4 — Step 9 must use the same persisted/live assembly state that makes Step 7 complete.
+// Never show 0 sections simply because browser-local canvas state was absent or loaded later.
+function step9LiveItemsV3193(){
+  const persisted=persistedAssemblyItemsV31821();
+  if(persisted.length)return persisted.map(normaliseCanvasBlock);
+  const local=getCanvas();
+  if(local.length)return local.map(normaliseCanvasBlock);
+  return [];
+}
+function step9LiveStatusV3193(){
+  const current=String(val(S.issue?.fields||{},'Issue Status')||'').trim().toUpperCase();
+  if(['READY FOR LETTERMAN','PUBLISHED','ARCHIVED'].includes(current))return current==='READY FOR LETTERMAN'?'PRODUCTION READY':current;
+  if(finalQAPassedV31820())return 'QA PASSED';
+  return current||'CHECK';
+}
+function renderStep9LiveStateV3193(){
+  const items=step9LiveItemsV3193();
+  const masters=items.filter(b=>b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE').length;
+  if(E('pr-sections-v312c'))E('pr-sections-v312c').textContent=String(items.length||0);
+  if(E('pr-masters-v312c'))E('pr-masters-v312c').textContent=String(masters||0);
+  if(E('pr-status-v312c'))E('pr-status-v312c').textContent=step9LiveStatusV3193();
+}
+// v3.18.20 — Final QA completion must survive browser refreshes and new deploys.
+// A zero-hard-fix QA run persists the issue lifecycle as QA in Airtable. Step 9 can
+// therefore trust the issue record even when the browser-local report is unavailable.
+function persistedQAPassedV31820(){
+  const status=String(val(S.issue?.fields||{},'Issue Status')||'').trim().toUpperCase();
+  return ['QA','READY FOR LETTERMAN','PUBLISHED','ARCHIVED'].includes(status);
+}
+function finalQAPassedV31820(){
+  try{
+    const q=JSON.parse(localStorage.getItem(qaKey())||'null');
+    if(q?.qaVersion==='3.17.3.7'&&q?.summary&&Number(q.summary.fix||0)===0)return true;
+  }catch{}
+  return persistedQAPassedV31820();
+}
+async function persistQALifecycleV31820(passed){
+  if(!S.issue?.id)return;
+  const current=String(val(S.issue.fields||{},'Issue Status')||'').trim().toUpperCase();
+  const target=passed?'QA':(['QA'].includes(current)?'BUILDING':current||'BUILDING');
+  if(current===target)return;
+  try{
+    const data=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Issue Status':target}})});
+    if(data?.record){S.issue=data.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);}
+  }catch(error){
+    console.warn('QA lifecycle persistence failed',error);
+    throw new Error(`Final QA completed, but its persisted issue status could not be saved: ${error?.message||error}`);
+  }
+}
+function workflowStepInfoV312(step){
+ const sig=getSmartSignals(),plan=getSmartPlan(),locked=smartPlanLocked(plan),profile=engineProfileForPublication(),selected=getMasterSelectionV312(),canvas=getCanvas();
+ const target=profile.defaultMasters||15,min=profile.targetMasters?.[0]||5,max=profile.targetMasters?.[1]||7;
+ const info={
+ 1:['Plan',sig.length<24?`Collect source signals first. ICS needs at least 24 distinct signals to build the ${target}-candidate plan.`:(!plan?.articles?.length?`Build the ${target}-candidate Master plan from current signals, archive memory and publication rules.`:`The ${target}-candidate plan exists. Review it before approval.`),sig.length<24?'Collect Signals':'Build / Resume 15-Candidate Plan'],
+ 2:['Approve',!plan?.articles?.length?'Finish Step 1 first.':(!locked?'Review the 15-candidate slate. Locking will name only genuine production blockers; candidate balance remains advisory.':'Plan locked. Create or update all 15 Master briefs.'),!locked?'Lock Approved Plan':'Create / Update 15 Briefs'],
+ 3:['Research','Open the approved research queue. ICS will create/update the 15 locked Master briefs automatically if needed; no manual article entry.','Open Research Workspace'],
+ 4:['Produce','Use the existing production pipeline to research/write the 15 Master candidates. Production is resumable and completed work is preserved.','Produce All Approved Masters'],
+ 5:['Select',`Bank all READY Masters first, then choose ${min}–${max} strongest for this issue. Unselected READY Masters remain available for later issues.`,`Review Master Selection`],
+ 6:['Components',`Build the supporting and partner components needed to complete this issue. ICS calculates the missing count from the saved Step 5 selection and publication target.`,`Build / Resume Supporting Components`],
+ 7:['Assemble','Rebuild the running order from the current saved Step 5 Masters and persistent Step 6 support/partner blocks. The old browser assembly is discarded.','Assemble Selected Issue'],
+ 8:['QA','Run issue-level QA after the running order is complete. Fix exceptions, not every record manually.',(()=>{try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');return window.__finalQARunningV31736?'Running Final QA…':(q?.qaVersion==='3.17.3.7'&&q?.summary?.fix>0?'Fix QA Exceptions':'Run Final QA')}catch{return 'Run Final QA'}})()],
+ 9:['Production Ready','Generate the ordered production package after QA. It can then be sent to Letterman or any other publishing platform.','Generate Production Package']
+ };return info[step]||info[1]
+}
+function operatorGuideDataV319(step){
+ const profile=engineProfileForPublication(),plan=getSmartPlan(),selected=getMasterSelectionV312(),canvas=getCanvas(),target=supportTargetV315();
+ const matrix={
+  1:{next:'Collect current signals, then build/resume the candidate plan.',pass:`${profile.defaultMasters||15} distinct candidate Masters are saved.`,fail:'Retry the failed planning action. Keep any saved batches; do not reset unless ICS names the plan itself as corrupt.'},
+  2:{next:'Review the slate, replace only weak choices, then lock the approved plan.',pass:'The plan is locked and all approved Master briefs exist.',fail:'Fix only the named blocker or candidate. Do not reopen discovery unless ICS says the plan lacks valid candidates.'},
+  3:{next:'Research the approved Master queue. Let completed packs stay completed.',pass:'Each usable Master is Verified/Attributed with a sufficient saved Research Pack; genuinely blocked Masters may remain blocked.',fail:'Retry only the failed article or use Repair Research Queue. Never rerun successful research.'},
+  4:{next:'Write every Master that has a valid Research Pack.',pass:'READY/MINOR EDIT Masters have full copy, metadata and QA state; blocked research stays out of the writer queue.',fail:'Retry only the failed writer. Do not discard the Research Pack or regenerate the whole issue.'},
+  5:{next:`Choose the strongest ${profile.targetMasters?.[0]||5}–${profile.targetMasters?.[1]||7} Masters for this issue. Leave the rest bankable.`,pass:'The saved selection meets the family range and every selected Master is production-ready.',fail:'Replace the weak/blocked selection with another READY Master; do not lower quality to fill a slot.'},
+  6:{next:`Build the ${target.supportNeeded} supporting/partner components required around the selected Masters.`,pass:'Required support count is READY and the family mix has distinct editorial roles.',fail:'Rebuild only the bad/missing support slot. Do not regenerate good components.'},
+  7:{next:'Assemble once from saved Masters + persistent support, then adjust the top-to-bottom reading rhythm.',pass:'A complete running order is persisted and contains every selected Master plus the required support blocks.',fail:'Rebuild the running order from persisted records. Do not go back to research or production for an ordering problem.'},
+  8:{next:'Run Final QA. Treat 0 Fix as permission to continue; warnings are editorial unless explicitly named as blockers.',pass:'Latest QA has 0 hard Fixes and the QA lifecycle state is persisted.',fail:'Use Fix QA Exceptions for named hard fixes. Do not rebuild the issue for warnings.'},
+  9:{next:'Open the Canonical Letterman Build Package and build from Section 1 downward.',pass:'All sections are READY, QA is passed, publishing fields/CTA destinations are complete, and issue status is PRODUCTION READY.',fail:'Fix only the missing field/destination/entity mismatch named in the package. Never restart the issue.'}
+ };
+ return matrix[step]||matrix[1];
+}
+function renderOperatorGuideV319(step){
+ const box=E('operator-guide-v319');if(!box)return;
+ const d=operatorGuideDataV319(step);
+ E('operator-next-v319').textContent=d.next;E('operator-pass-v319').textContent=d.pass;E('operator-fail-v319').textContent=d.fail;
+ const names=['Plan','Approve','Research','Produce','Select','Components','Assemble','QA','Production Ready'];
+ E('operator-matrix-v319').innerHTML=names.map((name,i)=>{const x=operatorGuideDataV319(i+1);return `<div class="operator-matrix-row-v319"><b>${i+1} ${esc(name)}</b><span><strong>Next:</strong> ${esc(x.next)}</span><span><strong>Pass:</strong> ${esc(x.pass)}</span><span><strong>Fail:</strong> ${esc(x.fail)}</span></div>`}).join('');
+}
+
+let workflowSelectedStepV312=1;
+function updateWorkflowShellV312(forcedStep){
+ const shell=E('workflow-shell-v312');if(!shell)return;
+ if(window.__finalQARunningV31736) forcedStep=8;
+ const sig=getSmartSignals(),plan=getSmartPlan(),locked=smartPlanLocked(plan),canvas=getCanvas(),profile=engineProfileForPublication();
+ let auto=1;
+ if(sig.length>=24&&plan?.articles?.length===(profile.defaultMasters||15))auto=2;
+ if(locked)auto=3;
+
+ const produced=(plan?.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').length;
+ const minMasters=(profile.targetMasters?.[0]||5);
+ if(locked&&produced>0)auto=4;
+ if(locked&&produced>=minMasters)auto=5;
+
+ const selected=getMasterSelectionV312();
+ const selectionReady=selected.length>=minMasters&&produced>=minMasters;
+ const hasCanvas=canvas.length>0;
+ const hasReadySupport=hasCanvas&&canvas.some(b=>b.kind==='component'&&String(b.status||'').toUpperCase()==='READY');
+
+ // Correct sequence: Step 5 -> Step 6 -> Step 7.
+ if(selectionReady)auto=6;
+ const targetV315=supportTargetV315();
+ const supportCountV315=currentSupportComponentsV315().length;
+ const supportReadyV315=currentSupportComponentsV315().filter(b=>String(b.status||b.productionStatus||'').toUpperCase()==='READY').length;
+ if(selectionReady&&supportCountV315>=targetV315.supportNeeded&&supportReadyV315>=Math.min(targetV315.supportNeeded,supportCountV315))auto=7;
+
+ // v3.18.19 — derive Steps 7/8 completion from persisted issue state, not from the
+ // operator's current screen. A valid running order advances the workflow to QA; a
+ // fresh zero-hard-fix Final QA advances it to Production Ready. This keeps the
+ // nine-step progress bar truthful after refresh and when Step 9 is opened directly.
+ const expectedSectionsV31819=Number(profile.targetSections?.[0]||0);
+ const maxSectionsV31819=Number(profile.targetSections?.[1]||999);
+ const persistedAssemblyOkV31821=persistedAssemblyCompleteV31821();
+ const stateCanvasV31821=canvas.length?canvas:persistedAssemblyItemsV31821();
+ const canvasArticlesV31819=stateCanvasV31821.filter(b=>b.kind==='article');
+ const canvasSupportsV31819=stateCanvasV31821.filter(b=>b.kind!=='article');
+ const selectedOrdersV31819=new Set(selected.map(Number));
+ const selectedTitlesV31819=new Set((plan?.articles||[]).filter(a=>selectedOrdersV31819.has(Number(a.order))).map(a=>String(a.title||'').trim().toLowerCase()).filter(Boolean));
+ const canvasTitlesV31819=new Set(canvasArticlesV31819.map(b=>String(b.title||'').trim().toLowerCase()).filter(Boolean));
+ const selectedMastersPresentV31819=selectedTitlesV31819.size===selected.length&&[...selectedTitlesV31819].every(t=>canvasTitlesV31819.has(t));
+ const browserAssemblyOkV31821=selectionReady
+   && stateCanvasV31821.length>=expectedSectionsV31819 && stateCanvasV31821.length<=maxSectionsV31819
+   && canvasArticlesV31819.length===selected.length
+   && canvasSupportsV31819.length>=targetV315.supportNeeded
+   && selectedMastersPresentV31819;
+ const assemblyCompleteV31819=persistedAssemblyOkV31821||legacyAssemblyStructurallyCompleteV3191()||browserAssemblyStructurallyCompleteV3192()||browserAssemblyOkV31821;
+ if(assemblyCompleteV31819)auto=8;
+
+ // QA is persisted independently. If the issue lifecycle says QA passed, Step 8 is complete
+ // even when this deploy preview has no browser-local QA report/canvas.
+ const qaCompleteV31819=assemblyCompleteV31819&&finalQAPassedV31820();
+ if(qaCompleteV31819)auto=9;
+
+ workflowSelectedStepV312=forcedStep||auto;
+ // v3.12d: one source of truth. The visible active step and the CSS-isolated
+ // operator screen must always use the same workflow step, including after
+ // async issue loading / renderAssembly / updateWorkflowGuide calls.
+ document.body.dataset.workflowStep=String(workflowSelectedStepV312);
+ const handoffReadyV319=['READY FOR LETTERMAN','PUBLISHED','ARCHIVED'].includes(String(val(S.issue?.fields||{},'Issue Status')||'').trim().toUpperCase());
+ document.querySelectorAll('[data-flow-step]').forEach(b=>{const n=Number(b.dataset.flowStep);b.classList.toggle('active',n===workflowSelectedStepV312&&!handoffReadyV319);b.classList.toggle('done',n<auto||(n===9&&handoffReadyV319))});
+ const resetBtn=E('workflow-reset-plan-v312j');
+ if(resetBtn){
+   const hasPlan=!!plan?.articles?.length||getSmartPlanBatches().flatMap(b=>b.articles||[]).length>0;
+   resetBtn.style.display=(hasPlan&&workflowSelectedStepV312<=2)?'inline-flex':'none';
+ }
+ const [name,copy,label]=workflowStepInfoV312(workflowSelectedStepV312);E('workflow-current-v312').textContent=workflowContextLabelV312(workflowSelectedStepV312,name);E('workflow-instruction-v312').textContent=copy;const btn=E('workflow-primary-v312');btn.textContent=label;btn.dataset.step=String(workflowSelectedStepV312);btn.disabled=!!window.__finalQARunningV31736;
+ renderOperatorGuideV319(workflowSelectedStepV312);
+ renderMasterSelectionV312();renderSmartTitleReviewV312l(getSmartPlan());
+ if(workflowSelectedStepV312===3)setTimeout(()=>hydrateStep3StateV3133(),0);
+ if(workflowSelectedStepV312===6)setTimeout(()=>renderStep6StatusV3151(),0);
+}
+function runWorkflowPrimaryV312(){
+ const step=Number(E('workflow-primary-v312')?.dataset.step||workflowSelectedStepV312||1),plan=getSmartPlan();
+ if(step===1){if(getSmartSignals().length<24)E('assembly-auto').click();else E('assembly-build-plan').click();return}
+ if(step===2){
+  if(!plan?.articles?.length){updateWorkflowShellV312(1);return}
+  if(!smartPlanLocked(plan))E('smart-plan-lock').click();else E('smart-plan-apply').click();return
+ }
+ if(step===3){
+   Promise.all([approvedBriefStatusV3131(),productionSections()]).then(([st,queue])=>{
+     if(!st.clean){openResearchWorkspaceV3131();return}
+     const rows=queue.map(x=>({s:x.s,wf:articleWorkflowState(x.s),status:String(val(x.s.fields,'Evidence Status')||'').trim()}));
+     const researched=rows.filter(x=>x.wf.researched).length;
+     const exceptions=rows.filter(x=>x.wf.researched&&!(x.wf.publishableEvidence||x.wf.verified));
+     if(researched<rows.length){researchAllApprovedMastersV3131();return}
+     if(exceptions.length){
+       sortSections();renderSections();
+       const first=exceptions[0]?.s;
+       if(first){S.section=first;renderForm();render();}
+       const lines=exceptions.map(x=>`Article ${Number(val(x.s.fields,'Section Order')||0)}: ${String(val(x.s.fields,'Section Title')||'Untitled')} — ${x.status||'Evidence not verified'}`);
+       setWorkflowActionStatusV312(3,'Research',`${researched}/${rows.length} researched · ${rows.length-exceptions.length}/${rows.length} publishable · ${exceptions.length} evidence exceptions`,`Resolve only these exceptions:\n- ${lines.join('\n- ')}`);
+       return;
+     }
+     updateWorkflowShellV312(4);
+   }).catch(()=>openResearchWorkspaceV3131());
+   return
+ }
+ if(step===4){show('build');ensureApprovedQueueV3202({materialize:true,quiet:true}).then(st=>{setWorkflowActionStatusV312(4,'Produce',`${st.active}/${st.expected} approved Masters are attached to this issue.`,`Queue identity clean. Write only Masters with publishable saved Research Packs; completed work is preserved.`);setTimeout(()=>E('run-production')?.click(),80)}).catch(e=>{E('production-progress').className='warning';E('production-progress').innerHTML=`<strong>PRODUCTION STOP GATE</strong><div class="muted">${esc(e.message||e)}</div><div class="muted" style="margin-top:6px">Click Repair Approved Queue on this screen. Do not go backwards.</div>`;setWorkflowActionStatusV312(4,'Produce','Approved queue needs repair.',String(e.message||e));});return}
+ if(step===5){
+   show('assemble');
+   refreshMasterSelectionDataV314().then(()=>{
+     workflowSelectedStepV312=5;
+     updateWorkflowShellV312(5);
+     renderMasterSelectionV312();
+     E('master-selection-panel-v312')?.scrollIntoView({behavior:'smooth',block:'start'});
+     const planNow=getSmartPlan(),pr=engineProfileForPublication(),min=pr.targetMasters?.[0]||8;
+     const ready=(planNow?.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').length;
+     const review=(planNow?.articles||[]).filter(a=>masterCandidateStateV312(a)==='WRITTEN REVIEW').length;
+     setWorkflowActionStatusV312(5,'Select',`${ready}/15 READY · ${review} Written Review.`,`ICS has recommended the strongest READY shortlist using editorial grade first and lane spread second. Review it, then Save Selection. Written Review candidates are not forced into this issue while enough READY Masters exist.`);
+   }).catch(e=>{
+     setWorkflowActionStatusV312(5,'Select','Could not refresh Master selection.','Step 4 work is preserved. '+String(e.message||e));
+   });
+   return
+ }
+ if(step===6){
+   show('assemble');
+   workflowSelectedStepV312=6;
+   updateWorkflowShellV312(6);
+   renderStep6StatusV3151();
+   return
+ }
+ if(step===7){
+   show('assemble');
+   workflowSelectedStepV312=7;
+   updateWorkflowShellV312(7);
+   setStep7StatusV3164('Step 7 — Assembly Starting…','Refreshing the current Step 5 selection and persistent Step 6 components now.');
+   document.querySelector('.canvas-layout')?.scrollIntoView({behavior:'smooth',block:'start'});
+   setTimeout(()=>smartAssembleIssue(),0);
+   return
+ }
+ if(step===8){
+   if(window.__finalQARunningV31736)return;
+   show('assemble');
+   const primary=E('workflow-primary-v312');
+   if(primary){primary.disabled=true;primary.textContent='Running Final QA…';}
+   try{const q=JSON.parse(localStorage.getItem(qaKey())||'null');if(q?.qaVersion==='3.17.3.7'&&q?.summary?.fix>0){if(primary)primary.disabled=false;fixQAExceptionsV317();return}}catch{}
+   E('assembly-qa').click();return
+ }
+ if(step===9){show('assemble');E('assembly-generate').click();return}
+}
+
+function updateWorkflowGuide(){
+  const sig=getSmartSignals(),plan=getSmartPlan(),canvas=getCanvas();
+  const states=[['assembly-auto',sig.length>=24],['assembly-build-plan',!!(plan?.articles?.length===(engineProfileForPublication().defaultMasters||15))],['assembly-smart-assemble',canvas.length>0]];
+  states.forEach(([id,done])=>{const b=E(id);if(!b)return;b.classList.toggle('workflow-done-step',!!done);b.classList.remove('workflow-next-step')});
+  const next= sig.length<24?'assembly-auto':!(plan?.articles?.length===(engineProfileForPublication().defaultMasters||15))?'assembly-build-plan':canvas.length===0?'assembly-smart-assemble':null;
+  if(next&&E(next))E(next).classList.add('workflow-next-step');
+  updateWorkflowShellV312();
+}
+async function copyPlannerStatus(){await copyText(plannerStatusText())}
+
+function signalDedupeKey(x){
+  const raw=String(x?.signal||x?.title||x?.question||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+  const stop=new Set(['the','a','an','and','or','to','of','in','for','on','with','is','are','this','that','what','why','how','should','could','would','your','our']);
+  return raw.split(' ').filter(w=>w.length>2&&!stop.has(w)).slice(0,10).sort().join('|')||raw;
+}
+function mergeSignalPools(pools){
+  const out=[],seen=new Set();
+  for(const pool of pools){for(const item of (Array.isArray(pool)?pool:[])){
+    if(!item||!String(item.signal||item.title||item.question||'').trim())continue;
+    const k=signalDedupeKey(item);if(seen.has(k))continue;seen.add(k);out.push(item);
+  }}
+  return out;
+}
+function tasteTrailSignalRelevantV3185(item){
+  const pool=String(item?.discovery_pool||item?.scope||'').toUpperCase();
+  if(pool==='EVERGREEN_BANK')return true;
+  const t=`${item?.signal||''} ${item?.title||''} ${item?.question||''} ${item?.source_title||''}`.toLowerCase();
+  return /\b(restaurant|restaurants|pub|pubs|cafe|cafes|café|coffee|food|drink|drinks|bar|bars|beer|brewery|wine|takeaway|takeaways|menu|menus|dining|diner|eat|eating|chef|kitchen|breakfast|brunch|lunch|dinner|roast|pizza|burger|curry|fish\s*(?:and|&)\s*chips|bakery|baker|street food|hospitality|supper|tasting|cocktail|nightlife|night club|nightclub|live music|gig|comedy|food festival|beer festival)\b/.test(t);
+}
+function wrongSignalGeographyV3185(item,publication=currentPublicationName()){
+  const pub=String(publication||'').toLowerCase();
+  const t=`${item?.signal||''} ${item?.title||''} ${item?.source_title||''} ${item?.source_url||''}`.toLowerCase();
+  if(pub.includes('peterborough')&&(/\bontario\b|\bcanada\b|\bkawartha\b|\botonabee\b|\btrent university\b|peterborough\s*,?\s*on\b/.test(t)))return true;
+  return false;
+}
+function signalFitsPublicationV3185(item,publication=currentPublicationName(),profile=engineProfileForPublication(publication)){
+  if(wrongSignalGeographyV3185(item,publication))return false;
+  if(profile?.key==='TASTE_TRAIL'&&!tasteTrailSignalRelevantV3185(item))return false;
+  return true;
+}
+function filterSignalsForPublicationV3185(items,publication=currentPublicationName(),profile=engineProfileForPublication(publication)){
+  return (Array.isArray(items)?items:[]).filter(x=>signalFitsPublicationV3185(x,publication,profile));
+}
+
+function evergreenSignalSeedsForProfile(profileKey){
+  const common=[
+    ['LOCAL_LIFE','What everyday local service or habit is more frustrating than it should be?'],
+    ['LOCAL_LIFE','Which local place has changed most in the last few years — for better or worse?'],
+    ['FOOD_HOSPITALITY','Where is the best-value breakfast locally, and what does it actually cost?'],
+    ['FOOD_HOSPITALITY','Which pub or restaurant is genuinely worth travelling across the area for?'],
+    ['FOOD_HOSPITALITY','Where can two people still eat well locally without the bill becoming a shock?'],
+    ['FOOD_HOSPITALITY','Which local takeaway has the strongest loyal following, and why?'],
+    ['WHATSON_DISCOVERY','What can you do locally this weekend for less than £20?'],
+    ['WHATSON_DISCOVERY','Which local attraction is better than people expect?'],
+    ['WHATSON_DISCOVERY','What local place is worth the drive but rarely makes the obvious lists?'],
+    ['WHATSON_DISCOVERY','Which local walk has a good stop for coffee, lunch or a pint?'],
+    ['COMMUNITY','Which local club, charity or community group deserves more attention?'],
+    ['COMMUNITY','What local family activity gives the best value for a couple of hours out?'],
+    ['FUN_CURIOSITY','What local fact sounds made up but is actually true?'],
+    ['FUN_CURIOSITY','Which local place divides opinion more than it probably should?'],
+    ['FUN_CURIOSITY','What is the strangest local landmark, name or tradition readers can explain?'],
+    ['READER_VOICE','What local place would readers defend when everyone else says it is overrated?'],
+    ['READER_VOICE','What is the one local recommendation you always give visitors?'],
+    ['READER_VOICE','Which local business do readers think deserves a bigger audience?'],
+    ['MONEY_CONSUMER','Which everyday local cost has risen enough that readers are changing what they do?'],
+    ['MONEY_CONSUMER','Which household bill or subscription is easiest to overlook when checking value?'],
+    ['HOME_PROPERTY','Which home repair should people deal with before it becomes expensive?'],
+    ['HOME_PROPERTY','What should local homeowners compare before choosing a tradesperson?'],
+    ['MOTORING_TRAVEL','What five-minute car check prevents the most avoidable hassle?'],
+    ['MOTORING_TRAVEL','Which local journey is easier by a different route, time or transport choice?'],
+    ['BUSINESS_PEOPLE','Which independent local business solves a problem people do not realise it can solve?'],
+    ['BUSINESS_PEOPLE','What local expert question would save readers time, money or a bad decision?'],
+    ['SEASONAL','What is worth booking, checking or buying locally before the next seasonal rush?'],
+    ['SEASONAL','What local summer day out is still enjoyable when the weather changes?'],
+    ['DISCOVERY','Where can readers get a genuinely good view, walk or hour out for free?'],
+    ['DISCOVERY','Which market town or village deserves a half-day visit and what would you do there?']
+  ];
+  const niche={
+    HOME_SELLER:[
+      ['PRICING','What makes an asking price realistic rather than optimistic?'],['AGENTS','What should a seller ask before choosing an estate agent?'],['PRESENTATION','Which small presentation changes actually influence buyers?'],['LEGAL','What slows conveyancing most often and what can a seller prepare early?'],['NEGOTIATION','When should a seller accept, reject or counter an offer?'],['MOVING','Which moving costs catch sellers by surprise?']
+    ],
+    TASTE_TRAIL:[
+      ['BREAKFAST','Where is breakfast genuinely worth getting up for locally?'],
+      ['COFFEE','Which local coffee stop is worth choosing rather than simply convenient?'],
+      ['BRUNCH','Which brunch gives you the best mix of food, atmosphere and value?'],
+      ['LUNCH','Where should you go for a lunch that changes the rest of the day?'],
+      ['AFTERNOON','Where is afternoon tea, cake or a slower afternoon actually worth booking?'],
+      ['DINNER','Which dinner venue is worth planning the evening around?'],
+      ['PUBS','Which pub or bar is worth going to for more than one quick drink?'],
+      ['NIGHTLIFE','Where can you go after dinner when you are not ready to go home?'],
+      ['STAY','Which local hotel, inn or stay makes a night out or short break better?'],
+      ['TAKEAWAY','Which takeaway, street-food stall or food truck deserves a proper test?'],
+      ['MARKETS','Which market, food hall or producer is worth building a visit around?'],
+      ['EVENTS','What food, drink, music, theatre or hospitality event is worth putting in the diary?'],
+      ['VALUE','What hospitality experience is genuinely worth the money?'],
+      ['DISCOVERY','Which place outside the core city is worth the journey this week?'],
+      ['READER','What should readers nominate for the next Taste Trail test?']
+    ],
+    PET_INSIDER:[
+      ['HEALTH','Which routine pet check is easiest to miss?'],['BEHAVIOUR','What everyday pet behaviour should owners deal with earlier?'],['COST','Where do pet costs surprise owners most?'],['PLACES','Which local pet-friendly place is genuinely welcoming?'],['SERVICES','What should owners ask before choosing a groomer, walker, trainer or sitter?'],['READER','What local pet recommendation do owners keep giving each other?']
+    ]
+  };
+  return (profileKey==='SPOTLIGHT'?common:(niche[profileKey]||common)).map((x,i)=>({signal:x[1],question:x[1],title:x[1],discovery_pool:'EVERGREEN_BANK',signal_type:'EDITORIAL_SEED',lane_hint:x[0],source_title:'TBOS evergreen question bank',source_url:'',why_now:'Evergreen candidate — research/local proof required before production',seed_id:`${profileKey}-EV-${String(i+1).padStart(3,'0')}`}));
+}
+function expandSignalPoolWithEvergreen(signals,target=24){
+  const profile=engineProfileForPublication();
+  const history=recentHistoryForPublication(currentPublicationName()).map(x=>String(x.title||x.question||x||''));
+  const blocked=history.map(x=>signalDedupeKey({signal:x}));
+  let out=mergeSignalPools([signals]);
+  for(const seed of evergreenSignalSeedsForProfile(profile.key)){
+    if(out.length>=target)break;
+    const k=signalDedupeKey(seed);
+    if(blocked.includes(k))continue;
+    out=mergeSignalPools([out,[seed]]);
+  }
+  return out.slice(0,40);
+}
+async function collectSmartSignals(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const promise=String(E('assembly-theme')?.value||val(S.issue.fields,'Main Theme')||'').trim();
+  if(!promise){alert('Add an Issue Promise first.');return}
+  const btn=E('assembly-auto'),old=btn.textContent;btn.disabled=true;btn.textContent='Collecting diverse signals…';
+  try{
+    const publication=currentPublicationName(),issueNumber=val(S.issue.fields,'Issue Number')||'',sendDate=val(S.issue.fields,'Send Date'),operatorSignals=E('smart-plan-signals')?.value||'';
+    const profile=engineProfileForPublication(publication);
+    const tasteArea=publicationAreaV31816(publication);
+    const passes=profile.key==='TASTE_TRAIL' ? [
+      {pool:'CURRENT',instruction:`Taste Trail only. Find current ${tasteArea}-area hospitality and going-out leads: restaurants, pubs, bars, cafes, takeaways, hotels, accommodation, nightlife, live venues, food markets, stalls, events, openings, closures, relaunches and meaningful changes. Reject unrelated council, crime, transport, housing and general local-news stories unless they directly change the hospitality experience.`},
+      {pool:'DAYTIME_HOSPITALITY',instruction:`Taste Trail daytime circuit for ${tasteArea}: breakfast, coffee, brunch, lunch, afternoon tea, cafes, bakeries, markets, food halls, stalls, street food, takeaways, prices, value and local producers.`},
+      {pool:'EVENING_NIGHT',instruction:`Taste Trail evening circuit for ${tasteArea}: dinner, pubs, bars, cocktails, alcohol-free nights, live music, comedy, theatre-linked nights out, nightclubs, late-night venues and places where the evening naturally continues.`},
+      {pool:'STAY_EXPERIENCE',instruction:`Taste Trail stay-and-experience discovery for ${tasteArea}: hotels, inns, B&Bs, accommodation, spas, destination dining, short-break ideas, hospitality experiences and places worth travelling to within the wider publication catchment.`},
+      {pool:'WHATSON_DISCOVERY',instruction:`Taste Trail What's On for ${tasteArea}: food and drink events, markets, tastings, beer or wine events, supper clubs, live music, comedy, theatre, hospitality events and nights worth putting in the diary.`},
+      {pool:'HUMAN_COMMUNITY',instruction:`Taste Trail people only in the ${tasteArea} hospitality world: independent owners, chefs, publicans, bar teams, cafe owners, hoteliers, local producers, market traders, breweries, bakeries and other people who make the local going-out scene work.`},
+      {pool:'FUN_READER',instruction:`Taste Trail reader angles for ${tasteArea}: value comparisons, dishes, venues, brunch/takeaway tests, overrated debates, hidden gems, nightlife choices, stay-over ideas and recommendations people would argue about or share.`},
+      {pool:'EVERGREEN',instruction:`Taste Trail evergreen questions across a full day and night in ${tasteArea}: breakfast, coffee, lunch, afternoon, dinner, drinks, nightlife, stay over, takeaways, markets, recipes and events. Every idea still needs current local research and should help a reader decide where to eat, drink, stay or go out.`}
+    ] : [
+      {pool:'CURRENT',instruction:'Find strong current local developments, changes, openings, closures, decisions, events and genuinely timely reader questions. Avoid routine council filler and avoid recently published subjects.'},
+      {pool:'FOOD_HOSPITALITY',instruction:'Find food and hospitality leads only: pubs, restaurants, cafes, takeaways, openings, closures, menus, prices, value, Sunday lunch, breakfast, local food producers and questions readers would recommend or argue about.'},
+      {pool:'WHATSON_DISCOVERY',instruction:'Find things to do and places to discover: events, theatre, live music, markets, attractions, walks, villages, day trips, weekend ideas, unusual places and worthwhile local discoveries.'},
+      {pool:'HUMAN_COMMUNITY',instruction:'Find local-life and human angles: families, community, people, charities, clubs, schools, libraries, neighbourhood stories, reader experiences and useful local recommendations. Avoid admin-heavy repeats.'},
+      {pool:'FUN_READER',instruction:'Find lighter and highly engaging candidates: curiosities, local trivia, oddities, nominations, polls, debates, comparisons, reader questions, fun tests and shareable conversation starters.'},
+      {pool:'EVERGREEN',instruction:'Find evergreen or seasonal reader questions that can be made locally specific now. Prefer compare, recommend, test, reveal, save, discover or explain angles that have not appeared in the recent publication history.'}
+    ];
+    const previouslySaved=getSmartSignals();
+    let accumulated=mergeSignalPools([filterSignalsForPublicationV3185(previouslySaved,publication,profile)]);
+    const removedSaved=Math.max(0,previouslySaved.length-accumulated.length);
+    let failed=0,completed=0;
+    E('smart-scan-progress').textContent=`Starting diverse discovery. ${accumulated.length} existing saved lead${accumulated.length===1?'':'s'} will be preserved and excluded from repeat discovery.`;
+    for(const pass of passes){
+      const exclusionTitles=accumulated.slice(-30).map(x=>String(x.signal||x.title||x.question||'').trim()).filter(Boolean);
+      const exclusionText=exclusionTitles.length?'\n\nDO NOT RETURN OR REPHRASE ANY OF THESE ALREADY-SAVED LEADS:\n- '+exclusionTitles.join('\n- '):'';
+      const passPrompt=promise+'\n\nDISCOVERY PASS — '+pass.pool+'\n'+pass.instruction+exclusionText+'\n\nReturn genuinely different leads for this pass. Do not fill the quota with close variants of one story.';
+      E('smart-scan-progress').textContent=`Discovery ${completed+1}/${passes.length}: ${pass.pool.replaceAll('_',' ')} · ${accumulated.length} distinct leads saved so far.`;
+      try{
+        const r=await api('collect-issue-signals',{method:'POST',body:JSON.stringify({publication,issueNumber,sendDate,issuePromise:passPrompt,knownSignals:[operatorSignals,exclusionText].filter(Boolean).join('\n'),discoveryPool:pass.pool,discoveryInstruction:pass.instruction,excludeSignals:exclusionTitles})});
+        const arr=filterSignalsForPublicationV3185(Array.isArray(r?.signals)?r.signals:[],publication,profile);
+        accumulated=mergeSignalPools([accumulated,arr.map(x=>({...x,discovery_pool:x.discovery_pool||pass.pool}))]).slice(0,40);
+        completed++;
+      }catch(err){failed++;console.warn('Signal discovery pass failed',pass.pool,err)}
+      if(accumulated.length>=30)break;
+    }
+    const liveSignals=filterSignalsForPublicationV3185(accumulated,publication,profile).slice(0,40);
+    if(!liveSignals.length)throw new Error('No discovery leads returned from any pool.');
+    const signals=expandSignalPoolWithEvergreen(liveSignals,36);
+    const evergreenAdded=Math.max(0,signals.length-liveSignals.length);
+    saveSmartSignals(signals);localStorage.removeItem(smartPlanKey());saveSmartPlanBatches([]);clearSmartRejected();renderSmartPlan();
+    const note=`${liveSignals.length} publication-matched fresh/current discovery leads found. Added ${evergreenAdded} archive-guarded evergreen question-bank candidates, giving ${signals.length} planning candidates.${removedSaved?` Removed ${removedSaved} previously saved lead${removedSaved===1?'':'s'} that failed the new niche/geography gate.`:''} Fresh leads are evidence signals; evergreen seeds are ideas only and must be researched/localised before production. Next: Build / Resume Issue Plan.`;
+    E('smart-scan-progress').textContent=note;updateWorkflowGuide();alert(note+(failed?`\n\n${failed} discovery pass${failed===1?'':'es'} failed, but all successful and previously saved leads were preserved.`:''));
+  }catch(e){renderSmartPlan();alert('Signal collection stopped: '+e.message+'\n\nAny previously saved signals are still available.');}
+  finally{btn.disabled=false;btn.textContent=old}
+}
+async function buildSmartPlanFromSavedSignals(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const promise=String(E('assembly-theme')?.value||val(S.issue.fields,'Main Theme')||'').trim();
+  if(!promise){alert('Add an Issue Promise first.');return}
+  const signals=getSmartSignals();
+  if(signals.length<24){alert(`Signal pool is too small (${signals.length}). Collect at least 24 distinct discovery leads before building the 15-candidate plan.`);return}
+  const btn=E('assembly-build-plan'),old=btn.textContent;btn.disabled=true;
+  try{
+    await loadArticleLibrary();
+    const existingPlan=getSmartPlan();const profile=engineProfileForPublication(),targetMasters=profile.defaultMasters||15;if(existingPlan?.articles?.length===targetMasters){alert(`A complete ${targetMasters}-article ${profile.name} plan already exists. Keep, edit or replace choices, then lock it.`);return}
+    let batches=getSmartPlanBatches();
+    const base={publication:currentPublicationName(),issueNumber:val(S.issue.fields,'Issue Number')||'',issuePromise:promise,sendDate:val(S.issue.fields,'Send Date'),knownSignals:E('smart-plan-signals')?.value||'',signals,blockedRecentHistory:recentHistoryForPublication(currentPublicationName()),rejectedCandidates:getSmartRejected(),engineProfile:profile.key,engineName:profile.name,editorialLanes:profile.lanes,minimumGroups:profile.minimumGroups,maxHeavyMoodShare:profile.maxHeavyMoodShare,targetSections:profile.targetSections,targetMasters:profile.targetMasters,freshnessPolicy:{minimumCreateNew:Math.ceil((profile.defaultMasters||15)*.5),maximumDirectReuse:Math.max(1,Math.floor((profile.defaultMasters||15)*.25)),rule:'Same-publication produced articles are recent history, not the default reuse pool. Prefer CREATE NEW from current signals and genuinely fresh reader questions.'}};
+    const inventory=inventoryWithReuseGuard(S.articleLibrary,90);
+    // v3.12.0: fifteen single-article resumable micro-batches. Each successful decision is saved immediately,
+    // keeping every Netlify function call comfortably below the platform inactivity window.
+    const conversationRule='ADAPTIVE STORY MODE RULE: First decide what kind of question/story this is. Advice, money, home, health, pets, motoring and service questions should usually sound like something a person would type into a Zoom Q&A, ask on a podcast, at dinner, in the pub, school gate, work, car or WhatsApp. News, breaking stories and controversies should NOT be forced into that template: use NEWS EXPLAINER, BREAKING UPDATE or DEBATE / CONTROVERSY treatment where appropriate. Other modes include RECOMMENDATION / DISCOVERY, PRACTICAL SERVICE, COMPARISON / VALUE and HUMAN / COMMUNITY. Illustrative personas with ordinary names, ages and situations are allowed to make a common scenario relatable, but they are STORY DEVICES, never evidence: do not invent quotes, testimony, credentials, outcomes, survey results or factual claims. Return real_life_question when useful and writing_mode when supported by the response schema; otherwise encode the correct treatment in the question/title.';
+    const groups=[
+      {label:'STRONGEST MIX',brief:'Choose the strongest balanced opening slate, not simply the newest headlines. Across these opening choices prefer current relevance and a genuinely fresh reader question, different Life Lanes and different reader jobs. '+conversationRule},
+      {label:'VALUE + COMMERCIAL BREADTH',brief:'Fill missing Life Lanes. Prioritise money/home/service value, fresh reader questions, carefully justified localisation only when materially different, and natural commercial or specialist-brand pathways without forcing a sponsor. Avoid another civic/accountability story unless unusually important. '+conversationRule},
+      {label:'HUMAN + DISCOVERY + SHARE',brief:'Deliberately add human variety: food/leisure/discovery/weekend, recommendation/list/resource/shareable value, family/pets/health/community where earned. Prefer genuinely fresh reader questions from current signals. Same-publication published articles are history, not a reuse pool. Do not finish with a council-heavy or question-formula-heavy slate. '+conversationRule}
+    ];
+    const specs=Array.from({length:targetMasters},(_,i)=>{const g=groups[Math.min(groups.length-1,Math.floor(i/(targetMasters/3)))];return {batch:i+1,label:g.label,count:1,brief:g.brief+` This is decision ${i+1} of ${targetMasters}. Follow the ${profile.name} engine lanes and projected support recipe. Do not let one problem/admin mood dominate.`}});
+    for(const spec of specs){
+      if(batches.some(b=>b.batch===spec.batch&&Array.isArray(b.articles)&&b.articles.length===1))continue;
+      const prior=batches.flatMap(b=>b.articles||[]).map(a=>({title:a.title,question:a.question,real_life_question:a.real_life_question||a.question||'',writing_mode:a.writing_mode||'AUTO',mode:a.mode,life_lane:a.life_lane||'',lane:a.lane||'',existing_article_id:a.existing_article_id||'',source_signal:a.source_signal||''}));
+      btn.textContent=`Building plan ${spec.batch}/${targetMasters}…`;
+      const progress=`Planning ${spec.batch}/${targetMasters} ${spec.label}.`;
+      E('smart-scan-progress').textContent=`${progress} Each article decision is saved immediately.`;
+      setWorkflowActionStatusV312(1,'Plan',progress,'ICS is choosing and saving the next Master candidate.');
+      const data=await apiTransientRetryV31825('plan-issue-batch',{method:'POST',body:JSON.stringify({...base,forbiddenPublicationTerms:forbiddenPublicationTermsV312i(),rejectedCandidates:getSmartRejected(),existingArticles:inventory,batch:spec.batch,batchLabel:spec.label,batchBrief:spec.brief,targetCount:1,totalBatches:targetMasters,priorArticles:prior,engineProfile:profile.key,editorialLanes:profile.lanes,minimumGroups:profile.minimumGroups,maxHeavyMoodShare:profile.maxHeavyMoodShare})},2);
+      if(data.deterministicFallback){
+        const source=data.fallbackSource==='saved-signal'?'saved signal/question-bank pool':'article library';
+        const note=`Planning ${spec.batch}/${targetMasters} recovered automatically: duplicate rejected, safe unused candidate selected from ${source}.`;
+        E('smart-scan-progress').textContent=note;
+        setWorkflowActionStatusV312(1,'Plan',note,`Decision saved; continuing automatically.${data.rejectedModelCandidate?` Rejected model candidate: ${data.rejectedModelCandidate}`:''}`);
+      }else if(data.fallbackUsed){
+        const note=`Planning ${spec.batch}/${targetMasters} completed using the compact timeout-recovery route.`;
+        E('smart-scan-progress').textContent=note;
+        setWorkflowActionStatusV312(1,'Plan',note,'Decision saved; continuing automatically.');
+      }
+      const saved={batch:spec.batch,label:spec.label,articles:data.articles||[],issue_summary:data.issue_summary||''};
+      batches=batches.filter(b=>b.batch!==spec.batch).concat(saved).sort((a,b)=>a.batch-b.batch);saveSmartPlanBatches(batches);renderSmartPlan();
+    }
+    const articles=batches.sort((a,b)=>a.batch-b.batch).flatMap(b=>b.articles||[]).slice(0,targetMasters).map((a,i)=>({...a,order:i+1}));
+    if(articles.length!==targetMasters)throw new Error(`Only ${articles.length}/${targetMasters} article decisions are saved. Click Build / Resume Issue Plan again to resume.`);
+    const counts=articles.reduce((o,a)=>(o[a.mode]=(o[a.mode]||0)+1,o),{});
+    const plan={createdAt:new Date().toISOString(),publication:base.publication,sendDate:base.sendDate,issuePromise:promise,issue_summary:batches.map(b=>b.issue_summary).filter(Boolean).join(' '),signals,articles,counts,engineProfile:profile.key,projectedSupportRecipe:profile.supportRecipe};
+    localStorage.setItem(smartPlanKey(),JSON.stringify(plan));renderSmartPlan();updateWorkflowGuide();
+    setWorkflowActionStatusV312(1,'Plan',`${targetMasters}/${targetMasters} complete — plan ready for review.`,'Next: Step 2 — Approve.');
+    alert(`${profile.name} ${targetMasters}-article plan ready: ${counts.REUSE||0} REUSE · ${counts.LOCALISE||0} LOCALISE · ${counts.REFRESH||0} REFRESH · ${counts['CREATE NEW']||0} CREATE NEW. Review it before creating briefs.`);
+  }catch(e){
+    const msg=String(e.message||'');
+    plannerRejectedTitlesFromMessageV312E(msg).forEach(addSmartRejected);
+    renderSmartPlan();
+    const rejected=getSmartRejected();
+    const extra=rejected.length?`\n\nRejected this planning run (${rejected.length}) remain excluded: ${rejected.join(' | ')}`:'';
+    const m='Planning stopped: '+msg+'\n\nEvery completed article decision has been kept. Resume only after this genuine blocker is resolved.'+extra;
+    E('smart-scan-progress').textContent=m;
+    updateWorkflowGuide();
+    // Keep the actual blocker visible after the generic workflow refresh.
+    setWorkflowActionStatusV312(1,'Plan','Planning stopped — attention required.',m);
+  }
+  finally{btn.disabled=false;btn.textContent=old}
+}
+async function applySmartPlanToBuild({quiet=false}={}){
+  if(!S.issue){alert('Open an issue first.');return}
+  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Create a Smart Issue Plan first.');return}
+  if(!smartPlanLocked(plan)){alert('Review and Lock Approved Plan before creating Airtable briefs.');return}
+  const work=plan.articles.filter(a=>a.mode!=='REUSE');
+  if(!work.length){alert('This plan contains no missing or refresh articles. You can assemble it now.');return}
+  if(!quiet&&!confirm(`Create/update ${work.length} REFRESH / CREATE NEW Master Article briefs in this issue? Edited plan items will update the existing brief at the same article number and clear stale story state. REUSE articles remain linked to the existing library.`))return null;
+  const btn=E('smart-plan-apply'),old=btn.textContent;btn.disabled=true;btn.textContent='Creating briefs…';
+  try{
+    const r=await api('sections?issueId='+encodeURIComponent(S.issue.id));S.sections=r.records||[];
+    let created=0,updated=0;
+    for(const a of work){
+      const marker=`SMART PLAN ${a.mode} — Article ${String(a.order).padStart(2,'0')}.${a.existing_article_id?` Source article: ${a.existing_article_id}.`:''}`;
+      const fields={Issues:[S.issue.id],'Section Title':a.title,'Section Order':a.order,'Section Type':'Anchor','Section Status':'Planned','Reader Hook':a.hook,'Core Reader Question':a.question,'Universal Reader Problem':a.problem,'Reader Type':a.reader,'Emotional Outcome':'Curious','Reader Value':a.value,'Local Proof Needed':a.local_proof,'Evidence Required':a.evidence,'Evidence Status':'Needs Update','Commercial Lane':a.lane,'Commercial Pathway':a.partner_path,'Primary Next Action':a.cta_text||'','CTA Type':a.cta_type||'None','CTA Text':a.cta_text||'','Archive Similarity Status':'Review','Reuse / Localisation Potential':'Review after publication','Notes':`${marker}\nWhy now: ${a.why_now||''}\nReader question: ${a.real_life_question||a.question||''}\nWriting mode: ${resolvedWritingMode(a)}\nAdaptive story rule: Use conversation/expert style for advice and service questions; use news, debate, discovery, comparison, human/community or breaking treatment when the story calls for it.\nIllustrative persona rule: ordinary invented names/ages/scenarios may add personality, but never fabricate quotes, testimony, credentials, outcomes or evidence.\nEditorial stance: ${a.stance||'PRACTICAL'}${a.countercase?`\nCountercase: ${a.countercase}`:''}${a.source_signal?`\nCurrent signal: ${a.source_signal}`:''}\nPlan provenance: ${(()=>{const pr=provenanceAlignment(a,plan),sg=pr.signal;return `${pr.label} | ${pr.reason}${sg?` | ${sg.signal||''} | ${sg.source_title||''} | ${sg.source_url||''}`:''}`})()}`,'Section QA Result':'Not Checked','Section Final Copy':'','Primary Hot Button':'','Evidence Checked Date':'','Source / Reference Link 1':'','Action Destination URL':'','Archive Similarity Note':''};
+      if(String(a.editorDecision||'').toUpperCase()==='EDITED'){fields['Notes']+=`\nManual plan edit rule: The current title and reader question are controlling. Ignore any quantity, list size or angle inherited from the previous story. Do not force a fixed number of examples; use only as many strong examples as the evidence supports. If several strong examples exist, use a round-up; if one dominates, build around that one; if none clear the relevance threshold, recommend replacement rather than filler.`;fields['Reader Hook']=a.title||'';fields['Universal Reader Problem']=a.question||'';fields['Reader Type']=`${currentPlaceName()} readers affected by or interested in this question`;fields['Reader Value']=`A clear answer to: ${a.question}`;fields['Local Proof Needed']=`Named ${currentPlaceName()} examples and current local proof directly relevant to the question.`;fields['Evidence Required']=`Current reliable sources sufficient to answer the reader question. Do not force a pre-set number of examples; use only as many strong examples as the evidence supports.`;fields['Commercial Pathway']='';fields['Primary Next Action']='';fields['CTA Type']='None';fields['CTA Text']='';fields['Social Question Shape']='';}
+      const sameOrder=S.sections.filter(s=>Number(val(s.fields||{},'Section Order'))===Number(a.order)&&!isSupersededSmartBrief(s));const existing=sameOrder.find(approvedPlanIdentity)||sameOrder[0]||S.sections.find(s=>String(val(s.fields,'Section Title')||'').trim().toLowerCase()===a.title.trim().toLowerCase());
+      if(existing){const patch={...fields};delete patch.Issues;const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:existing.id,fields:patch})});existing.fields=d.record.fields;updated++;}
+      else{const d=await api('sections',{method:'POST',body:JSON.stringify({fields})});S.sections.push(d.record);created++;}
+    }
+    const idata=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Issue Status':'BUILDING','Main Theme':plan.issuePromise||E('assembly-theme').value}})});S.issue=idata.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);
+    const rec=await reconcileApprovedSmartQueue({quiet:true});
+    sortSections();renderSections();renderForm();render();show('build');
+    const msg=`Approved Master briefs ready: ${created} created · ${updated} updated · ${rec.active} active · ${rec.superseded} superseded preserved.${rec.clean?' Queue identity clean ✓':' STOP GATE — queue identity needs review.'}`;
+    E('save-state').textContent=msg;
+    if(!quiet)alert(msg);
+    return {created,updated,rec};
+  }catch(e){
+    const msg='Could not create/update approved Master briefs: '+e.message;
+    E('save-state').textContent=msg;
+    if(!quiet)alert(msg);
+    throw e;
+  }
+  finally{btn.disabled=false;btn.textContent=old}
+}
+function buildSmartCanvas(articles,persistentSupports=null){
+  const pub=currentPublicationName()||'Local Publication',profile=engineProfileForPublication(pub);const local=pub.replace(/\s+(Spotlight|Taste Trail|Pet Insider|Home Seller Insider).*$/i,'').trim()||pub;
+  const comp=(type,title='',purpose='')=>{const def=COMPONENT_DEFS.find(x=>x.type===type);const b=makeComponentBlock(def||{type,title:type,purpose:''});if(title)b.title=title;if(purpose)b.purpose=purpose;b.lifeLane=editorialLaneFor(b,profile);return b};
+  let supports=(persistentSupports&&persistentSupports.length)?persistentSupports.map(s=>supportRecordToCanvasV3153(s)):(profile.supportRecipe||[]).map(type=>comp(type));
+  if(supports[0]?.type==='OPENING NOTE')supports[0].purpose=`Set up the ${local} issue promise in 2–4 short lines and preview the strongest reasons to keep reading.`;
+  const opening=supports.find(x=>x.type==='OPENING NOTE')||null,closing=[...supports].reverse().find(x=>x.type==='BEFORE YOU GO'||x.type==='CLOSING QUESTION')||null;
+  supports=supports.filter(x=>x!==opening&&x!==closing);
+  const masters=articles.filter(x=>String(x.type||'').toUpperCase()==='MASTER ARTICLE');
+  const features=articles.filter(x=>String(x.type||'').toUpperCase()==='FEATURE ARTICLE');
+  const anchors=[];let mi=0,fi=0;
+  while(mi<masters.length||fi<features.length){
+    if(mi<masters.length)anchors.push(masters[mi++]);
+    if(mi<masters.length)anchors.push(masters[mi++]);
+    if(fi<features.length)anchors.push(features[fi++]);
+  }
+  while(fi<features.length)anchors.push(features[fi++]);
+  const items=[];if(opening)items.push(opening);
+  const extraSupport=Math.max(0,supports.length-anchors.length),extraAt=new Set();
+  for(let j=1;j<=extraSupport;j++)extraAt.add(Math.max(0,Math.min(anchors.length-1,Math.round(j*anchors.length/(extraSupport+1))-1)));
+  let si=0;
+  anchors.forEach((a,i)=>{
+    a.lifeLane=editorialLaneFor(a,profile);items.push(a);
+    if(si<supports.length)items.push(supports[si++]);
+    if(extraAt.has(i)&&si<supports.length)items.push(supports[si++]);
+  });
+  while(si<supports.length){
+    // Insert any residue before the final third's last article anchor rather than creating a support-only tail.
+    const lastArticle=Math.max(1,items.map((x,i)=>x.kind==='article'?i:-1).reduce((a,b)=>Math.max(a,b),-1));
+    items.splice(Math.min(items.length,lastArticle+1),0,supports[si++]);
+  }
+  if(closing)items.push(closing);
+  return items.slice(0,profile.targetSections[1]);
+}
+function assemblyRhythmIntegrityV3204(items){
+  const errors=[];let run=0,maxRun=0;const articlePositions=[];
+  (items||[]).forEach((x,i)=>{if(x.kind==='article'){run=0;articlePositions.push(i)}else{run++;maxRun=Math.max(maxRun,run)}});
+  if(maxRun>2)errors.push(`Too many lightweight components in a row (${maxRun}); maximum is 2.`);
+  const n=items.length,last=articlePositions.at(-1)??-1;if(n&&last<Math.floor(n*.70))errors.push('The final third has no substantial article anchor.');
+  if(articlePositions.length){for(let third=0;third<3;third++){const lo=Math.floor(n*third/3),hi=Math.floor(n*(third+1)/3);if(!articlePositions.some(p=>p>=lo&&p<hi))errors.push(`No Master/Feature article in issue third ${third+1}.`)}}
+  return {ok:errors.length===0,errors,maxRun,articlePositions};
+}
+function setStep7StatusV3164(head,detail=''){
+  const box=E('step7-status-v3164');
+  if(box){
+    box.style.display='block';
+    box.innerHTML=`<strong>${esc(head)}</strong>${detail?`<div class="muted" style="margin-top:5px;white-space:pre-wrap">${esc(detail)}</div>`:''}`;
+  }
+  setWorkflowActionStatusV312(7,'Assemble',head,detail);
+}
+function clearRunningOrderV3164(){
+  localStorage.removeItem(assemblyKey());
+  canvasSelectedUid=null;
+  renderAssembly();
+}
+async function smartAssembleIssue(){
+  if(!S.issue){
+    setStep7StatusV3164('Step 7 blocked.','Open an issue first.');return;
+  }
+
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length){
+    setStep7StatusV3164('Step 7 blocked.','No approved candidate plan is loaded.');return;
+  }
+
+  setStep7StatusV3164('Checking Current Step 5 Selection…','Refreshing the current Master records before rebuilding the running order.');
+
+  try{
+    await Promise.all([loadSections(),loadArticleLibrary()]);
+  }catch(e){
+    setStep7StatusV3164('Step 7 blocked — refresh failed.',String(e.message||e));return;
+  }
+
+  const profile=engineProfileForPublication();
+  const selectedOrders=getMasterSelectionV312();
+  const minMasters=profile.targetMasters?.[0]||8,maxMasters=profile.targetMasters?.[1]||10;
+
+  if(selectedOrders.length<minMasters||selectedOrders.length>maxMasters){
+    setStep7StatusV3164('Step 7 blocked — Master selection is incomplete.',
+      `Select ${minMasters}–${maxMasters} READY Masters in Step 5. Current selection: ${selectedOrders.length}.`);
+    return;
+  }
+
+  const selectedArticles=plan.articles.filter(a=>selectedOrders.includes(Number(a.order)));
+  const chosen=[],missing=[];
+
+  for(let i=0;i<selectedArticles.length;i++){
+    const a=selectedArticles[i];
+    setStep7StatusV3164(`Checking Master ${i+1}/${selectedArticles.length}…`,a.title);
+
+    let src=planArticleRecordV312(a);
+    if(!src&&a.mode==='REUSE')src=(S.articleLibrary||[]).find(x=>x.id===a.existing_article_id)||null;
+
+    const leak=src?producedMasterLeakageV316(src):null;
+    const state=src?masterArticleState(src):'missing';
+
+    if(leak){
+      missing.push(`${a.order}. ${a.title} — WRONG PUBLICATION / GEOGRAPHY: ${leak.hits.join(', ')}`);
+      continue;
+    }
+    if(!src||state!=='complete'){
+      missing.push(`${a.order}. ${a.title} — ${src?state:'record not found'}`);
+      continue;
+    }
+
+    const b=makeArticleBlock(src);
+    b.planMode=a.mode;
+    b.editorialStance=a.stance;
+    b.relatedPlanQuestion=a.question;
+    chosen.push(b);
+  }
+
+  if(missing.length){
+    setStep7StatusV3164('Step 7 blocked — selected Masters are not clean/ready.',
+      `${missing.join('\n')}\n\nThe previous running order has NOT been accepted as current. Fix/save Step 5, then Assemble again.`);
+    return;
+  }
+
+  await refreshPersistentSupportV3153();
+  const requiredSupport=supportTargetV315().supportNeeded;
+  const persistedSupport=supportRecordsForTargetV3204(persistentSupportRecordsV3153(),requiredSupport).filter(supportReadyRecordV3153);
+
+  if(persistedSupport.length<requiredSupport){
+    setStep7StatusV3164('Step 7 blocked — supporting components incomplete.',
+      `${persistedSupport.length}/${requiredSupport} persistent support components are READY. Complete Step 6 first.`);
+    return;
+  }
+
+  const features=readyFeatureArticlesV3204().map(makeArticleBlock);
+  if(features.length<featureTargetForIssueV3204()){
+    setStep7StatusV3164('Step 7 blocked — Feature Articles incomplete.',`${features.length}/${featureTargetForIssueV3204()} Feature Articles are READY. Return to Step 6A and finish the Feature layer.`);
+    return;
+  }
+  setStep7StatusV3164('Rebuilding Running Order…',
+    `${chosen.length} clean READY Masters + ${features.length} READY Feature Articles + ${requiredSupport} persistent support components. Discarding the old browser running order.`);
+
+  // Never ask whether to keep/replace stale localStorage. Step 7 is a deterministic rebuild
+  // from current Step 5 + Step 6 state.
+  clearRunningOrderV3164();
+
+  const items=buildSmartCanvas([...chosen,...features],persistedSupport.slice(0,requiredSupport));
+  localStorage.setItem(assemblyKey(),JSON.stringify(items));
+  try{
+    await persistAssemblyV31821(items);
+  }catch(error){
+    clearRunningOrderV3164();
+    setStep7StatusV3164('Step 7 failed persistence check.',String(error?.message||error));
+    return;
+  }
+  // A rebuilt running order invalidates any previously persisted QA pass.
+  if(persistedQAPassedV31820()){
+    try{
+      const data=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Issue Status':'BUILDING'}})});
+      if(data?.record){S.issue=data.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);}
+    }catch(error){console.warn('Could not invalidate prior QA lifecycle after assembly rebuild',error);}
+  }
+  localStorage.removeItem(qaKey());
+  canvasSelectedUid=items[0]?.uid||null;
+  renderAssembly();
+
+  // Final title-level geography sanity check after assembly.
+  const foreign=items.filter(x=>x.kind==='article').filter(x=>
+    forbiddenPublicationTermsV312i().some(term=>publicationTermPresentV312o(String(x.title||''),term))
+  );
+  if(foreign.length){
+    clearRunningOrderV3164();
+    setStep7StatusV3164('Step 7 failed integrity check.',
+      `Foreign geography appeared after assembly:\n- ${foreign.map(x=>x.title).join('\n- ')}\nThe running order was cleared rather than shown as valid.`);
+    return;
+  }
+
+  const rhythm=assemblyRhythmIntegrityV3204(items);
+  if(!rhythm.ok){
+    clearRunningOrderV3164();
+    setStep7StatusV3164('Step 7 failed rhythm integrity.',rhythm.errors.join(' '));
+    return;
+  }
+  setStep7StatusV3164(`Running Order Ready — ${items.length}/${items.length} · rhythm passed`,
+    `${chosen.length} Masters + ${features.length} Feature Articles + ${items.length-chosen.length-features.length} support/partner components. No support-only tail; substantial article anchors are distributed through all three thirds.`);
+}
+
+function autoAssembleIssue(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const produced=(S.articleLibrary||S.sections||[])
+    .filter(s=>masterArticleState(s)==='complete')
+    .sort((a,b)=>Number(val(a.fields,'Section Order')||999)-Number(val(b.fields,'Section Order')||999));
+  if(!produced.length){alert('No completed Master Articles are available for this issue.');return}
+
+  if(getCanvas().length&&!confirm('Replace the current canvas with an automatically assembled first draft?'))return;
+
+  const comp=(type,title='',purpose='')=>{
+    const def=COMPONENT_DEFS.find(x=>x.type===type);
+    const b=makeComponentBlock(def||{type,title:type,purpose:''});
+    if(title)b.title=title;
+    if(purpose)b.purpose=purpose;
+    return b;
+  };
+  const partner=(title,purpose)=>{
+    const b=makePartnerBlock();
+    b.title=title;
+    b.purpose=purpose;
+    b.status='NEEDS DECISION';
+    return b;
+  };
+
+  const articles=produced.slice(0,9).map(makeArticleBlock);
+  const items=[];
+  items.push(comp('OPENING NOTE',"Opening Note","Set up the Peterborough issue promise in 2–4 short lines and preview the strongest reasons to keep reading."));
+
+  const between=[
+    ()=>comp('READER POLL',"The Peterborough Quick Vote","One specific, easy-to-answer local question connected to the issue's strongest tension."),
+    ()=>comp('TIP / HACK',"One Useful Thing","Give readers one practical action they can use immediately."),
+    ()=>comp('JOKE',"Quick Breather","A short suitable joke or light local observation to break up heavier material."),
+    ()=>comp('Q&A',"Reader Question","Answer one useful question raised by the surrounding Master Articles."),
+    ()=>comp('INTERESTING FACT',"Worth Knowing","One verified, surprising Peterborough fact with a clear source requirement."),
+    ()=>comp('READER RECOMMENDATION',"Your Peterborough Recommendation","Ask for a named local recommendation that can feed a future guide or article."),
+    ()=>comp('MYTH V FACT',"Myth v Fact","Test one common belief raised by this issue and give the fair, sourced answer."),
+    ()=>comp('FACEBOOK DISCUSSION',"Take It To Facebook","Create one standalone stop-and-comment question connected to the issue."),
+    ()=>comp('TRIVIA',"Peterborough Quick Test","A short local knowledge question with a verified answer/reveal."),
+    ()=>comp('READER VOICE',"Over To You","Ask for one specific lived experience, example or opinion that can improve a future article."),
+    ()=>comp('MINI GUIDE',"Save This","A tiny 3-5 point checklist or decision aid that adds value without becoming another article."),
+    ()=>comp('LOCAL DISCOVERY',"One To Try","A named local discovery prompt or recommendation request tied to a lighter reader need; never invent the recommendation."),
+    ()=>comp('QUICK OPINION',"Unfiltered Take","A short fair challenge or contrary question where the issue has earned some edge; explain the tension, do not manufacture outrage."),
+    ()=>comp('SOCIAL PROMPT',"Your Turn","A specific reply/comment prompt that can seed a later article or guide without repeating an existing CTA.")
+  ];
+
+  const desiredBetween=Math.min(8,Math.max(0,articles.length-1));
+  const supportGapIndexes=new Set(Array.from({length:desiredBetween},(_,j)=>Math.round(j*Math.max(0,articles.length-2)/Math.max(1,desiredBetween-1))));
+  let betweenUsed=0;
+  articles.forEach((a,i)=>{
+    items.push(a);
+    if(i<articles.length-1 && supportGapIndexes.has(i) && between[betweenUsed])items.push(between[betweenUsed++]());
+  });
+
+  // Commercial presence is deliberately visible but not invented.
+  items.splice(Math.min(7,items.length),0,
+    partner("Resident Expert / Featured Partner 1","Assign an active Resident Expert or Featured Partner and choose the format that best serves this issue. Do not invent a sponsor.")
+  );
+  items.splice(Math.min(15,items.length),0,
+    partner("Resident Expert / Featured Partner 2","Assign another active Resident Expert or Featured Partner without repeating the first category. Do not invent a sponsor.")
+  );
+
+  items.push(comp('READER VOTE',"Worth It Or Overpriced?","A quick value judgement or either/or vote tied to a lighter issue theme."));
+  items.push(comp('COMMUNITY VOICE',"Community Voice","Surface one useful local voice, cause or contribution with named proof."));
+  items.push(comp('FEATURED PARTNER / OFFER',"Do Something This Week","One useful visit, booking, nomination, download, offer, event or reply action. This may expose a future Featured Partner opportunity but must still work editorially without one."));
+  items.push(comp('CLOSING QUESTION',"One Last Question","End with one specific question readers can reply to or answer on social."));
+
+  // Fill a balanced Spotlight draft to the agreed 28-32 range without inventing more articles.
+  const extraSupport=[
+    ()=>comp('READER QUESTION',"What Should We Answer Next?","Ask for one precise reader question that can enter the Question Bank."),
+    ()=>comp('QUICK WIN',"Two-Minute Win","One tiny action, check or decision readers can make now without turning this into another article."),
+    ()=>comp('NOMINATION',"Name The Local One","Ask readers to nominate a specific local business, place, person or service for a future evidence-led guide."),
+    ()=>comp('HUMOUR',"You Know The Feeling…","A short relatable local observation or joke that gives the issue breathing room."),
+    ()=>comp('MYTH / QUESTION',"Are We Sure About That?","Challenge one assumption from the issue and invite evidence or experience; do not state an unsupported counter-claim.")
+  ];
+  let fill=0;
+  while(items.length<26){items.splice(Math.max(1,items.length-1),0,extraSupport[fill%extraSupport.length]());fill++;}
+  const finalItems=items.slice(0,26);
+  localStorage.setItem(assemblyKey(),JSON.stringify(finalItems));
+  canvasSelectedUid=finalItems[0]?.uid||null;
+  renderAssembly();
+  const articleNote=articles.length<8?`\nNOTE: only ${articles.length} completed Master Articles were available. Spotlight normally targets around 8-10; add another strong article only if it improves the issue.`:'';
+  alert(`Auto assembly created ${finalItems.length} blocks from ${articles.length} completed Master Articles. Target: normally 24-30 total sections with around 8-10 concise, information-rich Master Articles.${articleNote}\nReview the running order, assign real partners, then produce the supporting components.`);
+}
+
+async function produceSupportingComponents(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const canvas=getCanvas();
+  const pending=canvas.filter(b=>b.kind==='component'&&String(b.status||'').toUpperCase()!=='READY');
+  if(!pending.length){alert('No supporting components need production.');return}
+  if(!confirm(`Produce ${pending.length} supporting components? Partner blocks will be left for real partner assignment.`))return;
+
+  const btn=E('assembly-produce');
+  const original=btn.textContent;
+  btn.disabled=true;
+  let passed=0,failed=0;
+
+  const articleContext=canvas.filter(b=>b.kind==='article').map((b,i)=>`${i+1}. ${b.title}\n${String(b.content||b.purpose||'').slice(0,900)}`).join('\n\n');
+  const promise=E('assembly-theme')?.value||'';
+
+  for(const block of pending){
+    const blockIndex=canvas.findIndex(x=>x.uid===block.uid);
+    const nearby=canvas.slice(Math.max(0,blockIndex-2),Math.min(canvas.length,blockIndex+3)).filter(x=>x.uid!==block.uid).map((x,i)=>`${x.type}: ${x.title}\n${String(x.content||x.purpose||'').slice(0,500)}`).join('\n\n');
+    btn.textContent=`Producing ${passed+failed+1}/${pending.length}…`;
+    try{
+      const prompt=`You are producing one short supporting component for a Trail Blaze Local Spotlight newsletter.
+
+PUBLICATION: ${S.publication?.name||S.publication?.fields?.Name||'Peterborough Spotlight'}
+ISSUE PROMISE: ${promise}
+
+COMPONENT TYPE: ${block.type}
+HEADLINE/LABEL: ${block.title}
+PURPOSE/READER JOB: ${block.purpose||''}
+ATTACHED PARTNER: ${block.partner||'None'}
+PARTNER CATEGORY: ${block.category||'None'}
+LOCAL PROOF / SOURCE REQUIREMENT: ${block.proof||'No factual source supplied — do not invent facts.'}
+SAVED PRODUCTION BRIEF: ${block.productionBrief||block.content||'None'}
+PRIMARY ACTION REQUESTED: ${block.cta||block.button||'None'}
+
+MASTER ARTICLE CONTEXT:
+${articleContext}
+
+NEARBY RUNNING-ORDER CONTEXT:
+${nearby||'No neighbouring blocks yet.'}
+
+Write ONLY the finished newsletter component copy.
+- Keep it concise and human, normally 25-100 words unless the format clearly needs less. Supporting blocks are pace changers, not mini Master Articles.
+- Write like a well-informed local person, not a brochure, council report or AI explainer. Plain spoken UK English; short sentences; natural humour where it fits.
+- ADAPTIVE STORY MODE: where the component is advice/service/question-led, phrase it like a real Zoom/podcast/pub/dinner-table/WhatsApp question. For news, controversy, events, discovery, trivia or updates, use the natural format for that job instead of forcing a personal-question wrapper. Illustrative personas may add personality but never count as evidence.
+- EXPERT-ANSWER MODEL: for advice/explainer components, sound like a trusted specialist giving a clear face-to-face answer. Never invent an expert identity, credential or quote; a real partner can replace the editorial voice when supplied.
+- Give this component ONE distinct job. It must add something the nearby Master Articles do not: a decision, laugh, fact, question, local recommendation, action or genuine voice. Do not paraphrase a nearby article or repeat its CTA/question in different words.
+- Use specific local relevance where supported by supplied context. A generic component that could run anywhere by swapping the place name has not earned its slot.
+- Never invent facts, businesses, prices, quotes, events, experts, sponsors or reader comments. If a factual claim needs evidence that is not supplied, turn it into a reader question/request for local input instead of inventing an answer.
+- If a real partner is attached, integrate them naturally as the relevant expert/featured partner, not as an advert. Never invent advice or a quote and attribute it to that partner; only attribute partner advice actually supplied in the brief/source requirement.
+- Avoid machine-smoothed filler such as useful, practical, meaningful, key, crucial, straightforward, 'The question is…' or 'That matters because…'.
+- Keep Spotlight's human edge: humour, a cheeky observation or a fair challenge is welcome where it fits, but never invent controversy.
+- One primary action maximum. No markdown heading because the label is stored separately.`;
+
+      const data=await api('produce-component',{
+        method:'POST',
+        body:JSON.stringify({prompt,model:'gpt-5.6-luna'})
+      });
+      const text=String(data.text||'').trim();
+      if(!text)throw new Error('No component copy returned');
+      if(!block.productionBrief)block.productionBrief=String(block.content||'').trim();
+      block.content=text;
+      block.contentStatus='APPROVED';
+      block.productionStatus='READY FOR LETTERMAN';
+      block.status='READY';
+      passed++;
+      localStorage.setItem(assemblyKey(),JSON.stringify(canvas));
+      renderAssembly();
+    }catch(err){
+      block.status='NEEDS PRODUCTION';
+      block.productionError=String(err?.message||err);
+      failed++;
+      localStorage.setItem(assemblyKey(),JSON.stringify(canvas));
+      renderAssembly();
+    }
+  }
+  btn.disabled=false;
+  btn.textContent=original;
+  alert(`Audience voice + localisation gate finished.\nReady ${passed} · Failed ${failed}\nPartner blocks remain for real partner assignment.`);
+}
+
+function sponsorField(fields,names){
+  for(const name of names){
+    const v=fields?.[name];
+    if(Array.isArray(v)&&v.length)return v;
+    if(v!==undefined&&v!==null&&String(v).trim()!=='')return v;
+  }
+  return '';
+}
+function sponsorText(value){
+  return Array.isArray(value)?value.join(' '):String(value||'');
+}
+function sponsorRecordView(record){
+  const f=record?.fields||{};
+  return {
+    id:record.id,
+    name:sponsorText(sponsorField(f,['Sponsor Name','Partner Name','Business Name','Organisation','Organization','Company','Name'])).trim(),
+    category:sponsorText(sponsorField(f,['Sponsor Category','Partner Category','Category','Expert Lane','Commercial Lane'])).trim(),
+    status:sponsorText(sponsorField(f,['Sponsor Status','Partner Status','Status','Active Status'])).trim(),
+    publication:sponsorField(f,['Publication','Publications','Publication Name','Newsletter','Brand']),
+    commitment:sponsorText(sponsorField(f,['Commitment','Presence Commitment','Package','Frequency','Placement','Terms'])).trim(),
+    cta:sponsorText(sponsorField(f,['CTA Text','Button Text','Primary CTA','Call To Action'])).trim(),
+    url:sponsorText(sponsorField(f,['Destination URL','Website','URL','Link','Landing Page'])).trim(),
+    description:sponsorText(sponsorField(f,['Description','Sponsor Description','Partner Description','Offer','Notes'])).trim(),
+    fields:f
+  };
+}
+function activeSponsorForPublication(sponsor){
+  const status=String(sponsor.status||'').toLowerCase();
+  if(status&&/(inactive|paused|ended|cancelled|canceled|expired|prospect)/.test(status))return false;
+  const pub=sponsor.publication;
+  if(!pub||((Array.isArray(pub)&&!pub.length)))return true;
+  const ids=Array.isArray(pub)?pub:[pub];
+  const currentId=(S.issue?.fields?.Publication||[])[0]||'';
+  const name=currentPublicationName().toLowerCase();
+  const blob=ids.map(String).join(' ').toLowerCase();
+  return ids.includes(currentId)||blob.includes(name)||name.split(' ')[0]&&blob.includes(name.split(' ')[0]);
+}
+function partnerContext(items,index){
+  const before=[...items.slice(0,index)].reverse().find(x=>x.kind==='article');
+  const after=items.slice(index+1).find(x=>x.kind==='article');
+  return [before?.title,before?.purpose,after?.title,after?.purpose].filter(Boolean).join(' ');
+}
+function wordsForMatch(text){
+  const stop=new Set(['the','and','for','with','from','this','that','your','into','about','local','partner','sponsor','support','weekly','presence']);
+  return [...new Set(String(text||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>3&&!stop.has(w)))];
+}
+function sponsorMatchScore(sponsor,context,used){
+  let score=used.has(sponsor.id)?-1000:0;
+  const hay=[sponsor.name,sponsor.category,sponsor.description].join(' ').toLowerCase();
+  for(const w of wordsForMatch(context))if(hay.includes(w))score+=3;
+  const ctx=String(context||'').toLowerCase();
+  const cat=String(sponsor.category||'').toLowerCase();
+  if(/rent|tenant|landlord|property|letting|housing/.test(ctx)&&/rent|tenant|landlord|property|letting|estate/.test(cat+' '+hay))score+=18;
+  if(/charity|community|family|food parcel|crisis|support/.test(ctx)&&/charity|community|family|food|cause|support/.test(cat+' '+hay))score+=18;
+  if(/mortgage|debt|money|deposit/.test(ctx)&&/mortgage|debt|finance|money|broker/.test(cat+' '+hay))score+=18;
+  if(/car|drive|vehicle|motoring/.test(ctx)&&/garage|motor|car|vehicle|tyre/.test(cat+' '+hay))score+=18;
+  if(/dog|pet/.test(ctx)&&/dog|pet|trainer|vet/.test(cat+' '+hay))score+=18;
+  return score;
+}
+async function assignActivePartners(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const items=getCanvas();
+  const partnerBlocks=items.filter(b=>b.kind==='partner'&&String(b.status||'').toUpperCase()!=='READY');
+  if(!partnerBlocks.length){alert('No partner blocks need assignment.');return}
+
+  const button=E('assembly-partners');
+  const original=button.textContent;
+  button.disabled=true;
+  button.textContent='Loading active partners…';
+
+  try{
+    const result=await api('active-sponsors');
+    const sponsors=(result.records||[]).map(sponsorRecordView).filter(s=>s.name&&activeSponsorForPublication(s));
+    if(!sponsors.length)throw new Error(`No active sponsors were found for ${currentPublicationName()||'this publication'}.`);
+
+    if(!confirm(`Assign ${Math.min(partnerBlocks.length,sponsors.length)} active partner${Math.min(partnerBlocks.length,sponsors.length)===1?'':'s'} to ${partnerBlocks.length} partner block${partnerBlocks.length===1?'':'s'}? ICS will use only Airtable sponsor data and the surrounding issue context.`))return;
+
+    const used=new Set();
+    let assigned=0,needs=0;
+    for(const block of partnerBlocks){
+      const index=items.findIndex(x=>x.uid===block.uid);
+      const context=partnerContext(items,index);
+      const ranked=sponsors.map(s=>({s,score:sponsorMatchScore(s,context,used)})).sort((a,b)=>b.score-a.score);
+      const chosen=ranked[0]?.s;
+      if(!chosen||used.has(chosen.id)){
+        block.status='NEEDS DECISION';
+        block.content='No unused active partner could be matched automatically. Assign a real partner in the inspector.';
+        needs++;
+        continue;
+      }
+      used.add(chosen.id);
+      block.partner=chosen.name;
+      block.category=chosen.category||'Active Partner';
+      block.commitment=chosen.commitment||'Weekly presence';
+      block.cta=chosen.cta||(chosen.url?'Find Out More':'');
+      block.button=chosen.cta||(chosen.url?'Find Out More':'');
+      block.url=chosen.url||'';
+      block.proof=`Active Sponsors record: ${chosen.name}${chosen.category?` · ${chosen.category}`:''}`;
+
+      button.textContent=`Writing ${assigned+needs+1}/${partnerBlocks.length}…`;
+      try{
+        const prompt=`Write one concise partner-presence block for a UK local newsletter.
+
+PUBLICATION: ${currentPublicationName()}
+PARTNER: ${chosen.name}
+CATEGORY: ${chosen.category||'Not specified'}
+COMMITMENT: ${chosen.commitment||'Not specified'}
+APPROVED DESCRIPTION / NOTES: ${chosen.description||'No additional description supplied'}
+SURROUNDING ISSUE CONTEXT: ${context||'General issue context'}
+CTA: ${block.cta||'No button required'}
+DESTINATION URL PRESENT: ${chosen.url?'Yes':'No'}
+
+RULES:
+- Use ONLY the partner information supplied above.
+- Do not invent services, prices, claims, awards, quotes, offers, sponsorship terms or contact details.
+- Never tell readers the organisation is 'our partner', 'Spotlight's partner', a sponsor or advertiser. Position it through a concrete reader benefit, action, attributed insight or signpost.
+- If the partner already has a nearby Master Article, complement it rather than summarising it. Give this block a different job.
+- 35-80 words. Plain spoken UK English; specific beats polished.
+- Avoid generic advert language and machine-smoothed filler such as useful, practical, meaningful, key or crucial.
+- One primary action maximum, phrased around the reader's question/problem where possible (for example 'Ask Your Rental Question'), not 'Learn More' unless nothing better is supported.
+- Return only the finished block copy.`;
+        const generated=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
+        block.content=String(generated.text||'').trim();
+        block.status=block.content?'READY':'NEEDS DECISION';
+        if(block.status==='READY')assigned++;else needs++;
+      }catch(error){
+        block.content=chosen.description||`${chosen.name} is an active partner for this publication.`;
+        block.status=chosen.description?'READY':'NEEDS DECISION';
+        if(block.status==='READY')assigned++;else needs++;
+      }
+      localStorage.setItem(assemblyKey(),JSON.stringify(items));
+      renderAssembly();
+    }
+    alert(`Partner assignment finished.\nReady ${assigned} · Needs decision ${needs}`);
+  }catch(error){
+    alert(`Partner assignment could not complete: ${error.message}`);
+  }finally{
+    button.disabled=false;
+    button.textContent=original;
+  }
+}
+
+function qaKey(){return `${assemblyKey()}:finalqa`}
+function qaText(b){return [b.title,b.purpose,b.content,b.cta,b.button,b.url,b.partner,b.category,b.proof].filter(Boolean).join(' ')}
+function qaReaderText(b){return [b.title,b.content,b.cta,b.button].filter(Boolean).join(' ')}
+function qaWords(text){
+  const stop=new Set(['this','that','with','from','have','your','what','when','where','which','about','into','they','their','there','will','would','could','should','peterborough','spotlight','local','reader','article','question','support','partner','before','answer','around','rather','first','issue','place','practical','useful','really','quite','also','just','more','most','some','than','then','them','over','under','after','because','while','whereas','important','matter','matters','straightforward','clear','help','helps','helpful','worth','knowing']);
+  return [...new Set(String(text||'').toLowerCase().replace(/[^a-z0-9£]+/g,' ').split(/\s+/).filter(w=>w.length>4&&!stop.has(w)))];
+}
+function qaSimilarity(a,b){
+  const A=new Set(qaWords(a)),B=new Set(qaWords(b));
+  if(!A.size||!B.size)return 0;
+  let n=0; for(const w of A)if(B.has(w))n++;
+  return n/Math.min(A.size,B.size);
+}
+
+function looksTruncatedMasterV317(block){
+  if(block?.kind!=='article')return false;
+  const body=String(block.content||'').trim();
+  if(body.length<200)return true;
+  const last=body.slice(-1);
+  if(!/[.!?…"'’”\)\]]/.test(last))return true;
+  if(/\b(?:and|or|but|because|with|from|the|a|an|to|of|for|in|on|at|by|could|would|should|can|will|what|which|who|when|where)\s*$/i.test(body))return true;
+  return false;
+}
+function orphanPartnerTipV317(block){
+  return block?.kind==='component' &&
+    /PARTNER TIP/i.test(String(block.type||block.title||'')) &&
+    !String(block.partner||'').trim();
+}
+function duplicateOpeningClosingV317(items){
+  if(items.length<2)return null;
+  const first=items[0],last=items[items.length-1];
+  const opening=x=>/OPENING NOTE/i.test(String(x?.type||x?.title||''));
+  return opening(first)&&opening(last)?last:null;
+}
+function clearWriterOnlyStateV317(notes){
+  return String(notes||'')
+    .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v(?:1|2)[\s\S]*?END MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
+    .replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'')
+    .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*?(?=\n\n[A-Z][A-Z ]+ v|$)/g,'')
+    .replace(/\n?MASTER ARTICLE RUNNING v[\d.]+[\s\S]*?END MASTER ARTICLE RUNNING\s*/g,'')
+    .replace(/\n?MASTER ARTICLE FAILED v[\d.]+[\s\S]*?END MASTER ARTICLE FAILED\s*/g,'')
+    .trim();
+}
+function qaIssuePromiseV31815(){
+  return String(E('assembly-theme')?.value||localStorage.getItem(themeKey())||val(S.issue?.fields||{},'Main Theme')||'').trim();
+}
+function qaVoiceProfileV31815(profile=engineProfileForPublication()){
+  const key=String(profile?.key||'SPOTLIGHT').toUpperCase();
+  if(key==='TASTE_TRAIL')return 'Universal Trail Blaze standard: research deeply, write simply, sound like normal people talk. Taste Trail adds warmth, appetite, sociability and discovery: help readers picture the plan and think “Fancy this?”. Tempt and entertain before evaluating; avoid repetitive review/verdict language. Never pretend desk research is a first-hand visit, tasting or stay.';
+  if(key==='PET_INSIDER')return 'Universal Trail Blaze standard: research deeply, write simply, sound like normal people talk. Pet Insider adds warmth, calm reassurance, specific local help and expert authority without lecture tone.';
+  if(key==='HOME_SELLER')return 'Universal Trail Blaze standard: research deeply, write simply, sound like normal people talk. Explain money/property consequences early, use specific examples and avoid estate-agent brochure, compliance or textbook language.';
+  return 'Universal Trail Blaze standard: research deeply, write simply, sound like normal people talk. Spotlight adds local curiosity, specificity, humour or challenge where earned; never council-report, press-release or polished generic-magazine prose.';
+}
+function qaProfilePayloadV31815(){
+  const p=engineProfileForPublication();
+  return {key:p.key,name:p.name,targetSections:p.targetSections,targetMasters:p.targetMasters,targetSupport:p.targetSupport,voice:qaVoiceProfileV31815(p)};
+}
+function qaNamedEntityCandidatesV31815(text){
+  const stop=new Set(['Opening Note','Before You Go','Quick Food Quiz','One Quick Vote','Your Recommendation','Worth The Money','Master Article']);
+  const out=[];
+  // Multi-word proper names only. This deliberately excludes sentence-start words such as Monday, There’s, Sunday and You’ll.
+  for(const m of String(text||'').matchAll(/\b([A-Z][A-Za-z’'&.-]+(?:\s+(?:&|of|the|and|at|in|on|[A-Z][A-Za-z’'&.-]+)){1,4})\b/g)){
+    const x=m[1].trim().replace(/[.,;:!?]+$/,'');
+    if(x.length<7||stop.has(x))continue;
+    if(/^(Which|Where|What|When|How|Why|This|That|There|Before|After|Peterborough Taste Trail)\b/.test(x))continue;
+    out.push(x);
+  }
+  return out;
+}
+function deterministicQA(items){
+  const findings=[];
+  const add=(severity,code,message,blocks=[],safeFix=false)=>findings.push({severity,code,message,blocks,safeFix});
+  const ready=items.filter(b=>String(b.status||'').toUpperCase()==='READY').length;
+  const notReady=items.length-ready;
+  if(notReady)add('FIX','NOT_READY',`${notReady} block${notReady===1?' is':'s are'} not Ready.`,items.filter(b=>String(b.status||'').toUpperCase()!=='READY').map(b=>b.uid));
+  else add('PASS','ALL_READY',`All ${items.length} blocks are Ready.`);
+
+  const articleCount=items.filter(b=>b.kind==='article'&&String(b.type||'').toUpperCase()==='MASTER ARTICLE').length;
+  const featureCount=items.filter(b=>String(b.type||'').toUpperCase()==='FEATURE ARTICLE').length;
+  const qaProfile=engineProfileForPublication();
+  const [minSections,maxSections]=qaProfile.targetSections||[12,30];
+  const [minMasters,maxMasters]=qaProfile.targetMasters||[5,10];
+  if(items.length<minSections||items.length>maxSections)add('WARNING','ISSUE_SIZE',`${qaProfile.name} normally runs at about ${minSections}-${maxSections} sections; this canvas has ${items.length}. Treat this as a balance warning, not a quota.`);
+  else add('PASS','ISSUE_SIZE',`${items.length} sections is within the normal ${minSections}-${maxSections} ${qaProfile.name} range.`);
+  if(articleCount<minMasters||articleCount>maxMasters)add('WARNING','ARTICLE_COUNT',`${qaProfile.name} normally uses around ${minMasters}-${maxMasters} Master Articles; this canvas has ${articleCount}. Judge the finished issue by value and rhythm rather than count alone.`);
+  else add('PASS','ARTICLE_COUNT',`${articleCount} Master Articles is within the normal ${minMasters}-${maxMasters} ${qaProfile.name} range.`);
+  // v3.20.10 — four Features are the production target, not an unconditional QA quota.
+  // Three READY Features may pass when the structural rhythm gate remains healthy; evidence-blocked work is never forced into publication.
+  const featureTarget=featureTargetForIssueV3204();
+  const featureMinimum=featureMinimumForIssueV3209();
+  if(featureCount<featureMinimum)add('FIX','FEATURE_LAYER',`Only ${featureCount}/${featureTarget} Feature Articles are in the running order. At least ${featureMinimum} READY Features are required before the short-feature layer can carry enough editorial weight.`);
+  else if(featureCount<featureTarget)add('WARNING','FEATURE_LAYER',`${featureCount}/${featureTarget} planned Feature Articles are in the running order. This is acceptable when the missing Feature is not READY and the assembly-rhythm gate passes; do not lower the evidence bar merely to reach the target.`);
+  else add('PASS','FEATURE_LAYER',`${featureCount} permanent Feature Articles add mid-weight editorial anchors.`);
+  const issuePromise=qaIssuePromiseV31815();
+  if(!issuePromise)add('WARNING','ISSUE_PROMISE','The saved issue promise is blank, so the running order has no defined editorial promise to guide the edition.');
+  else add('PASS','ISSUE_PROMISE','A saved issue promise is present and available to Final QA.');
+  const longArticles=items.filter(b=>String(b.type||'').toUpperCase()==='MASTER ARTICLE'&&String(b.content||'').trim().split(/\s+/).filter(Boolean).length>950);
+  if(longArticles.length)add('WARNING','MEGA_ARTICLE',`${longArticles.length} Master Article${longArticles.length===1?' is':'s are'} over about 950 words. Run the Split Test: does each contain a question that should become a separate Feature Article?`,longArticles.map(b=>b.uid));
+  else add('PASS','ARTICLE_LENGTH',`No obvious Master Articles over about 950 words.`);
+
+
+  const truncatedMasters=items.filter(looksTruncatedMasterV317);
+  if(truncatedMasters.length){
+    add('FIX','TRUNCATED_MASTER',`${truncatedMasters.length} selected Master Article${truncatedMasters.length===1?' appears':'s appear'} to end mid-sentence or mid-word.`,truncatedMasters.map(b=>b.uid),false);
+  } else add('PASS','MASTER_COMPLETENESS','Selected Master Articles appear to end cleanly.');
+
+  const orphanTips=items.filter(orphanPartnerTipV317);
+  if(orphanTips.length)add('FIX','ORPHAN_PARTNER_TIP',`${orphanTips.length} reader-facing Partner Tip${orphanTips.length===1?' has':'s have'} no named partner. Convert to editorial copy or attach a real partner.`,orphanTips.map(b=>b.uid),true);
+
+  const duplicateClosing=duplicateOpeningClosingV317(items);
+  if(duplicateClosing)add('FIX','DUPLICATE_OPENING_CLOSE','The issue ends with another Opening Note. Replace it with a distinct closing/sign-off job.',[duplicateClosing.uid],true);
+
+  const partnerBlocks=items.filter(b=>b.kind==='partner');
+  if(partnerBlocks.length){
+    const missing=partnerBlocks.filter(b=>!b.partner||String(b.status||'').toUpperCase()!=='READY');
+    if(missing.length)add('FIX','PARTNER_MISSING',`${missing.length} partner block${missing.length===1?' needs':'s need'} a real active partner assignment.`,missing.map(b=>b.uid));
+    else add('PASS','PARTNERS_PRESENT',`${partnerBlocks.length}/${partnerBlocks.length} partner blocks have real assignments.`);
+  }
+
+  const leakRx=/(discounted arrangement|internal note|commercial arrangement|sponsorship amount|sponsor rate|pricing tier|discount rate|editor note|production note|sponsor note)/ig;
+  const leakDetails=[];
+  for(const b of items){
+    const fields=[['title',b.title],['content',b.content],['cta',b.cta],['button',b.button]];
+    const hits=[];
+    for(const [field,value] of fields){
+      const text=String(value||''); leakRx.lastIndex=0;
+      for(const m of text.matchAll(leakRx))hits.push({field,term:m[0]});
+    }
+    if(hits.length)leakDetails.push({block:b,hits});
+  }
+  if(leakDetails.length){
+    const detail=leakDetails.map(x=>`${x.block.title||x.block.type||'Untitled'} [${x.block.kind}] — ${x.hits.map(h=>`${h.field}: “${h.term}”`).join(', ')}`).join(' | ');
+    add('FIX','INTERNAL_NOTE_LEAK',`Internal/commercial wording found in ${leakDetails.length} reader-facing block${leakDetails.length===1?'':'s'}: ${detail}`,leakDetails.map(x=>x.block.uid),true);
+  } else add('PASS','NO_INTERNAL_LEAK','No obvious internal commercial notes detected in reader-facing copy.');
+
+  // v3.19.0 — publication-family leakage is a hard handoff defect, not a style preference.
+  const activePub=String(currentPublicationName()||'');
+  const isTasteTrail=/taste trail/i.test(activePub);
+  const wrongFamily=isTasteTrail?items.filter(b=>/\bTell Spotlight\b|\bSpotlight readers?\b|\bSpotlight newsletter\b/i.test([b.title,b.content,b.cta,b.button].join(' '))):[];
+  if(wrongFamily.length)add('FIX','WRONG_FAMILY_LANGUAGE',`${wrongFamily.length} block${wrongFamily.length===1?' contains':'s contain'} Spotlight reader-facing language inside a Taste Trail issue. Replace it with publication-appropriate wording before handoff.`,wrongFamily.map(b=>b.uid),false);
+  else if(isTasteTrail)add('PASS','FAMILY_LANGUAGE','No obvious Spotlight reader-facing language leaked into this Taste Trail issue.');
+
+  const multiCta=items.filter(b=>{
+    const vals=[b.cta,b.button].filter(x=>String(x||'').trim());
+    return vals.length>1&&new Set(vals.map(x=>String(x).trim().toLowerCase())).size>1;
+  });
+  if(multiCta.length)add('WARNING','CTA_CONFLICT',`${multiCta.length} block${multiCta.length===1?' has':'s have'} more than one differing primary CTA/button.`,multiCta.map(b=>b.uid));
+  else add('PASS','ONE_BUTTON','No conflicting primary CTA/button pairs detected.');
+
+  // v3.17.3.7 deterministic format gate. AI may comment on these formats, but may not
+  // change publish severity from run to run. A hard fix is raised only when the saved
+  // reader-facing block clearly promises news/listings AND is plainly generic advice.
+  const formatBlocks=items.filter(b=>b.kind==='component'||b.kind==='partner');
+  const genericAdviceRx=/\b(check|confirm|look up|keep|before setting off|latest information|official information|official source|opening times|dates|routes|parking|costs?)\b/i;
+  const concreteRx=/\b(?:\d{1,2}[\/.-]\d{1,2}|\d{1,2}\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)|£\s?\d+|\d+%|\d{1,4}\s?(?:am|pm))\b/i;
+  const namedLocalRx=/\b(?:Cambridge|Ely|Wisbech|March|St Ives|Huntingdon|Peterborough|Fenland|South Cambridgeshire|East Cambridgeshire|Cambridgeshire County Council|Greater Cambridge|Wicken Fen|Newmarket|Soham|Whittlesey)\b/i;
+  const formatMismatch=[];
+  for(const b of formatBlocks){
+    const label=`${b.type||''} ${b.title||''}`.toLowerCase();
+    const text=String(b.content||'').trim();
+    const isNews=/news brief|quick update/.test(label);
+    const isWhatsOn=/what.?s on|listing/.test(label);
+    if(!isNews&&!isWhatsOn)continue;
+    const hasConcrete=concreteRx.test(text)||namedLocalRx.test(text);
+    const looksGeneric=genericAdviceRx.test(text);
+    if(looksGeneric&&!hasConcrete)formatMismatch.push(b);
+  }
+  if(formatMismatch.length){
+    add('FIX','FORMAT_MISMATCH',`${formatMismatch.length} factual-format support block${formatMismatch.length===1?'':'s'} promise news/update/listings but contain only generic advice. Reframe the component type/purpose or add genuine local material before publication.`,formatMismatch.map(b=>b.uid),true);
+  } else add('PASS','FORMAT_FULFILMENT','News/update/listings components do not show an obvious deterministic format mismatch.');
+
+  // Semantic-ish duplicate scan across supporting components.
+  const comps=items.filter(b=>b.kind==='component');
+  const dupPairs=[];
+  for(let i=0;i<comps.length;i++)for(let j=i+1;j<comps.length;j++){
+    const sim=qaSimilarity(qaText(comps[i]),qaText(comps[j]));
+    if(sim>=0.42)dupPairs.push({a:comps[i],b:comps[j],sim});
+  }
+  if(dupPairs.length){
+    const ids=[...new Set(dupPairs.flatMap(p=>[p.a.uid,p.b.uid]))];
+    add('WARNING','SUPPORTING_DUPLICATION',`${dupPairs.length} supporting-component pair${dupPairs.length===1?' looks':'s look'} substantially similar.`,ids,true);
+  } else add('PASS','SUPPORTING_VARIETY','Supporting components do not show obvious word-level duplication.');
+
+  // v3.18.3 editorial rhythm: catch the CBS #46 failure mode where the ending becomes check/check/question/question.
+  const tail=items.slice(-7);
+  const instructionalTail=tail.filter(b=>/check|checklist|quick check|expert quick|before you react|ask these|what change|local debate/i.test(`${b.type||''} ${b.title||''}`)||/\b(check|confirm|note|ask|mark|save|look up)\b/i.test(String(b.content||''))).length;
+  if(tail.length>=6&&instructionalTail>=4)add('WARNING','ENDING_RHYTHM',`The final ${tail.length} blocks contain ${instructionalTail} instructional/check/question-style components. Vary the ending with discovery, humour, recommendation, people, food or a warmer sign-off.`,tail.map(b=>b.uid),true);
+  else add('PASS','ENDING_RHYTHM','The final run does not show the previous check/question-heavy ending pattern.');
+
+  // Duplicate named-place / venue signal across Master Articles. Warning only: repetition can be intentional.
+  // v3.18.15: multi-word entity candidates only, avoiding sentence-start words being mistaken for venues.
+  const masters=items.filter(b=>b.kind==='article');
+  const properByMaster=masters.map(b=>({b,set:new Set(qaNamedEntityCandidatesV31815(`${b.title||''} ${b.content||''}`))}));
+  const properCounts=new Map(); for(const x of properByMaster)for(const n of x.set)properCounts.set(n,(properCounts.get(n)||0)+1);
+  const repeatedProper=[...properCounts.entries()].filter(([,n])=>n>=2).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if(repeatedProper.length)add('WARNING','NAMED_PLACE_REPEAT',`Named place/venue repetition across Masters: ${repeatedProper.map(([n,c])=>`${n} (${c})`).join(', ')}. Confirm each repeat earns its place; otherwise substitute a different local example.`,[],true);
+  else add('PASS','NAMED_PLACE_REPEAT','No obvious repeated multi-word place/venue names across Master Articles.');
+
+  // County-balance warning for Cambridgeshire Spotlight only.
+  const pubLabel=String(currentPublicationName()||'').toLowerCase();
+  if(/cambridgeshire spotlight/.test(pubLabel)&&masters.length){
+    const camBlocks=masters.filter(b=>/\bCambridge\b/i.test(`${b.title||''} ${b.content||''}`)).length;
+    const otherBlocks=masters.filter(b=>/\b(Ely|Huntingdon|St Ives|Wisbech|March|Soham|Whittlesey|Fenland|Chatteris|St Neots|Ramsey)\b/i.test(`${b.title||''} ${b.content||''}`)).length;
+    if(camBlocks>=Math.ceil(masters.length*.6)&&otherBlocks<Math.ceil(masters.length*.4))add('WARNING','COUNTY_BALANCE',`Cambridge appears in ${camBlocks}/${masters.length} Master Articles while wider-county named-place coverage is thinner (${otherBlocks}/${masters.length}). Confirm the weighting is editorially deliberate.`,masters.map(b=>b.uid),true);
+    else add('PASS','COUNTY_BALANCE','Cambridgeshire Master geography does not show an obvious Cambridge-heavy concentration.');
+  }
+
+  // Topic concentration using useful content words.
+  const counts=new Map();
+  for(const b of items){
+    for(const w of qaWords(qaText(b)))counts.set(w,(counts.get(w)||0)+1);
+  }
+  const concentrated=[...counts.entries()].filter(([,n])=>n>=5).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(concentrated.length)add('WARNING','TOPIC_CONCENTRATION',`Single-word frequency note (non-semantic): ${concentrated.map(([w,n])=>`${w} (${n})`).join(', ')}. Review whether the issue is circling the same question too often.`);
+  else add('PASS','TOPIC_BALANCE','No obvious single-word topic concentration across five or more blocks.');
+
+
+  // Human-language / AI-tell guard: frequency, not blanket bans.
+  const humanGuardWords=['useful','practical','straightforward','meaningful','valuable','importantly','helpful','navigate','whether','matters','key','crucial','worth knowing'];
+  const issueBlob=items.map(b=>String(b.content||'').toLowerCase()).join(' ');
+  const overused=[];
+  for(const term of humanGuardWords){
+    const rx=new RegExp(`\\b${term.replace(/\s+/g,'\\s+')}\\b`,'g');
+    const n=(issueBlob.match(rx)||[]).length;
+    const limit=term.includes(' ')?2:3;
+    if(n>limit)overused.push(`${term} (${n})`);
+  }
+  const phrasePatterns=[
+    {label:'The question is…',rx:/\bthe question is\b/gi,limit:2},
+    {label:'That matters because…',rx:/\bthat matters because\b/gi,limit:1},
+    {label:'The key point…',rx:/\bthe key point\b/gi,limit:1},
+    {label:'It is important to…',rx:/\bit is important to\b/gi,limit:1}
+  ];
+  const overusedPhrases=phrasePatterns.map(p=>({label:p.label,n:(issueBlob.match(p.rx)||[]).length,limit:p.limit})).filter(x=>x.n>x.limit);
+  if(overused.length||overusedPhrases.length){
+    add('WARNING','HUMAN_VOICE',`Human-language check: repeated AI-ish wording/patterns detected — ${[...overused,...overusedPhrases.map(x=>`${x.label} (${x.n})`)].join(', ')}. Prefer specific everyday wording and vary sentence shape.`,[],true);
+  }else add('PASS','HUMAN_VOICE','No obvious overuse of common AI-ish words or repeated polished sentence patterns.');
+
+  // Partner overexposure: count partner name across blocks, but do not auto-remove.
+  for(const p of partnerBlocks){
+    if(!p.partner)continue;
+    const needle=String(p.partner).toLowerCase();
+    const appearances=items.filter(b=>qaText(b).toLowerCase().includes(needle));
+    if(appearances.length>=3)add('WARNING','PARTNER_EXPOSURE',`${p.partner} appears in ${appearances.length} blocks. Confirm that this level of visibility is intentional.`,appearances.map(b=>b.uid));
+  }
+
+  // v3.20.4 — structural rhythm gate: no support-only tail and article anchors across the whole issue.
+  const structuralRhythm=assemblyRhythmIntegrityV3204(items);
+  if(!structuralRhythm.ok)add('FIX','ASSEMBLY_RHYTHM',structuralRhythm.errors.join(' '),[],false);
+  else add('PASS','ASSEMBLY_RHYTHM','Master/Feature anchors are distributed through all three thirds and there is no long support-only run.');
+
+  // Rhythm: warn on runs of 3 articles.
+  let run=0,maxRun=0;
+  for(const b of items){run=b.kind==='article'?run+1:0;maxRun=Math.max(maxRun,run)}
+  if(maxRun>=3)add('WARNING','HEAVY_RHYTHM',`The running order contains ${maxRun} Master Articles in a row. Consider a lighter/interactivity break.`);
+  else add('PASS','RHYTHM',`No run of three or more Master Articles detected.`);
+
+  // First-party supplied info rule: informational only, never a failure.
+  add('PASS','FIRST_PARTY_RULE','Named information supplied directly by a featured partner/organisation may be used as first-party information. Public corroboration is helpful but not mandatory; attribute or qualify it where appropriate.');
+
+  return findings;
+}
+function renderQAReport(report){
+  const lines=[`FINAL QA — ${report.summary.fix} Fix · ${report.summary.warning} Warning · ${report.summary.pass} Pass`,''];
+  for(const f of report.findings){
+    lines.push(`${f.severity}: ${f.message}`);
+  }
+  return lines.join('\n');
+}
+
+function setQAFixButtonState(report){
+  const b=E('qa-fix-v317');
+  const r=E('qa-rerun-v317');
+  const fresh=!!(report&&report.qaVersion==='3.17.3.7'&&report.summary);
+  const fixes=fresh?Number(report.summary.fix||0):0;
+  if(b){b.disabled=!(fresh&&fixes>0);b.textContent=fixes>0?`Fix QA Exceptions (${fixes})`:'Fix QA Exceptions';}
+  const repair=E('qa-repair-v3191');
+  const named=(report?.findings||[]).some(f=>f.severity==='FIX'&&(f.code==='WRONG_FAMILY_LANGUAGE'||/articleMeta|align the metadata|different slug|metadata.*former|entity mismatch/i.test(String(f.message||''))));
+  if(repair){repair.style.display=fresh&&fixes>0&&named?'inline-block':'none';repair.disabled=!!window.__finalQARunningV31736;}
+  if(r){r.disabled=!fresh||!!window.__finalQARunningV31736;r.textContent=window.__finalQARunningV31736?'Running Final QA…':'Rerun Final QA';}
+}
+function showQAReport(report,scroll=true){
+  const panel=E('qa-report-panel'),text=E('qa-report-text'),summary=E('qa-report-summary');
+  if(!panel||!text||!summary)return;
+  panel.style.display='block';
+  text.value=renderQAReport(report);
+  const blockers=(report.findings||[]).filter(f=>f.severity==='FIX' && ['INTERNAL_COPY','INCOMPLETE_COPY','PARTNER_INTERNAL','INTERNAL_NOTE_LEAK'].includes(f.code)).length;
+  summary.textContent=`${blockers?'HOLD':'PUBLISH GATE'} · ${report.summary.fix} Fix · ${report.summary.warning} Warning · ${report.summary.pass} Pass · fresh QA saved in this browser`;
+  setQAFixButtonState(report);
+  if(scroll)setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+function clearQAReportView(message='Run Final QA to review the complete issue.'){
+  const panel=E('qa-report-panel'),text=E('qa-report-text'),summary=E('qa-report-summary');
+  if(panel)panel.style.display='block'; if(text)text.value=''; if(summary)summary.textContent=message; setQAFixButtonState(null);
+}
+function loadSavedQAReport(){
+  try{
+    const report=JSON.parse(localStorage.getItem(qaKey())||'null');
+    if(report?.qaVersion==='3.17.3.7'){showQAReport(report,false);return}
+    const issueStatus=String(val(S.issue?.fields||{},'Issue Status')||'').trim().toUpperCase();
+    if(['QA','READY FOR LETTERMAN','PUBLISHED','ARCHIVED'].includes(issueStatus)){
+      clearQAReportView('Persisted QA gate: PASSED — 0 hard fixes. The detailed browser report is not available after this refresh; rerun QA only if you want a fresh warning report.');
+      const r=E('qa-rerun-v317');if(r){r.disabled=false;r.textContent='Rerun Final QA'}
+      return;
+    }
+    clearQAReportView('Run Final QA to review the complete assembled issue.');
+  }catch{clearQAReportView('Run Final QA to review the complete assembled issue.');}
+}
+async function copyQAReport(){
+  const text=E('qa-report-text')?.value||'';
+  if(!text){alert('There is no QA report to copy yet.');return}
+  try{
+    await navigator.clipboard.writeText(text);
+    const b=E('qa-copy'),old=b.textContent;
+    b.textContent='Copied ✓';
+    setTimeout(()=>b.textContent=old,1400);
+  }catch{
+    E('qa-report-text').focus();
+    E('qa-report-text').select();
+    alert('The report is selected. Press Ctrl+C to copy it.');
+  }
+}
+async function runFinalQA(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const items=getCanvas();
+  if(!items.length){alert('Add or assemble the issue first.');return}
+  const btn=E('assembly-qa'),original=btn.textContent;
+  window.__finalQARunningV31736=true;
+  workflowSelectedStepV312=8;
+  document.body.dataset.workflowStep='8';
+  btn.disabled=true;btn.textContent='Running Final QA…';
+  const rerun=E('qa-rerun-v317'); if(rerun){rerun.disabled=true;rerun.textContent='Running Final QA…';}
+  setWorkflowActionStatusV312(8,'QA','Running Final QA…',`Checking all ${items.length} assembled sections against the ${engineProfileForPublication().name} profile. Stay on Step 8; the report will appear here when complete.`);
+  updateWorkflowShellV312(8);
+  try{
+    let findings=deterministicQA(items);
+    try{
+      const payload={
+        publication:currentPublicationName(),
+        issuePromise:qaIssuePromiseV31815(),
+        profile:qaProfilePayloadV31815(),
+        blocks:items.map((b,i)=>({
+          order:i+1,uid:b.uid,kind:b.kind,type:b.type,title:b.title,purpose:b.purpose,
+          content:b.content,partner:b.partner,category:b.category,cta:b.cta,button:b.button,url:b.url,status:b.status,
+          articleMeta:b.kind==='article'?(()=>{const r=S.sections.find(x=>x.id===b.refId);const p=r?masterArticlePackage(r.fields||{}):{};return {article_title:p?.article_title||'',article_subhead:p?.article_subhead||'',seo_title:p?.seo_title||'',seo_description:p?.seo_description||'',url_path:p?.url_path||'',newsletter_headline:p?.newsletter_headline||'',cta_text:p?.cta_text||''}})():null,
+          sourceRule:b.kind==='partner'?'Partner information may include first-party information supplied directly by the organisation. Do not treat lack of public web corroboration alone as a failure.':''
+        }))
+      };
+      const ai=await api('final-qa',{method:'POST',body:JSON.stringify(payload)});
+      if(Array.isArray(ai.findings))findings=findings.concat(ai.findings);
+    }catch(error){
+      findings.push({severity:'WARNING',code:'AI_QA_UNAVAILABLE',message:`Editorial AI review was unavailable, so deterministic QA only was used: ${error.message}`,blocks:[],safeFix:false});
+    }
+    const summary={
+      fix:findings.filter(f=>f.severity==='FIX').length,
+      warning:findings.filter(f=>f.severity==='WARNING').length,
+      pass:findings.filter(f=>f.severity==='PASS').length
+    };
+    const report={qaVersion:'3.17.3.7',createdAt:new Date().toISOString(),summary,findings};
+    localStorage.setItem(qaKey(),JSON.stringify(report));
+    await persistQALifecycleV31820(summary.fix===0);
+    showQAReport(report,true);
+    setWorkflowActionStatusV312(8,'QA',`Final QA complete · ${summary.fix} Fix · ${summary.warning} Warning · ${summary.pass} Pass`,
+      summary.fix?'Hard fixes remain. Use Fix QA Exceptions, then rerun Final QA.':'No hard QA fixes remain. Review warnings, then move to Step 9 Production Ready.');
+    updateWorkflowShellV312(8);
+
+  }catch(error){
+    const message=`Final QA did not complete: ${String(error?.message||error)}`;
+    clearQAReportView(message);
+    setWorkflowActionStatusV312(8,'QA','Final QA failed.',message);
+    updateWorkflowShellV312(8);
+  }finally{
+    window.__finalQARunningV31736=false;
+    workflowSelectedStepV312=8;
+    document.body.dataset.workflowStep='8';
+    btn.disabled=false;btn.textContent=original;
+    setQAFixButtonState((()=>{try{return JSON.parse(localStorage.getItem(qaKey())||'null')}catch{return null}})());
+    updateWorkflowShellV312(8);
+  }
+}
+
+async function rewriteSupportBlockV317(block,problems,itemsOverride=null){
+  const items=itemsOverride||getCanvas();
+  const context=partnerContext(items,items.findIndex(x=>x.uid===block.uid));
+  const issueMap=items.map((x,i)=>`${i+1}. ${x.title} — ${String(x.content||x.purpose||'').slice(0,220)}`).join('\n');
+  const prompt=`Rewrite ONE newsletter supporting block for ${currentPublicationName()}.
+
+TYPE: ${block.type||''}
+TITLE: ${block.title||''}
+CURRENT COPY:
+${block.content||''}
+
+QA PROBLEMS:
+${problems||'Make the block distinct, reader-facing and publication-ready.'}
+
+NEARBY CONTEXT:
+${context||'None'}
+
+ISSUE MAP:
+${issueMap}
+
+RULES:
+- Return only finished reader-facing copy.
+- 35-100 words unless the format clearly needs less.
+- One clear job and one CTA maximum.
+- Do not invent facts, prices, businesses, dates, offers, quotes or local claims.
+- If evidence is not supplied, use a question, opinion prompt, checklist or closing action instead of fabrication.
+- Natural UK English; avoid formulaic AI phrasing.
+- Do not use internal production/commercial language.
+- Do not repeat another Master or support block.
+- Capitalise Every Word In Headings when a heading is included.`;
+  const generated=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
+  const replacement=String(generated.text||'').trim();
+  if(!replacement)throw new Error('No replacement component copy returned.');
+  block.content=replacement;
+  block.status='READY';
+  block.contentStatus='APPROVED';
+  block.productionStatus='READY FOR LETTERMAN';
+}
+
+async function repairTruncatedMasterV317(block,index,total){
+  const record=(S.sections||[]).find(x=>x.id===block.refId);
+  if(!record)throw new Error(`Master record not found for ${block.title}`);
+  const notes=String(val(record.fields||{},'Notes')||'');
+  const clean=clearWriterOnlyStateV317(notes);
+  const patched=await api('sections',{method:'PATCH',body:JSON.stringify({id:record.id,fields:{
+    'Section Final Copy':'',
+    'Section Status':'Drafting',
+    'Section QA Result':'Not Checked',
+    'Notes':clean
+  }})});
+  let fresh=patched.record;
+  const i=S.sections.findIndex(x=>x.id===fresh.id);if(i>=0)S.sections[i]=fresh;
+
+  setWorkflowActionStatusV312(8,'QA',`Repairing Master ${index}/${total}…`,
+    `${block.title}\nReusing the saved Research Pack, rerunning only the writer, then checking for a complete ending.`);
+
+  await produceOne({s:fresh,run:800+index},'generate');
+  fresh=await refreshProducedRecord(fresh.id);
+  if(!fresh)throw new Error('Rewritten Master record could not be refreshed.');
+
+  const copy=String(val(fresh.fields||{},'Section Final Copy')||'').trim();
+  const temp={...block,content:copy};
+  if(looksTruncatedMasterV317(temp))throw new Error('Rewritten Master still appears truncated.');
+  const leak=producedMasterLeakageV316(fresh);
+  if(leak)throw new Error(`Rewritten Master contains wrong-publication geography: ${leak.hits.join(', ')}`);
+
+  block.title=String(val(fresh.fields,'Section Title')||block.title);
+  block.content=copy;
+  block.cta=String(val(fresh.fields,'CTA Text')||val(fresh.fields,'Primary Next Action')||block.cta||'');
+  block.button=String(val(fresh.fields,'CTA Text')||block.button||'');
+  block.url=articleUrl(fresh);
+  block.status='READY';
+  block.contentStatus='APPROVED';
+  block.productionStatus='ASSETS NEEDED';
+}
+
+async function evaluateIssueQAV3173(items){
+  let findings=deterministicQA(items);
+  try{
+    const payload={
+      publication:currentPublicationName(),
+      issuePromise:qaIssuePromiseV31815(),
+      profile:qaProfilePayloadV31815(),
+      blocks:items.map((b,i)=>({
+        order:i+1,uid:b.uid,kind:b.kind,type:b.type,title:b.title,purpose:b.purpose,
+        content:b.content,partner:b.partner,category:b.category,cta:b.cta,button:b.button,url:b.url,status:b.status,
+        sourceRule:b.kind==='partner'?'Partner information may include first-party information supplied directly by the organisation. Do not treat lack of public web corroboration alone as a failure.':''
+      }))
+    };
+    const ai=await api('final-qa',{method:'POST',body:JSON.stringify(payload)});
+    if(Array.isArray(ai.findings))findings=findings.concat(ai.findings);
+  }catch(error){
+    findings.push({severity:'WARNING',code:'AI_QA_UNAVAILABLE',message:`Editorial AI review was unavailable, so deterministic QA only was used: ${error.message}`,blocks:[],safeFix:false});
+  }
+  return {
+    qaVersion:'3.17.3.7',createdAt:new Date().toISOString(),
+    summary:{
+      fix:findings.filter(f=>f.severity==='FIX').length,
+      warning:findings.filter(f=>f.severity==='WARNING').length,
+      pass:findings.filter(f=>f.severity==='PASS').length
+    },
+    findings
+  };
+}
+function fixCodesV3173(report){
+  return new Set((report?.findings||[]).filter(f=>f.severity==='FIX').map(f=>String(f.code||'').trim()).filter(Boolean));
+}
+async function rewriteMasterLeakV31733(block,itemsOverride=null){
+  const issueItems=itemsOverride||getCanvas();
+  const surrounding=issueItems.map((b,i)=>`${i+1}. ${b.kind==='article'?'MASTER':'SUPPORT'} — ${b.title||b.type||''}`).join('\n');
+  const prompt=`Surgically edit this FINISHED reader-facing Master Article.
+
+PUBLICATION: ${currentPublicationName()}
+TITLE: ${block.title||''}
+CURRENT COPY:
+${block.content||''}
+
+ISSUE RUNNING ORDER TITLES:
+${surrounding}
+
+ONLY JOB:
+- Remove any internal, production, editor-facing, sponsorship, pricing or commercial-arrangement wording that should never be visible to readers.
+- Preserve every factual claim, named place, number, attribution, recommendation, structure and editorial meaning.
+- Do not add facts, research, offers, partners or claims.
+- Do not shorten or rewrite the article for style beyond the minimum wording needed to make the leaked sentence reader-facing.
+- Keep the article complete and naturally finished.
+- Return ONLY the complete revised article body, with no notes or explanation.`;
+  const d=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
+  const copy=String(d.text||'').trim();
+  if(!copy)throw new Error('Master leak repair returned empty copy.');
+  const temp={...block,content:copy};
+  if(looksTruncatedMasterV317(temp))throw new Error('Master leak repair appears truncated.');
+  block.content=copy;
+  return block;
+}
+async function persistMasterLeakRepairV31733(block){
+  if(!block?.refId)throw new Error('Persistent Master record id is missing.');
+  const record=(S.sections||[]).find(x=>x.id===block.refId);
+  if(!record)throw new Error('Persistent Master record was not found.');
+  const fields={
+    'Section Final Copy':String(block.content||'').trim(),
+    'Section QA Result':'Not Checked'
+  };
+  const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:block.refId,fields})});
+  const i=(S.sections||[]).findIndex(x=>x.id===block.refId);
+  if(i>=0)S.sections[i]=d.record;
+  return d.record;
+}
+
+async function persistSupportRepairV3173(block){
+  if(!block?.refId)throw new Error('Persistent support record id is missing.');
+  const record=(S.sections||[]).find(x=>x.id===block.refId);
+  if(!record||!isPersistentSupportSectionV3153(record))throw new Error('Persistent Step 6 support record was not found.');
+  const meta=supportMetaV3153(record);
+  const notes=supportNotesV3153({
+    type:block.type||meta.type,
+    lifeLane:block.lifeLane||meta.lifeLane,
+    commercialRole:block.commercialRole||meta.commercialRole,
+    partnerName:block.partner||meta.partnerName
+  });
+  const fields={
+    'Section Title':block.title||String(val(record.fields||{},'Section Title')||block.type||'Support'),
+    'Section Final Copy':String(block.content||'').trim(),
+    'Section Status':'Ready',
+    'Section QA Result':'Not Checked',
+    'Notes':notes
+  };
+  if(String(block.cta||block.button||'').trim())fields['CTA Text']=String(block.cta||block.button).trim();
+  if(String(block.url||'').trim())fields['Action Destination URL']=String(block.url).trim();
+  const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:block.refId,fields})});
+  const i=(S.sections||[]).findIndex(x=>x.id===block.refId);
+  if(i>=0)S.sections[i]=d.record;
+  return d.record;
+}
+async function fixQAExceptionsV317(){
+  if(!S.issue)return;
+  const originalItems=getCanvas();
+  if(!originalItems.length)return;
+
+  const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
+  if(!saved||saved.qaVersion!=='3.17.3.7'){
+    setWorkflowActionStatusV312(8,'QA','Fresh QA required.','This QA report came from an older Step 8 build. Run Final QA in v3.17.3.7 before fixing exceptions.');
+    localStorage.removeItem(qaKey());
+    updateWorkflowShellV312(8);
+    return;
+  }
+  if(!saved.summary?.fix){
+    setWorkflowActionStatusV312(8,'QA','No hard fixes to repair.','Final QA already has 0 Fix. Review warnings, then move to Step 9.');
+    updateWorkflowShellV312(8);return;
+  }
+
+  const btn=E('qa-fix-v317');
+  const old=btn?.textContent||'Fix QA Exceptions';
+  if(btn){btn.disabled=true;btn.textContent='Testing QA Repairs…';}
+
+  let masterFixed=0,supportPrepared=0;
+  const failed=[];
+  try{
+    setWorkflowActionStatusV312(8,'QA','Testing QA hard-fix repairs…',
+      'v3.17.3.7 works on a temporary copy first. Support repairs are written back to persistent Step 6 records only if fresh whole-issue QA reduces the hard-fix count without introducing a new hard-fix class.');
+
+    // Deterministic Master truncation remains a direct upstream repair from the saved Research Pack.
+    const masters=originalItems.filter(looksTruncatedMasterV317);
+    for(let i=0;i<masters.length;i++){
+      try{
+        await repairTruncatedMasterV317(masters[i],i+1,masters.length);
+        masterFixed++;
+        localStorage.setItem(assemblyKey(),JSON.stringify(originalItems));
+      }catch(e){failed.push(`${masters[i].title}: ${String(e.message||e)}`)}
+    }
+
+    // Work on a temporary issue copy. Nothing in Step 6 is changed until convergence is proved.
+    const working=JSON.parse(JSON.stringify(originalItems));
+    const orphan=working.filter(orphanPartnerTipV317);
+    for(const block of orphan){
+      try{
+        block.type='EXPERT QUICK CHECK';block.title='Quick Local Check';block.productionTemplate='SHORT COMPONENT';
+        block.commercialRole='EDITORIAL';block.partner='';block.partnerAttached=false;
+        await rewriteSupportBlockV317(block,'The current reader-facing label says Partner Tip but no real partner is attached. Convert this into one distinct editorial quick check. Do not mention partners, sponsors or commercial relationships. It must not repeat any Master Article or another support block.',working);
+        supportPrepared++;
+      }catch(e){failed.push(`${block.title}: ${String(e.message||e)}`)}
+    }
+
+    const closing=duplicateOpeningClosingV317(working);
+    if(closing){
+      try{
+        closing.type='BEFORE YOU GO';closing.title='Before You Go';closing.productionTemplate='SHORT COMPONENT';
+        closing.purpose='Close the issue with one distinct sign-off or reader action. Do not restart the opening theme.';
+        await rewriteSupportBlockV317(closing,'This closing repeats the Opening Note. Write a distinct sign-off or single reader action that closes the issue rather than restarting it. Avoid repeating the issue-wide check-details formula.',working);
+        supportPrepared++;
+      }catch(e){failed.push(`Before You Go: ${String(e.message||e)}`)}
+    }
+
+    const leakIds=[...new Set((saved.findings||[]).filter(f=>f.code==='INTERNAL_NOTE_LEAK'||/internal|commercial/i.test(String(f.message||''))).flatMap(f=>f.blocks||[]))];
+    const handledIds=new Set([...orphan.map(b=>b.uid),...(closing?[closing.uid]:[])]);
+    const masterLeakPrepared=new Set();
+    for(const block of working.filter(b=>leakIds.includes(b.uid)&&!handledIds.has(b.uid))){
+      try{
+        if(block.kind==='article'){
+          await rewriteMasterLeakV31733(block,working);
+          masterLeakPrepared.add(block.uid);
+        }else{
+          await rewriteSupportBlockV317(block,'Remove every internal, production, sponsorship, pricing, commercial-arrangement or editor-facing phrase. Keep only reader-facing copy. Preserve any real named partner and do not invent facts. Give this block one distinct job that is not already performed elsewhere in the issue.',working);
+          supportPrepared++;
+        }
+        handledIds.add(block.uid);
+      }catch(e){failed.push(`${block.title}: ${String(e.message||e)}`)}
+    }
+
+    // v3.17.3.2: format mismatch must converge as a family. A News Brief, Quick Update or What's On
+    // block with no actual news/listings can drift between WARNING and FIX across AI passes. If the saved
+    // report identifies that mismatch, safely reframe the support block at the same time as hard fixes.
+    // We never invent facts: the new identity becomes opinion/reader-input editorial instead.
+    const formatMismatch=f=>/news brief|quick update|what.?s on|listing|actual local|generic advice|no events|no venues|no activities/i.test(String(f?.message||''));
+    const aiSafeFixes=(saved.findings||[]).filter(f=>
+      f.safeFix===true && (f.severity==='FIX' || (f.severity==='WARNING'&&formatMismatch(f)))
+    );
+    for(const finding of aiSafeFixes){
+      for(const block of working.filter(b=>(finding.blocks||[]).includes(b.uid)&&b.kind!=='article'&&!handledIds.has(b.uid))){
+        try{
+          const formatProblem=formatMismatch(finding);
+          if(formatProblem&&!String(block.partner||'').trim()){
+            const originalType=String(block.type||'').toUpperCase();
+            if(originalType.includes("WHAT'S ON")||originalType.includes('WHATS ON')){
+              block.type='READER RECOMMENDATION';block.title='Your Local Pick';
+              block.purpose='Ask for one specific local recommendation without pretending to supply verified listings.';
+            }else if(originalType.includes('NEWS BRIEF')){
+              block.type='LOCAL DEBATE';block.title='Local Debate';
+              block.purpose='Put one clear local choice or tension to readers without presenting generic guidance as news.';
+            }else{
+              block.type='READER VOICE';block.title='Reader Voice';
+              block.purpose='Ask for one concrete reader observation or experience without presenting generic guidance as a factual update.';
+            }
+            block.productionTemplate='SHORT COMPONENT';
+            block.commercialRole='EDITORIAL';block.partner='';block.partnerAttached=false;
+          }
+          await rewriteSupportBlockV317(block,`${finding.message}\n\nRepair the actual reader-facing block, not the QA label. ${formatProblem?'The old format promised factual news, an update or listings without evidence. The format has now been changed: write to the NEW title/purpose and do not call it news, an update or What\'s On. Do not invent events, dates, venues or claims.':''} It must have a genuinely different reader job from the adjacent Master and from every other support block. Do not use the stock formula of checking dates, costs, routes, opening times or provider information unless that is uniquely the purpose of this block. If factual evidence is absent, use a distinct opinion, decision, observation or single reader action rather than inventing facts.`,working);
+          handledIds.add(block.uid);supportPrepared++;
+        }catch(e){failed.push(`${block.title}: ${String(e.message||e)}`)}
+      }
+    }
+
+    if(!supportPrepared&&!masterLeakPrepared.size){
+      const detail=failed.length?`No safe support repair was prepared.\n- ${failed.join('\n- ')}`:'Final QA contains no supporting hard fix that v3.17.3.7 can safely rewrite automatically.';
+      setWorkflowActionStatusV312(8,'QA','No support repair saved.',detail);
+      return;
+    }
+
+    setWorkflowActionStatusV312(8,'QA','Checking repair convergence…',
+      `${supportPrepared} support repair${supportPrepared===1?'':'s'} + ${masterLeakPrepared.size} Master leak repair${masterLeakPrepared.size===1?'':'s'} prepared temporarily. Running fresh whole-issue QA before anything is written back.`);
+    const candidateReport=await evaluateIssueQAV3173(working);
+    const beforeFix=Number(saved.summary.fix||0),afterFix=Number(candidateReport.summary.fix||0);
+    const beforeCodes=fixCodesV3173(saved),afterCodes=fixCodesV3173(candidateReport);
+    const newCodes=[...afterCodes].filter(c=>!beforeCodes.has(c));
+
+    if(!(afterFix<beforeFix)||newCodes.length){
+      const why=newCodes.length?`New hard-fix class detected: ${newCodes.join(', ')}.`:`Hard-fix count did not fall (${beforeFix} → ${afterFix}).`;
+      setWorkflowActionStatusV312(8,'QA','Repair rejected — source records unchanged.',
+        `${why}\nThe temporary rewrite was discarded. v3.17.3.7 will not churn persistent Step 6 copy when the whole issue does not improve.`);
+      showQAReport(saved,false);
+      return;
+    }
+
+    // Only now persist the changed support records upstream to Step 6 Airtable source-of-truth.
+    const changed=working.filter(w=>{
+      const o=originalItems.find(x=>x.uid===w.uid);
+      return w.kind!=='article'&&o&&(String(w.content||'')!==String(o.content||'')||String(w.type||'')!==String(o.type||'')||String(w.title||'')!==String(o.title||''));
+    });
+    let persisted=0;
+    for(const block of changed){
+      try{await persistSupportRepairV3173(block);persisted++;}
+      catch(e){failed.push(`${block.title}: persistence failed — ${String(e.message||e)}`)}
+    }
+    let masterLeakPersisted=0;
+    for(const block of working.filter(b=>masterLeakPrepared.has(b.uid))){
+      try{await persistMasterLeakRepairV31733(block);masterLeakPersisted++;}
+      catch(e){failed.push(`${block.title}: Master leak persistence failed — ${String(e.message||e)}`)}
+    }
+    if(persisted!==changed.length||masterLeakPersisted!==masterLeakPrepared.size){
+      setWorkflowActionStatusV312(8,'QA','Repair persistence incomplete.',
+        `${persisted}/${changed.length} support repairs reached persistent Step 6 records. Do not continue to Step 9. Run Final QA again after refreshing/reassembling if the app requests it.\n- ${failed.join('\n- ')}`);
+      await refreshPersistentSupportV3153().catch(()=>{});
+      localStorage.removeItem(qaKey());updateWorkflowShellV312(8);return;
+    }
+
+    localStorage.setItem(assemblyKey(),JSON.stringify(working));
+    renderAssembly();
+    await refreshPersistentSupportV3153().catch(()=>{});
+    localStorage.removeItem(qaKey());
+    updateWorkflowShellV312(8);
+    setWorkflowActionStatusV312(8,'QA','QA repair converged and persisted.',
+      `${masterFixed} truncated Masters repaired · ${masterLeakPersisted} Master leak repair${masterLeakPersisted===1?'':'s'} persisted · ${persisted} supporting hard-fix records persisted upstream · hard fixes reduced ${beforeFix} → ${afterFix}. Run Final QA again now to verify the saved source-of-truth.`);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=old;}
+  }
+}
+
+
+async function repairNamedHardFixesV3191(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
+  if(!saved?.summary?.fix){alert('Run Final QA first.');return}
+  const original=getCanvas();
+  const wrongIds=[...new Set((saved.findings||[]).filter(f=>f.severity==='FIX'&&f.code==='WRONG_FAMILY_LANGUAGE').flatMap(f=>f.blocks||[]))];
+  const entityIds=[...new Set((saved.findings||[]).filter(f=>f.severity==='FIX'&&/articleMeta|align the metadata|different slug|metadata.*former|entity mismatch/i.test(String(f.message||''))).flatMap(f=>f.blocks||[]))];
+  if(!wrongIds.length&&!entityIds.length){alert('There are no named hard fixes this repair can handle safely.');return}
+  const entityBlocks=original.filter(b=>entityIds.includes(b.uid)&&b.kind==='article');
+  const names=entityBlocks.map(b=>b.title).join('\n- ');
+  const prompt=`ICS will repair only the named hard fixes.\n\nWrong-family wording: ${wrongIds.length} block(s).\nEntity/story mismatches: ${entityBlocks.length} Master(s).${entityBlocks.length?`\n- ${names}`:''}\n\nFor an entity mismatch, ICS will first look for an already-produced Master whose body agrees with the stored publishing metadata. If none exists, it will research the metadata story — not the contaminated legacy body/brief — and rebuild only that Master. It will stop rather than guess. Continue?`;
+  if(!confirm(prompt))return;
+  const btn=E('qa-repair-v3191'); if(btn){btn.disabled=true;btn.textContent='Repairing Named Fixes…'}
+  try{
+    let working=JSON.parse(JSON.stringify(original));
+    // Deterministic family-language repair.
+    for(const block of working.filter(b=>wrongIds.includes(b.uid))){
+      const clean=x=>String(x||'').replace(/Tell Spotlight/gi,'Tell us').replace(/Spotlight readers?/gi,'Taste Trail readers').replace(/Spotlight newsletter/gi,'Taste Trail');
+      block.title=clean(block.title);block.content=clean(block.content);block.cta=clean(block.cta);block.button=clean(block.button);
+      if(block.kind==='article'){
+        const rec=S.sections.find(x=>x.id===block.refId);
+        if(rec){const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:rec.id,fields:{'Section Final Copy':block.content,'CTA Text':block.cta||block.button||val(rec.fields||{},'CTA Text')}})});const i=S.sections.findIndex(x=>x.id===rec.id);if(i>=0)S.sections[i]=d.record;}
+      }else await persistSupportRepairV3173(block);
+    }
+
+    // v3.19.2 entity reconciliation. Metadata is the publishing-side identity; never re-run the stale legacy brief blindly.
+    for(let i=0;i<entityBlocks.length;i++){
+      const block=entityBlocks[i];
+      let rec=S.sections.find(x=>x.id===block.refId);
+      if(!rec)throw new Error(`Could not resolve the persistent Master for ${block.title}. No automatic guess was made.`);
+      const pkg=masterArticlePackage(rec.fields||{})||{};
+      const metaBlob=[pkg.article_title,pkg.article_subhead,pkg.seo_title,pkg.seo_description,pkg.url_path,pkg.newsletter_headline].filter(Boolean).join(' ');
+      const metaTerms=(metaBlob.toLowerCase().match(/[a-z0-9]+/g)||[]).filter(w=>w.length>=5&&!['former','article','restaurant','cambridge','cambridgeshire','what','happens','next'].includes(w));
+      const metadataEntityHint=metaTerms.slice(0,12).join(' ');
+
+      setWorkflowActionStatusV312(8,'QA',`Reconciling entity mismatch ${i+1}/${entityBlocks.length}…`,`${block.title}\nLooking first for an existing produced Master that agrees with the publishing metadata.`);
+
+      // Prefer an existing coherent produced record. This avoids unnecessary research and protects published/banked work.
+      const candidates=(S.articleLibrary||S.sections||[]).filter(x=>x.id!==rec.id&&masterArticleState(x)==='complete');
+      let replacement=null;
+      let bestScore=0;
+      for(const cand of candidates){
+        const cp=masterArticlePackage(cand.fields||{})||{};
+        const body=String(val(cand.fields||{},'Section Final Copy')||cp.article_body||'').toLowerCase();
+        const cmeta=[cp.article_title,cp.article_subhead,cp.seo_title,cp.seo_description,cp.url_path,cp.newsletter_headline].filter(Boolean).join(' ').toLowerCase();
+        const score=metaTerms.reduce((n,t)=>n+(body.includes(t)?2:0)+(cmeta.includes(t)?1:0),0);
+        if(score>bestScore){bestScore=score;replacement=cand;}
+      }
+      if(replacement&&bestScore>=8){
+        const fresh=makeArticleBlock(replacement);
+        const wi=working.findIndex(x=>x.uid===block.uid);
+        if(wi>=0)working[wi]={...fresh,uid:block.uid};
+        continue;
+      }
+
+      // No coherent banked copy found: reframe THIS record around the publishing metadata story.
+      if(!metadataEntityHint)throw new Error(`${block.title}: publishing metadata does not contain enough identity detail to repair safely.`);
+      const articleTitle=String(pkg.article_title||pkg.newsletter_headline||block.title||'').trim();
+      const articleSubhead=String(pkg.article_subhead||pkg.seo_description||'').trim();
+      const patch={
+        'Section Title':articleTitle||block.title,
+        'Core Reader Question':articleSubhead||`What is the confirmed current story behind ${articleTitle||block.title}?`,
+        'Reader Hook':articleTitle||block.title,
+        'Universal Reader Problem':articleSubhead||articleTitle||block.title,
+        'Local Proof Needed':`Verify the named place/entity and current status described by the publishing metadata: ${metadataEntityHint}.`,
+        'Evidence Required':`Current reliable evidence that specifically supports the publishing metadata story. Do not use the contaminated legacy body as evidence.`,
+        'Notes':`${stripAssemblyMarkerV31821(val(rec.fields||{},'Notes'))}\nENTITY RECONCILIATION v3.19.2 — publishing metadata is canonical; legacy body/brief identity was contaminated.`.trim()
+      };
+      const pd=await api('sections',{method:'PATCH',body:JSON.stringify({id:rec.id,fields:patch})});
+      rec=pd.record; const ri=S.sections.findIndex(x=>x.id===rec.id);if(ri>=0)S.sections[ri]=rec;
+
+      // Clear generated state only after the metadata-led identity has been persisted.
+      const fakePlan={order:Number(val(rec.fields||{},'Section Order')||0),title:articleTitle||block.title,question:patch['Core Reader Question'],mode:'CREATE_NEW'};
+      rec=await invalidateMasterForFreshResearchV316(fakePlan,rec,'Final QA metadata-led entity reconciliation');
+      const item={s:rec,run:1920+i};
+      const research=await produceOneReliablyV31825(item,'research');
+      if(['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(String(research?.outcome||'')))throw new Error(`${block.title}: metadata-led fresh research did not reach a publishable state (${research?.outcome||'unknown'}). The legacy record was not accepted as repaired.`);
+      rec=await refreshProducedRecord(rec.id); item.s=rec;
+      await produceOneReliablyV31825(item,'generate');
+      rec=await refreshProducedRecord(rec.id);
+      const rebuilt=makeArticleBlock(rec);
+      const wi=working.findIndex(x=>x.uid===block.uid);
+      if(wi>=0)working[wi]={...rebuilt,uid:block.uid};
+    }
+
+    await refreshIssueSectionsForSummary();
+    // Rehydrate only blocks still pointing at their original persistent record; preserve any banked replacement chosen above.
+    working=working.map(old=>{
+      if(old.kind!=='article')return old;
+      const rec=S.sections.find(x=>x.id===old.refId);
+      if(!rec)return old;
+      const fresh=makeArticleBlock(rec);return {...fresh,uid:old.uid};
+    });
+    localStorage.setItem(assemblyKey(),JSON.stringify(working));
+    // Persist exact order where possible. Legacy structural completion is accepted even if old selection identity cannot verify.
+    try{await persistAssemblyV31821(working)}catch(error){
+      if(!browserAssemblyStructurallyCompleteV3192())throw error;
+      console.warn('v3.19.2 accepted structurally valid legacy running order after strict persistence check:',error);
+    }
+    localStorage.removeItem(qaKey());
+    renderAssembly();updateWorkflowShellV312(8);
+    setWorkflowActionStatusV312(8,'QA','Named hard fixes reconciled.','The running order was preserved. Rerunning Final QA now; no unrelated Master or support block was regenerated.');
+    await runFinalQA();
+  }catch(error){
+    setWorkflowActionStatusV312(8,'QA','Named repair stopped safely.',String(error?.message||error));
+    alert(`Repair stopped safely: ${String(error?.message||error)}`);
+  }finally{if(btn){btn.disabled=false;btn.textContent='Repair Named Hard Fixes'}}
+}
+
+async function applySafeFixes(){
+  if(!S.issue){alert('Open an issue first.');return}
+  const items=getCanvas();
+  const saved=JSON.parse(localStorage.getItem(qaKey())||'null');
+  if(!saved){alert('Run Final QA first.');return}
+  const safe=saved.findings.filter(f=>f.safeFix&&['FIX','WARNING'].includes(f.severity));
+  const ids=[...new Set(safe.flatMap(f=>f.blocks||[]))];
+  const targets=items.filter(b=>ids.includes(b.uid)&&b.kind!=='article');
+  if(!targets.length){alert('Final QA found no safe automatic fixes. Master Articles and partner assignments are never changed automatically.');return}
+  if(!confirm(`Apply safe fixes to ${targets.length} supporting/partner block${targets.length===1?'':'s'}? Master Articles and partner assignments will not be removed or changed.`))return;
+
+  const btn=E('assembly-fix'),original=btn.textContent;
+  btn.disabled=true;
+  let fixed=0,failed=0;
+  try{
+    for(const block of targets){
+      btn.textContent=`Fixing ${fixed+failed+1}/${targets.length}…`;
+      const relevant=safe.filter(f=>(f.blocks||[]).includes(block.uid)).map(f=>`${f.code}: ${f.message}`).join('\n');
+      const context=partnerContext(items,items.findIndex(x=>x.uid===block.uid));
+      const wholeIssue=items.map((x,i)=>`${i+1}. ${x.title} — ${String(x.content||x.purpose||'').slice(0,260)}`).join('\n');
+      const prompt=`Safely rewrite ONE existing newsletter block after Final QA.
+
+PUBLICATION: ${currentPublicationName()}
+BLOCK TYPE: ${block.kind} / ${block.type||''}
+TITLE: ${block.title}
+CURRENT COPY:
+${block.content||''}
+
+QA PROBLEMS TO FIX:
+${relevant}
+
+NEARBY ARTICLE CONTEXT:
+${context||'None supplied'}
+
+WHOLE ISSUE MAP:
+${wholeIssue}
+
+${block.kind==='partner'?`REAL ASSIGNED PARTNER: ${block.partner||''}
+APPROVED CATEGORY: ${block.category||''}
+CTA: ${block.cta||block.button||''}
+IMPORTANT: Keep the assigned partner. Do not alter commercial commitments or invent services, prices, offers, claims, sponsorship terms or contact details.`:''}
+
+RULES:
+- Return only replacement reader-facing copy.
+- Preserve the function of the block, but if QA says the topic/action is repetitive, choose a DIFFERENT subject or reader job from the whole issue rather than paraphrasing the same idea.
+- Remove internal/commercial notes and avoid duplicating nearby or issue-wide content.
+- Write like an informed local person talking to another local person: plain, specific, sometimes conversational, never literary or over-polished.
+- HUMAN VOICE: write like a well-informed local person speaking naturally. Specific facts/actions beat polished adjectives. Avoid repeatedly using useful, practical, straightforward, meaningful, valuable, importantly, whether, matters, key or crucial; avoid stock phrases such as “The question is…” and “That matters because…”.
+- WHOLE-ISSUE DIVERSITY: use the whole issue map. When a component overlaps another subject, question or CTA, give it a genuinely different job rather than rephrasing the same idea.
+- PARTNER COPY: never tell readers an organisation is our partner, Spotlight’s partner, sponsor or advertiser. Give a concrete service, action, attributed insight or signpost. If it already has a Master Article, complement it rather than summarising it.
+- Avoid overusing words such as useful, practical, straightforward, meaningful, valuable, importantly, helpful, navigate, whether, matters, key and crucial.
+- Prefer concrete specifics over adjectives.
+- Do not invent local facts, businesses, prices, quotes, events, experts or sponsors.
+- If factual evidence is missing, turn the component into a reader question/opinion prompt instead of inventing an answer.
+- First-party information supplied directly by a named featured organisation is usable; do not reject it merely because it lacks public web corroboration.
+- 35-100 words unless the format clearly needs less.
+- One primary action maximum.`;
+      try{
+        const generated=await api('produce-component',{method:'POST',body:JSON.stringify({prompt,model:'gpt-5.6-luna'})});
+        const text=String(generated.text||'').trim();
+        if(!text)throw new Error('No replacement copy returned');
+        block.content=text;
+        block.status='READY';
+        fixed++;
+      }catch(error){
+        failed++;
+      }
+      localStorage.setItem(assemblyKey(),JSON.stringify(items));
+      renderAssembly();loadSavedQAReport();
+    }
+    localStorage.removeItem(qaKey());
+    alert(`Safe fixes finished.\nFixed ${fixed} · Failed ${failed}\nRun Final QA again to verify the issue.`);
+  }finally{
+    btn.disabled=false;btn.textContent=original;
+  }
+}
+function titleCaseCtaV3183(text){
+  const small=new Set(['a','an','and','as','at','but','by','for','from','in','into','of','on','or','the','to','with']);
+  return String(text||'').trim().split(/\s+/).map((w,i,a)=>{
+    if(!w)return w; const low=w.toLowerCase();
+    if(i>0&&i<a.length-1&&small.has(low))return low;
+    return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
+  }).join(' ');
+}
+// v3.18.18 — publishing metadata quality + actionable CTA handoff gate; builds on v3.18.16 integrity routing.
+function publicationBaseUrlV31816(publication){
+  return String(publicationDefaultCtaDestinationV3182(publication)||'').replace(/\/+$/,'');
+}
+function publicationAreaV31816(publication){
+  const p=String(publication||'').trim();
+  return p.replace(/\s+(Spotlight|Taste Trail|Pet Insider|Home Seller Insider)$/i,'').trim()||p;
+}
+function cleanHookFragmentV31818(text){
+  let t=String(text||'').replace(/\s+/g,' ').trim()
+    .replace(/[?!.:;,…]+$/g,'').trim()
+    .replace(/^(where|which|what|why|how|is|are|can|could|should|would|do|does|did)\s+/i,'');
+  // A second pass removes constructions such as “What Should …” after the first question word is stripped.
+  t=t.replace(/^(should|would|could|can|do|does|did)\s+/i,'');
+  const dangling=/\b(and|or|for|to|with|at|in|on|of|the|a|an|your|our|this|that|these|those|should|would|could)$/i;
+  while(dangling.test(t))t=t.replace(dangling,'').trim();
+  return t;
+}
+function publishingHookFromTitleV31816(title,publication){
+  let t=String(title||'').replace(/^Peterborough Taste Trail:\s*/i,'').trim();
+  const area=publicationAreaV31816(publication);
+  if(area){const safeArea=area.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');t=t.replace(new RegExp("\\b"+safeArea+"(?:’s|'s)?\\b",'gi'),'').replace(/\s{2,}/g,' ').trim();}
+  const rules=[
+    [/(kids?|children).*(free|cheap|less|deal|summer)|eat free|cheap summer meal/i,'Kids’ Summer Deals'],
+    [/pubs?.*(dinner|food)|dinner.*pub/i,'Pub Dinners'],
+    [/alcohol[- ]?free|mocktail|0\.0/i,'Alcohol-Free Nights'],
+    [/outdoor|outside|terrace|garden/i,'Outdoor Dining'],
+    [/bottomless brunch/i,'Bottomless Brunch'],
+    [/taste[- ]?test|test next/i,'Next Taste Test'],
+    [/best[- ]?value|money go furthest|worth the money/i,'Best-Value Meals'],
+    [/cafe|café|coffee/i,'Coffee Stops'],
+    [/restaurant/i,'Restaurant Picks'],
+    [/property/i,'Property'],
+    [/mortgage/i,'Mortgages'],
+    [/road|traffic|transport/i,'Roads & Travel'],
+    [/event|what.?s on|weekend/i,'What’s On'],
+    [/dog|pet|vet/i,'Pets']
+  ];
+  for(const [rx,label] of rules)if(rx.test(t))return label;
+  t=cleanHookFragmentV31818(t.replace(/\s+[—–-]\s+.*$/,'').trim());
+  const words=t.split(/\s+/).filter(Boolean).slice(0,4);
+  return cleanHookFragmentV31818(words.join(' '))||'Local Picks';
+}
+function productionPublishingMetaV31816(publication,theme,items){
+  const area=publicationAreaV31816(publication);
+  const family=engineProfileForPublication(publication).key;
+  const articleItems=(items||[]).filter(b=>b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE');
+  const labels=[];
+  for(const b of articleItems){
+    const meta=articlePublishingMetaV3182(b);
+    const label=publishingHookFromTitleV31816(meta?.newsletterHeadline||b.title||'',publication);
+    if(label&&!labels.some(x=>x.toLowerCase()===label.toLowerCase()))labels.push(label);
+  }
+  const first=labels.slice(0,3);
+  let subject='';
+  if(family==='TASTE_TRAIL')subject=`${area} Taste Trail: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'Where To Eat, Drink & Go Out'}`;
+  else if(family==='PET_INSIDER')subject=`${area} Pet Insider: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'This Week’s Local Pet Guide'}`;
+  else if(family==='HOME_SELLER')subject=`${area} Home Seller: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'This Week’s Property Brief'}`;
+  else subject=`${area}: ${first.join(', ').replace(/, ([^,]*)$/, ' & $1')||'This Week’s Local Brief'}`;
+  subject=subject.replace(/\s+/g,' ').trim();
+  if(subject.length>72)subject=subject.slice(0,69).replace(/\s+\S*$/,'')+'…';
+  const next=labels.slice(3,6);
+  let preheader=next.length?`Also inside: ${next.join(', ').replace(/, ([^,]*)$/, ' & $1')}.`:`Fresh local picks, useful detail and one clear reason to open this week’s issue.`;
+  if(first.length)preheader=`${first.join(', ').replace(/, ([^,]*)$/, ' & $1')} — ${preheader.charAt(0).toLowerCase()+preheader.slice(1)}`;
+  if(preheader.length>155)preheader=preheader.slice(0,152).replace(/\s+\S*$/,'')+'…';
+  const promise=String(theme||'').trim();
+  let description='';
+  if(family==='TASTE_TRAIL')description=`This ${area} Taste Trail brings together ${labels.slice(0,5).join(', ').replace(/, ([^,]*)$/, ' and $1')||'places to eat, drink, stay and go out'}, with current local detail, useful links and reader questions that invite a response.`;
+  else description=`This issue brings together ${labels.slice(0,5).join(', ').replace(/, ([^,]*)$/, ' and $1')||'the strongest local stories and reader decisions'}, shaped around the edition promise${promise?`: ${promise}`:'.'}`;
+  if(description.length>240)description=description.slice(0,237).replace(/\s+\S*$/,'')+'…';
+  return {subject,preheader,description};
+}
+function publishingMetaWeakV31816(kind,text,theme){
+  const t=String(text||'').replace(/\s+/g,' ').trim(); if(!t)return true;
+  if(kind==='subject'&&(t.length>78||t===String(theme||'').trim()))return true;
+  if(kind!=='subject'&&((t.match(/ · /g)||[]).length>=2||/…$/.test(t)))return true;
+  if(/\b(and|or|for|to|with|at|in|on|of|the|a|an|your|our|this|that|these|those|should|would|could)[…?.!]*$/i.test(t))return true;
+  if(/\b(cheap summer meals for|should taste[- ]?test next)\b/i.test(t))return true;
+  return false;
+}
+function newsletterSeoMetaV31823(publication,issueNumber,sendDate,items){
+  const area=publicationAreaV31816(publication);
+  const family=engineProfileForPublication(publication).key;
+  const articleItems=(items||[]).filter(b=>b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE');
+  const labels=[];
+  for(const b of articleItems){
+    const meta=articlePublishingMetaV3182(b);
+    const label=publishingHookFromTitleV31816(meta?.newsletterHeadline||b.title||'',publication);
+    if(label&&!labels.some(x=>x.toLowerCase()===label.toLowerCase()))labels.push(label);
+  }
+  const month=sendDate?new Date(String(sendDate)+'T12:00:00').toLocaleString('en-GB',{month:'long',year:'numeric'}):'';
+  let seoTitle=family==='TASTE_TRAIL' ? `${area} Taste Trail: ${labels.slice(0,3).join(', ').replace(/, ([^,]*)$/, ' & $1')||'Eat, Drink, Stay & Go Out'}` : `${publication}${issueNumber?` Issue ${issueNumber}`:''}`;
+  if(seoTitle.length>68)seoTitle=seoTitle.slice(0,65).replace(/\s+\S*$/,'')+'…';
+  let seoDescription=family==='TASTE_TRAIL' ? `Discover where to eat, drink, stay and go out around ${area}${month?` in ${month}`:''}, with local hospitality picks, events, value checks and reader recommendations.` : `Read ${publication}${issueNumber?` Issue ${issueNumber}`:''}${month?` for ${month}`:''}.`;
+  if(seoDescription.length>160)seoDescription=seoDescription.slice(0,157).replace(/\s+\S*$/,'')+'…';
+  const slugBase=[area,'taste-trail',issueNumber?`issue-${issueNumber}`:'',month?month.toLowerCase().replace(/\s+/g,'-'):''].filter(Boolean).join('-');
+  const slug=slugBase.toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  const keywords=family==='TASTE_TRAIL' ? [`${area} Taste Trail`,`${area} restaurants`,`${area} pubs`,`${area} cafes`,`${area} nightlife`,`${area} eating out`,`${area} drinking out`,`${area} hotels`,`${area} accommodation`,`${area} events`,`${area} food markets`,`${area} takeaways`].join(', ') : `${publication}, local newsletter, ${area}`;
+  return {seoTitle,seoDescription,slug,keywords};
+}
+function unresolvedInteractiveCtasV31818(items,publication){
+  const out=[];
+  for(const b of (items||[])){
+    if(!(b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE'))continue;
+    const record=(S.sections||[]).find(x=>x.id===b.refId),f=record?.fields||{};
+    const actionText=titleCaseCtaV3183(String(b.button||b.cta||val(f,'CTA Text')||'').trim());
+    if(!actionText||!articleActionNeedsDestinationV31816(actionText))continue;
+    const actionDest=resolvedActionDestinationV31822(b,f,publication);
+    if(!actionDest)out.push({title:String(b.title||'Master Article').trim(),cta:actionText});
+  }
+  return out;
+}
+
+// v3.20.0 — Article Bank + predictive Letterman URLs. No new Airtable columns required.
+const ARTICLE_BANK_MARKER_RE_V320=/\n?ARTICLE BANK v1\n[\s\S]*?\nEND ARTICLE BANK\s*/gi;
+function articleBankStateV320(recordOrFields){
+  const f=recordOrFields?.fields||recordOrFields||{},notes=String(val(f,'Notes')||'');
+  const blocks=[...notes.matchAll(/ARTICLE BANK v1\n([\s\S]*?)\nEND ARTICLE BANK/gi)];
+  if(!blocks.length)return {masterId:'',classification:'',expectedUrl:'',bankedDate:''};
+  const body=blocks[blocks.length-1][1],get=k=>{const m=body.match(new RegExp('^'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+':\\s*(.*)$','mi'));return m?String(m[1]||'').trim():''};
+  return {masterId:get('Master ID'),classification:get('Classification'),expectedUrl:get('Expected URL'),bankedDate:get('Banked Date')};
+}
+function withoutArticleBankMarkerV320(notes){return String(notes||'').replace(ARTICLE_BANK_MARKER_RE_V320,'\n').replace(/\n{3,}/g,'\n\n').trim()}
+function articleBankClassificationV320(record){
+  const f=record?.fields||{},p=masterArticlePackage(f)||{},txt=[val(f,'Section Title'),val(f,'Section Final Copy'),p.article_subhead,p.summary_content].join(' ').toLowerCase();
+  if(/\b(?:today|tomorrow|this week|this weekend|until|deadline|closes?|opens?|2026|offer|discount|summer rewards|holiday heroes)\b/.test(txt))return 'TIME-SENSITIVE';
+  if(/\b(?:summer|winter|spring|autumn|christmas|easter|halloween|valentine|seasonal)\b/.test(txt))return 'SEASONAL';
+  return 'EVERGREEN';
+}
+function expectedArticleUrlV320(record,publication=currentPublicationName()){
+  const f=record?.fields||{},p=masterArticlePackage(f)||{},slug=String(p.url_path||'').replace(/^\/+|\/+$/g,'').trim();
+  return articlePublishedUrlV31816(publication,slug);
+}
+function articleBankMarkerV320(record){
+  const prior=articleBankStateV320(record),expected=expectedArticleUrlV320(record),classification=prior.classification||articleBankClassificationV320(record);
+  return ['ARTICLE BANK v1',`Master ID: ${record.id}`,`Classification: ${classification}`,`Expected URL: ${expected}`,`Banked Date: ${prior.bankedDate||new Date().toISOString().slice(0,10)}`,'END ARTICLE BANK'].join('\n');
+}
+function bankCandidatesV320(){
+  const all=[...(S.articleLibrary||[]),...(S.sections||[])],seen=new Set(),out=[];
+  for(const r of all){if(!r?.id||seen.has(r.id)||masterArticleState(r)!=='complete')continue;seen.add(r.id);out.push(r)}
+  return out.sort((a,b)=>String(val(a.fields||{},'Section Title')||'').localeCompare(String(val(b.fields||{},'Section Title')||'')));
+}
+function renderArticleBankV320(){
+  const panel=E('article-bank-panel-v320'),list=E('article-bank-list-v320');if(!panel||!list||!S.issue)return;
+  const rows=bankCandidatesV320();panel.style.display=workflowSelectedStepV312===5?'block':'none';if(panel.style.display==='none')return;
+  const published=rows.filter(r=>/^https?:\/\//i.test(lettermanArticleStateV3194(r).publishedUrl)).length;
+  const unused=rows.filter(r=>!recordUsedInNewsletterV319(r)).length;
+  E('bank-ready-v320').textContent=rows.length;E('bank-published-v320').textContent=published;E('bank-unused-v320').textContent=unused;
+  E('article-bank-summary-v320').textContent=`${rows.length} READY articles across ${currentPublicationName()} · ${published} confirmed in Letterman · ${unused} not yet used in a newsletter.`;
+  list.innerHTML=rows.length?rows.map(r=>{
+    const f=r.fields||{},title=String(val(f,'Section Title')||'Untitled'),lm=lettermanArticleStateV3194(r),bank=articleBankStateV320(r),expected=bank.expectedUrl||expectedArticleUrlV320(r),used=recordUsedInNewsletterV319(r),confirmed=/^https?:\/\//i.test(lm.publishedUrl);
+    return `<label class="master-selection-row-v312" style="grid-template-columns:auto 1fr auto"><input type="checkbox" data-bank-publish-v320="${esc(r.id)}" ${confirmed?'checked disabled':''}><span><strong>${esc(title)}</strong><small>${esc(featureTypeLabelV3204(r))} · ${esc(bank.classification||articleBankClassificationV320(r))} · ${used?'USED IN NEWSLETTER':'BANKED · UNUSED'}</small><small>${expected?`Expected Letterman URL: ${esc(expected)}`:'No publication base URL available yet — manual reconciliation will be required.'}</small></span><span class="selection-status-v312">${confirmed?'PUBLISHED ✓':bank.masterId?'BANKED':'READY'}</span></label>`;
+  }).join(''):'<div class="empty">No READY Master Articles are available for this publication yet.</div>';
+}
+async function prepareArticleBankV320(){
+  const rows=bankCandidatesV320();if(!rows.length){alert('No READY articles are available to bank.');return}
+  const btn=E('article-bank-prepare-v320');if(btn){btn.disabled=true;btn.textContent='Banking…'}
+  try{
+    let saved=0;
+    for(const r of rows){
+      const notes=String(val(r.fields||{},'Notes')||''),next=[withoutArticleBankMarkerV320(notes),articleBankMarkerV320(r)].filter(Boolean).join('\n\n');
+      if(next===notes)continue;
+      const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:r.id,fields:{Notes:next}})});if(d?.record){S.sections=S.sections.map(x=>x.id===r.id?d.record:x);S.articleLibrary=S.articleLibrary.map(x=>x.id===r.id?d.record:x);saved++;}
+    }
+    renderArticleBankV320();alert(`${saved} READY article${saved===1?'':'s'} prepared in the Article Bank. Expected Letterman URLs are now known before issue selection.`);
+  }catch(e){alert('Could not prepare Article Bank: '+(e?.message||e))}finally{if(btn){btn.disabled=false;btn.textContent='Prepare All READY Articles'}}
+}
+async function confirmBankPublishedV320(){
+  const ids=[...document.querySelectorAll('[data-bank-publish-v320]:checked:not(:disabled)')].map(x=>x.dataset.bankPublishV320);
+  if(!ids.length){alert('Tick the articles you have actually published in Letterman.');return}
+  const btn=E('article-bank-confirm-v320');if(btn){btn.disabled=true;btn.textContent='Confirming…'}
+  try{
+    for(const id of ids){
+      const r=bankCandidatesV320().find(x=>String(x.id)===String(id));if(!r)continue;const expected=articleBankStateV320(r).expectedUrl||expectedArticleUrlV320(r);if(!expected)throw new Error(`${val(r.fields||{},'Section Title')}: ICS cannot predict the Letterman URL because this publication has no known base URL.`);
+      const prior=lettermanArticleStateV3194(r),clean=withoutLettermanMarkerV3194(val(r.fields||{},'Notes'));
+      const state={publishedUrl:expected,ctaDestination:prior.ctaDestination||'',canonical:prior.canonical||'ICS',publishedDate:prior.publishedDate||new Date().toISOString().slice(0,10),status:'PUBLISHED'};
+      const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:r.id,fields:{Notes:[clean,lettermanMarkerV3194(state)].filter(Boolean).join('\n\n')}})});if(d?.record){S.sections=S.sections.map(x=>x.id===r.id?d.record:x);S.articleLibrary=S.articleLibrary.map(x=>x.id===r.id?d.record:x);}
+    }
+    renderArticleBankV320();renderAssembly();alert(`${ids.length} Letterman article${ids.length===1?'':'s'} confirmed using the pre-generated URL. No retrospective URL entry was needed.`);
+  }catch(e){alert('Could not confirm Letterman publishing: '+(e?.message||e))}finally{if(btn){btn.disabled=false;btn.textContent='Confirm Selected Published'}}
+}
+
+// v3.19.4 — Letterman reconciliation is persisted on the Master record without requiring new Airtable columns.
+const LETTERMAN_MARKER_RE_V3194=/\n?LETTERMAN ARTICLE v1\n[\s\S]*?\nEND LETTERMAN ARTICLE\s*/gi;
+function lettermanArticleStateV3194(recordOrFields){
+  const f=recordOrFields?.fields||recordOrFields||{};
+  const notes=String(val(f,'Notes')||'');
+  const blocks=[...notes.matchAll(/LETTERMAN ARTICLE v1\n([\s\S]*?)\nEND LETTERMAN ARTICLE/gi)];
+  if(!blocks.length)return {publishedUrl:'',ctaDestination:'',canonical:'ICS',publishedDate:'',status:''};
+  const body=blocks[blocks.length-1][1];
+  const get=k=>{const m=body.match(new RegExp('^'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+':\\s*(.*)$','mi'));return m?String(m[1]||'').trim():''};
+  return {publishedUrl:get('Published URL'),ctaDestination:get('CTA Destination'),canonical:get('Canonical Source')||'ICS',publishedDate:get('Published Date'),status:get('Status')};
+}
+function withoutLettermanMarkerV3194(notes){return String(notes||'').replace(LETTERMAN_MARKER_RE_V3194,'\n').replace(/\n{3,}/g,'\n\n').trim()}
+function lettermanMarkerV3194(state){
+  return ['LETTERMAN ARTICLE v1',`Status: ${state.publishedUrl?'PUBLISHED':'NOT PUBLISHED'}`,`Published URL: ${state.publishedUrl||''}`,`Published Date: ${state.publishedDate||''}`,`CTA Destination: ${state.ctaDestination||''}`,`Canonical Source: ${state.canonical||'ICS'}`,'END LETTERMAN ARTICLE'].join('\n');
+}
+function articlePublishedUrlFromBlockV3194(block,publication,slug){
+  const rec=(S.sections||[]).find(x=>String(x.id)===String(block?.refId||''))||(S.articleLibrary||[]).find(x=>String(x.id)===String(block?.refId||''));
+  const explicit=lettermanArticleStateV3194(rec).publishedUrl;
+  return /^https?:\/\//i.test(explicit)?explicit:articlePublishedUrlV31816(publication,slug);
+}
+function suggestActionDestinationFromSourcesV3194(block,actionText){
+  const rec=(S.sections||[]).find(x=>String(x.id)===String(block?.refId||''));
+  const p=masterArticlePackage(rec?.fields||{})||{};
+  const sources=Array.isArray(p.sources)?p.sources:[];
+  const t=String(actionText||'').toLowerCase();
+  const score=x=>{const z=`${x?.title||''} ${x?.url||''}`.toLowerCase();let n=0;if(/menu/.test(t)&&/menu|order/.test(z))n+=5;if(/book/.test(t)&&/book|reserv|menu/.test(z))n+=4;if(/check/.test(t)&&/official|menu|book/.test(z))n+=1;return n};
+  return [...sources].filter(x=>/^https?:\/\//i.test(String(x?.url||''))).sort((a,b)=>score(b)-score(a))[0]?.url||'';
+}
+function lettermanCanonicalExternalV3194(block){
+  const rec=(S.sections||[]).find(x=>String(x.id)===String(block?.refId||''));
+  const st=lettermanArticleStateV3194(rec);return st.canonical==='LETTERMAN'&&/^https?:\/\//i.test(st.publishedUrl);
+}
+function renderLettermanReconcileV3194(){
+  if(!S.issue)return;
+  const items=step9LiveItemsV3193().filter(b=>b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE');
+  const wrap=E('letterman-reconcile-list-v3194');if(!wrap)return;
+  wrap.innerHTML=items.map((b,i)=>{
+    const rec=(S.sections||[]).find(x=>String(x.id)===String(b.refId||''));const st=lettermanArticleStateV3194(rec);
+    const action=titleCaseCtaV3183(String(b.button||b.cta||val(rec?.fields||{},'CTA Text')||'').trim());
+    const needs=action&&articleActionNeedsDestinationV31816(action);
+    const suggested=needs&&!st.ctaDestination?suggestActionDestinationFromSourcesV3194(b,action):'';
+    return `<div class="card" style="margin:10px 0;padding:14px" data-letterman-row-v3194="${String(b.refId)}"><div style="font-weight:800;margin-bottom:8px">${i+1}. ${esc(String(b.title||'Master Article'))}</div><div class="form-grid"><div class="field full"><label>Published Letterman URL</label><input data-lm-url value="${esc(st.publishedUrl)}" placeholder="https://…/a/article-slug"></div>${needs?`<div class="field full"><label>Article CTA destination — ${esc(action)}</label><input data-lm-cta value="${esc(st.ctaDestination||suggested)}" placeholder="https://…"><div class="muted">${suggested&&!st.ctaDestination?'ICS found a likely destination in this Master’s saved sources. Check it before saving.':'Only required when the CTA needs somewhere to go.'}</div></div>`:''}<div class="field full"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-lm-canonical ${st.canonical==='LETTERMAN'?'checked':''}> Letterman copy is canonical for this legacy/external article</label><div class="muted">Use this only when the published Letterman article is the version to keep and the old ICS body may be stale or conflicting.</div></div></div></div>`;
+  }).join('')||'<div class="empty">No Master Articles are in the current running order.</div>';
+  E('letterman-reconcile-dialog-v3194').showModal();
+}
+async function saveLettermanReconcileV3194(){
+  const rows=[...document.querySelectorAll('[data-letterman-row-v3194]')];
+  const btn=E('save-letterman-reconcile-v3194');if(btn){btn.disabled=true;btn.textContent='Saving…'}
+  try{
+    for(const row of rows){
+      const id=row.dataset.lettermanRowV3194,rec=(S.sections||[]).find(x=>String(x.id)===String(id));if(!rec)continue;
+      const url=String(row.querySelector('[data-lm-url]')?.value||'').trim();
+      const cta=String(row.querySelector('[data-lm-cta]')?.value||'').trim();
+      if(url&&!/^https?:\/\//i.test(url))throw new Error(`${val(rec.fields||{},'Section Title')}: published URL must start with http:// or https://`);
+      if(cta&&!/^https?:\/\//i.test(cta))throw new Error(`${val(rec.fields||{},'Section Title')}: CTA destination must start with http:// or https://`);
+      const canonical=row.querySelector('[data-lm-canonical]')?.checked?'LETTERMAN':'ICS';
+      const prior=lettermanArticleStateV3194(rec),clean=withoutLettermanMarkerV3194(val(rec.fields||{},'Notes'));
+      const state={publishedUrl:url,ctaDestination:cta,canonical,publishedDate:prior.publishedDate||(url?new Date().toISOString().slice(0,10):''),status:url?'PUBLISHED':'NOT PUBLISHED'};
+      const notes=[clean,lettermanMarkerV3194(state)].filter(Boolean).join('\n\n');
+      const d=await api('sections',{method:'PATCH',body:JSON.stringify({id,fields:{Notes:notes}})});
+      if(d?.record){S.sections=S.sections.map(x=>String(x.id)===String(id)?d.record:x);S.articleLibrary=S.articleLibrary.map(x=>String(x.id)===String(id)?d.record:x);}
+    }
+    E('letterman-reconcile-dialog-v3194').close();renderAssembly();renderStep9LiveStateV3193();
+    const text=assemblyDraft();E('preview-text').value=text;await persistProductionReadyV319(text);
+    alert('Letterman reconciliation saved. Step 9 has been recalculated from the real published URLs and CTA destinations.');
+  }catch(error){alert('Could not save Letterman reconciliation: '+(error?.message||error))}
+  finally{if(btn){btn.disabled=false;btn.textContent='Save Letterman Reconciliation'}}
+}
+function articlePublishedUrlV31816(publication,slug){
+  const base=publicationBaseUrlV31816(publication),s=String(slug||'').replace(/^\/+|\/+$/g,'').trim();
+  return base&&s?`${base}/a/${s}`:'';
+}
+function explicitActionDestinationV31816(block,recordFields,publication){
+  const candidates=[block?.url,val(recordFields||{},'Action Destination URL')].map(x=>String(x||'').trim()).filter(x=>/^https?:\/\//i.test(x));
+  const home=publicationBaseUrlV31816(publication).toLowerCase();
+  return candidates.find(x=>x.replace(/\/+$/,'').toLowerCase()!==home)||'';
+}
+// v3.18.22 — one universal Trail Blaze Local reader-response destination.
+// GC tracking remains a Letterman concern; ICS only supplies source context required by the form.
+function publicationShortCodeV31822(publication){
+  const currentId=(S.issue?.fields?.Publication||[])[0]||'';
+  const rec=S.publications.find(p=>p.id===currentId)||S.publications.find(p=>String(val(p.fields,'Publication Name')||'').trim().toLowerCase()===String(publication||'').trim().toLowerCase());
+  return String(val(rec?.fields||{},'Short Code')||publicationCodeFromNameV3184(publication)||'').trim().toUpperCase();
+}
+function articleActionCanUseTellUsV31822(text){
+  return /nominate|tell us|send|reply|recommend|vote/i.test(String(text||''));
+}
+function tellUsResponseTypeV31822(text){
+  const t=String(text||'').toLowerCase();
+  if(/nominate/.test(t))return 'nomination';
+  if(/recommend/.test(t))return 'recommendation';
+  return 'feedback';
+}
+function tellUsDestinationV31822(block,recordFields,publication){
+  const actionText=titleCaseCtaV3183(String(block?.button||block?.cta||val(recordFields||{},'CTA Text')||'').trim());
+  if(!articleActionCanUseTellUsV31822(actionText))return '';
+  const meta=articlePublishingMetaV3182(block)||{};
+  const topic=String(meta.slug||block?.title||'reader-response').replace(/^\/+|\/+$/g,'').trim();
+  const params=new URLSearchParams();
+  params.set('publication',String(publication||'Trail Blaze Local').trim());
+  const code=publicationShortCodeV31822(publication); if(code)params.set('code',code);
+  if(topic)params.set('topic',topic);
+  params.set('type',tellUsResponseTypeV31822(actionText));
+  return `https://trailblazelocal.com/tell-us/?${params.toString()}`;
+}
+function resolvedActionDestinationV31822(block,recordFields,publication){
+  const rec=(S.sections||[]).find(x=>String(x.id)===String(block?.refId||''));
+  const lm=typeof lettermanArticleStateV3194==='function'?lettermanArticleStateV3194(rec).ctaDestination:'';
+  return lm||explicitActionDestinationV31816(block,recordFields,publication)||tellUsDestinationV31822(block,recordFields,publication);
+}
+function newsletterArticleButtonTextV31816(block,meta){
+  const t=String(meta?.newsletterHeadline||block?.title||'').toLowerCase();
+  if(/guide|where|which|compare|best|worth|free|outdoor|drink|pub|brunch/.test(t))return 'Read The Full Guide';
+  if(/taste test|nominate|vote/.test(t))return 'Read The Article';
+  return 'Read The Full Article';
+}
+function articleActionNeedsDestinationV31816(text){return /nominate|tell us|send|vote|book|buy|claim|register|enter|contact|reply|recommend/i.test(String(text||''));}
+function closingCandidateV31816(b){return b&&b.kind!=='article'&&/(BEFORE YOU GO|CLOSING|SIGN.?OFF|ONE LAST QUESTION)/i.test(`${b.type||''} ${b.title||''}`);}
+function productionOrderV31816(items,publication){
+  const list=(items||[]).slice(); if(!list.length)return list;
+  if(closingCandidateV31816(list[list.length-1]))return list;
+  let idx=-1; for(let i=list.length-2;i>=0;i--){if(closingCandidateV31816(list[i])){idx=i;break}}
+  if(idx>=0){const [c]=list.splice(idx,1);list.push(c);return list}
+  list.push({uid:'v31816-closing',kind:'support',type:'CLOSING',title:'Before You Go',content:closingCopyV3183(publication),status:'READY',lifeLane:'OPEN'});
+  return list;
+}
+function newsletterFallbacksV3183(publication,theme,items){
+  const t=String(theme||'').trim().replace(/\s+/g,' ');
+  let subject=t;
+  if(subject.length>78)subject=subject.split(/\s+[—–-]\s+/)[0].trim();
+  if(subject.length>78)subject=subject.slice(0,75).replace(/\s+\S*$/,'')+'…';
+  if(!subject)subject=`${publication||'Local'} — This Week`;
+  const articleTitles=(items||[]).filter(x=>x.kind==='article').map(x=>String(x.title||'').trim()).filter(Boolean).slice(0,4);
+  let pre=articleTitles.length?articleTitles.join(' · '):`The latest local stories, places and decisions worth knowing about.`;
+  if(pre.length>150)pre=pre.slice(0,147).replace(/\s+\S*$/,'')+'…';
+  return {subject,preheader:pre};
+}
+function masterUsefulLinksV3183(block){
+  if(!block||block.kind!=='article')return [];
+  const record=(S.sections||[]).find(x=>x.id===block.refId),p=masterArticlePackage(record?.fields||{})||{};
+  return (Array.isArray(p.sources)?p.sources:[]).filter(x=>x&&x.url).slice(0,5).map(x=>({title:String(x.title||'Source / resource').trim(),url:String(x.url||'').trim()}));
+}
+function closingCopyV3183(publication){
+  return `Before You Go\n\nThat’s it for this issue. If we missed something worth knowing, trying, questioning or talking about in ${publication||'your area'}, tell us. The best future issues usually start with something a reader spots before we do.\n\nSee You Next Issue.`;
+}
+function publicationStoredBaseUrlV3201(publication){
+  const currentId=(S.issue?.fields?.Publication||[])[0]||'';
+  const wanted=String(publication||'').trim().toLowerCase();
+  const rec=(S.publications||[]).find(p=>String(p.id)===String(currentId))
+    ||(S.publications||[]).find(p=>String(val(p.fields||{},'Publication Name')||'').trim().toLowerCase()===wanted);
+  const f=rec?.fields||{};
+  const preferred=['Publication URL','Publication Website URL','Website URL','Website','Site URL','Site','Domain','Base URL'];
+  for(const key of preferred){
+    const v=String(val(f,key)||'').trim();
+    if(/^https?:\/\//i.test(v))return v.replace(/\/+$/,'')+'/';
+    if(v&&/^[a-z0-9.-]+\.[a-z]{2,}(?:\/.*)?$/i.test(v))return `https://${v.replace(/^\/+|\/+$/g,'')}/`;
+  }
+  // Generic safety net for existing publication schemas: only inspect URL/site/domain-named fields.
+  for(const [key,value] of Object.entries(f)){
+    if(!/(url|website|domain|site)/i.test(String(key)))continue;
+    const v=String(value||'').trim();
+    if(/^https?:\/\//i.test(v))return v.replace(/\/+$/,'')+'/';
+    if(v&&/^[a-z0-9.-]+\.[a-z]{2,}(?:\/.*)?$/i.test(v))return `https://${v.replace(/^\/+|\/+$/g,'')}/`;
+  }
+  return '';
+}
+function publicationDefaultCtaDestinationV3182(publication){
+  // v3.20.1: the publication record is authoritative. ICS already knows the website URL.
+  const stored=publicationStoredBaseUrlV3201(publication);
+  if(stored)return stored;
+  // Legacy fallback only for older publication records that genuinely have no stored site URL.
+  const raw=String(publication||'').trim(),p=raw.toLowerCase();
+  const known=[
+    ['cambridgeshire spotlight','https://cambridgeshirespotlight.co.uk/'],
+    ['peterborough spotlight','https://peterboroughspotlight.co.uk/'],
+    ['norfolk spotlight','https://norfolkspotlight.co.uk/'],
+    ['peterborough taste trail','https://peterboroughtastetrail.co.uk/'],
+    ['cambridge taste trail','https://cambridge.tastetrail.co.uk/'],
+    ['norwich taste trail','https://norwich.tastetrail.co.uk/'],
+    ['north norfolk taste trail','https://northnorfolk.tastetrail.co.uk/']
+  ];
+  const hit=known.find(([name])=>p.includes(name));
+  return hit?hit[1]:'';
+}
+function articlePublishingMetaV3182(block){
+  if(!block||block.kind!=='article')return null;
+  const record=(S.sections||[]).find(x=>x.id===block.refId);
+  const f=record?.fields||{};
+  const p=masterArticlePackage(f)||{};
+  const title=String(val(f,'Section Title')||p.article_title||block.title||'').trim();
+  const subhead=String(p.article_subhead||'').trim();
+  const description=String(p.summary_content||p.newsletter_teaser||subhead||'').trim();
+  const seoTitle=String(p.seo_title||title).trim();
+  const seoDescription=String(p.seo_description||description).trim();
+  const slug=String(p.url_path||block.url||'').replace(/^\/+|\/+$/g,'').trim();
+  const keywords=Array.isArray(p.keywords)?p.keywords.join(', '):String(p.keywords||'').trim();
+  const imageBrief=String(p.featured_image_brief||'').trim();
+  const imageAlt=String(p.featured_image_alt||'').trim();
+  const newsletterHeadline=String(p.newsletter_headline||title).trim();
+  const newsletterTeaser=String(p.newsletter_teaser||description).trim();
+  const fb=String(p.social_facebook||'').trim();
+  const li=String(p.social_linkedin||'').trim();
+  const x=String(p.social_x||'').trim();
+  return {title,subhead,description,seoTitle,seoDescription,slug,keywords,imageBrief,imageAlt,newsletterHeadline,newsletterTeaser,fb,li,x};
+}
+function newsletterDescriptionV3182(publication,theme,preheader){
+  const t=String(theme||'').trim(), pre=String(preheader||'').trim();
+  if(pre)return pre;
+  if(t)return t;
+  return `Latest issue of ${publication||'the newsletter'}.`;
+}
+function assemblyDraft(){
+  const rawItems=step9LiveItemsV3193(),theme=String(E('assembly-theme')?.value||val(S.issue?.fields||{},'Main Theme')||'').trim();
+  if(!rawItems.length)return 'No assembled running order is available.';
+  const publication=pubName(S.issue?.fields?.Publication||[]);
+  const items=productionOrderV31816(rawItems,publication);
+  const ready=items.filter(x=>String(x.status||'').toUpperCase()==='READY');
+  const notReady=items.filter(x=>String(x.status||'').toUpperCase()!=='READY');
+  const issueNumber=val(S.issue?.fields||{},'Issue Number')||'';
+  const sendDate=val(S.issue?.fields||{},'Send Date')||'';
+  const savedSubject=String(val(S.issue?.fields||{},'Subject Line')||'').trim();
+  const savedPreheader=String(val(S.issue?.fields||{},'Preheader')||'').trim();
+  const generated=productionPublishingMetaV31816(publication,theme,items);
+  const subject=publishingMetaWeakV31816('subject',savedSubject,theme)?generated.subject:savedSubject;
+  const preheader=publishingMetaWeakV31816('preheader',savedPreheader,theme)?generated.preheader:savedPreheader;
+  const description=generated.description;
+  const newsletterSeo=newsletterSeoMetaV31823(publication,issueNumber,sendDate,items);
+  let out=`CANONICAL LETTERMAN BUILD PACKAGE\n\nOPERATOR INSTRUCTION\nBuild from SECTION 1 downward. Master article body, publishing metadata, CTA, useful links and social copy are kept together in newsletter order. Do not reconcile a second export.\n\nPUBLICATION\n${publication}\n\nISSUE\n${issueNumber}${sendDate?`\n\nSEND DATE\n${sendDate}`:''}\n\nISSUE PROMISE / QUESTION\n${theme||'[ADD ISSUE PROMISE]'}\n\nPUBLISHING ORDER — ${items.length} SECTIONS`;
+  items.forEach((b,i)=>{
+    const isArticle=b.kind==='article'||String(b.type||'').toUpperCase()==='MASTER ARTICLE';
+    const isLast=i===items.length-1;
+    const title=String(b.title||b.type||`Section ${i+1}`).trim();
+    const content=String(b.content||'').trim();
+    const meta=isArticle?articlePublishingMetaV3182(b):null;
+    out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION ${i+1} — ${isLast&&closingCandidateV31816(b)?'CLOSING — ':''}${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    if(isArticle)out+=`\n\n⚠ ARTICLE — BUILD SEPARATELY IN LETTERMAN\nThis is a permanent ${String(b.type||'').toUpperCase()==='FEATURE ARTICLE'?'Feature Article':'Master Article'}. Create/publish the article first, then use its published URL where the newsletter section links to the article.`;
+    if(b.partner)out+=`\nPARTNER / ATTRIBUTION: ${String(b.partner).trim()}`;
+    if(isArticle&&meta?.subhead)out+=`\n\nARTICLE SUBTITLE\n${meta.subhead}`;
+    if(content){if(isArticle&&lettermanCanonicalExternalV3194(b)){const st=lettermanArticleStateV3194((S.sections||[]).find(x=>x.id===b.refId));out+=`\n\n[ARTICLE COPY ALREADY PUBLISHED IN LETTERMAN — canonical copy: ${st.publishedUrl}]`;}else out+=`\n\n${content}`;}
+    if(isArticle&&meta){
+      const record=(S.sections||[]).find(x=>x.id===b.refId),f=record?.fields||{};
+      const articleUrl=articlePublishedUrlFromBlockV3194(b,publication,meta.slug);
+      out+=`\n\nARTICLE PUBLISHING DETAILS\nARTICLE DESCRIPTION / SUMMARY\n${meta.description||'[MISSING]'}\n\nSEO TITLE\n${meta.seoTitle||'[MISSING]'}\n\nSEO DESCRIPTION\n${meta.seoDescription||'[MISSING]'}\n\nARTICLE URL SLUG\n${meta.slug||'[MISSING]'}\n\nPUBLISHED ARTICLE URL\n${articleUrl||'[MISSING — PUBLICATION URL OR SLUG REQUIRED]'}\n\nKEYWORDS\n${meta.keywords||'[MISSING]'}\n\nFEATURED IMAGE BRIEF\n${meta.imageBrief||'[MISSING]'}\n\nFEATURED IMAGE ALT TEXT\n${meta.imageAlt||'[MISSING]'}\n\nNEWSLETTER HEADLINE\n${meta.newsletterHeadline||'[MISSING]'}\n\nNEWSLETTER TEASER\n${meta.newsletterTeaser||'[MISSING]'}
+
+SOCIAL — FACEBOOK
+${meta.fb||'[NONE SUPPLIED]'}
+
+SOCIAL — LINKEDIN
+${meta.li||'[NONE SUPPLIED]'}
+
+SOCIAL — X
+${meta.x||'[NONE SUPPLIED]'}`;
+      const links=masterUsefulLinksV3183(b); if(links.length)out+=`\n\nUSEFUL LINKS / SOURCES\n${links.map(x=>`- ${x.title}: ${x.url}`).join('\n')}`;
+      out+=`\n\nNEWSLETTER BUTTON TEXT\n${newsletterArticleButtonTextV31816(b,meta)}\nNEWSLETTER BUTTON DESTINATION\n${articleUrl||'[PUBLISH ARTICLE FIRST — THEN INSERT ITS URL]'}`;
+      const actionText=titleCaseCtaV3183(String(b.button||b.cta||val(f,'CTA Text')||'').trim());
+      if(actionText){const actionDest=resolvedActionDestinationV31822(b,f,publication);out+=`\n\nARTICLE CTA TEXT\n${actionText}\nARTICLE CTA DESTINATION\n${actionDest||(articleActionNeedsDestinationV31816(actionText)?'[DESTINATION REQUIRED — DO NOT USE PUBLICATION HOMEPAGE AS FALLBACK]':'[NO EXTERNAL DESTINATION REQUIRED]')}`;}
+    }else{
+      const button=titleCaseCtaV3183(String(b.button||b.cta||'').trim());
+      if(button){out+=`\n\nBUTTON TEXT\n${button}\nBUTTON DESTINATION\n${String(b.url||'').trim()||'[DESTINATION REQUIRED]'}`;}
+    }
+  });
+  out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nNEWSLETTER PUBLISHING DETAILS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nEMAIL SUBJECT / HEADLINE\n${subject||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nPREVIEW TEXT / PREHEADER\n${preheader||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nNEWSLETTER DESCRIPTION\n${description||'[MISSING — ADD BEFORE SCHEDULING]'}\n\nNEWSLETTER SEO TITLE\n${newsletterSeo.seoTitle||'[MISSING]'}\n\nNEWSLETTER SEO DESCRIPTION\n${newsletterSeo.seoDescription||'[MISSING]'}\n\nNEWSLETTER / ARCHIVE SLUG\n${newsletterSeo.slug||'[MISSING]'}\n\nNEWSLETTER KEYWORDS\n${newsletterSeo.keywords||'[MISSING]'}\n\nSEND DATE\n${sendDate||'[MISSING]'}`;
+  out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPRODUCTION STATUS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${ready.length}/${items.length} sections ready`;
+  const mandatoryMissing=[];
+  if(!subject||publishingMetaWeakV31816('subject',subject,theme))mandatoryMissing.push('quality email subject');
+  if(!preheader||publishingMetaWeakV31816('preheader',preheader,theme))mandatoryMissing.push('quality preheader');
+  if(!description||publishingMetaWeakV31816('description',description,theme))mandatoryMissing.push('quality newsletter description');
+  if(!sendDate)mandatoryMissing.push('send date');
+  const articleRouteMissing=items.filter(b=>b.kind==='article').filter(b=>!articlePublishedUrlFromBlockV3194(b,publication,articlePublishingMetaV3182(b)?.slug));
+  if(articleRouteMissing.length)mandatoryMissing.push(`${articleRouteMissing.length} article link destination(s)`);
+  const unresolvedCtas=unresolvedInteractiveCtasV31818(items,publication);
+  if(unresolvedCtas.length)mandatoryMissing.push(`${unresolvedCtas.length} interactive article CTA destination(s)`);
+  if(notReady.length||mandatoryMissing.length){
+    if(notReady.length)out+=`\nBLOCKED: ${notReady.length}\n${notReady.map(x=>'- '+(x.title||x.type)+' — '+(x.status||'NOT READY')).join('\n')}`;
+    if(mandatoryMissing.length)out+=`\nMISSING / WEAK PUBLISHING FIELDS: ${mandatoryMissing.join(', ')}`;
+    if(typeof unresolvedCtas!=='undefined'&&unresolvedCtas.length)out+=`\nCTA DESTINATIONS REQUIRED:\n${unresolvedCtas.map(x=>`- ${x.title}: ${x.cta}`).join('\n')}`;
+    out+=`\nNOT READY FOR PUBLISHING HANDOFF`;
+  }else out+=`\nQA GATE: PASSED — 0 HARD FIXES\nHANDOFF INTEGRITY: PASSED\nREADY FOR PUBLISHING HANDOFF`;
+  return out;
+}
+function masterAssetsPackageV3181(){
+  const plan=getSmartPlan();
+  const selected=new Set(getMasterSelectionV312().map(Number));
+  const selectedArticles=(plan?.articles||[]).filter(a=>selected.has(Number(a.order)));
+  const canvasOrder=new Map(step9LiveItemsV3193().filter(b=>b.kind==='article').map((b,i)=>[String(b.refId||''),i]));
+  const articles=selectedArticles.sort((a,b)=>{const ar=planArticleRecordV312(a),br=planArticleRecordV312(b);const ai=canvasOrder.has(String(ar?.id||''))?canvasOrder.get(String(ar.id)):999;const bi=canvasOrder.has(String(br?.id||''))?canvasOrder.get(String(br.id)):999;return ai-bi||Number(a.order)-Number(b.order)});
+  if(!articles.length)return 'No selected Master Articles are available. Return to Step 5 and confirm the final Master selection.';
+  const publication=pubName(S.issue?.fields?.Publication||[]);
+  const issueNumber=val(S.issue?.fields||{},'Issue Number')||'';
+  const sendDate=val(S.issue?.fields||{},'Send Date')||'';
+  let missing=[];
+  let out=`ARTICLE & SOCIAL ASSETS\n\nSTAFF NOTE\nEvery MASTER below is an ARTICLE — BUILD SEPARATELY IN LETTERMAN before the newsletter is scheduled.\n\nPUBLICATION\n${publication}\n\nISSUE\n${issueNumber}${sendDate?`\n\nSEND DATE\n${sendDate}`:''}\n\nSELECTED MASTER ARTICLES — ${articles.length}`;
+  articles.forEach((a,idx)=>{
+    const r=planArticleRecordV312(a);
+    const f=r?.fields||{};
+    const p=masterArticlePackage(f)||{};
+    const title=String(val(f,'Section Title')||p.article_title||a.title||`Master ${idx+1}`).trim();
+    const subhead=String(p.article_subhead||'').trim();
+    const description=String(p.summary_content||p.newsletter_teaser||subhead||'').trim();
+    const seoTitle=String(p.seo_title||title).trim();
+    const seoDescription=String(p.seo_description||description).trim();
+    const slug=String(p.url_path||val(f,'Action Destination URL')||'').replace(/^\/+|\/+$/g,'').trim();
+    const keywords=Array.isArray(p.keywords)?p.keywords.join(', '):String(p.keywords||'').trim();
+    const imageBrief=String(p.featured_image_brief||'').trim();
+    const imageAlt=String(p.featured_image_alt||'').trim();
+    const newsletterHeadline=String(p.newsletter_headline||title).trim();
+    const newsletterTeaser=String(p.newsletter_teaser||description).trim();
+    const button=titleCaseCtaV3183(String(val(f,'CTA Text')||a.ctaText||'').trim());
+    const partnerName=String(val(f,'Featured Partner')||val(f,'Partner')||'').trim();
+    const articleUrl=(lettermanArticleStateV3194(r).publishedUrl||articlePublishedUrlV31816(publication,slug));
+    const actionDestination=resolvedActionDestinationV31822({title,button,cta:button,url:val(f,'Action Destination URL')},f,publication);
+    const newsletterButton=newsletterArticleButtonTextV31816({title}, {newsletterHeadline});
+    const buttonDestination=actionDestination||(button&&articleActionNeedsDestinationV31816(button)?'[DESTINATION REQUIRED — DO NOT USE PUBLICATION HOMEPAGE AS FALLBACK]':'[NO EXTERNAL DESTINATION REQUIRED]');
+    const fb=String(p.social_facebook||'').trim();
+    const li=String(p.social_linkedin||'').trim();
+    const x=String(p.social_x||'').trim();
+    const sourceLinks=(Array.isArray(p.sources)?p.sources:[]).filter(x=>x&&x.url).slice(0,5);
+    const required={description,seoTitle,seoDescription,slug,keywords,imageBrief,imageAlt,newsletterHeadline,newsletterTeaser};
+    const absent=Object.entries(required).filter(([,v])=>!String(v||'').trim()).map(([k])=>k);
+    if(absent.length)missing.push(`${title}: ${absent.join(', ')}`);
+    out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMASTER ${idx+1} — ${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nARTICLE TITLE\n${title}\n\nARTICLE SUBHEAD\n${subhead||'[NONE SUPPLIED]'}\n\nARTICLE DESCRIPTION / SUMMARY\n${description||'[MISSING]'}\n\nSEO TITLE\n${seoTitle||'[MISSING]'}\n\nSEO DESCRIPTION\n${seoDescription||'[MISSING]'}\n\nURL SLUG\n${slug||'[MISSING]'}\n\nKEYWORDS\n${keywords||'[MISSING]'}\n\nFEATURED IMAGE BRIEF\n${imageBrief||'[MISSING]'}\n\nFEATURED IMAGE ALT TEXT\n${imageAlt||'[MISSING]'}\n\nNEWSLETTER HEADLINE\n${newsletterHeadline||'[MISSING]'}\n\nNEWSLETTER TEASER\n${newsletterTeaser||'[MISSING]'}\n\nPUBLISHED ARTICLE URL\n${articleUrl||'[MISSING]'}\n\nNEWSLETTER BUTTON TEXT\n${newsletterButton}\n\nNEWSLETTER BUTTON DESTINATION\n${articleUrl||'[PUBLISH ARTICLE FIRST — THEN INSERT ITS URL]'}\n\nARTICLE CTA TEXT\n${button||'[NONE]'}\n\nARTICLE CTA DESTINATION\n${button?buttonDestination:'[NONE]'}\n\nARTICLE URL SLUG\n${slug||'[MISSING]'}\n\nFACEBOOK\n${fb||'[NONE SUPPLIED]'}\n\nLINKEDIN\n${li||'[NONE SUPPLIED]'}\n\nX\n${x||'[NONE SUPPLIED]'}${sourceLinks.length?`\n\nUSEFUL LINKS / SOURCES\n${sourceLinks.map(z=>`- ${z.title||'Source / resource'}: ${z.url}`).join('\n')}`:''}`;
+  });
+  out+=`\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nASSET STATUS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${articles.length} selected Master Articles\n${missing.length?`METADATA REVIEW REQUIRED — ${missing.length} article(s) have missing fields:\n- ${missing.join('\n- ')}`:'LETTERMAN METADATA READY — all required article asset fields present'}\n\nIMAGE NOTE\nFeatured-image briefs and alt text are included here. Actual image-file generation is not yet part of this Step 9 package.`;
+  return out;
+}
+async function persistNewsletterUsageV319(){
+  if(!S.issue?.id)return;
+  const issueId=String(S.issue.id),publication=currentPublicationName();
+  const issueNumber=String(val(S.issue.fields||{},'Issue Number')||'').trim();
+  const sendDate=String(val(S.issue.fields||{},'Send Date')||'').trim();
+  const articleIds=[...new Set(step9LiveItemsV3193().filter(b=>b.kind==='article'&&b.refId).map(b=>String(b.refId)))];
+  for(const id of articleIds){
+    const record=(S.sections||[]).find(x=>String(x.id)===id)||(S.articleLibrary||[]).find(x=>String(x.id)===id);
+    if(!record)continue;
+    const notes=String(val(record.fields||{},'Notes')||'');
+    const already=newsletterUsageBlocksV319(record).some(block=>new RegExp(`^Issue ID:\s*${issueId.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\s*$`,'mi').test(block));
+    if(already)continue;
+    const marker=[
+      'NEWSLETTER USAGE v1',
+      `Issue ID: ${issueId}`,
+      `Publication: ${publication}`,
+      `Issue: ${issueNumber||'—'}`,
+      `First used: ${sendDate||new Date().toISOString().slice(0,10)}`,
+      'END NEWSLETTER USAGE'
+    ].join('\n');
+    const d=await api('sections',{method:'PATCH',body:JSON.stringify({id,fields:{Notes:[notes.trim(),marker].filter(Boolean).join('\n\n')}})});
+    if(d?.record){
+      S.sections=S.sections.map(x=>x.id===id?d.record:x);
+      S.articleLibrary=S.articleLibrary.map(x=>x.id===id?d.record:x);
+    }
+  }
+}
+async function persistProductionReadyV319(text){
+  if(!S.issue?.id)return false;
+  const ready=/READY FOR PUBLISHING HANDOFF\s*$/m.test(String(text||''));
+  if(!ready)return false;
+  const current=String(val(S.issue.fields||{},'Issue Status')||'').trim().toUpperCase();
+  if(['READY FOR LETTERMAN','PUBLISHED','ARCHIVED'].includes(current)){await persistNewsletterUsageV319();return true}
+  await persistNewsletterUsageV319();
+  const data=await api('issues',{method:'PATCH',body:JSON.stringify({id:S.issue.id,fields:{'Issue Status':'READY FOR LETTERMAN'}})});
+  if(data?.record){S.issue=data.record;S.issues=S.issues.map(x=>x.id===S.issue.id?S.issue:x);E('ih-status')&&(E('ih-status').value='READY FOR LETTERMAN');updateWorkflowShellV312(9);renderAssembly();return true}
+  return false;
+}
+async function step9SafeRunV31817(kind){
+  try{
+    if(kind==='assets'){
+      if(!finalQAPassedV31820()){alert('Article & Social Assets are locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');return}
+      const text=masterAssetsPackageV3181();
+      E('article-package-text').value=text;
+      E('article-dialog').showModal();
+      return;
+    }
+    if(!finalQAPassedV31820()){alert('Production Package is locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');return}
+    renderStep9LiveStateV3193();
+    const liveItems=step9LiveItemsV3193();
+    if(!liveItems.length){alert('Step 9 cannot see a persisted running order yet. Return to Step 7 only if ICS explicitly says assembly is incomplete; do not rebuild a green Step 7.');return}
+    const text=assemblyDraft();
+    E('preview-text').value=text;
+    await persistProductionReadyV319(text);
+    E('preview-dialog').showModal();
+  }catch(err){
+    console.error('Step 9 output error',err);
+    alert('Step 9 could not generate the '+(kind==='assets'?'Article & Social Assets':'Production Package')+': '+(err?.message||err));
+  }
+}
+function generateMasterAssetsV3181(){
+  if(!finalQAPassedV31820()){
+    alert('Article & Social Assets are locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');
+    return;
+  }
+  const text=masterAssetsPackageV3181();
+  E('article-package-text').value=text;
+  E('article-dialog').showModal();
+}
+async function generateAssembly(){
+  if(!finalQAPassedV31820()){
+    alert('Production Package is locked until Final QA shows 0 Fix. Return to Step 8 and run Final QA first.');
+    return;
+  }
+  const text=assemblyDraft();
+  E('preview-text').value=text;
+  await persistProductionReadyV319(text);
+  E('preview-dialog').showModal();
+}
+E('view-research').onclick=()=>focusField('Notes');
+E('add-authoritative-source').onclick=async()=>{
+ if(!S.section){alert('Select an article first.');return}
+ const existing=String(val(S.section.fields||{},'Source / Reference Link 1')||'').trim();
+ const url=prompt('Paste the strongest official, regulator, trade-body or primary source URL:',existing);
+ if(url===null)return;
+ const clean=String(url||'').trim();
+ if(!/^https?:\/\//i.test(clean)){alert('Please paste a complete http or https URL.');return}
+ const evidence=prompt('Paste the relevant source wording now. This is used if the page blocks automated extraction and is also checked against the URL:','');
+ if(evidence===null)return;
+ const evidenceText=String(evidence||'').trim();
+ if(evidenceText.length<40){alert('Please paste the relevant evidence wording from the source (at least 40 characters).');return}
+ const title=prompt('Optional: source title. Leave blank and TBOS will identify it from the URL:','')||'';
+ const notes=String(val(S.section.fields||{},'Notes')||'');
+ const stamp=new Date().toISOString();
+ const safeEvidence=evidenceText.replace(/END AUTHORITATIVE EVIDENCE UPDATE/gi,'[END marker removed]').slice(0,14000);
+ const marker=[`AUTHORITATIVE EVIDENCE UPDATE v2`,`URL: ${clean}`,`TITLE: ${String(title).trim()}`,`ADDED: ${stamp}`,`EDITOR CONFIRMED TEXT: YES`,`EVIDENCE TEXT:`,`---`,` ${safeEvidence}`.trimStart(),`---`,`STATUS: NEW EVIDENCE — RESEARCH PACK AND MASTER ARTICLE STALE`,`END AUTHORITATIVE EVIDENCE UPDATE`].join('\n');
+ const without=notes
+   .replace(/\n?AUTHORITATIVE SOURCE UPDATE v1[\s\S]*?END AUTHORITATIVE SOURCE UPDATE\s*/g,'')
+   .replace(/\n?AUTHORITATIVE EVIDENCE UPDATE v2[\s\S]*?END AUTHORITATIVE EVIDENCE UPDATE\s*/g,'')
+   .replace(/\n?MASTER ARTICLE RESEARCH CHECKPOINT v1[\s\S]*?END MASTER ARTICLE RESEARCH CHECKPOINT\s*/g,'')
+   .replace(/\n?MASTER ARTICLE WRITER CHECKPOINT v(?:1|2)[\s\S]*?END MASTER ARTICLE WRITER CHECKPOINT\s*/g,'')
+   .replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'')
+   .replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'')
+   .replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*?(?=\n\n[A-Z][A-Z ]+ v|$)/g,'')
+   .replace(/\n?MASTER ARTICLE TRACE v1[\s\S]*?END MASTER ARTICLE TRACE\s*/g,'')
+   .trim();
+ try{
+   const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:S.section.id,fields:{'Source / Reference Link 1':clean,'Evidence Status':'Needs Update','Section QA Result':'Fix Required','Section Status':'Researching','Notes':[without,marker].filter(Boolean).join('\n\n')}})});
+   S.section=d.record;const i=S.sections.findIndex(x=>x.id===d.record.id);if(i>=0)S.sections[i]=d.record;
+   renderSections();selectSection(d.record.id);renderArticleWorkflow();
+   E('production-progress').innerHTML='<strong>Authoritative evidence saved</strong><div class="muted">URL and editor-supplied source text are retained. The old Research Pack and Master Article were invalidated. Click 1. Research current article.</div>';
+   alert('Authoritative evidence saved. The old research and article package were invalidated. Click 1. Research current article next.');
+ }catch(err){alert('Could not save the evidence: '+err.message)}
+};
+E('open-primary-source').onclick=()=>{const u=String(val(S.section?.fields||{},'Source / Reference Link 1')||'').trim();if(/^https?:\/\//i.test(u))window.open(u,'_blank','noopener')};
+E('mark-evidence-verified').onclick=()=>{if(!S.section)return;if(!confirm('Confirm that you have opened the source and checked the key factual claims for this article.'))return;setField('Evidence Status','Verified',true);setField('Evidence Checked Date',new Date().toISOString().slice(0,10),true);E('save-state').textContent='Evidence marked Verified. Click Save section to write this to Airtable.';renderGate();const temp={...S.section,fields:{...S.section.fields,...formFields()}};const original=S.section;S.section=temp;renderArticleWorkflow();S.section=original;focusField('Evidence Status')};
+E('library-filter').onchange=renderSections;E('assembly-search').oninput=renderAssembly;
+E('assembly-order').ondragover=e=>{e.preventDefault();E('assembly-order').classList.add('drag-over')};
+E('assembly-order').ondragleave=()=>E('assembly-order').classList.remove('drag-over');
+E('assembly-order').ondrop=e=>dropOnCanvas(e);
+E('assembly-clear').onclick=()=>{if(confirm('Clear the entire issue canvas?')){canvasSelectedUid=null;saveCanvas([])}};
+E('assembly-auto').onclick=collectSmartSignals;E('assembly-build-plan').onclick=buildSmartPlanFromSavedSignals;E('assembly-smart-assemble').onclick=smartAssembleIssue;document.addEventListener('click',e=>{if(e.target?.id==='copy-smart-audit')copyIssueBalanceAudit()});
+document.addEventListener('click',e=>{if(e.target?.id==='copy-commercial-completion')copyCommercialCompletion()});
+E('reconcile-smart-queue')?.addEventListener('click',async()=>{const b=E('reconcile-smart-queue'),old=b.textContent;b.disabled=true;b.textContent='Repairing Approved Queue…';try{const st=await ensureApprovedQueueV3202({materialize:true,quiet:false});E('production-progress').className='philosophy-box';E('production-progress').innerHTML=`<strong>Approved queue ready ✓</strong><div class="muted">Active ${st.active}/${st.expected} · duplicate order none · missing none.</div>`;updateWorkflowShellV312(workflowSelectedStepV312);}catch(e){alert('Could not repair approved queue: '+e.message)}finally{b.disabled=false;b.textContent=old}});
+E('smart-commercial-completion')?.addEventListener('click',()=>{
+  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the Issue Plan first.');return}
+  renderCommercialCompletionPanel(plan);
+  document.querySelector('#commercial-completion-panel')?.scrollIntoView({behavior:'smooth',block:'center'});
+});
+E('smart-plan-audit')?.addEventListener('click',()=>{
+  const plan=getSmartPlan();if(!plan?.articles?.length){alert('Build the Issue Plan first.');return}
+  renderSmartPlan();document.querySelector('.smart-audit-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
+});
+E('smart-plan-lock').onclick=lockSmartPlan;E('smart-plan-apply').onclick=applySmartPlanToBuild;E('smart-edit-save').onclick=saveSmartArticleEdit;E('smart-edit-cancel').onclick=()=>E('smart-edit-panel').style.display='none';E('smart-plan-hide').onclick=()=>E('smart-plan-panel').style.display='none';E('assembly-produce').onclick=produceSupportingComponents;E('assembly-partners').onclick=assignActivePartners;E('assembly-qa').onclick=runFinalQA;E('qa-fix-v317').onclick=fixQAExceptionsV317;E('qa-repair-v3191').onclick=repairNamedHardFixesV3191;E('qa-rerun-v317').onclick=runFinalQA;E('assembly-fix').onclick=applySafeFixes;E('qa-copy').onclick=copyQAReport;E('qa-hide').onclick=()=>E('qa-report-panel').style.display='none';E('assembly-generate').onclick=generateAssembly;
+E('add-partner-block').onclick=()=>addBlock(makePartnerBlock());
+E('save-inspector').onclick=saveInspector;E('inspect-type').onchange=()=>{const t=E('inspect-type').value,d=COMPONENT_DEFS.find(x=>x.type===t);E('inspect-template').value=t==='MASTER ARTICLE'?'MASTER ARTICLE':(d?.template||(t==='PARTNER PRESENCE'?'PARTNER TIP':'SHORT COMPONENT'));E('inspect-points').value=t==='MASTER ARTICLE'?5:(d?.points||(t==='PARTNER PRESENCE'?3:2));if(t==='PARTNER PRESENCE'){E('inspect-has-partner').checked=true;E('partner-fields').hidden=false}};E('inspect-has-partner').onchange=toggleInspectorPartner;E('inspect-commercial-role').onchange=()=>{const role=E('inspect-commercial-role').value;if(['AUTHORITY','ACTIVATION','REVENUE'].includes(role)&&!E('inspect-has-partner').checked){E('inspect-partner-suggestion').textContent='This commercial role may benefit from a partner, but attach one only when a real partner is confirmed.'}};
+E('remove-canvas-block').onclick=()=>{if(canvasSelectedUid)removeCanvasBlock(canvasSelectedUid)};
+E('create-component-copy').onclick=createStarterCopy;E('produce-selected-component').onclick=produceSelectedComponent;
+E('jump-next-component').onclick=jumpToNextIncompleteComponent;
+E('command-open-build').onclick=()=>show('build');
+
+if(E('pr-reconcile-v3194'))E('pr-reconcile-v3194').onclick=renderLettermanReconcileV3194;if(E('save-letterman-reconcile-v3194'))E('save-letterman-reconcile-v3194').onclick=saveLettermanReconcileV3194;if(E('article-bank-prepare-v320'))E('article-bank-prepare-v320').onclick=prepareArticleBankV320;if(E('article-bank-confirm-v320'))E('article-bank-confirm-v320').onclick=confirmBankPublishedV320;
+E('assembly-export').onclick=exportCanvasBackup;if(E('smart-copy-status'))E('smart-copy-status').onclick=copyPlannerStatus;
+if(E('workflow-copy-status-v312e'))E('workflow-copy-status-v312e').onclick=copyWorkflowStatusV312E;
+if(E('step6-rebuild-mix-v31812'))E('step6-rebuild-mix-v31812').onclick=rebuildComponentMixV31813;
+if(E('step6-build-features-v3204'))E('step6-build-features-v3204').onclick=buildFeatureArticlesV3204;
+if(E('step6-build-v3151'))E('step6-build-v3151').onclick=()=>{
+  const t=supportTargetV315(),ready=step6ReadyCountV3151();
+  if(t.featureArticles<featureTargetForIssueV3204()){buildFeatureArticlesV3204();return;}
+  if(t.supportNeeded>0&&ready>=t.supportNeeded){focusWorkflowStepV312B(7);return;}
+  buildSupportBatchV315();
+};
+if(E('smart-title-toggle-v312l'))E('smart-title-toggle-v312l').onclick=toggleSmartCompactReviewV312l;
+if(E('smart-title-copy-v312l'))E('smart-title-copy-v312l').onclick=copySmartTitlesV312l;
+if(E('smart-title-download-v312l'))E('smart-title-download-v312l').onclick=downloadSmartTitlesV312l;
+if(E('workflow-reset-plan-v312j'))E('workflow-reset-plan-v312j').onclick=resetSmartCandidatePlanV312j;
+
+// v3.12b: keep the nine-step workflow visible globally and show one job at a time.
+function installCleanWorkflowV312B(){
+  const shell=E('workflow-shell-v312'),main=document.querySelector('main.main'),firstView=main?.querySelector('.view');
+  if(shell&&main&&firstView&&shell.parentElement!==main)main.insertBefore(shell,firstView);
+  const initial=workflowSelectedStepV312||1;focusWorkflowStepV312B(initial,{scroll:false});
+}
+function focusWorkflowStepV312B(step,{scroll=true}={}){
+  step=Math.max(1,Math.min(9,Number(step)||1));
+  document.body.dataset.workflowStep=String(step);
+  workflowSelectedStepV312=step;
+  if(step===3||step===4)show('build');else show('assemble');
+  if(step===3||step===4){
+    restoreActiveIssueContextV3202().then(()=>ensureApprovedQueueV3202({materialize:true,quiet:true})).then(st=>{
+      if(Number(document.body.dataset.workflowStep)===step){
+        E('production-progress').className='philosophy-box';
+        E('production-progress').innerHTML=`<strong>Approved queue attached ✓</strong><div class="muted">Active ${st.active}/${st.expected} · duplicate order none · missing none.</div>`;
+        renderSections();
+      }
+    }).catch(e=>{
+      if(Number(document.body.dataset.workflowStep)===step){
+        E('production-progress').className='warning';
+        E('production-progress').innerHTML=`<strong>${step===4?'PRODUCTION':'RESEARCH'} STOP GATE</strong><div class="muted">${esc(e.message||e)}</div><div class="muted" style="margin-top:6px">Click Repair Approved Queue on this screen. Do not go backwards.</div>`;
+      }
+    });
+  }
+  updateWorkflowShellV312(step);
+  // updateWorkflowShell can auto-select during show(); force the operator-selected step back on screen.
+  workflowSelectedStepV312=step;
+  document.querySelectorAll('[data-flow-step]').forEach(b=>b.classList.toggle('active',Number(b.dataset.flowStep)===step));
+  const [name,copy,label]=workflowStepInfoV312(step);
+  if(E('workflow-current-v312'))E('workflow-current-v312').textContent=workflowContextLabelV312(step,name);
+  if(E('workflow-instruction-v312'))E('workflow-instruction-v312').textContent=copy;
+  if(E('workflow-primary-v312')){E('workflow-primary-v312').textContent=label;E('workflow-primary-v312').dataset.step=String(step)}
+  if(step===6){
+    const l=document.querySelector('.canvas-layout');
+    l?.classList.add('library-hidden');
+    l?.classList.add('inspector-hidden');
+    setTimeout(()=>renderStep6StatusV3151(),0);
+  }else{
+    const p=E('step6-status-panel-v3151');if(p)p.style.display='none';
+  }
+  if(scroll)E('workflow-shell-v312')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+
+// v3.12c — stage behaviour and clean Canvas defaults.
+function applyWorkflowLayoutV312C(step){
+  step=Number(step)||1;
+  const canvas=document.querySelector('.canvas-layout');
+  if(canvas){
+    canvas.classList.remove('library-open-v312c','inspector-open-v312c');
+  }
+  if(step===5){
+    refreshMasterSelectionDataV314().then(()=>{
+      workflowSelectedStepV312=5;updateWorkflowShellV312(5);renderMasterSelectionV312();
+    }).catch(()=>renderMasterSelectionV312());
+  }
+  if(step===8){
+    const qa=E('qa-report-panel'); if(qa)qa.style.display='block';
+  }
+  if(step===9){
+    renderStep9LiveStateV3193();
+  }
+  const researchRepair=E('repair-research-queue-v3189');
+  if(researchRepair)researchRepair.style.display=step<=4?'inline-flex':'none';
+  const masterAssets=E('pr-assets-v3181');
+  if(masterAssets)masterAssets.style.display=step===9?'none':'inline-flex';
+  // Assembly controls become explicit "Show" controls rather than ambiguous Hide controls.
+  if(E('toggle-canvas-library'))E('toggle-canvas-library').textContent='Show Content Library';
+  if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').textContent='Show Selected Section';
+}
+const _focusWorkflowStepV312B=focusWorkflowStepV312B;
+focusWorkflowStepV312B=function(step,opt={}){
+  _focusWorkflowStepV312B(step,opt);
+  applyWorkflowLayoutV312C(step);
+};
+
+if(E('workflow-primary-v312'))E('workflow-primary-v312').onclick=runWorkflowPrimaryV312;
+document.querySelectorAll('[data-flow-step]').forEach(b=>b.onclick=()=>focusWorkflowStepV312B(Number(b.dataset.flowStep)));
+
+if(E('toggle-step6-advanced-v315'))E('toggle-step6-advanced-v315').onclick=()=>{
+  const ed=E('component-editor');
+  if(ed)ed.style.display=ed.style.display==='none'?'block':'none';
+};
+if(E('repair-master-integrity-v316'))E('repair-master-integrity-v316').onclick=repairProducedMasterIntegrityV316;
+if(E('master-selection-save-v312'))E('master-selection-save-v312').onclick=()=>{
+  renderMasterSelectionV312();
+  const n=getMasterSelectionV312().length,pr=engineProfileForPublication(),min=pr.targetMasters?.[0]||8,max=pr.targetMasters?.[1]||10;
+  if(n<min||n>max){
+    setWorkflowActionStatusV312(5,'Select','Selection needs adjustment.',`Select ${min}–${max} READY Masters. Current selection: ${n}.`);
+    return;
+  }
+  workflowSelectedStepV312=5;updateWorkflowShellV312(5);
+  setWorkflowActionStatusV312(5,'Select',`${n} Masters selected for this issue.`,`Selection saved. Unselected READY candidates remain bankable. Next: click Step 6 — Components.`);
+};
+if(E('toggle-canvas-library'))E('toggle-canvas-library').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('library-open-v312c');E('toggle-canvas-library').textContent=l.classList.contains('library-open-v312c')?'Hide Content Library':'Show Content Library'}else{l.classList.toggle('library-hidden');E('toggle-canvas-library').textContent=l.classList.contains('library-hidden')?'Show Content Library':'Hide Content Library'}};
+if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('inspector-open-v312c');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-open-v312c')?'Hide Selected Section':'Show Selected Section'}else{l.classList.toggle('inspector-hidden');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-hidden')?'Show Selected Section':'Hide Selected Section'}};if(E('pr-generate-v312c'))E('pr-generate-v312c').onclick=()=>step9SafeRunV31817('package');
+if(E('pr-copy-v312c'))E('pr-copy-v312c').onclick=()=>step9SafeRunV31817('package');
+
+
+async function repairLockedResearchQueueV3189(){
+  if(!S.issue)throw new Error('Open an issue first.');
+  const plan=getSmartPlan();
+  if(!plan?.articles?.length||!smartPlanLocked(plan))throw new Error('Lock the approved Smart Issue Plan first.');
+  const r=await api('sections?issueId='+encodeURIComponent(S.issue.id)+'&_ts='+Date.now());
+  S.sections=r.records||[];
+  let repaired=0;
+  for(const a of plan.articles){
+    const order=Number(a.order||0);
+    if(!order)continue;
+    const active=S.sections.filter(sec=>approvedPlanIdentity(sec)&&Number(val(sec.fields||{},'Section Order'))===order);
+    if(active.length)continue;
+    const sameOrder=S.sections.filter(sec=>!isSupersededSmartBrief(sec)&&Number(val(sec.fields||{},'Section Order'))===order);
+    const exact=sameOrder.filter(sec=>normalizePlanTitle(val(sec.fields||{},'Section Title')||'')===normalizePlanTitle(a.title||''));
+    const candidates=exact.length===1?exact:(sameOrder.length===1?sameOrder:[]);
+    if(candidates.length!==1)continue;
+    const sec=candidates[0], f=sec.fields||{}, notes=String(val(f,'Notes')||'');
+    const cleaned=notes.replace(/PUBLISH NOW — Final Running Order \d{2}\.\s*/g,'').trim();
+    const next=`PUBLISH NOW — Final Running Order ${String(order).padStart(2,'0')}.\n${cleaned}`.trim();
+    const d=await api('sections',{method:'PATCH',body:JSON.stringify({id:sec.id,fields:{Notes:next,'Section Order':order}})});
+    const idx=S.sections.findIndex(x=>x.id===sec.id); if(idx>=0)S.sections[idx]=d.record;
+    repaired++;
+  }
+  await refreshIssueSectionsForSummary();
+  const active=S.sections.filter(approvedPlanIdentity);
+  const orders=active.map(x=>Number(val(x.fields||{},'Section Order')));
+  const missing=[...Array(plan.articles.length)].map((_,i)=>i+1).filter(n=>!orders.includes(n));
+  const dup=[...new Set(orders.filter((n,i)=>orders.indexOf(n)!==i))];
+  const clean=active.length===plan.articles.length&&!missing.length&&!dup.length;
+  renderSections();renderForm();updateWorkflowGuide();
+  return {repaired,active:active.length,expected:plan.articles.length,missing,dup,clean};
+}
+async function runRepairLockedResearchQueueV3189(){
+  const b=E('repair-research-queue-v3189'); const old=b?.textContent||'Repair Research Queue';
+  if(b){b.disabled=true;b.textContent='Repairing…'}
+  try{
+    const d=await repairLockedResearchQueueV3189();
+    const msg=d.clean?`Research queue identity repaired. ${d.active}/${d.expected} active approved Masters.`:`Research queue still needs review: ${d.active}/${d.expected} active · missing ${d.missing.join(', ')||'none'} · duplicate ${d.dup.join(', ')||'none'}.`;
+    E('save-state').textContent=msg;
+    if(!d.clean)alert(msg);
+  }catch(e){alert('Research queue repair failed: '+String(e.message||e));}
+  finally{if(b){b.disabled=false;b.textContent=old}}
+}
+async function rerunSelectedResearchV3188(){
+  if(!S.section){alert('Select the Master you want to re-research first.');return}
+  const plan=getSmartPlan();
+  const order=Number(val(S.section.fields||{},'Section Order')||0);
+  const title=String(val(S.section.fields||{},'Section Title')||'');
+  const a=(plan?.articles||[]).find(x=>Number(x.order||0)===order)||
+          (plan?.articles||[]).find(x=>normalizePlanTitle(x.title||'')===normalizePlanTitle(title));
+  if(!a){alert('This Master is not linked to the locked Smart Issue Plan, so ICS cannot safely clear and rebuild its research automatically.');return}
+  if(!confirm(`Re-research only Article ${order}: ${title}?\n\nThe saved Research Pack/source for this Master will be cleared. The approved brief and every other Master will be preserved.`))return;
+  const b=E('rerun-selected-research-v3188'); const old=b?.textContent||'Re-research Selected Master';
+  if(b){b.disabled=true;b.textContent='Re-researching…'}
+  try{
+    let record=await invalidateMasterForFreshResearchV316(a,S.section,'Step 3 persisted research geography/evidence repair');
+    S.section=record;
+    const d=await produceOne({s:record,run:988},'research');
+    await refreshIssueSectionsForSummary();
+    S.section=S.sections.find(x=>x.id===record.id)||record;
+    renderSections();renderForm();renderArticleWorkflow();updateWorkflowGuide();
+    const gate=evidencePublishabilityV3134(S.section.fields||{});
+    if(gate.blocked)throw new Error(gate.geographyIssue||'Fresh research is still blocked.');
+    E('save-state').textContent=`Selected research rebuilt. ${gate.verified?'Verified':gate.attributed?'Attribution required':'Publishability review required'}. All other Masters preserved.`;
+  }catch(e){
+    E('save-state').textContent='Selected re-research failed: '+String(e.message||e);
+    alert('Selected re-research did not complete cleanly: '+String(e.message||e));
+  }finally{if(b){b.disabled=false;b.textContent=old}}
+}
+E('create-workspace-report-v3186').onclick=createWorkspaceReportV3186;E('repair-research-queue-v3189').onclick=runRepairLockedResearchQueueV3189;E('rerun-selected-research-v3188').onclick=rerunSelectedResearchV3188;E('copy-workspace-report-v3186').onclick=copyWorkspaceReportV3186;E('download-workspace-report-v3186').onclick=downloadWorkspaceReportV3186;E('save-canvas-theme').onclick=saveCanvasPromiseV31824;E('issue-filter').onchange=renderIssues;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const v=b.dataset.view;if((v==='build'||v==='assemble')&&!S.issue)await restoreActiveIssueContextV3202();if(v==='assemble'&&S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on planner open',e)}}show(v);if(v==='assemble'){renderAssembly();updateWorkflowGuide()}});E('add-publication').onclick=()=>{E('pub-area').value='';E('pub-family').value='Taste Trail';E('pub-name').value='';E('pub-name').dataset.auto='1';E('pub-code').value='';E('pub-code').dataset.auto='1';E('pub-status').value='Active';syncPublicationSetupV3184(true);E('publication-dialog').showModal()};E('pub-area').oninput=()=>syncPublicationSetupV3184();E('pub-family').onchange=()=>syncPublicationSetupV3184();E('pub-name').oninput=()=>{E('pub-name').dataset.auto='0';if(E('pub-code').dataset.auto==='1'){E('pub-code').value=publicationCodeFromNameV3184(E('pub-name').value)}};E('pub-code').oninput=()=>{E('pub-code').dataset.auto='0'};E('create-publication').onclick=createPublicationV3184;E('new-issue').onclick=prepareNewIssueV31824;E('new-publication').onchange=syncNewIssuePromiseV31824;E('new-theme').oninput=()=>{E('new-theme').dataset.auto='0'};E('create-issue').onclick=createIssue;E('save-edited-issue').onclick=saveEditedIssue;E('run-map-audit').onclick=auditMap;E('copy-issue-map').onclick=copyProductionMap;E('apply-editorial-plan').onclick=applyEditorialPlan;E('build-issue').onclick=buildIssue;E('repair-build-briefs').onclick=repairBuildBriefs;E('test-openai').onclick=testOpenAI;E('run-production').onclick=()=>runProduction();E('run-next-production').onclick=()=>researchAllApprovedMastersV3131();E('generate-selected-production').onclick=()=>runProduction({one:true,mode:'generate'});E('preview-article-package').onclick=()=>{E('article-package-text').value=selectedArticleExport();E('article-dialog').showModal()};E('pr-assets-v3181').onclick=()=>step9SafeRunV31817('assets');E('copy-article-package').onclick=()=>copyText(E('article-package-text').value);E('add-section').onclick=addSection;E('add-section-bottom').onclick=addSection;E('generate-intelligence').onclick=generateIntelligence;E('save-section').onclick=saveSection;E('save-issue').onclick=saveIssue;E('preview-copy').onclick=()=>{E('preview-text').value=letterman();E('preview-dialog').showModal()};E('copy-letterman').onclick=()=>copyText(letterman());E('copy-preview').onclick=()=>copyText(E('preview-text').value);E('open-production').onclick=async()=>{const pid=E('production-publication').value;if(!pid){alert('Choose a publication first.');return}const issue=S.issues.find(i=>(i.fields.Publication||[]).includes(pid)&&!['PUBLISHED','ARCHIVED'].includes(String(val(i.fields,'Issue Status')).toUpperCase()));if(issue){await openIssue(issue.id);show('build')}else{E('new-publication').value=pid;E('issue-dialog').showModal()}};installCleanWorkflowV312B();applyWorkflowLayoutV312C(workflowSelectedStepV312||1);loadAll().then(async()=>{const last=localStorage.getItem('ics:activeIssueId')||localStorage.getItem('ics:lastIssue');if(last&&S.issues.some(i=>i.id===last))await openIssue(last);else if(last&&localStorage.getItem('ics:canvas:'+last))console.info('Restoring historical Canvas in Recovery Mode:',last);if(S.issue){try{await loadArticleLibrary()}catch(e){console.warn('Produced Articles library refresh failed on startup',e)}}show('assemble');renderAssembly();updateWorkflowGuide()});

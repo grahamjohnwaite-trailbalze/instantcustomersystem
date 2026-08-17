@@ -1,0 +1,14 @@
+ICS / TBOS v3.9.19 — INTELLIGENT SHORT BRIEF
+5 August 2026
+
+Changes
+- Short Brief Mode now expands with an OpenAI-backed context-aware brief rather than generic boilerplate.
+- Sets new article Type=Anchor and Status=Planned automatically.
+- Generates subject-specific reader hook, problem, reader type, decision constraint, value, local proof, evidence plan, commercial pathway, action, CTA, social question and archive note.
+- Automatically runs existing Hot Button/CTA intelligence after expansion.
+- Fixes Article Intelligence classification so commercial routes such as “mortgage adviser” do not incorrectly turn a home-selling article into Money & Mortgages.
+- Keeps Short Brief values visible until Save.
+- Notes use real line breaks and retain persona/sponsor/reuse metadata.
+
+Acceptance test
+Create a new article from Short Brief Mode only. Build full brief. Confirm the generated fields are specific to the article rather than generic template language. Do not save if the expansion is clearly off-topic.

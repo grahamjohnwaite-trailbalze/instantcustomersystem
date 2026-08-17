@@ -1,0 +1,17 @@
+ICS / TBOS v3.9.17 — SHORT BRIEF + COMMERCIAL WORKFLOW
+
+Built directly on the supplied v3.9.16 package.
+
+CHANGES
+1. Adds Short Brief Mode to Build Issue. Operator enters title, reader question, commercial route, expert persona, sponsor override and niche pathways. TBOS expands the long production brief.
+2. Geography lock carried into research. Norfolk, England explicitly rejects Norfolk, Virginia.
+3. Localisation rule: strong location in SEO; conversational body normally once unless local proof genuinely requires more.
+4. Unsponsored business rule: do not name a single commercial provider merely to prove locality.
+5. Expert lane stored in Notes and supplied to writer. Unsponsored personas must not receive invented quotes/credentials/claims; confirmed real sponsors can replace the persona when real identity/commentary is supplied.
+6. Commercial pathway auto-created with Authority + Activation routes and niche reuse pathways.
+7. Language guard strengthened, including recurring “quietly”.
+8. Letterman package now stores article_title + article_body and only reports Ready for Letterman when a real body passes preflight.
+9. Final save preflight blocks missing/very short body, unresolved research/meta copy and Norfolk-Virginia contamination.
+
+TEST
+Use one fresh PBS, one fresh CBS and one niche article. Create each from Short Brief Mode, Save section, Research, Verify, Write, Preview. Confirm minimal manual editing.

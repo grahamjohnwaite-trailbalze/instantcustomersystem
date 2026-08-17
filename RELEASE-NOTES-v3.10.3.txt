@@ -1,0 +1,16 @@
+ICS v3.10.3 — DIVERSE SIGNAL COLLECTOR
+
+Purpose
+Fix the v3.10.2 failure where four parallel discovery calls repeatedly returned the same six leads, leaving only six after dedupe.
+
+Changes
+- Signal discovery now runs sequentially rather than in parallel.
+- Each discovery pass receives the leads already found and is explicitly told not to return or rephrase them.
+- Existing saved leads are preserved on subsequent Collect Signals runs instead of being overwritten.
+- Six distinct discovery pools: Current; Food & Hospitality; What's On & Discovery; Human & Community; Fun & Reader; Evergreen.
+- Collection stops early once a healthy pool of 30 distinct candidates has been reached.
+- Re-running Collect Signals grows the candidate pool because previously saved leads become exclusions for the next discovery run.
+- The 18-lead planning minimum remains in place.
+
+Acceptance test
+Norfolk Spotlight should produce at least 18 distinct leads before planning, with visibly different subject matter across hospitality, discovery, local life, engagement and practical/current content.

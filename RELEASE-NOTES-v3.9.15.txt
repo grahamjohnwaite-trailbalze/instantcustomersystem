@@ -1,0 +1,23 @@
+ICS Issue Canvas v3.9.15 — Authoritative Evidence Text Fallback
+
+Purpose
+- Let editors paste the source URL and decisive source wording in one action.
+- Keep authoritative evidence usable when a valid site blocks automated extraction with HTTP 403 or similar controls.
+
+Changes
+1. Replaced “Add / replace authoritative source URL” with “Add authoritative evidence”.
+2. The action now collects the URL and relevant source wording together, with an optional source title.
+3. Saves a structured AUTHORITATIVE EVIDENCE UPDATE v2 marker containing URL, timestamp and editor-confirmed source text.
+4. Automatically invalidates stale Research Pack, writer checkpoint and Master Article package when decisive evidence changes.
+5. Research prioritises editor-confirmed text tied to the exact URL even when direct page extraction fails.
+6. A 403 fetch warning is retained for audit, but no longer makes the authoritative source unusable.
+7. Direct extraction is still attempted and combined with the pasted evidence when available.
+
+SkiYodl acceptance test
+- Select Article 1.
+- Click Add authoritative evidence.
+- Paste the ABTA URL and the relevant ABTA notice wording in the next prompt.
+- Click 1. Research current article.
+- The new Research Pack should retain ABTA as official evidence and identify the winding-up, 22 July 2026 appointment, package-holiday route, accommodation-only route and RCM Advisory details.
+- Mark evidence verified, then rewrite the Master Article.
+- The rewritten article must not say the liquidation remains unconfirmed.

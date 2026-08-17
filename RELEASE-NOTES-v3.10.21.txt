@@ -1,0 +1,16 @@
+ICS v3.10.21 — VISIBLE BUILD MARKER + REPLACEMENT RESET
+
+This is a packaging/verification correction to v3.10.20.
+
+Fixes
+- Corrects the sidebar version label, which v3.10.20 accidentally left showing v3.10.19.
+- Adds an unmistakable visible build marker so the operator can confirm which package Netlify is serving after refresh.
+- Retains the v3.10.20 story replacement reset and visible Writing Mode control.
+
+How to verify after deployment
+1. Sidebar must show: Issue Canvas v3.10.21.
+2. Sidebar sublabel must show: Story Replacement Reset + Visible Writing Mode.
+3. A build marker must say: Build 2026-08-07 · replacement reset active.
+4. In the detailed section editor, a Writing mode selector must appear immediately after Core Reader Question.
+
+If any of these are absent after a hard refresh, Netlify/browser is still serving an older deployment.

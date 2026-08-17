@@ -1,0 +1,9 @@
+ICS v3.10.13 — Open Question Gate Phrase Fix
+
+Fixes a remaining false research block for open reader-question articles.
+
+- Treats reader/resident nomination or testimony as optional when verified local examples already exist.
+- Treats comparative proof of a “most changed” winner as optional when the article is framed as an open question rather than a definitive ranking.
+- Treats independent proof of everyday-life impact as optional when the article only presents verified changes as discussion starters and does not claim proven impact.
+- Keeps hard factual claims, definitive winners, invented consensus and unsupported outcome claims blocked.
+- Production service v3.7.6.

@@ -1,0 +1,10 @@
+ICS v3.19.2 — Legacy Reconciliation
+Build: 2026-08-12
+
+- Step 7 now recognises a structurally valid legacy browser running order without forcing a rebuild solely to turn the workflow green.
+- Named entity repair no longer blindly re-researches the stale legacy brief.
+- Entity reconciliation first reuses a coherent already-produced Master when one matches the stored publishing metadata.
+- If no banked match exists, fresh research is driven by the publishing metadata identity, while the contaminated legacy body is explicitly excluded as evidence.
+- Wrong-family wording repair remains surgical.
+- Existing running order is preserved; unrelated Masters/supports are never regenerated.
+- Lean deploy package: prior release-note files removed.

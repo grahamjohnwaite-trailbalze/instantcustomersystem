@@ -1,0 +1,20 @@
+ICS v3.20.9 — Feature-Aware Assembly Engine
+Build 2026-08-13
+
+Purpose
+- Fix Step 7 using stale pre-Feature running orders.
+- Treat every currently READY Feature Article as a first-class substantive article anchor.
+- Rebuild Step 7 from current Step 5 Master selection + Step 6A READY Features + current Step 6 supports.
+- Preserve the evidence bar: target remains 4 Features; assembly may proceed with 3 READY when one remains evidence-blocked.
+
+Step 7 integrity
+- Current selected Masters must all be present and no stale Master may substitute.
+- Every READY Feature must be present exactly once.
+- Current support record set must match the running order; stale support cannot keep Step 7 green.
+- Maximum two lightweight components consecutively.
+- At least one Master/Feature anchor in each issue third.
+- No support-only tail.
+- Entering Step 7 automatically checks current-state integrity and rebuilds only Step 7 if stale.
+- Persisted/browser assembly completion no longer treats a legacy order without current Features as complete.
+
+No earlier production state is reset.

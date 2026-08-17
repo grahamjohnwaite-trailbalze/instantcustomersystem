@@ -1,0 +1,22 @@
+ICS v3.20.3 — Reader Delight Component Engine
+Build: 2026-08-13
+
+Purpose
+- Stop supporting components becoming filler between Master Articles.
+- Make the rule universal across Trail Blaze publication families: if a block does not entertain or make readers want to read it, it does not get in.
+
+Changes
+- Spotlight component recipe now uses 19 distinct roles instead of relying on repeated Editorial Bridges.
+- Evidence-starved factual roles fall back to distinct safe fun/utility roles, not generic Quick Breathers.
+- Step 6 integrity explicitly rejects repeated Editorial Bridges / Quick Breathers.
+- Universal Reader Delight Gate added to component production:
+  * entertain, surprise, help, tempt, amuse or reward;
+  * value before asking for comments/votes/replies/shares;
+  * issue theme is an anchor, not every component's subject;
+  * no generic philosophical filler;
+  * humour must actually contain a smile/playful tension;
+  * facts remain disciplined and trustworthy.
+- Final QA now warns on reader-delight failure, value-before-ask failure and weak shareability/habit-building.
+
+Operator behaviour
+- Rebuild only Step 6. Selected Masters and earlier workflow state are preserved.

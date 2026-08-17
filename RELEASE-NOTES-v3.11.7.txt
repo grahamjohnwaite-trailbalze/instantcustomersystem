@@ -1,0 +1,7 @@
+ICS v3.11.7 — Geography Hard Gate
+
+- Rejects Peterborough, Ontario/Canada and other same-name wrong-geography sources before they reach the research pack.
+- Re-checks and removes wrong-geography sources after model recovery.
+- Evidence gate hard-fails if any wrong-geography source survives.
+- Research checkpoint upgraded to v2 so older research packs cannot be silently reused as current evidence.
+- No change to approved Letterman content or issue data.

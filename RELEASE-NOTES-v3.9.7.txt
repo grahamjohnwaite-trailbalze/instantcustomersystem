@@ -1,0 +1,17 @@
+ICS v3.9.7 — Broaden Candidate Pool / Rejection Memory
+
+Purpose
+Stop the micro-batch planner getting trapped proposing the same blocked article repeatedly after the v3.9.5 recent-history guard correctly rejects it.
+
+Changes
+- Keeps a per-issue planning-run rejection memory in browser storage.
+- A recent-history rejection is added to that memory automatically.
+- Rejected concepts are sent back to the planner as a hard do-not-propose list.
+- Close rewrites of rejected concepts are removed from the existing-article inventory.
+- Expands planner inventory from 45/55 candidates to up to 120 where available.
+- Explicitly prefers cross-publication LOCALISE candidates over uncertain same-publication reuse when editorial value is similar.
+- If the safe archive pool is weak/exhausted, planner is told to use an unused current discovery lead for CREATE NEW instead of recycling a blocked library topic.
+- Keeps v3.9.5 hard recent-history guard and v3.9.6 one-article timeout-safe micro-batches.
+
+Acceptance test
+Resume Norfolk Issue 11 with the existing 3 accepted decisions. If dog grooming or another candidate is rejected once, subsequent runs should not propose it again. The accepted count should be able to progress toward 9 without weakening the duplicate guard.

@@ -1,0 +1,8 @@
+ICS v3.21.8 — Claim-Strength Evidence Policy
+
+- Keeps locked Smart Plan discovery leads as publishable attributed evidence when the story is clearly being reported, without pretending the report is official confirmation.
+- Wires the Life-Lane Intelligence Source Bank into fast research queries.
+- Lets recommendation/list/debate articles retain relevant local evidence without forcing news-style official proof.
+- Current planning/decision stories cannot be marked verified/editorial from a generic or unrelated source; they still require direct official/primary confirmation for the decision itself.
+- Research service notes now save the actual evidence decision and missing-evidence reason for operator review.
+- Preserves the v3.21.7 synchronous 4-worker fast research architecture and live status strip.

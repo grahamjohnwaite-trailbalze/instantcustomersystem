@@ -1,0 +1,9 @@
+ICS / TBOS v3.9.12 — Final Status Sync
+
+Fixes:
+- A successfully written, QA-passed Master Article now overrides stale SOURCE CHECK / ATTRIBUTION research state on article cards.
+- Ready-for-Letterman articles display MASTER ARTICLE COMPLETE instead of WRITTEN — SOURCE CHECK when final saved article state is complete.
+- Selected-article production panel now reconstructs its status from Airtable on reload instead of showing “Production service not run yet.”
+- Active-order diagnostic now uses the locked Smart Plan article count instead of a hard-coded 15, removing false “missing order 10–15” warnings on 9-article plans.
+
+No production-function change in this release. v3.9.11 Core Evidence Gate remains intact.

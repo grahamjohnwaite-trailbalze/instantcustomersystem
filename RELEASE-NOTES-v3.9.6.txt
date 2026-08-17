@@ -1,0 +1,19 @@
+ICS / TBOS v3.9.6 — TIMEOUT-SAFE MICRO-BATCH PLANNER
+
+Purpose
+- Fix repeated Netlify 504 inactivity timeouts seen during Norfolk Issue 11 planning.
+
+Changes
+- Replaces 3 calls of 3 article decisions with 9 single-article micro-batches.
+- Saves each successful article decision immediately, so a timeout loses at most one decision.
+- Caps each planner model call at 18 seconds so the function returns before the hosting inactivity window.
+- Removes the server-side duplicate retry that could double execution time and trigger a 504.
+- If the recent-history guard rejects a candidate, the client can simply resume the same missing decision.
+- Keeps the v3.9.5 hard recent-history guard and provenance logic intact.
+
+Acceptance test
+1. Keep the existing 14 signals.
+2. Click Build / Resume Issue Plan.
+3. Planner should show decision progress x/9 and save each decision immediately.
+4. If one decision times out/rejects, click Build / Resume again; it resumes from that decision.
+5. Do not lock until all 9 decisions are reviewed.

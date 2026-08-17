@@ -1,0 +1,10 @@
+ICS v3.19.4 — Letterman Reconciliation + Canonical Asset Completion
+
+- Step 9 now has a Reconcile Letterman Articles action.
+- Each Master can persist its real Letterman published URL without adding fragile new Airtable columns.
+- Interactive article CTA destinations can be reconciled separately from article URLs.
+- ICS can suggest an existing saved menu/booking source for CTA destinations when appropriate; operator checks before save.
+- Legacy/external Masters can mark Letterman as the canonical copy. Step 9 then refuses to re-export a conflicting stale ICS body and points to the real published article instead.
+- Published URL and CTA state are stored on the persistent Master record and survive browser refreshes/deploys.
+- Step 9 production readiness recalculates after reconciliation and can move the issue to PRODUCTION READY when all genuine handoff blockers are complete.
+- These Letterman markers are also the first persistent foundation for the future Article Bank / used-unused tracking layer.

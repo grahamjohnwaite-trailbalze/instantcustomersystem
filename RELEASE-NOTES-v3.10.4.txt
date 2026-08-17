@@ -1,0 +1,17 @@
+ICS v3.10.4 — Hybrid Signal + Idea Pool
+
+Why:
+The collect-issue-signals backend consistently returns six distinct live leads. Repeated client calls cannot manufacture breadth when the server response is capped/repetitive.
+
+Change:
+- Treat live discovery signals and evergreen editorial ideas as two different inputs.
+- Preserve the six genuine/current signals.
+- Supplement them to a 24-candidate planning pool with archive-guarded TBOS evergreen question seeds.
+- Every evergreen seed is clearly labelled EDITORIAL_SEED / EVERGREEN_BANK and carries no factual claim or source URL.
+- Evergreen seeds must be researched and localised before production.
+- Recent same-publication history still blocks matching seeds.
+- The 18-candidate planner gate now applies to the combined planning pool, not to current-news signals alone.
+- Spotlight and initial niche profiles receive different evergreen seed sets.
+
+Important:
+This is an interim architecture correction, not a claim that the user's full 6,000+ idea bank is yet connected. The next data-layer step is to ingest/connect that bank and replace/extend the built-in seed set.

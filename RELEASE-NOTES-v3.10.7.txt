@@ -1,0 +1,20 @@
+ICS v3.10.7 — Balanced Lane Allocation + Sponsor Coverage Fix
+
+Purpose
+- Correct false FOOD & HOSPITALITY and sponsor-lane inflation caused by commercial labels leaking into editorial classification.
+- Keep every core sponsor lane visible without making the issue feel like 13 sponsor articles.
+- Rebalance the 18 supporting components toward local life, family, business, discovery, events and fun.
+
+Changes
+1. Editorial lane classification no longer reads the commercial lane field.
+2. Sponsor opportunity classification no longer reads combined commercial labels such as “Food / Leisure / Visitor”.
+3. Spotlight support recipe rebalanced to 18 blocks: Opening Note, Poll, Local Trivia, Event Pick, Weekend Idea, Food Find, Property Desk, Pet Quick Check, Health Quick Check, Motoring Quick Check, Home Quick Check, Local Business Find, Community Voice, Humour, Sally Savers, Family Activity, Reader Recommendation, Before You Go.
+4. Added Family Activity component so Family / Activities can be visible without forcing a Master Article.
+5. Planning-mood calculation treats compact authority-lane quick checks as neutral/useful unless their actual produced content later warrants an urgent/problem classification.
+6. Existing freshness, archive, source-alignment and duplication gates remain intact.
+
+Expected Norfolk retest
+- 13/13 core sponsor lanes visible.
+- FOOD & HOSPITALITY should fall materially from the false 8-count concentration.
+- Business / People, Fun / Curiosity, Local Life / Community and Family / Activities should be represented.
+- Heavy problem/admin share should fall below the 40% planning ceiling if the nine Masters themselves are balanced.

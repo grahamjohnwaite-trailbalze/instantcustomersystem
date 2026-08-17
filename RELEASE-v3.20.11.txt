@@ -1,0 +1,8 @@
+ICS v3.20.11 — Content Distinctiveness Gate
+Build 2026-08-13
+
+- Feature Articles must add a different reader question/evidence set/outcome from selected Masters.
+- Build / Repair Features automatically recommissions READY Features that duplicate selected Masters.
+- Feature duplication is now a hard QA defect; evidence quality is never lowered.
+- Support generation adds Local Proof, Engagement Budget, Theme Saturation and Language Fingerprint gates.
+- Lean deploy: historical release notes and app-check development copies removed.

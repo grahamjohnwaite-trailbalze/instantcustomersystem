@@ -1,0 +1,10 @@
+ICS v3.21.7 — Research Runtime Fix
+
+FIXED
+- Step 3 synchronous research no longer references section fields before Airtable has loaded the selected record.
+- This ReferenceError was causing every v3.21.6 research request to return a technical failure before evidence collection began.
+- Keeps the synchronous Fast Research Lane and live Finished / Active / Waiting / Failed control from v3.21.6.
+
+OPERATOR
+- Deploy, reopen CBS #47 Step 3, then run Research All 19 Masters once.
+- Existing plan/signals are preserved; do not go backwards.

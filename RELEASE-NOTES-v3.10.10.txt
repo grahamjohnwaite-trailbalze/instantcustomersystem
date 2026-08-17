@@ -1,0 +1,16 @@
+ICS v3.10.10 — Final Balance Tuning
+
+Purpose
+- Stop a healthy Spotlight plan being blocked because Reader Voice is 6 instead of 5.
+- Distinguish target, review and blocking thresholds.
+- Suggest the best underrepresented lane to rotate into when Reader Voice is high.
+
+Changes
+1. Reader Voice target remains 3–5 per Spotlight issue.
+2. 6 Reader Voice moments = REVIEW only; acceptable in a 24–30 section issue.
+3. 7 Reader Voice moments = stronger REVIEW; rebalance recommended, but not a production block.
+4. 8+ Reader Voice moments = NEEDS ATTENTION and blocks the planning gate.
+5. Audit suggests an underrepresented lane to receive the next rotated support component.
+6. Generic lane-cap handling no longer hard-blocks Reader Voice at 6.
+7. Planning status is now READY when there are no findings, REVIEW for soft findings, and NEEDS ATTENTION only for hard failures.
+8. Existing freshness, archive, sponsor-lane, semantic classification, mood and duplication rules are unchanged.

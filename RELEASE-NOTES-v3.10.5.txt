@@ -1,0 +1,29 @@
+ICS v3.10.5 — Life Lane + Commercial Coverage Guard
+
+Purpose
+- Stop Spotlight plans passing merely because they are fresh.
+- Require the whole 24–30 section projected issue to cover the broader life mix and natural sponsor/expert territory.
+
+Changes
+- Spotlight whole-issue minimums now include:
+  * 2+ Food / Hospitality
+  * 2+ What's On / Discovery
+  * 2+ Local Life / Community
+  * 2+ Money / Home / Consumer
+  * 1+ Motoring / Travel
+  * 1+ Business / People
+  * 2+ Fun / Curiosity
+  * 3+ Reader interaction
+- Added dedicated Motoring Quick Check and Home Quick Check support components so these lanes can be filled by short useful pieces rather than forcing more Master Articles.
+- Spotlight support recipe remains 18 blocks and now deliberately covers the missing life lanes.
+- Commercial balance guard now checks diversity across the issue rather than rewarding 9/9 Masters for having a nominal route.
+- Target commercial shape: 4–8 distinct natural categories, including at least 2 expert/help lanes and 2 activation/featured-partner lanes.
+- Over-engineered commercial coverage is flagged; editorial-first remains the rule.
+- Planning gate treats missing required life/commercial coverage as NEEDS ATTENTION.
+
+Test
+1. Reopen Norfolk test issue.
+2. Build / Resume Issue Plan if needed.
+3. Click Analyze Issue Balance.
+4. Do not lock or create briefs yet.
+5. Confirm the audit now explicitly reports missing life lanes and commercial-category diversity.

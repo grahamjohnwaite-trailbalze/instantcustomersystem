@@ -1,0 +1,10 @@
+ICS v3.10.24 — Foreign Story-Family Reset
+
+Fixes a defect in v3.10.23 where stale Article intelligence could survive when a field contained both the new story family and old dog-grooming/planning terms. The previous detector returned the first matching family only.
+
+Changes:
+- Detects all story-family markers in each stored intelligence field.
+- If the current title/question is finance and any stale field still contains pet/planning (or another foreign family), the editor clears the stale intelligence immediately on load.
+- Notes and social-question shape are included in the stale-family check.
+- No Airtable write occurs until Save section.
+- Visible build marker updated to v3.10.24.

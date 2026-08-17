@@ -1,0 +1,22 @@
+ICS / TBOS v3.9.13 — Review Queue + Bulk Safety
+
+Purpose
+- Stop bulk production from rewriting Master Articles that already have a saved package.
+- Make the Build Issue rail distinguish written review work from genuinely unwritten work.
+- Fix W progress when a Master Article package exists even if the legacy Section Final Copy field is not populated as expected.
+- Keep Primary Hot Button visible as a final-QA task without inflating the production warning count for every article.
+
+Changes
+1. Bulk production now treats any saved Master Article package as already written and excludes it from the bulk pending set.
+2. Added a Needs editorial review filter for SOURCE CHECK / NEEDS REVIEW / BLOCKED records.
+3. Article workflow W is derived from the saved Master Article package as well as final-copy fields.
+4. Hot Button missing is displayed as a neutral 'Hot Button pending — final QA' note during production instead of a production warning.
+5. Summary now reports how many articles need editorial review and how many are QA-ready.
+6. Manual single-article reruns still remain possible, with an explicit replacement confirmation.
+
+Acceptance test
+- Reload Norfolk Spotlight Issue #11.
+- All 9 written packages should count as Produced if all 9 have packages.
+- Article 2 should show W ✓ when its Master Article package is present.
+- 'Write all approved articles' should not offer to rerun written SOURCE CHECK / NEEDS REVIEW records.
+- Use 'Needs editorial review' to isolate the non-green records.

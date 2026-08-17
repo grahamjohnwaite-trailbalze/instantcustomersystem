@@ -1,0 +1,30 @@
+ICS / TBOS v3.9.11 — CORE EVIDENCE GATE
+4 August 2026
+
+PURPOSE
+Stop useful service/guide articles being blocked by evidence demands that are not necessary to answer the approved reader question.
+
+FIXED
+1. Core claim vs enrichment
+   - Strong official/primary evidence can now satisfy a general service/advice article even when optional hands-on or local-enrichment checks are missing.
+   - Missing evidence is only publication-blocking when it is needed for a material claim the article actually intends to make.
+
+2. No unnecessary hands-on gate
+   - Device testing, representative-bank testing and similar real-world recreation are non-blocking unless the approved brief actually depends on such testing.
+
+3. Local proof is claim-aware
+   - Norfolk-specific retailer/operator confirmation is required only when the article intends to name or make claims about those local entities.
+   - A general UK factual/service answer is not blocked merely because it lacks an unnecessary Norfolk retailer example.
+
+4. Discovery source is provenance, not a mandatory dependency
+   - For guide/advice questions, inability to reopen the original news/RSS article does not block writing when authoritative independent sources answer the approved question.
+
+5. Safety retained
+   - Breaking/company-specific claims such as insolvency, liquidation, court, crash, closure and similar event-status stories do NOT receive the relaxed gate.
+   - They still require direct verification or explicit source-check handling.
+
+DEBUG
+Production service marker advanced to v3.7.3.
+
+TEST
+After deploy, rerun Article 4 (Google Wallet) first using Research current article, then Write current Master Article if research passes. Do not rerun all nine until this single-record test succeeds.

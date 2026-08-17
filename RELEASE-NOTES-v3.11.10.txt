@@ -1,0 +1,17 @@
+ICS v3.11.10 — Support Component Production
+Build: 2026-08-08
+
+FOCUS
+Complete the missing Issue Canvas support-component workflow.
+
+CHANGES
+- Adds a visible Produce component button in the Component Inspector.
+- Produces the selected short component from its reader job, issue context, local proof/source requirement, production brief and attached real partner.
+- Preserves the starter/brief separately before replacing the inspector content with finished Letterman-ready copy.
+- Marks successfully produced support blocks APPROVED / READY FOR LETTERMAN.
+- Enforces one clear job, concise Spotlight voice and one CTA maximum.
+- Explicitly forbids invented partner quotes/advice, prices, qualifications, testimonials, services or outcomes.
+- Upgrades batch supporting-component production to use partner/source/brief context and proper production statuses.
+
+FIRST ACCEPTANCE TEST
+Use the existing Raimonda / Smarter Paws PET QUICK CHECK component. Click Produce component. It should replace the scaffold with concise reader-facing copy and show APPROVED / READY FOR LETTERMAN.

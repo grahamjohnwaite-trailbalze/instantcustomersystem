@@ -1,0 +1,9 @@
+ICS v3.11.9 — Plan-to-Brief Sync Fix
+
+- Smart Plan edits now update the existing Airtable brief at the same article number instead of matching only by title.
+- Editing/replacing a plan item clears stale final copy, evidence/source state, CTA and QA fields before new research.
+- Manually edited plan items no longer inherit rigid old quantity requirements such as “five planning applications”.
+- Edited briefs explicitly tell research to use only as many strong examples as the evidence supports: round-up if several, single-story deep dive if one dominates, replace if none are strong enough.
+- Button renamed Create / Update Article Briefs to make the sync step explicit.
+
+Operator flow: Edit/Replace in Smart Issue Plan → Lock Approved Plan → Create / Update Article Briefs → Build Issue card updates to the new brief → Research.

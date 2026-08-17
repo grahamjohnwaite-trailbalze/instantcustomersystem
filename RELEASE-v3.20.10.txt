@@ -1,0 +1,18 @@
+ICS v3.20.10 — Feature QA Tolerance + Rhythm Gate
+
+Purpose
+- Align Step 8 Final QA with the Step 6A/Step 7 rule already proven on PBS #51.
+- Four Feature Articles remain the production target.
+- Three READY Feature Articles are a valid minimum when the fourth is not READY/evidence-blocked and the assembled issue still passes structural rhythm.
+
+Changed
+- FEATURE_LAYER is now FIX only below the 3-Feature minimum.
+- 3/4 Features produces a WARNING, not a hard FIX.
+- 4/4 Features produces PASS.
+- The existing ASSEMBLY_RHYTHM hard gate remains authoritative: no long support-only tail and substantive Master/Feature anchors across all thirds.
+- Evidence standards are unchanged; ICS must never force a blocked Feature into publication merely to hit 4/4.
+
+Expected PBS #51 result
+- The previous 1 Fix caused solely by 3/4 Features should clear on rerun.
+- The missing fourth Feature may remain a warning while evidence-blocked.
+- Step 9 unlocks when Final QA has 0 hard Fixes.

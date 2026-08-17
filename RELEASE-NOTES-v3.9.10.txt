@@ -1,0 +1,31 @@
+ICS / TBOS v3.9.10 — Production States + Independent Question Recovery
+4 August 2026
+
+WHY THIS PATCH
+v3.9.9 proved the staged bulk pipeline works, but the Build Issue UI was reading only older v2.x production markers. As a result, completed v3.7.1 research/writer runs could remain labelled PRODUCING or IN PRODUCTION QUEUE. It also treated written-but-review-required packages and research-blocked records too similarly.
+
+FIXES
+1. Build Issue now recognises both v2.x and v3.x production-service markers.
+2. Clear terminal states:
+   - MASTER ARTICLE COMPLETE
+   - WRITTEN — SOURCE CHECK / EDITOR REVIEW
+   - RESEARCH BLOCKED — RETRY / REPLACE
+   - TECHNICAL FAILURE
+   - PRODUCING only while a live run is genuinely active.
+3. Production summary now reports:
+   Written ready · Written review · Research blocked · Technical failed.
+4. Research recovery is now question-first for guide/advice/recommendation briefs.
+   - If the discovery article is unavailable, the system may answer the approved reader question independently from credible local/official/primary sources.
+   - It must not turn failed source recovery into a publishable meta-article about the missing source.
+   - Specific breaking-news/company/incident claims remain tied to verification of the actual subject and are not silently generalized.
+5. If the model-led second-pass research times out on an eligible guide/advice brief, a bounded fast independent-question recovery is attempted before the article is blocked.
+6. Production service marker advanced to v3.7.2.
+
+UPLOAD
+- app/index.html
+- netlify/functions/produce-section.mjs
+- RELEASE-NOTES-v3.9.10.txt
+
+TEST AFTER DEPLOY
+Reload Build Issue first. Existing records should immediately stop showing stale PRODUCING/QUEUE labels where a terminal v3.x production result already exists.
+Then rerun Write all approved articles once to test the new independent-question recovery on the remaining non-ready records.

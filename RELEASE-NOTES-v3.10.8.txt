@@ -1,0 +1,15 @@
+ICS v3.10.8 — Semantic Lane Validation + Sponsor Matrix Fix
+
+Fixes exposed by the Norfolk Spotlight planning audit:
+- Planner-supplied life_lane is no longer blindly trusted for Spotlight balance counts.
+- Primary editorial lane is validated against the actual article subject/title/question.
+- A wrongly-labelled attraction/day-out/business story can no longer inflate FOOD & HOSPITALITY simply because the planner stored the wrong lane.
+- READER VOICE cannot become the primary lane for an otherwise normal local-life Master purely because it is phrased as a reader question.
+- Core sponsor opportunity classification no longer reads life_lane/lifeLane, preventing editorial lane metadata from falsely lighting up commercial categories.
+- Short component TYPE still contributes to sponsor visibility, so implied category coverage remains intact.
+- Existing freshness, 13/13 sponsor-lane visibility, mood gate, lane caps and archive guards remain unchanged.
+
+Acceptance target for the current Norfolk test plan:
+- Food/Hospitality should fall toward the actual food subjects (normally 3 Masters + Food Find support, not 7–8 Masters).
+- Business/People should be recognised where the subject is genuinely a local business/person story.
+- Reader Voice should reflect dedicated engagement components rather than planner metadata.

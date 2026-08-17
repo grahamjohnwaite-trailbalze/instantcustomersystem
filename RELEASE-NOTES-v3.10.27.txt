@@ -1,0 +1,11 @@
+ICS v3.10.27 — WRITING MODE PERSISTENCE FIX
+
+Production unblock for PBS Issue 50 Article 09.
+
+- Preserves an explicit editor-selected Writing Mode during story replacement/reset instead of re-inferring AUTO.
+- Expands News Explainer detection for accountability/news wording such as reportedly, sold, owed, taxpayer, accountability, collapsed and administration.
+- Normalises upper/lower/title-case Writing Mode values so planner-created NEWS EXPLAINER and Build Issue News Explainer resolve to the same canonical mode.
+- Save Section now verifies the Writing Mode returned by Airtable, retries Notes once if needed, and visibly confirms the persisted mode.
+- If the mode still does not persist, the editor gets a blocking warning instead of silently reverting.
+
+Acceptance test: PBS Article 09 → select News Explainer → Save section → reopen → News Explainer remains selected.

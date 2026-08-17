@@ -1,0 +1,20 @@
+ICS v3.9.3 — Commercial Opportunity + Issue Balance Patch
+4 August 2026
+
+PURPOSE
+Keep commercial value obvious without forcing arbitrary sponsor quotas, and stop a strong Spotlight plan becoming too civic/serious.
+
+CHANGES
+- Replaces legacy 5–8 Resident Expert / Featured Partner quota warnings with opportunity mapping.
+- Removes legacy 30-Block Commercial Completion target logic.
+- Renames the second balance action to Review Commercial Opportunities.
+- Shows commercial pathways on every planned Master Article where they naturally exist.
+- Issue audit reports number of Master Articles with natural commercial pathways, expert/authority lanes and feature/activation lanes.
+- Commercial safeguards: real partner commitments can raise priority, but never lower the editorial floor; components can also fulfil partner value.
+- Adds Life Lane spread check.
+- Adds civic/public-service dominance check (normally no more than about 4 of 9 Master Articles unless the news week genuinely warrants it).
+- Flags an overly practical/problem-heavy Master Article layer and asks for discovery, recommendation, human or enjoyment pieces.
+- Keeps Unfiltered/debate and engagement variety checks without requiring every article to be question-led.
+- Planner prompts now explicitly identify commercial routes and require at least two lighter/discovery/people-led Master Articles.
+- Final QA recognises commercial opportunity visibility without demanding a sponsor quota.
+- Removes leftover 28–32 / 12–15 line from generated Issue Build Pack.

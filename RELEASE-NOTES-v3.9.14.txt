@@ -1,0 +1,22 @@
+ICS Issue Canvas v3.9.14 — Authoritative Source Override
+
+Purpose
+- Let an editor qualify a questionable article by adding one stronger official or primary source URL.
+- Make that source part of the next research run instead of leaving it buried in Notes.
+
+Changes
+1. Added “Add / replace authoritative source URL” to the Current article workflow.
+2. Pasting a URL saves it to Source / Reference Link 1 and adds a structured AUTHORITATIVE SOURCE UPDATE marker.
+3. The existing Research Pack and Master Article are explicitly marked stale until research is rerun.
+4. Research now fetches the editor-supplied URL directly and retains it for qualification before general search results.
+5. The targeted research prompt is told to assess the exact editor URL first and extract what it confirms, does not confirm, dates, named bodies and action routes.
+6. Recognises ABTA and key UK regulator/trade-body domains as authoritative sources.
+
+SkiYodl acceptance test
+- Select Article 1.
+- Click Add / replace authoritative source URL.
+- Paste https://www.abta.com/news/ski-yodl-ltd-advice-customers
+- Click 1. Research current article.
+- View research and confirm ABTA appears as a retained source and the liquidation/customer routes are extracted.
+- Mark evidence verified when correct, then click 3. Write current Master Article.
+- The rewritten article must not retain the old “liquidation unconfirmed” position.

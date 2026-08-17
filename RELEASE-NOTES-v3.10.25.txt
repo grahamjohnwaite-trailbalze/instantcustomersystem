@@ -1,0 +1,13 @@
+ICS v3.10.25 — Safe Foreign Story Reset
+
+Built from the last navigable v3.10.23 baseline, not from v3.10.24.
+
+Fixes:
+- Repairs the JavaScript syntax error introduced in v3.10.24 that prevented normal Issue Builder navigation.
+- Retains the intended multi-family stale-story detection so finance replacements can clear old pet/planning intelligence.
+- Uses explicit null-safe value handling in stale-story detection.
+- No unrelated UI or workflow changes.
+
+Validation performed before packaging:
+- Main app JavaScript parsed successfully with `node --check`.
+- Package structure compared against v3.10.23; only app/index.html and release notes changed.

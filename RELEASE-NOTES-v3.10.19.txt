@@ -1,0 +1,21 @@
+ICS v3.10.19 — Adaptive Story Mode + Conversation Engine
+
+Production service: v3.7.12
+
+Purpose
+Keep the real-life Question Engine feel without forcing local news, controversies, discovery pieces or breaking updates into the same advice template.
+
+Changes
+- Adds an Adaptive Writing Mode selector to Smart Plan article editing: AUTO, Conversation Advice, News Explainer, Debate / Controversy, Recommendation / Discovery, Practical Service, Comparison / Value, Human / Community, Breaking Update.
+- AUTO selects a likely treatment from the question, stance and story cues; editors can override it.
+- Planner is told to use Zoom/podcast/pub/dinner-table questions strongly for advice/service content, but not to force them onto news or controversy.
+- Writer receives the selected/resolved writing mode in planning notes and chooses the article structure accordingly.
+- Illustrative personas are now allowed: ordinary invented names, ages and everyday situations may make a common scenario human and relatable. They are storytelling devices only, never evidence.
+- Still forbids invented quotes, testimony, credentials, business ownership, reader consensus, survey results or medical/legal/financial outcomes.
+- News mode: what happened, where, who is affected, what changes now, what is unknown.
+- Debate mode: real tension, evidence/countercase, specific reader question.
+- Discovery/comparison/service modes use structures appropriate to their jobs instead of repeating one template.
+- Supporting components inherit the same adaptive treatment rule.
+
+Editorial principle
+Choose the style from the question. Most expert/advice content should feel like real advice from real people; local news and controversies should still feel like news and debate.

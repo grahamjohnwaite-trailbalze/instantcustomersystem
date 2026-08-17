@@ -1,0 +1,17 @@
+ICS v3.11.3 — Writer Checkpoint Invalidation Fix
+
+Purpose
+Ensure the v3.11.2 Spotlight Writer actually runs instead of reusing a writer checkpoint created under the previous prompt.
+
+Root cause
+- v3.11.2 changed the writer prompt but did not bump WRITER_PROMPT_VERSION.
+- Existing articles with an unchanged research pack therefore matched the old writer checkpoint key and reused the previous draft.
+- This explains why the Hilton regression output was effectively identical and appeared almost instantly.
+
+Fix
+- Bumps WRITER_PROMPT_VERSION from ARTICLE-BUILDER-STABLE-v1 to ARTICLE-BUILDER-SPOTLIGHT-v2.
+- Existing research may still be reused, but the writer draft cannot be reused across this prompt-version boundary.
+- The next Produce Master Article run must execute the new Spotlight Writer layer and the v3.11.2 Letterman package/CTA stabilisation.
+
+Acceptance check
+Use Article 09 Hilton. Research may complete quickly from the saved research pack. Then Produce Master Article must create a fresh draft with the new writer layer rather than returning the old package.

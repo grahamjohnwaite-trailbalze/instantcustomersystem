@@ -1,0 +1,18 @@
+ICS v3.10.22 — Deep Story Reset + Stale Intelligence Guard
+
+Fixes the case where an operator changes and saves an article title/question before clicking Generate section intelligence.
+
+Changes:
+- Generate section intelligence now detects stale story intelligence even when the new title/question were already saved to Airtable.
+- Compares the current reader question with the previous Reader question stored in Notes.
+- Adds a topic-family mismatch guard so finance questions cannot retain pet/planning evidence, actions or commercial pathways.
+- Story replacement reset now also clears stale Reader Hook.
+- Child/university savings questions default to the choice/comparison Hot Button rather than being misread as a generic What Happens Next question because they mention 15 years.
+- Visible sidebar marker: v3.10.22 · stale-story guard active.
+
+Test:
+1. Open Article 8 with the Millie/university title and reader question already saved.
+2. Click Generate section intelligence once.
+3. Old dog-groomer/planning/source/action/commercial fields must disappear.
+4. The regenerated brief should show family savings/Junior ISA/investment evidence, Financial adviser/family finance pathway, and Conversation Advice writing mode.
+5. Save section only after the regenerated brief is clean.

@@ -1,0 +1,19 @@
+ICS v3.19.1 — Legacy State + Named Fix Repair
+
+Purpose
+- Make completed pre-v3.19 running orders count as completed when their persisted structure is valid.
+- Repair named hard QA defects surgically without rebuilding a whole issue.
+
+Changes
+1. Step 7 legacy assembly compatibility
+   - A persisted, contiguous running order can satisfy Step 7 when section count, Master count and support count match the active publication profile.
+   - This avoids completed legacy issues appearing incomplete only because older selection identity metadata differs.
+2. Repair Named Hard Fixes button on Step 8
+   - Appears only when fresh QA contains supported named hard fixes.
+   - Wrong-family copy such as Tell Spotlight inside Taste Trail is corrected deterministically.
+   - Entity/story mismatch keeps the approved Master brief, clears only the contaminated Master, runs fresh research + rewrite for that Master, preserves all other Masters/support, and restores the persisted running order.
+   - Final QA reruns automatically after the repair.
+3. No fuzzy entity choice
+   - If the affected Master cannot be matched to its approved plan record exactly, repair stops instead of guessing.
+
+Upgrade from v3.19.0. Existing records are preserved.

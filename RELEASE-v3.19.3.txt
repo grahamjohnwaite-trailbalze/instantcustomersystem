@@ -1,0 +1,8 @@
+ICS v3.19.3 — Step 9 Live Handoff State
+
+- Step 9 now reads the same persisted/live running order that makes Step 7 complete.
+- Step 9 counters no longer fall back to 0 when browser-local canvas state is absent or late-loading.
+- Canonical Letterman package generation now uses the live persisted running order.
+- Step 9 shows QA PASSED after a persisted 0-Fix QA, until publishing fields make the issue PRODUCTION READY.
+- Research Queue repair is hidden outside research/production stages; Master-Only Asset View is hidden from Step 9 to reduce operator ambiguity.
+- Package remains lean: only this release note is included.

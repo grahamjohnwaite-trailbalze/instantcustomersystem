@@ -1,0 +1,10 @@
+ICS v3.10.23 — Replacement-Pending Load Reset
+
+Fixes a replacement article opening with old story intelligence already pre-populated.
+
+- On section load, compares saved title/core reader question with stored story-specific intelligence.
+- If they belong to different story families, clears stale story fields in the editor immediately.
+- Preserves structural fields, article number/order, new title, new reader question and writing mode.
+- Does not write to Airtable merely by opening the article.
+- Operator flow: open replacement article → stale fields visibly blank → Generate section intelligence → Save section → Research.
+- Visible build marker updated to v3.10.23.

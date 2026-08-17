@@ -1,0 +1,59 @@
+ICS v3.10.0 — UNIVERSAL PLANNING ENGINE / EDITORIAL BALANCE GATE
+
+BASELINE
+- Built from clean v3.9.16 Decisive Official Source Gate.
+- Does not include the failed v3.9.17–v3.9.21 Short Brief experiments.
+
+WHAT THIS BUILD CHANGES
+1. One universal planning engine with publication-specific Engine Profiles.
+2. Auto profile selection from Publication DNA/name.
+3. Initial profiles included:
+   - Spotlight
+   - Home Seller Insider
+   - Taste Trail
+   - Pet Insider
+4. Spotlight now models broad editorial lanes before production:
+   Local Life; Food & Hospitality; What's On; Places & Discovery; Money & Consumer;
+   Home & Property; Family & Community; Motoring & Travel; Fun & Curiosity;
+   Reader Voice; Business & People; Topical / Breaking.
+5. Mood classification is separate from subject classification.
+6. Planning Gate projects the complete issue (Master Articles + planned support/life components)
+   before Airtable briefs are created.
+7. Spotlight planning safeguards now include:
+   - normal 24–30 section projected issue
+   - 8–10 Master Articles
+   - minimum Food/Hospitality representation
+   - minimum What's On/Discovery representation
+   - minimum Local Life/Community representation
+   - minimum Fun/Curiosity representation
+   - minimum Reader Interaction representation
+   - heavy SAVE MONEY / PROBLEM SOLVING / URGENT mood capped at 40%
+   - explicit warning when the issue lacks enough ENJOY / DISCOVER / CURIOUS / HUMAN moments
+8. Plan lock is blocked when the projected editorial shape fails the planning gate.
+9. Canonical Spotlight support components added, including Local Trivia, What's On, Food Find,
+   Pub / Restaurant Question, Worth The Drive?, Sally Savers, Local Debate, Weekend Idea,
+   Local Business Find, Nomination, Humour, Expert Quick Check and Before You Go.
+10. Smart assembly now uses the active Engine Profile support recipe rather than the old fixed
+    generic component sequence and fixed standalone partner blocks.
+11. Engine Profile panel shows target sections, target Master Articles, support blocks, editorial
+    lanes and current planning-gate health.
+12. Commercial opportunity remains visible but can no longer by itself make a flat issue look balanced.
+
+IMPORTANT SCOPE
+- v3.10.0 is Phase 1: planning architecture and editorial balance.
+- Spotlight is the first live acceptance profile.
+- Niche profiles are present in the same engine architecture, but niche backend planning acceptance
+  still needs to be proven after Spotlight passes.
+- Short Brief persistence, one-source status sync, full-body Final QA and one-click Letterman are
+  intentionally NOT changed in this build. Those follow after the planning engine is proven.
+
+FIRST ACCEPTANCE TEST
+Norfolk Spotlight Issue #12:
+- build/resume a 9-Master plan
+- inspect Planning Gate before locking
+- plan must project a recognisable 24–30 section Spotlight with hospitality, discovery/local life,
+  curiosity and reader interaction, not another admin/checklist-heavy issue
+- only lock if Planning Gate allows it
+- assemble approved plan and confirm canonical life/support blocks appear
+
+DO NOT MERGE TO PRODUCTION UNTIL THIS ACCEPTANCE TEST PASSES.

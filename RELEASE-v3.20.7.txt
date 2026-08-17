@@ -1,0 +1,9 @@
+ICS v3.20.7 — FEATURE 202 STATE RECOVERY
+Build date: 2026-08-13
+
+Fixes
+- Treats HTTP 202 from Feature research/writing as ACCEPTED/PENDING rather than a hard failure.
+- Polls the persisted Airtable section state for the real saved result before retrying once.
+- Keeps Feature planning 202 non-blocking via the existing safe local fallback.
+- Error messages identify Feature number and exact failed stage.
+- Resumes partial Feature rows and preserves PBS #51 Masters/components.

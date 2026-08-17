@@ -1,0 +1,20 @@
+ICS v3.20.14 — Stability Cut — Optional Features
+Build: 2026-08-13
+
+Purpose
+- Restore forward movement toward a viable newsletter builder.
+- Feature Articles are optional until the core builder is frozen.
+- Masters + supporting components must be sufficient to assemble a balanced issue.
+
+Changes
+- Feature minimum for assembly is now 0.
+- Step 7 no longer blocks because Feature Articles are unavailable or evidence-blocked.
+- Step 8 no longer raises a Feature-count FIX; 0 Features passes when rhythm passes.
+- Step 7 distributes Masters/ready optional Features and supports across the full issue with a rhythm-first gap algorithm.
+- No more than two lightweight supports should run consecutively in normal Spotlight geometry.
+- Existing Feature records are preserved for later review; they are not required for PBS #51 completion.
+
+Operator instruction for current PBS #51
+- Do not run Build Optional Features.
+- Continue from Step 7 Assemble.
+- If rhythm passes, run Step 8 QA and proceed to Step 9 on 0 Fix.

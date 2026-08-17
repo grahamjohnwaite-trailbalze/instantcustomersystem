@@ -1,0 +1,6 @@
+ICS v3.10.28 — Research Completion State Fix
+
+- Fixes false “Research complete” when Evidence Status was merely Researching.
+- Research is now considered complete only when a terminal RESEARCH PACK or RESEARCH_COMPLETE service block is actually saved in Notes.
+- If research was started but no terminal pack was saved, the UI now says “Research not complete” and tells the operator to retry once.
+- No planning, writing-mode, issue metadata or production logic changes.

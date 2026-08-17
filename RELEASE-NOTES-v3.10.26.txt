@@ -1,0 +1,19 @@
+ICS v3.10.26 — Issue Metadata + Duplicate Guard
+
+Production-blocker fix built from v3.10.25.
+
+Changes:
+- Issues list now has Edit controls for Issue Number, Send Date, Status and Main Theme.
+- Existing issue details can be corrected without rebuilding the issue.
+- ARCHIVED status is available so accidental duplicate issue records can be retired safely without deleting content.
+- Duplicate issue numbers are visibly flagged on the Issues list.
+- Create Issue now blocks accidental duplicate publication + issue-number creation and opens the existing record instead.
+- Create Issue button is disabled while saving to stop double-click duplicate records.
+- Removed the stale hard-coded 16 July 2026 default send date. A send date must now be deliberately chosen.
+- Existing article/planning/production logic is unchanged from v3.10.25.
+
+Recommended recovery for the two PBS #50 records:
+1. Pick the #50 record you want to use.
+2. Edit it to Send Date 08/08/2026 and keep status PLANNED.
+3. Edit the accidental second #50 and set status ARCHIVED.
+4. Open the active #50 and continue Issue Canvas planning.
