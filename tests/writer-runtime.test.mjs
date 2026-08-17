@@ -5,5 +5,5 @@ const prod=fs.readFileSync(new URL('../netlify/functions/produce-section.mjs', i
 assert(!prod.includes('export const config={background:true}'));
 assert(!app.includes('Writer did not reach a persisted terminal state within 14 minutes'));
 assert(app.includes('persisted to Airtable'));
-assert(prod.includes("const RELEASE_VERSION='3.9.3'"));
+assert(prod.includes("const RELEASE_VERSION='3.9.4'"));
 console.log('v3.22.1 synchronous writer runtime tests passed');
