@@ -1,0 +1,7 @@
+ICS v3.21.6 — Synchronous Fast Research
+
+- Step 3 research now calls a synchronous research-section endpoint instead of an opaque background function.
+- Each fast research job must return a real terminal success/error before the next job is counted.
+- Airtable Research Pack persistence is confirmed immediately after each research response.
+- Step 4 article generation remains background/asynchronous.
+- Live ticker continues to show finished / active / waiting / failed and elapsed time.
