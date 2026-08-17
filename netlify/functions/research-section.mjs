@@ -1505,7 +1505,9 @@ export default async(request)=>{
     if(request.method.toUpperCase()!=='POST')return json(405,{ok:false,error:'Method not allowed'});
     const data=await readJson(request);
     const mode=String(data.mode||'generate').toLowerCase()==='research'?'research':'generate';
-    const noteClass=/^ARTICLE LENGTH CLASS:\s*SHORT\s*$/mi.test(String(fields.Notes||'')); const requested=String(data.contentType||'master').toLowerCase(); const contentType=(requested==='feature'||requested==='short'||noteClass)?'short':'master';
+    // v3.21.7: do not inspect Airtable fields before the selected section has been loaded.
+    // The v3.21.6 synchronous fast lane referenced `fields` here before declaration,
+    // causing every Step 3 request to fail immediately with a technical error.
     runId=String(data.runId||runId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80)||runId;
     log('request_parsed',{sectionId:data.sectionId||'',requestedClass:data.productionClass||''});
     if(!data.sectionId)return json(400,{ok:false,error:'sectionId is required.'});
@@ -1517,6 +1519,9 @@ export default async(request)=>{
     const record=cleanRecord(rawRecord);
     log('airtable_lookup_completed',{recordId:record.id,title:String(record.fields?.['Section Title']||'')});
     const fields={...(record.fields||{}),__publicationName:String(data.publicationName||'').trim()};
+    const noteClass=/^ARTICLE LENGTH CLASS:\s*SHORT\s*$/mi.test(String(fields.Notes||''));
+    const requested=String(data.contentType||'master').toLowerCase();
+    const contentType=(requested==='feature'||requested==='short'||noteClass)?'short':'master';
     const cls=ALLOWED_CLASSES.has(data.productionClass)?data.productionClass:productionClass(fields);
     const sourceNotes=String(value(fields,'Notes')||'');
     const originalNotes=stripRuntimeBlocks(sourceNotes);
