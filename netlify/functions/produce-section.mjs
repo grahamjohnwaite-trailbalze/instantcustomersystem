@@ -1,6 +1,7 @@
 import {TABLES,airtableRequest,cleanRecord,json,publicError,readJson} from './_airtable.mjs';
 const titleCaseAllWords=v=>String(v||'').trim().replace(/(^|[\s—–:/([{])([a-z])/g,(m,p,c)=>p+c.toUpperCase());
 import {cleanUrl,createResponse,outputText,parseJsonText} from './_openai.mjs';
+import {RESEARCH_SOURCE_BANK} from './_research-source-bank.mjs';
 
 const ALLOWED_CLASSES=new Set(['A — Question Only','B — Light Proof','C — Evidence Heavy']);
 const value=(f,k)=>f?.[k]??'';
@@ -549,6 +550,38 @@ function precisionPass(x,fields){
   if(topicHits>=2)return true;
   return false;
 }
+
+function sourceBankDomainsForFields(fields={}){
+  const lane=String(value(fields,'Life Lane')||value(fields,'Category')||value(fields,'Section Type')||'').toLowerCase();
+  const blob=[lane,value(fields,'Section Title'),value(fields,'Core Reader Question')].join(' ').toLowerCase();
+  const keys=[];
+  if(/money|saving|mortgage|cost|bill|consumer|finance|pension|benefit/.test(blob))keys.push('money');
+  if(/letting|landlord|tenant|renting|rental/.test(blob))keys.push('lettings');
+  if(/property|house|home buyer|home seller|estate|planning|housing/.test(blob))keys.push('property');
+  if(/home|garden|energy|security|valuables|household/.test(blob))keys.push('home');
+  if(/health|mental|dental|wellbeing|nhs|medical/.test(blob))keys.push('health');
+  if(/pet|dog|cat|animal|vet/.test(blob))keys.push('pets');
+  if(/road|motoring|car|parking|transport|a10|journey/.test(blob))keys.push('motoring');
+  if(/business|work|job|employer|recruit|company|opportunity/.test(blob))keys.push('business');
+  return [...new Set(keys.flatMap(k=>(RESEARCH_SOURCE_BANK[k]||[]).map(x=>x.domain)).filter(Boolean))].slice(0,6);
+}
+function trustedDiscoveryLead(src={},fields={}){
+  if(!src?.seeded_discovery||!cleanUrl(src.url))return false;
+  if(wrongGeographySource(src,fields))return false;
+  const title=String(src.title||'');
+  const current=String(value(fields,'Notes')||'').match(/Current signal:\s*([^\n]+)/i)?.[1]||'';
+  // A locked Smart Plan lead is allowed to establish that a story is being reported.
+  // It does not become official truth; downstream wording remains attributed/qualified.
+  return Boolean(title.trim()&&current.trim());
+}
+function guideEvidenceEligible(src={},fields={}){
+  if(!cleanUrl(src.url)||wrongGeographySource(src,fields)||genericDriftSource(src))return false;
+  const strategy=researchStrategy(fields||{},'B — Light Proof');
+  if(!['MULTI_CANDIDATE','EDITORIAL_FRAME'].includes(strategy.route))return false;
+  const rel=Number(src.relevance||relevanceScore(src,fields));
+  return rel>=2;
+}
+
 function articleSearchTerms(fields){
   const title=String(value(fields,'Section Title')||'').trim();
   const q=String(value(fields,'Core Reader Question')||'').trim();
@@ -568,6 +601,7 @@ function articleSearchTerms(fields){
   if(/nhs|obesity|health|send/i.test(title+' '+q+' '+evidence))queries.push(compact(`site:nhs.uk ${area} ${title}`).slice(0,180));
   if(/police|speed/i.test(title+' '+q)&&ctx.policeDomain)queries.push(compact(`site:${ctx.policeDomain} ${area} ${title}`).slice(0,180));
   if(/planning|housing|a\d+|self-build/i.test(title+' '+q+' '+proof))queries.push(compact(`${area} planning ${title}`).slice(0,180));
+  for(const domain of sourceBankDomainsForFields(fields))queries.push(compact(`site:${domain} ${area} ${title}`).slice(0,180));
   if(/pothole|road repair|highway repair/i.test(title+' '+q+' '+proof+' '+current)){
     queries.unshift(compact(`"${current.replace(/\|.*$/,'').replace(/^Lead\s+\d+:\s*/i,'').trim()}"`).slice(0,180));
     if(ctx.councilDomain)queries.push(compact(`site:${ctx.councilDomain} ${area} pothole repair trial techniques`).slice(0,180));
@@ -632,7 +666,7 @@ async function fastEvidencePack(fields,cls){
   const editorSource=await editorAuthoritativeSource(fields);
   if(editorSource)raw.unshift(editorSource);
   // Reject off-topic and wrong-country results before they ever reach Writer. An editor-supplied URL is deliberately retained for qualification.
-  raw=raw.map(x=>({...x,relevance:Number(x.relevance||relevanceScore(x,fields))})).filter(x=>x.seeded_editor||(!wrongGeographySource(x,fields)&&(x.relevance>=3&&precisionPass(x,fields))));
+  raw=raw.map(x=>({...x,relevance:Number(x.relevance||relevanceScore(x,fields))})).filter(x=>x.seeded_editor||trustedDiscoveryLead(x,fields)||guideEvidenceEligible(x,fields)||(!wrongGeographySource(x,fields)&&(x.relevance>=3&&precisionPass(x,fields))));
   raw.sort((a,b)=>b.relevance-a.relevance);
   const seen=new Set(),dedup=[];
   for(const x of raw){
@@ -650,7 +684,7 @@ async function fastEvidencePack(fields,cls){
     title:String(x.title||x.source||'').slice(0,220),
     url:cleanUrl(x.url),
     supports:String(x.description||`Discovery result for: ${x.query}`).slice(0,700),
-    source_type:x.seeded_discovery?'discovery':x.seeded_editor?(sourceTypeFor(x.url,x.source)==='other'?'primary':sourceTypeFor(x.url,x.source)):sourceTypeFor(x.url,x.source),
+    source_type:x.seeded_discovery?'discovery':x.seeded_editor?(sourceTypeFor(x.url,x.source)==='other'?'primary':sourceTypeFor(x.url,x.source)):(sourceBankDomainsForFields(fields).some(d=>hostOf(x.url).endsWith(d))?'industry':sourceTypeFor(x.url,x.source)),
     relevance:x.relevance
   })).filter(x=>x.url);
   const official=chosen.filter(x=>x.source_type==='official').length;
@@ -1030,7 +1064,8 @@ function researchLockDecision(fields,research){
   const sources=Array.isArray(research?.sources)?research.sources:[];
   const strategy=researchStrategy(fields||{},'B — Light Proof');
   const declared=String(research?.editorial_state||'').toUpperCase();
-  if(declared==='EDITORIAL'&&sources.length>=2)return {code:'EDITORIAL',humanReview:false,reason:'Multiple credible sources support an editorial/recommendation treatment; no objective winner or invented consensus may be claimed.'};
+  const hardCurrentDecision=isHardCurrentDecisionBrief(fields||{});
+  if(declared==='EDITORIAL'&&sources.length>=2&&!hardCurrentDecision)return {code:'EDITORIAL',humanReview:false,reason:'Multiple credible sources support an editorial/recommendation treatment; no objective winner or invented consensus may be claimed.'};
   if(declared==='ATTRIBUTED'&&sources.length>=1)return {code:'ATTRIBUTED_REPORT',humanReview:false,reason:'Credible reporting supports publication with proportionate qualification where a material detail remains unconfirmed.'};
   const combined=[
     String(research?.research_status||''),
@@ -1052,8 +1087,11 @@ function researchLockDecision(fields,research){
   if(directlyVerifyingOfficial.length>=1&&!directVerificationMissing){
     return {code:'VERIFIED_NOW',humanReview:false,reason:'An official or primary source directly verifies the article premise.'};
   }
-  if(reported.length>=1){
+  if(reported.length>=1&&!hardCurrentDecision){
     return {code:'ATTRIBUTED_REPORT',humanReview:false,reason:'Credible reporting supports the article premise. Keep uncertain material claims qualified; source naming is needed only when editorially relevant.'};
+  }
+  if(reported.length>=1&&hardCurrentDecision){
+    return {code:'RESEARCH_INCOMPLETE',humanReview:true,reason:'A current planning/decision story has credible reporting, but direct official or primary confirmation is still required before stating the decision as fact.'};
   }
   if((strategy.route==='MULTI_CANDIDATE'||strategy.route==='EDITORIAL_FRAME')&&sources.length>=2){
     return {code:'EDITORIAL',humanReview:false,reason:'Credible local examples are sufficient for an editorial recommendation, list or reader-debate article.'};
@@ -1751,7 +1789,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel,record.id);
-      const service=[`PRODUCTION SERVICE v3.9.0`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.9.2`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Decision: ${decision.reason||'No decision detail recorded.'}`,`Missing: ${(research.missing_evidence||[]).join('; ')||'None recorded'}`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
