@@ -7,7 +7,7 @@ const value=(f,k)=>f?.[k]??'';
 
 const TOTAL_BUDGET_MS=110000;
 const RECOVERY_BUDGET_MS=65000;
-const RELEASE_VERSION='3.9.3';
+const RELEASE_VERSION='3.9.4';
 const WRITER_PROMPT_VERSION='TRAIL-BLAZE-HUMAN-VOICE-v1';
 
 function publicationContext(fields={}){
@@ -330,7 +330,7 @@ function lockedResearchFromNotes(notes){
   }
   return null;
 }
-const CURRENT_RESEARCH_PROMPT_VERSION='GEOGRAPHY-HARD-GATE-v3';
+const CURRENT_RESEARCH_PROMPT_VERSION='PRODUCTION-YIELD-v4';
 function researchCheckpointBlock(key,research,model,sectionRecordId=''){
   return `MASTER ARTICLE RESEARCH CHECKPOINT v2\n${JSON.stringify({brief_key:key,section_record_id:String(sectionRecordId||''),research_prompt_version:CURRENT_RESEARCH_PROMPT_VERSION,saved_at:new Date().toISOString(),model:model||'',research},null,2)}\nEND MASTER ARTICLE RESEARCH CHECKPOINT`;
 }
@@ -805,6 +805,8 @@ TASK
 9. CURRENT PLANNING / APPROVAL STORIES: resolve the applicant/business/person, exact site/address or settlement, planning authority and application/decision reference where possible. Search the relevant UK council planning/decision material. Do not return Sufficient for an approval explainer from a single newspaper/RSS headline alone. Require direct official/primary confirmation of the decision or, if that is genuinely unavailable, at least two independent article-specific local sources plus a clearly resolved subject and authority. CURRENT-NEWS ENTITY LOCK: do not substitute an older planning case merely because it shares the same category (for example another dog groomer, gym or housing scheme). A current lead must resolve to current-year or recent decision evidence that matches the place, proposal and authority; if only an older lookalike case can be found, return Insufficient and say the current entity still needs resolving.
 10. Geography is hard-gated to ${ctx.location}. Remove results from same-name places outside the UK. For Norfolk specifically, reject Norfolk, Virginia and US property/university/company results.
 
+11. PRODUCTION-YIELD CHECK: do not return Sufficient just because you found related material. The pack must satisfy the approved Local Proof Needed and Evidence Required strongly enough for the writer to deliver the promised article without turning it into a generic guide. Generic homepages/category pages are discovery leads, not article-specific proof. For named-list promises, verify the named examples and practical details directly.
+
 Return ONLY valid JSON:
 {"research_status":"Sufficient or Insufficient","editorial_state":"VERIFIED|ATTRIBUTED|EDITORIAL|BLOCKED","resolved_subject":{"name":"","location":"","responsible_body":"","reference":"","confidence":"high/medium/low"},"research_summary":"","sources":[{"title":"","url":"","supports":"","source_type":"official/primary/local/discovery/other","reader_facing":true}],"required_now_missing":[],"future_tests":[],"optional_missing":[],"missing_evidence":[]}`;
 }
@@ -1116,6 +1118,13 @@ ${routeRule}
 - HOSPITALITY STATUS DOUBLE-CHECK: when an article names a restaurant, pub, bar, cafe, takeaway, hotel, accommodation provider, market, stall, nightclub, venue or hospitality business, actively look for a current official website, booking/menu page or official social page. Use it to confirm the business still appears to be trading under that identity, at that location, and that the relevant offer/service is current. A live but obviously stale page is not enough on its own when newer evidence suggests closure, sale, relaunch or rebrand.
 - Do not invent a source or claim.
 - If adequate evidence cannot be found, say so explicitly.
+
+PRODUCTION-YIELD CONTRACT
+- The goal is not merely to find a related source; it is to create a Research Pack strong enough for a finished local article to pass QA first time.
+- A generic homepage, generic council landing page, generic TripAdvisor category page or broad tourist guide does NOT verify a specific article premise. Use the specific decision page, named venue page/menu, event page, planning record, service page, official guidance page or article-specific report.
+- If the headline promises named choices (for example three walks, a market, a food find, a pub/restaurant, things under £20), return the named choices and verify the material practical details the reader needs. Do not downgrade the promise into a generic decision guide.
+- For FULL articles, normally retain at least 3 distinct article-specific sources when the subject supports it. For SHORT articles, normally retain at least 2. One strong primary source can be sufficient only when it directly supports the whole narrow premise.
+- Treat the Local Proof Needed and Evidence Required fields as acceptance criteria, not optional suggestions. If they are not met, return Insufficient rather than falsely marking the article VERIFIED.
 
 Return ONLY valid JSON:
 {
@@ -1756,7 +1765,7 @@ export default async(request)=>{
       ].join('\n');
       const cleanNotes=stripRuntimeBlocks(originalNotes).replace(/\n?RESEARCH PACK v1[\s\S]*?END RESEARCH PACK\s*/g,'').trim();
       const checkpoint=researchCheckpointBlock(key,research,researchModel,record.id);
-      const service=[`PRODUCTION SERVICE v3.9.3`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
+      const service=[`PRODUCTION SERVICE v3.9.4`,`Run ID: ${runId}`,`Stage: RESEARCH`,`Outcome: ${decision.code}`,`State: RESEARCH_COMPLETE`,`Writer: Not started — staged workflow`,`END PRODUCTION SERVICE`].join('\n');
       const notes=[cleanNotes,checkpoint,pack,service,traceBlock()].filter(Boolean).join('\n\n');
       const saved=await airtableRequest(TABLES.sections,{method:'PATCH',body:{records:[{id:record.id,fields:{
         'Source / Reference Link 1':retained[0]?.url||value(fields,'Source / Reference Link 1')||'',
@@ -1919,7 +1928,7 @@ export default async(request)=>{
     result.editorial_readiness=editorialReadiness(result,publishGate,lockDecision,sources,fields);
     const priorNotes=removeWriterCheckpoints(originalNotes).replace(/\n?MASTER ARTICLE PACKAGE v1[\s\S]*?END MASTER ARTICLE PACKAGE\s*/g,'').replace(/\n?PRODUCTION SERVICE v[\d.]+[\s\S]*$/,'').trim();
     const block=packageBlock(result,sources,response._model_used,contentType);
-    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.9.3`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
+    const serviceNotes=[block,'',`PRODUCTION SERVICE v3.9.4`,`Run ID: ${runId}`,`Stage: GENERATE`,`Writer research: Disabled — locked Research Pack only`,`Class: ${cls}`,`Outcome: ${outcome.code}`,`Research recovery: ${research?.recovery_used?'Used':'Not needed'}`,`Evidence: ${String(result.evidence_summary||'').trim()||String(research?.research_summary||'').trim()||'No summary returned.'}`,`Missing evidence: ${outcome.missing?.length?outcome.missing.join('; '):'None'}`,`Exception: ${qa==='Pass'?'None':String(result.exception||outcome.label)}`].join('\n');
     const update={
       'Section Title':titleCaseAllWords(result.article_title||value(fields,'Section Title')),
       'Section Final Copy':String(result.article_body||'').trim(),

@@ -346,7 +346,7 @@ body[data-workflow-step="6"] #workflow-primary-v312{display:none!important}
 #step6-feature-panel-v3204,#step6-build-features-v3204{display:none!important}
 body[data-workflow-step="3"] #repair-research-queue-v3189,body[data-workflow-step="4"] #repair-research-queue-v3189{display:none!important}
 .v322-core-badge{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#eef6ff;color:#135aa3;font-weight:700;font-size:11px;margin-left:8px}
-</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.22.3<br><strong>Persisted State Integrity</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-16 · FULL + SHORT articles · coverage-aware components · reusable core subjects</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
+</style></head><body><div class="shell"><aside class="sidebar"><div class="brand">Instant Customer System<span>Issue Command Centre</span></div><nav class="nav"><button data-view="dashboard">Dashboard</button><button data-view="publications">Publications</button><button data-view="issues">Issues</button><button data-view="build">Build Issue</button><button class="active" data-view="assemble">Issue Canvas</button></nav><div class="phase">Issue Canvas v3.22.4<br><strong>20→12 Production Yield Contract</strong><br><span style="font-size:10px;opacity:.75">Build 2026-08-16 · FULL + SHORT articles · coverage-aware components · reusable core subjects</span></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">Trail Blaze Operating System</div><h1 id="page-title">Issue Canvas</h1><div class="sub" id="page-sub">Plan with one universal engine, then produce and distribute publication-specific issues.</div></div><div class="status"><span id="dot" class="dot"></span><span id="connection">Connecting…</span></div></header>
 <section class="view" id="view-dashboard"><div class="grid metrics"><div class="card metric"><span>Active publications</span><strong id="m-pubs">—</strong></div><div class="card metric"><span>Open issues</span><strong id="m-open">—</strong></div><div class="card metric"><span>Current production</span><strong id="m-current-production" style="font-size:17px">Choose below</strong></div><div class="card metric"><span>Workflow</span><strong style="font-size:17px">1 Plan → 9 Production Ready</strong></div></div><div class="section-head"><h2>Production priority</h2></div><div class="card"><strong>Open the publication you want to produce.</strong><p>Select an active publication. ICS will open its current issue in the production workspace so its editorial plan can be applied, articles produced and then assembled in Issue Planner.</p><div class="toolbar" style="margin-top:12px"><select id="production-publication" style="min-width:280px"></select><button class="btn" id="open-production">Open selected production</button></div></div><div class="section-head"><h2>Issues needing attention</h2></div><div id="attention" class="table-wrap"><div class="empty">Loading…</div></div></section>
 <section class="view" id="view-publications"><div class="section-head"><h2>Publications</h2><div class="toolbar"><button class="btn" id="add-publication">Add Publication</button><button class="btn secondary" onclick="loadAll()">Refresh</button></div></div><div class="card" style="margin-bottom:10px"><strong>Publication setup lives here.</strong><p class="muted" style="margin:6px 0 0">Create the publication once, then it appears automatically in Issues and the production selector. The publication name determines the editorial engine profile.</p></div><div id="pub-table" class="table-wrap"></div></section>
 <section class="view" id="view-issues"><div class="section-head"><h2>Issues</h2><div class="toolbar"><select id="issue-filter"><option value="">All publications</option></select><button class="btn" id="new-issue">Create issue</button></div></div><div id="issue-table" class="table-wrap"></div></section>
@@ -446,7 +446,7 @@ body[data-workflow-step="3"] #repair-research-queue-v3189,body[data-workflow-ste
 </div><div class="toolbar"><button class="btn" id="smart-edit-save">Save this change</button><button class="btn secondary" id="smart-edit-cancel">Cancel</button></div></div>
 <div id="smart-plan-list" class="checklist"></div>
 </section>
-<section class="card" id="article-bank-panel-v320" style="display:none;margin-bottom:14px"><div class="section-head" style="margin:0"><div><div class="eyebrow">After Step 4 — Content Production Engine</div><h2 style="margin:4px 0">Article Bank</h2><div class="muted" id="article-bank-summary-v320">Every READY FULL or SHORT article becomes a permanent banked asset before newsletter selection.</div></div><div class="toolbar"><button class="btn secondary" id="article-bank-prepare-v320" type="button">Prepare All READY Articles</button><button class="btn" id="article-bank-confirm-v320" type="button">Confirm Selected Published</button></div></div><div class="production-ready-grid" style="margin-top:12px"><div><strong id="bank-ready-v320">0</strong><span>READY / bankable</span></div><div><strong id="bank-published-v320">0</strong><span>Confirmed in Letterman</span></div><div><strong id="bank-unused-v320">0</strong><span>Unused in newsletter</span></div></div><div class="muted" style="margin:10px 0">ICS generates the expected Letterman URL from the publication website URL already stored in ICS + the Master Article SEO slug. Tick only articles you have actually published; no URL pasting is needed when Letterman keeps the planned slug.</div><div id="article-bank-list-v320"></div></section><section class="master-selection-panel-v312" id="master-selection-panel-v312" style="display:none"><div class="section-head" style="margin:0"><div><h2 style="margin:0">Step 5 — Select Articles For This Issue</h2><div class="muted" id="master-selection-summary-v312">Produce the article slate first, bank every READY asset, then choose the strongest FULL + SHORT mix for this issue. Unselected READY articles stay available for later.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn secondary" id="repair-master-integrity-v316" type="button">Repair Produced Masters</button><button class="btn secondary" id="master-selection-save-v312" type="button">Save Selection</button></div></div><div id="master-selection-grid-v312" class="master-selection-grid-v312"></div></section>
+<section class="card" id="article-bank-panel-v320" style="display:none;margin-bottom:14px"><div class="section-head" style="margin:0"><div><div class="eyebrow">After Step 4 — Content Production Engine</div><h2 style="margin:4px 0">Article Bank</h2><div class="muted" id="article-bank-summary-v320">Every READY FULL or SHORT article becomes a permanent banked asset before newsletter selection.</div></div><div class="toolbar"><button class="btn secondary" id="article-bank-prepare-v320" type="button">Prepare All READY Articles</button><button class="btn" id="article-bank-confirm-v320" type="button">Confirm Selected Published</button></div></div><div class="production-ready-grid" style="margin-top:12px"><div><strong id="bank-ready-v320">0</strong><span>READY / bankable</span></div><div><strong id="bank-published-v320">0</strong><span>Confirmed in Letterman</span></div><div><strong id="bank-unused-v320">0</strong><span>Unused in newsletter</span></div></div><div class="muted" style="margin:10px 0">ICS generates the expected Letterman URL from the publication website URL already stored in ICS + the Master Article SEO slug. Tick only articles you have actually published; no URL pasting is needed when Letterman keeps the planned slug.</div><div id="article-bank-list-v320"></div></section><section class="master-selection-panel-v312" id="master-selection-panel-v312" style="display:none"><div class="section-head" style="margin:0"><div><h2 style="margin:0">Step 5 — Build This Issue From This Week’s 20</h2><div class="muted" id="master-selection-summary-v312">Each week ICS adds about 20 articles. For Spotlight, the production contract is 8 READY FULL + 4 READY SHORT for the issue; every other READY article stays in the bank.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn secondary" id="repair-master-integrity-v316" type="button">Repair READY Shortfall</button><button class="btn secondary" id="master-selection-save-v312" type="button">Save Selection</button></div></div><div id="master-selection-grid-v312" class="master-selection-grid-v312"></div></section>
 <section id="production-ready-panel-v312c"><div class="eyebrow">Step 9 — Production Ready</div><h2 style="margin:5px 0 6px">Canonical Letterman Build Package</h2><div class="muted">One top-to-bottom handoff in the exact newsletter order. Each FULL or SHORT article carries its full copy, publishing metadata, CTA, useful links and social copy in the same section.</div><div class="production-ready-grid"><div><strong id="pr-sections-v312c">—</strong><span>Sections</span></div><div><strong id="pr-masters-v312c">—</strong><span>Permanent Articles</span></div><div><strong id="pr-status-v312c">CHECK</strong><span>Issue Status</span></div></div><div class="toolbar"><button class="btn" id="pr-generate-v312c" type="button">Open Canonical Build Package</button><button class="btn secondary" id="pr-copy-v312c" type="button">Open / Copy Package</button><button class="btn secondary" id="pr-reconcile-v3194" type="button">Reconcile Letterman Articles</button><button class="btn secondary" id="pr-assets-v3181" type="button">Article Asset View</button></div><div class="warning" style="margin-top:14px"><strong>Operator rule:</strong> build Letterman from this package from Section 1 downward. You should not need to hunt between separate component, article and social exports.</div></section>
 <section id="step6-coverage-panel-v3210" class="panel" style="display:none;margin-bottom:14px">
   <div class="section-head" style="margin:0 0 8px">
@@ -785,8 +785,8 @@ async function invalidateMasterForFreshResearchV316(a,record,reason='Produced-co
     'Reader Hook':a.title,
     'Reader Type':`${place} readers affected by or interested in this question`,
     'Reader Value':`A clear, locally grounded answer to: ${a.question}`,
-    'Local Proof Needed':`Named ${place} examples and current local proof directly relevant to this approved question. Do not use sibling-publication examples.`,
-    'Evidence Required':`Fresh current sources sufficient to answer this exact ${place} question. Reported evidence may be used with explicit attribution. Do not substitute evidence from another publication geography.`,
+    'Local Proof Needed':a.local_proof||`Named ${place} examples and current local proof directly relevant to this approved question. Do not use sibling-publication examples.`,
+    'Evidence Required':a.evidence||`Fresh current sources sufficient to answer this exact ${place} question. Reported evidence may be used with explicit attribution. Do not substitute evidence from another publication geography.`,
     'Evidence Status':'Needs Update',
     'Evidence Checked Date':'',
     'Source / Reference Link 1':'',
@@ -812,95 +812,45 @@ async function invalidateMasterForFreshResearchV316(a,record,reason='Produced-co
 }
 
 async function repairProducedMasterIntegrityV316(){
-  const plan=getSmartPlan();
-  if(!plan?.articles?.length)return;
+  const plan=getSmartPlan();if(!plan?.articles?.length)return;
   try{await refreshMasterSelectionDataV314()}catch{}
-  const bad=(plan.articles||[]).map(a=>{
-    const record=planArticleRecordV312(a);
-    const leak=record?producedMasterLeakageV316(record):null;
-    const notes=String(val(record?.fields||{},'Notes')||'');
-    const resetPending=!!record &&
-      /SMART PLAN APPROVED REPAIR|MASTER ARTICLE INTEGRITY RESET v1/.test(notes) &&
-      masterArticleState(record)!=='complete';
-    const check=leak
-      ? {state:'GEOGRAPHY REVIEW',reason:`Wrong-publication geography in produced copy: ${leak.hits.join(', ')}`,record,leak}
-      : resetPending
-        ? {state:'REPAIR PENDING',reason:'Previous geography repair cleared the stale article but did not complete a clean replacement.',record,repairPending:true}
-        : producedMasterIntegrityV316(a);
-    return {a,check};
-  }).filter(x=>x.check.leak||x.check.repairPending);
-
-  if(!bad.length){
-    setWorkflowActionStatusV312(5,'Select','No produced-content repairs needed.','All produced Masters pass the active-publication geography gate and there are no incomplete repair records.');
-    renderMasterSelectionV312();
-    return;
-  }
-
-  const btn=E('repair-master-integrity-v316');
-  const old=btn?.textContent||'Repair Produced Masters';
-  if(btn){btn.disabled=true;btn.textContent='Repairing…';}
-  let repaired=0,failed=[];
+  const target=issueArticleMixTargetV3224();let mix=readyMixV3224();
+  if(mix.full>=target.full&&mix.short>=target.short&&mix.total>=target.total){renderMasterSelectionV312();setWorkflowActionStatusV312(5,'Select','READY target already met.',`${mix.full} FULL + ${mix.short} SHORT are READY. Select the strongest ${target.label}.`);return;}
+  const rank={A:3,B:2,C:1};
+  const candidates=(plan.articles||[]).map(a=>({a,state:masterCandidateStateV312(a),rd:masterCandidateReadinessV314(a)}))
+    .filter(x=>x.state!=='READY')
+    .sort((x,y)=>(rank[y.rd.grade]||0)-(rank[x.rd.grade]||0)||Number(x.a.order)-Number(y.a.order));
+  const btn=E('repair-master-integrity-v316'),old=btn?.textContent||'Repair READY Shortfall';if(btn){btn.disabled=true;btn.textContent='Filling READY shortfall…'}
+  let repaired=0,attempted=0,fail=[];
   try{
-    const contaminated=bad.filter(x=>x.check.leak).length;
-    const pendingRepair=bad.filter(x=>x.check.repairPending).length;
-    setWorkflowActionStatusV312(5,'Select',`Repairing ${bad.length} Master${bad.length===1?'':'s'}…`,
-      `${contaminated} geography-contaminated · ${pendingRepair} incomplete previous repair${pendingRepair===1?'':'s'}.\nFresh research + rewrite will run only for:\n- ${bad.map(x=>`${x.a.order}. ${x.a.title}`).join('\n- ')}\nAll other Masters and all 18 supporting components are preserved.`);
-
-    for(let i=0;i<bad.length;i++){
-      const {a,check}=bad[i];
+    for(const x of candidates){
+      mix=readyMixV3224();const cls=articleLengthClassV3210(x.a,x.rd.record);
+      const needClass=(cls==='SHORT'?mix.short<target.short:mix.full<target.full);
+      if(!needClass&&mix.total>=target.total)continue;
+      if(mix.full>=target.full&&mix.short>=target.short&&mix.total>=target.total)break;
+      attempted++;
       try{
-        let record=await invalidateMasterForFreshResearchV316(a,check.record,check.reason);
-        const item={s:record,run:900+i};
-
-        setWorkflowActionStatusV312(5,'Select',`Repair ${i+1}/${bad.length} — fresh research`,
-          `${a.title}\nOld research/package cleared. Rebuilding from the approved Cambridgeshire brief.`);
-
+        let record=await invalidateMasterForFreshResearchV316(x.a,x.rd.record||planArticleRecordV312(x.a),'READY production shortfall — targeted evidence repair');
+        const item={s:record,run:1200+attempted};
+        setWorkflowActionStatusV312(5,'Select',`Repairing READY shortfall ${attempted}`,`${x.a.title} · ${cls} · fresh article-specific research, then rewrite only if research passes.`);
         const research=await produceOne(item,'research');
         const outcome=String(research?.outcome||'');
-        if(['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(outcome)){
-          throw new Error(`Fresh research did not reach a publishable state: ${outcome}`);
-        }
-
-        record=await refreshProducedRecord(record.id);
-        item.s=record;
-
-        const researchNotes=String(val(record.fields||{},'Notes')||'');
-        const researchBlocks=[...researchNotes.matchAll(/RESEARCH PACK v1\n([\s\S]*?)\nEND RESEARCH PACK/g)];
-        const researchPackText=researchBlocks.length?researchBlocks[researchBlocks.length-1][1]:'';
-        const researchLeak=forbiddenPublicationTermsV312i().filter(t=>publicationTermPresentV312o(researchPackText,t));
-        if(researchLeak.length){
-          throw new Error(`Fresh Research Pack still contains foreign geography: ${researchLeak.join(', ')}`);
-        }
-
-        setWorkflowActionStatusV312(5,'Select',`Repair ${i+1}/${bad.length} — rewriting`,
-          `${a.title}\nFresh Research Pack passed the geography gate. Writing from that pack now.`);
-
+        if(['BLOCKED','RESEARCH_INCOMPLETE','SOURCE_CHECK_REQUIRED'].includes(outcome))throw new Error(`research ${outcome}`);
+        record=await refreshProducedRecord(record.id);item.s=record;
         await produceOne(item,'generate');
         record=await refreshProducedRecord(record.id);
-        const leak=producedMasterLeakageV316(record);
-        if(leak){
-          await api('sections',{method:'PATCH',body:JSON.stringify({id:record.id,fields:{
-            'Section Status':'Needs Review',
-            'Section QA Result':'Fix Required'
-          }})});
-          throw new Error(`Rewritten copy still contains foreign geography: ${leak.hits.join(', ')}`);
-        }
+        if(masterArticleState(record)!=='complete')throw new Error(`rewrite finished as ${masterArticleState(record)}`);
         repaired++;
-      }catch(e){
-        failed.push(`${a.order}. ${a.title} — ${String(e.message||e)}`);
-      }
+        await refreshMasterSelectionDataV314();
+      }catch(e){fail.push(`${x.a.order}. ${x.a.title} — ${String(e.message||e)}`)}
     }
-
-    await refreshMasterSelectionDataV314();
-    renderMasterSelectionV312();
-    const detail=failed.length
-      ? `${repaired} repaired · ${failed.length} still needs attention:\n- ${failed.join('\n- ')}`
-      : `${repaired}/${bad.length} contaminated Masters repaired with fresh research and fresh writing. Review the Step 5 READY shortlist, then Save Selection.`;
-    setWorkflowActionStatusV312(5,'Select','Produced Master integrity repair finished.',detail);
-  }finally{
-    if(btn){btn.disabled=false;btn.textContent=old;}
-  }
+    await refreshMasterSelectionDataV314();mix=readyMixV3224();renderMasterSelectionV312();
+    const met=mix.full>=target.full&&mix.short>=target.short&&mix.total>=target.total;
+    setWorkflowActionStatusV312(5,'Select',met?'READY production target met.':'READY production target still short.',`${mix.full} FULL + ${mix.short} SHORT READY · target ${target.label} · ${repaired}/${attempted} repaired${fail.length?` · ${fail.length} did not pass and were left for later`:''}.`);
+    if(met)recommendMasterSelectionV314(),renderMasterSelectionV312();
+  }finally{if(btn){btn.disabled=false;btn.textContent=old}}
 }
+
 function candidateSlateAuditV312i(plan){
   const profile=engineProfileForPublication();
   const arts=plan?.articles||[];
@@ -3729,30 +3679,58 @@ async function refreshMasterSelectionDataV314(){
   sortSections();
   renderSections();
 }
+function issueArticleMixTargetV3224(){
+  const p=engineProfileForPublication();
+  if(String(p.key||'').toUpperCase()==='SPOTLIGHT')return {full:8,short:4,total:12,label:'8 FULL + 4 SHORT'};
+  const min=p.targetMasters?.[0]||5;
+  return {full:0,short:0,total:min,label:`${min} READY articles`};
+}
+function readyMixV3224(){
+  const plan=getSmartPlan();let full=0,short=0,total=0;
+  for(const a of (plan?.articles||[])){
+    if(masterCandidateStateV312(a)!=='READY')continue;
+    total++;
+    if(articleLengthClassV3210(a,planArticleRecordV312(a))==='SHORT')short++;else full++;
+  }
+  return {full,short,total};
+}
+function selectedMixV3224(selected=getMasterSelectionV312()){
+  const plan=getSmartPlan();let full=0,short=0,total=0;
+  for(const o of selected){
+    const a=(plan?.articles||[]).find(x=>Number(x.order)===Number(o));
+    if(!a||masterCandidateStateV312(a)!=='READY')continue;
+    total++;
+    if(articleLengthClassV3210(a,planArticleRecordV312(a))==='SHORT')short++;else full++;
+  }
+  return {full,short,total};
+}
+function meetsIssueMixV3224(mix=selectedMixV3224()){
+  const t=issueArticleMixTargetV3224();
+  if(t.full||t.short)return mix.full>=t.full&&mix.short>=t.short&&mix.total>=t.total;
+  return mix.total>=t.total;
+}
 function recommendMasterSelectionV314(){
-  const plan=getSmartPlan(),profile=engineProfileForPublication();
+  const plan=getSmartPlan(),profile=engineProfileForPublication(),target=issueArticleMixTargetV3224();
   if(!plan?.articles?.length)return [];
-  const min=profile.targetMasters?.[0]||8,max=profile.targetMasters?.[1]||10;
-  const target=Math.max(min,Math.min(max,Math.round((min+max)/2)));
   const gradeScore={A:40,B:25,C:10};
   const ready=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').map(a=>{
     const rd=masterCandidateReadinessV314(a),lane=normaliseEditorialLane(a.life_lane||editorialLaneFor(a,profile)||'Open');
-    return {a,rd,lane,tone:toneBucket(a),base:gradeScore[rd.grade]??0,civic:isCivicHeavyArticle(a)};
+    return {a,rd,lane,tone:toneBucket(a),base:gradeScore[rd.grade]??0,civic:isCivicHeavyArticle(a),cls:articleLengthClassV3210(a,rd.record)};
   });
   const picked=[],laneCounts={},toneCounts={};
-  // Greedy editorial mix: quality first, then reward a new life lane / new tone and penalise concentration.
-  while(picked.length<target){
-    const pool=ready.filter(x=>!picked.includes(x));
-    if(!pool.length)break;
-    pool.sort((x,y)=>{
-      const score=z=>z.base + (laneCounts[z.lane]?0:14) + (toneCounts[z.tone]?0:6) - (laneCounts[z.lane]||0)*8 - (z.civic?Math.max(0,(picked.filter(q=>q.civic).length-1))*8:0);
-      return score(y)-score(x)||Number(x.a.order)-Number(y.a.order);
-    });
-    const x=pool[0]; picked.push(x); laneCounts[x.lane]=(laneCounts[x.lane]||0)+1; toneCounts[x.tone]=(toneCounts[x.tone]||0)+1;
-  }
-  const orders=picked.map(x=>Number(x.a.order));
-  saveMasterSelectionV312(orders);
-  return orders;
+  const choose=(cls,count)=>{
+    while(picked.filter(x=>!cls||x.cls===cls).length<count){
+      const pool=ready.filter(x=>!picked.includes(x)&&(!cls||x.cls===cls));
+      if(!pool.length)break;
+      pool.sort((x,y)=>{
+        const score=z=>z.base+(laneCounts[z.lane]?0:14)+(toneCounts[z.tone]?0:6)-(laneCounts[z.lane]||0)*8-(z.civic?Math.max(0,(picked.filter(q=>q.civic).length-1))*8:0);
+        return score(y)-score(x)||Number(x.a.order)-Number(y.a.order);
+      });
+      const x=pool[0];picked.push(x);laneCounts[x.lane]=(laneCounts[x.lane]||0)+1;toneCounts[x.tone]=(toneCounts[x.tone]||0)+1;
+    }
+  };
+  if(target.full||target.short){choose('FULL',target.full);choose('SHORT',target.short);}else choose('',target.total);
+  const orders=picked.map(x=>Number(x.a.order));saveMasterSelectionV312(orders);return orders;
 }
 function renderMasterSelectionV312(){
   const panel=E('master-selection-panel-v312'),grid=E('master-selection-grid-v312');if(!panel||!grid)return;
@@ -3760,21 +3738,15 @@ function renderMasterSelectionV312(){
   if(!plan?.articles?.length){panel.style.display='none';return}
   panel.style.display='block';
   renderArticleBankV320();if(typeof renderFeatureSummaryV3204==='function')renderFeatureSummaryV3204();
-  const min=profile.targetMasters?.[0]||8,max=profile.targetMasters?.[1]||10;
-  const ready=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY').length;
-  const review=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='WRITTEN REVIEW').length;
+  const target=issueArticleMixTargetV3224();
+  const mix=readyMixV3224();
+  const review=(plan.articles||[]).filter(a=>['WRITTEN REVIEW','FAILED','BLOCKED'].includes(masterCandidateStateV312(a))).length;
   let selected=getMasterSelectionV312();
-
-  // Old pre-production default selections are not trusted once Step 4 has produced real states.
-  const selectedReady=selected.filter(o=>{
-    const a=(plan.articles||[]).find(x=>Number(x.order)===Number(o));
-    return a&&masterCandidateStateV312(a)==='READY';
-  });
-  if(selectedReady.length<min && ready>=min){
-    selected=recommendMasterSelectionV314();
-  }
-
-  const readyFull=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY'&&articleLengthClassV3210(a,planArticleRecordV312(a))==='FULL').length,readyShort=(plan.articles||[]).filter(a=>masterCandidateStateV312(a)==='READY'&&articleLengthClassV3210(a,planArticleRecordV312(a))==='SHORT').length; E('master-selection-summary-v312').textContent=`${ready}/${plan.articles.length} READY · ${readyFull} FULL · ${readyShort} SHORT · ${review} WRITTEN REVIEW · choose ${min}–${max} READY articles. Aim for roughly 7–10 FULL + 5–7 SHORT when the bank supports it; do not lower quality to hit a quota.`;
+  const selectedReady=selectedMixV3224(selected);
+  if(!meetsIssueMixV3224(selectedReady)&&mix.full>=target.full&&mix.short>=target.short&&mix.total>=target.total)selected=recommendMasterSelectionV314();
+  const deficitFull=Math.max(0,target.full-mix.full),deficitShort=Math.max(0,target.short-mix.short),deficitTotal=Math.max(0,target.total-mix.total);
+  E('master-selection-summary-v312').textContent=`WEEKLY PRODUCTION CONTRACT · ${plan.articles.length} planned · ${mix.total} READY (${mix.full} FULL + ${mix.short} SHORT) · issue needs ${target.label}${deficitFull||deficitShort||deficitTotal?` · SHORTFALL: ${deficitFull} FULL + ${deficitShort} SHORT`: ' · TARGET MET ✓'} · ${review} candidates can be repaired only if needed.`;
+  const repairBtn=E('repair-master-integrity-v316');if(repairBtn)repairBtn.style.display=(deficitFull||deficitShort||deficitTotal)?'inline-flex':'none';
 
   grid.innerHTML=(plan.articles||[]).map(a=>{
     const state=masterCandidateStateV312(a),checked=selected.includes(Number(a.order)),rd=masterCandidateReadinessV314(a);
@@ -5154,7 +5126,7 @@ function operatorGuideDataV319(step){
   2:{next:'Review the slate, replace only weak choices, then lock the approved plan.',pass:'The plan is locked and all approved Master briefs exist.',fail:'Fix only the named blocker or candidate. Do not reopen discovery unless ICS says the plan lacks valid candidates.'},
   3:{next:'Research the approved Master queue. Let completed packs stay completed.',pass:'Each usable Master is Verified/Attributed with a sufficient saved Research Pack; genuinely blocked Masters may remain blocked.',fail:'Retry only the failed article or use Repair Research Queue. Never rerun successful research.'},
   4:{next:'Write every Master that has a valid Research Pack.',pass:'READY/MINOR EDIT Masters have full copy, metadata and QA state; blocked research stays out of the writer queue.',fail:'Retry only the failed writer. Do not discard the Research Pack or regenerate the whole issue.'},
-  5:{next:`Choose the strongest ${profile.targetMasters?.[0]||5}–${profile.targetMasters?.[1]||7} Masters for this issue. Leave the rest bankable.`,pass:'The saved selection meets the family range and every selected Master is production-ready.',fail:'Replace the weak/blocked selection with another READY Master; do not lower quality to fill a slot.'},
+  5:{next:`For Spotlight choose 8 READY FULL + 4 READY SHORT. Leave the rest bankable.`,pass:'The saved selection meets the issue mix and every selected article is READY.',fail:'Replace the weak/blocked selection with another READY Master; do not lower quality to fill a slot.'},
   6:{next:`Build the ${target.supportNeeded} supporting/partner components required around the selected Masters.`,pass:'Required support count is READY and the family mix has distinct editorial roles.',fail:'Rebuild only the bad/missing support slot. Do not regenerate good components.'},
   7:{next:'Assemble once from saved Masters + persistent support, then adjust the top-to-bottom reading rhythm.',pass:'A complete running order is persisted and contains every selected Master plus the required support blocks.',fail:'Rebuild the running order from persisted records. Do not go back to research or production for an ordering problem.'},
   8:{next:'Run Final QA. Treat 0 Fix as permission to continue; warnings are editorial unless explicitly named as blockers.',pass:'Latest QA has 0 hard Fixes and the QA lifecycle state is persisted.',fail:'Use Fix QA Exceptions for named hard fixes. Do not rebuild the issue for warnings.'},
@@ -7839,13 +7811,13 @@ if(E('toggle-step6-advanced-v315'))E('toggle-step6-advanced-v315').onclick=()=>{
 if(E('repair-master-integrity-v316'))E('repair-master-integrity-v316').onclick=repairProducedMasterIntegrityV316;
 if(E('master-selection-save-v312'))E('master-selection-save-v312').onclick=()=>{
   renderMasterSelectionV312();
-  const n=getMasterSelectionV312().length,pr=engineProfileForPublication(),min=pr.targetMasters?.[0]||8,max=pr.targetMasters?.[1]||10;
-  if(n<min||n>max){
-    setWorkflowActionStatusV312(5,'Select','Selection needs adjustment.',`Select ${min}–${max} READY Masters. Current selection: ${n}.`);
+  const mix=selectedMixV3224(),target=issueArticleMixTargetV3224();
+  if(!meetsIssueMixV3224(mix)){
+    setWorkflowActionStatusV312(5,'Select','Selection needs adjustment.',`Issue needs ${target.label}. Current READY selection: ${mix.full} FULL + ${mix.short} SHORT (${mix.total} total).`);
     return;
   }
   workflowSelectedStepV312=5;updateWorkflowShellV312(5);
-  setWorkflowActionStatusV312(5,'Select',`${n} Masters selected for this issue.`,`Selection saved. Unselected READY candidates remain bankable. Next: click Step 6 — Components.`);
+  setWorkflowActionStatusV312(5,'Select',`${mix.full} FULL + ${mix.short} SHORT selected.`,`Production contract met. Unselected READY articles remain banked. Next: Step 6 — Components.`);
 };
 if(E('toggle-canvas-library'))E('toggle-canvas-library').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('library-open-v312c');E('toggle-canvas-library').textContent=l.classList.contains('library-open-v312c')?'Hide Content Library':'Show Content Library'}else{l.classList.toggle('library-hidden');E('toggle-canvas-library').textContent=l.classList.contains('library-hidden')?'Show Content Library':'Hide Content Library'}};
 if(E('toggle-canvas-inspector'))E('toggle-canvas-inspector').onclick=()=>{const l=document.querySelector('.canvas-layout');if(document.body.dataset.workflowStep==='7'){l.classList.toggle('inspector-open-v312c');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-open-v312c')?'Hide Selected Section':'Show Selected Section'}else{l.classList.toggle('inspector-hidden');E('toggle-canvas-inspector').textContent=l.classList.contains('inspector-hidden')?'Show Selected Section':'Hide Selected Section'}};if(E('pr-generate-v312c'))E('pr-generate-v312c').onclick=()=>step9SafeRunV31817('package');
